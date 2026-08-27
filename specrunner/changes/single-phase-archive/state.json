@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-27T05:02:04.464Z",
+  "updatedAt": "2026-08-27T05:17:19.353Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -77,7 +77,9 @@
     "54209d9b1cffdd4f9ea371318ae21a7f2a319e5c",
     "aaeb27ba5f0c2cff16ccd30db657c8be8ddc4a4a",
     "0bfa619920f96f4abfe027f74beac738c18af16c",
-    "d753024f9c8e895bef0e35897122c1ab307e2ff1"
+    "d753024f9c8e895bef0e35897122c1ab307e2ff1",
+    "819f86a1f412ed3dedafe668bc5f9c9ea04d6248",
+    "7e48c02923401870a82d179fca1a3ff0124352f9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -193,6 +195,25 @@
       "tests/unit/core/archive/orchestrator.test.ts",
       "src/core/archive/__tests__/plain-archive.test.ts",
       "specrunner/adr/2026-08-21-archive-state-after-merge.md"
+    ],
+    "conformance": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/cleanup.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/cli/archive.ts",
+      "src/core/job-list/operations-view.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "specrunner/adr/2026-08-21-archive-state-after-merge.md",
+      "tests/unit/core/archive/orchestrator.test.ts",
+      "tests/unit/core/archive/archive-cleanup.test.ts",
+      "tests/unit/core/job-list/operations-view.test.ts",
+      "tests/unit/cli/archive-plain-merge-detection.test.ts",
+      "tests/unit/no-worktree-archive.test.ts",
+      "tests/dispatch-workflow-archive-action.test.ts"
     ]
   },
   "resumePoint": null,
@@ -234,7 +255,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -243,13 +264,14 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }

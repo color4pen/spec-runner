@@ -2,7 +2,7 @@
 
 ## ステータス
 
-superseded by [ADR-20260826-single-phase-archive](../changes/single-phase-archive/spec.md)
+superseded by [ADR-20260826-single-phase-archive](2026-08-26-single-phase-archive.md)
 
 Amends:
 - [ADR-20260603-archive-command-client-closed](2026-06-03-archive-command-client-closed.md) — D5（Phase 3: `status → archived` を archive record push 後に行う）を廃止し、orchestrator が terminal transition を行わない構造に置き換える
