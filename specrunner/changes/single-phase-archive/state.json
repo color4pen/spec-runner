@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-26T23:38:51.360Z",
+  "updatedAt": "2026-08-27T04:26:23.094Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/single-phase-archive-36cad676",
-  "error": {
-    "code": "UNPUSHABLE_PATH_BLOCKED",
-    "message": "Step 'code-fixer' cannot push changes to protected path(s): .github/workflows/specrunner-dispatch.yml. Environment constraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**",
-    "hint": "The current environment's token cannot push to the following paths:\n  - .github/workflows/specrunner-dispatch.yml\nConstraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**\nYour changes remain uncommitted in the worktree.\nRemove the changes to these paths or resolve the requirement without modifying them, then run 'specrunner job resume single-phase-archive' to continue."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -175,13 +171,17 @@
       "src/core/archive/job-context.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "unpushable path constraint: .github/workflows/specrunner-dispatch.yml",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "code-review iter1 の 2 findings は operator-apply commit 7b287328 で解消済み: (1) workflow の archive コメントブロックを単相契約の説明へ書き換え（TC-032 の grep は 0 件）、(2) orchestrator.ts の JSDoc から旧 merge-completion 前提の記述を除去。Actions token は .github/workflows/** を push できないため operator が code-fixer の代わりに適用した。現在の tree を再レビューすること。",
+      "step": "code-review",
+      "recordedAt": "2026-08-27T04:26:22.772Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
