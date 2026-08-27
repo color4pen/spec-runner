@@ -12,8 +12,8 @@
  *          derive usage → archiveChangeFolder (mv/skip) →
  *          draft deletion → git add → commitArchive →
  *          git push origin <feature-branch> → capture headSha
- *          (status transition is NOT performed here — caller is responsible for calling
- *          markJobArchived after the PR is merged via completeAfterMerge)
+ *          (status transition is NOT performed here — the caller owns it: plain archive
+ *          calls markJobArchived directly after a successful push, independent of PR state)
  */
 import * as fs from "node:fs/promises";
 import * as nodePath from "node:path";
