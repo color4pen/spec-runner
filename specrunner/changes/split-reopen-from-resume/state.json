@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T13:46:47.727Z",
+  "updatedAt": "2026-08-27T13:55:05.098Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -75,7 +75,9 @@
     "575d49d29abb845ad0db050c83782cc3ae61d917",
     "e20fcc13ea699ff27072feca05c92186001de279",
     "f21b7bb97ba919886f3fda26f16cfd8b4cf58d36",
-    "db9ccf7d9aa5edcf4f0296d3e5689eae334a3fc3"
+    "db9ccf7d9aa5edcf4f0296d3e5689eae334a3fc3",
+    "6143b4692c93c5b2af96c4c57af47f083c46e2c8",
+    "bb6504a542f982a8e8ac0e10e5011bb445d6a076"
   ],
   "touchedFiles": {
     "request-review": [
@@ -157,6 +159,12 @@
       "tests/unit/core/command/reopen-terminal-slug.test.ts",
       "tests/dispatch-workflow-reopen-action.test.ts",
       ".github/workflows/specrunner-dispatch.yml"
+    ],
+    "code-fixer": [
+      "src/core/command/reopen.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/state/lifecycle.ts",
+      "src/core/command/resume.ts"
     ]
   },
   "resumePoint": null,
@@ -183,8 +191,38 @@
       "recordedAt": "2026-08-27T13:46:47.521Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "6143b4692c93c5b2af96c4c57af47f083c46e2c8",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/split-reopen-from-resume/design.md:sha256:3b3f97d76daf117b2937186da02ba0535b124b0d0324f65203564854814a8134|specrunner/changes/split-reopen-from-resume/request.md:sha256:b131dbde75ee776b3bc8c0db1812e50b76b6da0b292105bcb76748c76c5b0852|specrunner/changes/split-reopen-from-resume/spec.md:sha256:d39b101587cba17cfec64ffd81a76502ecfbc2f10d8498fd64b653b7ee4259ec|specrunner/changes/split-reopen-from-resume/tasks.md:sha256:c0b69d178278cab300205a79125297262adacf2e03d5404d8b20e7fe00b2c156|specrunner/changes/split-reopen-from-resume/test-cases.md:sha256:68733f2b3399c6ccdef698b57acd47a0e49e24675d6c29fc2a3e35cd2454ade5"
+    }
+  ],
   "_journal": {
-    "historyCount": 61,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -195,7 +233,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
