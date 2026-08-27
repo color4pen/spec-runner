@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-27T04:46:07.357Z",
+  "updatedAt": "2026-08-27T04:57:22.791Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -74,7 +74,8 @@
     "550f80cb98290d316e30bb2fd5aaf6b022aae4cb",
     "629a265d680a425818c4be1df5daff1c640b93e3",
     "e67a2ad65c117a2bfcbb81cdb3d3d53ed38749d9",
-    "54209d9b1cffdd4f9ea371318ae21a7f2a319e5c"
+    "54209d9b1cffdd4f9ea371318ae21a7f2a319e5c",
+    "aaeb27ba5f0c2cff16ccd30db657c8be8ddc4a4a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,20 +161,23 @@
     ],
     "code-review": [
       "src/core/archive/plain-archive.ts",
-      "src/core/archive/orchestrator.ts",
       "src/core/archive/cleanup.ts",
-      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/orchestrator.ts",
       "src/core/archive/merge-completion.ts",
-      "src/core/archive/__tests__/plain-archive.test.ts",
-      "src/core/job-list/operations-view.ts",
       "src/cli/archive.ts",
-      "src/core/archive/job-context.ts",
-      "src/core/archive/__tests__/orchestrator.test.ts",
+      "src/core/job-list/operations-view.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/__tests__/plain-archive.test.ts",
       "tests/unit/core/archive/orchestrator.test.ts",
       "tests/unit/core/archive/archive-cleanup.test.ts",
       "specrunner/adr/2026-08-21-archive-state-after-merge.md",
+      "tests/unit/core/job-list/operations-view.test.ts",
+      "src/core/archive/job-context.ts",
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
-      "tests/unit/no-worktree-archive.test.ts"
+      "src/core/finish/job-state-update.ts",
+      "src/state/lifecycle.ts",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts"
     ],
     "code-fixer": [
       "src/core/archive/orchestrator.ts",
@@ -193,7 +197,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -203,7 +207,7 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 2
     }
   }

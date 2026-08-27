@@ -127,6 +127,16 @@ export async function runPlainArchive(
   if (isPathB) {
     // -------------------------------------------------------------------------
     // Path B: best-effort transition + cleanup (no archive recording)
+    //
+    // assertJobFinishable is intentionally omitted here.
+    // Design D5 Path B semantics: the archive record already exists on the remote
+    // branch; the only remaining work is to transition the job state and clean up.
+    // This path is best-effort by design — if markJobArchived throws (e.g. because
+    // the internal transitionJob validation rejects the transition), the error is
+    // caught and surfaced as a warning so that cleanup can still proceed.
+    // Calling assertJobFinishable before markJobArchived would introduce an
+    // unnecessary hard failure for a path whose contract is "warn on error,
+    // always run cleanup".
     // -------------------------------------------------------------------------
     stdoutWrite(`Archive record already exists; working tree unavailable. Running best-effort transition...`);
 

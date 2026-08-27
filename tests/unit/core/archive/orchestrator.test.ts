@@ -892,7 +892,7 @@ describe("TC-AO-NO-INTERMEDIATE-STATUS: archive-recorded 等の中間 status が
 // ---------------------------------------------------------------------------
 
 describe("TC-022: mv/commit 双方 skip + ls-remote 空 → push skip, exit 0", () => {
-  it("両方 skip → ls-remote が空を返す → push を呼ばず exit 0 を返す", async () => {
+  it("両方 skip → ls-remote が空を返す → push を呼ばず exit 0 を返す / headSha は rev-parse HEAD で取得", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeJobState({ status: "awaiting-archive", branch: BRANCH }),
@@ -914,10 +914,15 @@ describe("TC-022: mv/commit 双方 skip + ls-remote 空 → push skip, exit 0", 
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
 
+    const EXPECTED_SHA = "cafebabecafebabecafebabecafebabecafebabe";
     const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
       if (Array.isArray(args) && args[0] === "ls-remote") {
         // Empty stdout → remote branch absent
         return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (Array.isArray(args) && args[0] === "rev-parse") {
+        // Return a deterministic SHA so headSha assertion can be concrete
+        return { exitCode: 0, stdout: `${EXPECTED_SHA}\n`, stderr: "" };
       }
       return { exitCode: 0, stdout: "", stderr: "" };
     }) as unknown as SpawnFn;
@@ -942,6 +947,18 @@ describe("TC-022: mv/commit 双方 skip + ls-remote 空 → push skip, exit 0", 
         (c[1] as string[])[2] === BRANCH,
     );
     expect(pushCall).toBeUndefined();
+
+    // headSha must be acquired via git rev-parse HEAD even on the push-skip path
+    const revParseCall = allCalls.find(
+      (c) => c[0] === "git" && Array.isArray(c[1]) &&
+        (c[1] as string[])[0] === "rev-parse" &&
+        (c[1] as string[])[1] === "HEAD",
+    );
+    expect(revParseCall).toBeDefined();
+
+    if (result.exitCode === 0) {
+      expect(result.headSha).toBe(EXPECTED_SHA);
+    }
   });
 });
 
