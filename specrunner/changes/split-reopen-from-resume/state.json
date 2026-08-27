@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T12:04:28.797Z",
+  "updatedAt": "2026-08-27T12:45:48.737Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
-  "error": {
-    "code": "UNPUSHABLE_PATH_BLOCKED",
-    "message": "Step 'code-fixer' cannot push changes to protected path(s): .github/workflows/specrunner-dispatch.yml. Environment constraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**",
-    "hint": "The current environment's token cannot push to the following paths:\n  - .github/workflows/specrunner-dispatch.yml\nConstraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**\nYour changes remain uncommitted in the worktree.\nRemove the changes to these paths or resolve the requirement without modifying them, then run 'specrunner job resume split-reopen-from-resume' to continue."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -163,11 +159,7 @@
       "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md"
     ]
   },
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "unpushable path constraint: .github/workflows/specrunner-dispatch.yml",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -179,10 +171,15 @@
       "text": "操作者裁定: .github/workflows/specrunner-dispatch.yml の reopen 分岐の 2 段呼び出しへの分割（tasks.md の該当タスク）は operator が feature branch に適用済み (commit 8e1e1c8f)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。workflow 内容を検証するテスト (TC-019) は適用済みの現内容を読み取って書くこと。残りの実装（CLI の reopen/resume 分離とテスト）を tasks.md に従って行うこと。",
       "step": "implementer",
       "recordedAt": "2026-08-27T11:23:35.983Z"
+    },
+    {
+      "text": "操作者裁定: code-review iter1 の F-001（lifecycle.ts の TransitionOpts JSDoc の prepare() 参照を execute() に修正）と F-002（workflow ヘッダの reopen コメントを 2 段呼び出しの新契約に更新）は operator が feature branch に適用済み (commit 6af009b0)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。",
+      "step": "code-review",
+      "recordedAt": "2026-08-27T12:45:48.404Z"
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
