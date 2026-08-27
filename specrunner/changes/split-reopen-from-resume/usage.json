@@ -227,6 +227,20 @@
         "contextTokensBeforeCompaction": 169147,
         "contextTokensAfterCompaction": 11600
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T11:07:00.294Z",
+      "modelUsage": null,
+      "contextOnly": true,
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "implementer",
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "peakActiveContextTokens": 96477,
+        "compactionCount": 0
+      }
     }
   ]
 }
