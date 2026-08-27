@@ -21,11 +21,31 @@
   to `expect(result.state.status).toBe("awaiting-resume")`.
 - [ ] In TC-016-b, update the call target to `"awaiting-resume"` with
   `{ allowReopen: false }` — it must still throw.
-- [ ] TC-002 and TC-017 assertions (testing `awaiting-archive → running` is
+- [ ] TC-002-a and TC-002-b assertions (testing `awaiting-archive → running` is
   forbidden by the general guard) are unchanged — do not modify them.
+- [ ] **EXCEPTION — TC-002-c must be updated**: TC-002-c currently asserts
+  `targets!.has("running")` for the `REOPEN_TRANSITIONS` awaiting-archive entry.
+  After D2, `REOPEN_TRANSITIONS["awaiting-archive"]` maps to
+  `new Set(["awaiting-resume"])` (not `running`). Update TC-002-c:
+  - Change the describe/it label from `"awaiting-archive → running edge"` to
+    `"awaiting-archive → awaiting-resume edge"`.
+  - Change `expect(targets!.has("running")).toBe(true)` to
+    `expect(targets!.has("awaiting-resume")).toBe(true)`.
+- [ ] TC-017 assertions (testing `transitionJob` without opts throws for
+  `awaiting-archive → running`) are unchanged. In addition, add a new TC-017-d
+  sub-test to directly assert that `canTransition("awaiting-archive", "awaiting-resume")`
+  returns `false`. This covers test-cases.md TC-017: "General guard still forbids
+  `awaiting-archive → awaiting-resume` without opt-in." Example:
+  ```ts
+  it("TC-017-d: canTransition('awaiting-archive', 'awaiting-resume') returns false", () => {
+    expect(canTransition("awaiting-archive", "awaiting-resume")).toBe(false);
+  });
+  ```
 
 **Acceptance Criteria**:
 - `canTransition("awaiting-archive", "running")` still returns `false`.
+- `canTransition("awaiting-archive", "awaiting-resume")` returns `false` (general
+  guard; TC-017 / test-cases.md TC-017).
 - `transitionJob(state, "awaiting-resume", ctx, { allowReopen: true })` returns
   `{ state: { status: "awaiting-resume" }, noop: false }` for `awaiting-archive` input.
 - `transitionJob(state, "awaiting-resume", ctx)` (no opts) throws for
@@ -207,12 +227,26 @@
 - [ ] Keep the `if [ -z "$FROM" ] || [ -z "$REASON" ]; then exit 1; fi` guard.
 - [ ] Update the inline comment to reflect the new two-step contract.
 
+- [ ] Add an automated unit test (TC-019 per test-cases.md) verifying that the
+  `action=reopen` branch of the Actions YAML dispatches two sequential CLI
+  commands. This test should read the raw YAML text and assert:
+  1. A line matching `job reopen "$SLUG" --reason "$REASON"` (or equivalent)
+     exists in the `action=reopen` branch.
+  2. A line matching `job resume "$SLUG"` (with `--from "$FROM"`) exists in the
+     same branch.
+  3. The `job reopen` invocation appears before `job resume` in the YAML.
+  Implement this as a grep/string-match unit test in an appropriate test file
+  (e.g., `tests/unit/workflow/specrunner-dispatch.test.ts`). If a full integration
+  test against a live Actions runner is desired, mark it `manual` with instructions
+  in the test comments.
+
 **Acceptance Criteria**:
 - `action=reopen` runs `job reopen` (lifecycle) then `job resume` (execution).
 - `--reason` is passed to `job reopen`; `--from` is passed to `job resume`.
 - If `job reopen` fails (non-zero exit), the shell exits before `job resume`
   runs (fail-fast; no implicit `|| true`).
 - Optional `$PROMPT` is forwarded to `job resume` when non-empty.
+- TC-019 automated test passes (YAML content verification).
 
 ---
 
@@ -248,12 +282,30 @@
   to
   `{ allowReopen: true } が src/core/command/reopen.ts 以外から渡されていないか（ガード対象: awaiting-archive → awaiting-resume）`.
 
+### `tests/unit/architecture/core-invariants.test.ts`
+
+- [ ] Locate the B-17 describe block JSDoc comment (around line 1191–1195) that
+  currently reads `awaiting-archive → running transition`. Update the prose to
+  say `awaiting-archive → awaiting-resume transition` to reflect D2. Specifically,
+  change:
+  ```
+  awaiting-archive → running transition must only be passed from
+  ```
+  to:
+  ```
+  awaiting-archive → awaiting-resume transition must only be passed from
+  ```
+  Note: the test logic itself (grep for `allowReopen: true`, liveness check,
+  violation check) is unchanged — only the prose comment is updated.
+
 **Acceptance Criteria**:
 - `specrunner guide escalation` output describes the two-step flow (reopen for
   transition, resume for execution).
 - The guide no longer mentions `--from` as a `reopen` option.
 - `architecture/conformance.md` B-17 row accurately states that the guarded
   transition is `awaiting-archive → awaiting-resume`.
+- `core-invariants.test.ts` B-17 JSDoc comment accurately says
+  `awaiting-archive → awaiting-resume transition`.
 
 ---
 
@@ -269,6 +321,29 @@
 The file currently tests `prepare()` (accessed via type cast) on a
 `CommandRunner` subclass.  After T-02, `ReopenCommand` exposes only `execute()`.
 
+> **TC number mapping** — the existing test file uses TC labels from the original
+> ADR that diverge from test-cases.md. When rewriting, **rename TC labels** to
+> match test-cases.md numbers. The table below maps current test-file TC labels
+> to the correct test-cases.md TC numbers:
+>
+> | Current test-file TC label | test-cases.md TC | Description |
+> |---|---|---|
+> | TC-003 (ResumeCommand pin) | TC-015 | Resume directly on awaiting-archive is still refused |
+> | TC-006 (archived job rejected) | TC-003 | Reopen rejected for archived job |
+> | TC-007 (canceled job rejected) | TC-004 | Reopen rejected for canceled job |
+> | TC-010 (--from bogus-step) | (replace; no direct TC) | Replace with addendum to TC-001 |
+> | TC-011 (--from regression-gate) | (replace; no direct TC) | Replace with addendum to TC-001 |
+> | TC-013 (no PR recorded) | TC-030 | Reopen rejected when no PR number |
+> | TC-014 (CLOSED PR) | TC-006 | Reopen rejected for closed (non-merged) PR |
+> | TC-015 (no GitHub client) | TC-007 | Reopen fails when PR state unavailable |
+> | TC-018 (worktree guard) | TC-029 | Reopen inside specrunner worktree returns exit code 2 |
+> | TC-020 (patch fields) | TC-009 | Run-control fields are reset by reopen |
+> | TC-021 (operator event) | TC-010 + TC-011 | Operator event durably recorded + no fromStep |
+>
+> Note: TC-005 (merged PR), TC-008 (evidence preserved), and TC-001 retain the
+> same numbers in both systems and need no renaming. The rewritten test file
+> MUST use the test-cases.md TC numbers as labels to avoid confusion.
+
 - [ ] Remove imports of `PrepareResult` from `runner.js`.
 - [ ] Remove `callPrepare()`, `callResumePrepare()`, `makeRuntime()`,
   `makeEventBus()` helpers.
@@ -279,64 +354,92 @@ The file currently tests `prepare()` (accessed via type cast) on a
 - [ ] **TC-001**: call `cmd.execute()`; assert return `0`; assert `transitionJob`
   called with `("awaiting-resume", ..., { allowReopen: true })`; assert
   `persist` called with a state where `status === "awaiting-resume"`.
-- [ ] **TC-003** (ResumeCommand pin): keep — it tests `ResumeCommand`; remove
-  only the `ReopenCommand`-specific helper references.
-- [ ] **TC-005**, **TC-006**, **TC-007**: call `cmd.execute()`; assert return `1`;
-  assert `persist` not called (or not called with `status: "awaiting-resume"`
-  for the rejection path — rejection must happen before the persist step).
+- [ ] **TC-015** (was TC-003 ResumeCommand pin): keep — it tests `ResumeCommand`;
+  remove only the `ReopenCommand`-specific helper references. Rename the describe
+  label from `TC-003` to `TC-015` to match test-cases.md.
+- [ ] **TC-005** (merged PR rejected): call `cmd.execute()`; assert return `1`;
+  assert `persist` not called with `status: "awaiting-resume"`.
+- [ ] **TC-003** (was TC-006 archived job): call `cmd.execute()`; assert return
+  `1`. Rename to TC-003.
+- [ ] **TC-004** (was TC-007 canceled job): call `cmd.execute()`; assert return
+  `1`. Rename to TC-004.
 - [ ] **TC-008-a** (evidence preserved): call `cmd.execute()`; configure
   `transitionJob` mock to return a state that carries over `steps` and
   `reviewerStatuses`; assert `persist` was called with a state preserving them.
-- [ ] **TC-013**, **TC-014**, **TC-015**: call `cmd.execute()`; assert return `1`.
-- [ ] **TC-018** (worktree guard): call `cmd.execute()`; assert return `2`.
-- [ ] **TC-020** (patch fields): assert `transitionJob` called with
+- [ ] **TC-030** (was TC-013 no PR recorded): call `cmd.execute()`; assert return
+  `1`. Rename to TC-030.
+- [ ] **TC-006** (was TC-014 CLOSED PR): call `cmd.execute()`; assert return `1`.
+  Rename to TC-006.
+- [ ] **TC-007** (was TC-015 no GitHub client): call `cmd.execute()`; assert
+  return `1`. Rename to TC-007.
+- [ ] **TC-029** (was TC-018 worktree guard): call `cmd.execute()`; assert return
+  `2`. Rename to TC-029.
+- [ ] **TC-009** (was TC-020 patch fields): assert `transitionJob` called with
   `patch: { error: null, resumePoint: null, mainCheckoutDrift: null, pid: null }`.
   Change `expect(patch["pid"]).toBeDefined()` to `expect(patch["pid"]).toBeNull()`.
-- [ ] **TC-021** (operator event before persist): call `cmd.execute()`; assert
-  `appendOperatorEvent` call order before `persist` using `invocationCallOrder`.
-  Assert the event record has `type: "operator-event"`, `action: "reopen"`,
-  `reason: "post-review fix"`. Assert `fromStep` is NOT in the record
-  (i.e., `operatorEventArg?.["fromStep"]` is `undefined`).
-- [ ] **TC-010** (former `--from bogus-step` test): replace with a test that
-  calls `cmd.execute()` on a valid job and asserts exit `0` (smoke test of
-  the full new `execute()` flow without `--from`).
+  Rename to TC-009.
+- [ ] **TC-010** + **TC-011** (was TC-021 operator event before persist): call
+  `cmd.execute()`; assert `appendOperatorEvent` call order before `persist` using
+  `invocationCallOrder`. Assert the event record has `type: "operator-event"`,
+  `action: "reopen"`, `reason: "post-review fix"`. Assert `fromStep` is NOT in
+  the record (i.e., `operatorEventArg?.["fromStep"]` is `undefined`).
+  Rename to TC-010 (durability ordering) and TC-011 (no fromStep).
+- [ ] **TC-020** (ReopenCommand has no CommandRunner inheritance): add a new test
+  that imports `ReopenCommand` and asserts `new ReopenCommand(...)` does NOT
+  extend `CommandRunner` (use `instanceof` or inspect the class hierarchy).
+- [ ] **TC-021** (constructor takes only slug and options): add a new test that
+  constructs `new ReopenCommand("slug", options)` and asserts no `runtime` or
+  `events` parameters are required.
+- [ ] Former TC-010 / TC-011 (`--from bogus-step` / `--from regression-gate`
+  tests): remove entirely. The --from rejection behavior is now tested in
+  `command-registry-reopen.test.ts` (TC-012 per test-cases.md).
 
 ### `event-journal-operator-event.test.ts`
 
 - [ ] In `makeOperatorEventLine()`: make `fromStep` optional. When `fromStep`
   is not provided in `overrides`, omit the field from the serialized JSON line.
-- [ ] **TC-009-a**: pass `fromStep: "implementer"` explicitly to
-  `makeOperatorEventLine` so the backward-compatibility read is still tested
-  (old records still have `fromStep`). Keep `expect(evt["fromStep"]).toBe("implementer")`.
+- [ ] **TC-009-a** (test-cases.md TC-023 backward compat): pass
+  `fromStep: "implementer"` explicitly to `makeOperatorEventLine` so the
+  backward-compatibility read is still tested (old records still have `fromStep`).
+  Keep `expect(evt["fromStep"]).toBe("implementer")`.
 - [ ] **TC-009-b**: same — pass `fromStep: "spec-review"` explicitly.
 - [ ] **TC-009-c** (multiple records): use at least one record with `fromStep`
   and one without to confirm both parse correctly.
-- [ ] **TC-024** (round-trip): remove `fromStep: "spec-review"` from the
-  `OperatorEventRecord` literal. After `fold()`, do not assert `fromStep` in
-  the collected event (or assert it is `undefined`).
+- [ ] **TC-024** (round-trip, test-cases.md TC-022): remove `fromStep: "spec-review"`
+  from the `OperatorEventRecord` literal. After `fold()`, do not assert `fromStep`
+  in the collected event (or assert it is `undefined`).
 
 ### `command-registry-reopen.test.ts`
 
-- [ ] **TC-004** ("without `--reason` exits ARG_ERROR"): remains valid —
-  update any `from`-related setup that was only there to satisfy the old
+- [ ] **TC-004** (test-cases.md: "without `--reason` exits ARG_ERROR"): remains
+  valid — update any `from`-related setup that was only there to satisfy the old
   `--from` requirement. Verify the handler still exits ARG_ERROR when `reason`
-  is absent.
-- [ ] **TC-019** (was "without `--from` exits ARG_ERROR"): replace with a
-  test verifying that providing `--from` to `job reopen` exits with ARG_ERROR
-  (the flag is no longer registered, so the parser should reject it).
+  is absent. (Note: this TC-004 label in the registry test file is unrelated to
+  test-cases.md TC-004 which is a reopen-command test — use label TC-004-registry
+  or a clear comment to avoid confusion.)
+- [ ] **TC-012** (was TC-019 "without `--from` exits ARG_ERROR"): rename from
+  TC-019 to TC-012 (test-cases.md TC-012: "--from is rejected on reopen"). Replace
+  the old test verifying that omitting `--from` fails with a test verifying that
+  **providing** `--from` to `job reopen` exits with ARG_ERROR (the flag is no
+  longer registered, so the parser should reject it).
 - [ ] **TC-010** ("Reopen does not invoke cancel-style cleanup"): update any
-  handler call setup to omit `from`. Verify the test still passes.
+  handler call setup to omit `from`. Verify the test still passes. (Note: this
+  TC-010 label in the registry test file is unrelated to test-cases.md TC-010
+  which is a reopen-command event-durability test.)
 
 **Acceptance Criteria**:
 - `reopen-command.test.ts` has no reference to `callPrepare`, `makeRuntime`,
   `makeEventBus`, or `PrepareResult`.
 - `reopen-command.test.ts` has no reference to `resolveResumeStep`,
   `buildAllowedStepSet`, `parseRequestMd`, or `loadConfig`.
-- TC-020 asserts `patch["pid"]` is `null`.
-- TC-021 asserts `fromStep` is absent from the operator event record.
+- `reopen-command.test.ts` TC labels match test-cases.md TC numbers (TC-001,
+  TC-003, TC-004, TC-005, TC-006, TC-007, TC-008, TC-009, TC-010, TC-011,
+  TC-015, TC-020, TC-021, TC-029, TC-030).
+- TC-009 asserts `patch["pid"]` is `null`.
+- TC-010 + TC-011 assert `fromStep` is absent from the operator event record.
 - `event-journal-operator-event.test.ts` TC-024 omits `fromStep` from the
   new-style record and confirms it is not asserted in the folded result.
-- `command-registry-reopen.test.ts` TC-019 verifies `--from` is rejected on
+- `command-registry-reopen.test.ts` TC-012 verifies `--from` is rejected on
   `job reopen`.
 - All tests pass.
 
@@ -356,8 +459,9 @@ The file currently tests `prepare()` (accessed via type cast) on a
   - no violation: the literal appears only in `reopen.ts`.
 - [ ] Confirm `reopen-command.test.ts` TC-001 returns `0` and transitions to
   `"awaiting-resume"`.
-- [ ] Confirm `reopen-command.test.ts` TC-003 still passes (ResumeCommand
-  rejects `awaiting-archive`).
+- [ ] Confirm `reopen-command.test.ts` TC-015 still passes (ResumeCommand
+  rejects `awaiting-archive` — test previously labeled TC-003, renamed to
+  TC-015 per test-cases.md mapping in T-06).
 
 **Acceptance Criteria**:
 - `bun run typecheck` exits `0`.

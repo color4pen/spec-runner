@@ -216,3 +216,28 @@ as two separate sequential commands.  `--reason` SHALL be passed to `reopen`;
 **And** `bun ./bin/specrunner.ts job resume "$SLUG" --from "$FROM" [--prompt
   "$PROMPT"]` is called second
 **And** if `job reopen` exits non-zero, `job resume` is not executed
+
+---
+
+### Note: `--reason` input constraints
+
+`--reason` is a required string parameter passed to `job reopen`.  Its value is
+recorded verbatim in the `events.jsonl` operator-event record (append-only audit
+journal) and also stored in the transition context.
+
+**Length and content**: No minimum or maximum length is enforced by this
+implementation.  The field is intended to capture a human-readable explanation
+for the reopen action (e.g. `"post-review fix"`, `"CI flake — retry"`).
+Implementation MUST NOT silently truncate the value.  If a future limit is
+desired, it MUST be surfaced as a validation error before any journal write
+occurs.  For the current scope, implementers may optionally warn (but not reject)
+values exceeding a reasonable threshold (e.g. 1000 characters), but this is not
+required.
+
+**XSS / injection**: `--reason` is written to the journal and logged to the
+console.  The CLI context presents no XSS risk.  No sanitization beyond standard
+string serialization is required.
+
+This note records the explicit decision to leave `--reason` unconstrained for
+this change.  If a maximum-length constraint is added later, it should be
+specified in a separate spec amendment.
