@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T12:54:44.672Z",
+  "updatedAt": "2026-08-27T13:46:47.727Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
   "pipelineId": "standard",
@@ -159,11 +159,7 @@
       ".github/workflows/specrunner-dispatch.yml"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -180,10 +176,15 @@
       "text": "操作者裁定: code-review iter1 の F-001（lifecycle.ts の TransitionOpts JSDoc の prepare() 参照を execute() に修正）と F-002（workflow ヘッダの reopen コメントを 2 段呼び出しの新契約に更新）は operator が feature branch に適用済み (commit 6af009b0)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。",
       "step": "code-review",
       "recordedAt": "2026-08-27T12:45:48.404Z"
+    },
+    {
+      "text": "操作者裁定: code-review の findings 3 件をすべて修正せよ。(1) reopen.ts の outer catch の return 2 → return 1（exit code 2 は worktree guard 専用）。(2) reopen-command.test.ts の重複 vi.mock（82-84 行）を削除。(3) decision-needed の TC-013 は option B を採用: TC-013 ラベルの明示的テスト（reopen → awaiting-resume → ResumeCommand が awaiting-resume を受理すること）を追加し、test-cases.md と tasks.md の整合性を回復すること。なお環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-27T13:46:47.521Z"
     }
   ],
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 61,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

@@ -111,7 +111,7 @@ export class ReopenCommand {
       }
     } catch (err) {
       logError((err as Error).message);
-      return 2;
+      return 1;
     }
 
     // Status gate: only awaiting-archive is reopenable

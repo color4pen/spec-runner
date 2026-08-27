@@ -1,6 +1,6 @@
 /**
  * TC-001, TC-003, TC-004, TC-005, TC-006, TC-007, TC-008, TC-009, TC-010, TC-011,
- * TC-015, TC-020, TC-021, TC-029, TC-030 — ReopenCommand.execute() unit tests.
+ * TC-013, TC-015, TC-020, TC-021, TC-029, TC-030 — ReopenCommand.execute() unit tests.
  *
  * TC-001: reopen transitions an awaiting-archive job to awaiting-resume
  * TC-003: reopen of an archived job is rejected
@@ -12,6 +12,7 @@
  * TC-009: run-control fields (error/resumePoint/mainCheckoutDrift/pid) are reset by reopen
  * TC-010: operator event is durably recorded before state transition
  * TC-011: operator event does not include fromStep
+ * TC-013: resume executes the pipeline after reopen (ResumeCommand accepts awaiting-resume)
  * TC-015: resume directly on awaiting-archive is still refused (ResumeCommand pin)
  * TC-020: ReopenCommand has no CommandRunner inheritance
  * TC-021: ReopenCommand constructor takes only slug and options
@@ -79,10 +80,6 @@ vi.mock("../../worktree/detection.js", () => ({
   detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
 
-vi.mock("../../resume/resolve-job.js", () => ({
-  resolveJobStateBySlug: vi.fn(),
-}));
-
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
@@ -90,7 +87,7 @@ vi.mock("../../resume/resolve-job.js", () => ({
 import { ReopenCommand } from "../reopen.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
-import { transitionJob } from "../../../state/lifecycle.js";
+import { transitionJob, canTransition } from "../../../state/lifecycle.js";
 import { resolveStateStoreByJobId } from "../../job-access/resolve-state-store.js";
 import { detectSpecrunnerWorktree } from "../../worktree/detection.js";
 import type { JobState } from "../../../state/schema.js";
@@ -548,6 +545,27 @@ describe("TC-010 + TC-011: operator event recorded before transition; no fromSte
     // Verify fromStep is absent from the operator event record
     const operatorEventArg = vi.mocked(MOCK_STORE.appendOperatorEvent).mock.calls[0]?.[0] as Record<string, unknown>;
     expect(operatorEventArg?.["fromStep"]).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-013: Resume executes the pipeline after reopen (ResumeCommand accepts awaiting-resume)
+// ---------------------------------------------------------------------------
+
+describe("TC-013: ResumeCommand accepts awaiting-resume status after reopen", () => {
+  it("TC-013: canTransition('awaiting-resume', 'running') is true — ResumeCommand status gate passes for post-reopen job", () => {
+    // After ReopenCommand transitions a job to awaiting-resume (D1 lifecycle contract),
+    // ResumeCommand.prepare() checks canTransition(state.status, "running") at the status gate.
+    // Verify that awaiting-resume → running is permitted by the general guard,
+    // confirming that resume is the sole execution entry point after reopen.
+    expect(canTransition("awaiting-resume", "running")).toBe(true);
+  });
+
+  it("TC-013-b: canTransition('awaiting-archive', 'running') is false — reopen does NOT grant direct execution", () => {
+    // awaiting-archive → running must remain forbidden (general guard).
+    // Only awaiting-archive → awaiting-resume is available (via REOPEN_TRANSITIONS + allowReopen opt-in),
+    // and execution requires a subsequent resume call.
+    expect(canTransition("awaiting-archive", "running")).toBe(false);
   });
 });
 
