@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-27T04:59:09.610Z",
+  "updatedAt": "2026-08-27T05:02:04.464Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -76,7 +76,8 @@
     "e67a2ad65c117a2bfcbb81cdb3d3d53ed38749d9",
     "54209d9b1cffdd4f9ea371318ae21a7f2a319e5c",
     "aaeb27ba5f0c2cff16ccd30db657c8be8ddc4a4a",
-    "0bfa619920f96f4abfe027f74beac738c18af16c"
+    "0bfa619920f96f4abfe027f74beac738c18af16c",
+    "d753024f9c8e895bef0e35897122c1ab307e2ff1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -183,6 +184,15 @@
     "code-fixer": [
       "tests/unit/core/archive/orchestrator.test.ts",
       "src/core/archive/plain-archive.ts"
+    ],
+    "regression-gate": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/job-list/operations-view.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/plain-archive.ts",
+      "tests/unit/core/archive/orchestrator.test.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "specrunner/adr/2026-08-21-archive-state-after-merge.md"
     ]
   },
   "resumePoint": null,
@@ -224,7 +234,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -238,7 +248,8 @@
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
