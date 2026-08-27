@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T14:04:33.096Z",
+  "updatedAt": "2026-08-27T14:08:10.477Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
@@ -79,7 +79,8 @@
     "6143b4692c93c5b2af96c4c57af47f083c46e2c8",
     "bb6504a542f982a8e8ac0e10e5011bb445d6a076",
     "a5d7be9651793c73838f09fda78b6b703f206cb1",
-    "c44b1f2386ce4fb076af1db8cd1de8223dc13ac4"
+    "c44b1f2386ce4fb076af1db8cd1de8223dc13ac4",
+    "ee6401d448d25f314ec4390421944d8f36fb27cf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -169,6 +170,17 @@
       "src/core/inbox/types.ts",
       "src/core/inbox/run-inbox.ts",
       "src/core/inbox/__tests__/planner.test.ts"
+    ],
+    "regression-gate": [
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/state/lifecycle.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/core/command/reopen.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/inbox/planner.ts",
+      "src/core/inbox/__tests__/planner.test.ts"
     ]
   },
   "resumePoint": null,
@@ -227,7 +239,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -241,7 +253,8 @@
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }
