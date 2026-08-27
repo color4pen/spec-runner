@@ -380,7 +380,7 @@ Verification phase: `bun run test` — must exit `0`. Specifically confirms:
 - `lifecycle-reopen.test.ts` TC-016 passes with `status: "awaiting-resume"`
 - `core-invariants.test.ts` B-17 liveness check passes (`reopen.ts` still contains `{ allowReopen: true }`)
 - `reopen-command.test.ts` TC-001 returns `0` and transitions to `"awaiting-resume"`
-- `reopen-command.test.ts` TC-003 (ResumeCommand rejects `awaiting-archive`) still passes
+- `reopen-command.test.ts` TC-015 (ResumeCommand rejects `awaiting-archive`) still passes
 
 ---
 

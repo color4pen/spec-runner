@@ -426,6 +426,13 @@ The file currently tests `prepare()` (accessed via type cast) on a
   handler call setup to omit `from`. Verify the test still passes. (Note: this
   TC-010 label in the registry test file is unrelated to test-cases.md TC-010
   which is a reopen-command event-durability test.)
+- [ ] **TC-024** ("runReopenCore returns exit code 0 on success"): remove
+  `from: "spec-review"` from the `flags` object passed to the handler. After T-03
+  removes `--from` from the registry, the handler no longer accepts `from` — passing
+  it would trigger the ARG_ERROR path added by TC-012, causing `expect(msg).not.toMatch(/ARG_ERROR/)`
+  to fail. Updated call should pass only `{ reason: "post-review fix" }` (or equivalent
+  valid flags without `from`). The test intent (handler does not exit with ARG_ERROR
+  when required args are present) remains unchanged.
 
 **Acceptance Criteria**:
 - `reopen-command.test.ts` has no reference to `callPrepare`, `makeRuntime`,
