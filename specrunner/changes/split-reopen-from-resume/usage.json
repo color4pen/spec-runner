@@ -185,6 +185,48 @@
         "peakActiveContextTokens": 102987,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T09:46:47.104Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 11,
+          "outputTokens": 1868,
+          "cacheReadInputTokens": 867541,
+          "cacheCreationInputTokens": 5684
+        }
+      },
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "spec-fixer",
+      "numTurns": 8,
+      "durationMs": 47589,
+      "durationApiMs": 46833,
+      "totalCostUsd": 0.30963029999999997,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 126000,
+        "compactionCount": 0
+      }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T10:19:23.882Z",
+      "modelUsage": null,
+      "contextOnly": true,
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "implementer",
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 165913,
+        "compactionCount": 1,
+        "contextTokensBeforeCompaction": 169147,
+        "contextTokensAfterCompaction": 11600
+      }
     }
   ]
 }
