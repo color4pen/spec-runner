@@ -1,13 +1,17 @@
 /**
- * ReopenCommand: CommandRunner for the `job reopen` command.
+ * ReopenCommand: standalone lifecycle command for `job reopen`.
  *
- * Transitions an awaiting-archive job back to running from a specified step.
- * This is an operator-scoped action (explicit --from + --reason required) that:
+ * Transition-only — no pipeline execution.
+ * Transitions an awaiting-archive job to awaiting-resume.
+ * This is an operator-scoped action (explicit --reason required) that:
  *   1. Validates the job is in awaiting-archive status
  *   2. Verifies the associated PR is still OPEN (fail-closed if unavailable)
  *   3. Appends an operator-event journal record (durable before transition)
- *   4. Transitions awaiting-archive → running via REOPEN_TRANSITIONS (allowReopen opt-in)
+ *   4. Transitions awaiting-archive → awaiting-resume via REOPEN_TRANSITIONS (allowReopen opt-in)
  *   5. Preserves all prior evidence (steps, reviewerStatuses, artifacts)
+ *   6. Exits without starting the pipeline
+ *
+ * After reopen, use `job resume <slug> --from <step>` to execute the pipeline.
  *
  * Design D1: reopen is a named operator action, not a widening of resume.
  * Design D3: PR gate is fail-closed — no client or query failure → reject.
@@ -15,30 +19,19 @@
  *   mainCheckoutDrift/pid); steps, reviewerStatuses, decisions, biteEvidence untouched.
  * Design D6: operator event is appended before the transition is persisted.
  */
-import { loadConfig } from "../../config/store.js";
-import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
-import type { JobState, StepName } from "../../state/schema.js";
-import { parseRequestMd } from "../../parser/request-md.js";
+import type { JobState } from "../../state/schema.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
-import { resolveRequestPath } from "../resume/resolve-request-path.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
-import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js";
 import type { GitHubClient } from "../port/github-client.js";
 
 export interface ReopenOptions {
-  /** Required: pipeline step to restart from (--from). */
-  from: string;
   /** Required: operator-supplied reason for the reopen (--reason). */
   reason: string;
   /** GitHub client for PR-state gate. null = fail-closed (no token). */
@@ -52,45 +45,17 @@ export interface ReopenOptions {
 }
 
 /**
- * Controlled-exit error for prepare() failures.
- * exitCode 1 = logical rejection (status gate, PR gate, invalid step, etc.)
- * exitCode 2 = invocation error (inside worktree, failed job resolution)
+ * Standalone command for `specrunner job reopen`.
+ * execute() performs all validation and state transition without starting the pipeline.
  */
-class PrepareError extends Error {
-  constructor(public readonly exitCode: 1 | 2, message: string) {
-    super(message);
-  }
-}
-
-/**
- * CommandRunner for `specrunner job reopen`.
- * prepare() performs all validation and state transition before the pipeline runs.
- */
-export class ReopenCommand extends CommandRunner {
+export class ReopenCommand {
   constructor(
-    runtime: RuntimeStrategy,
-    events: EventBus,
     private readonly slug: string,
     private readonly options: ReopenOptions,
-  ) {
-    super(runtime, events);
-  }
+  ) {}
 
   async execute(): Promise<number> {
-    // Override execute() to surface the exit code from PrepareError
-    try {
-      return await super.execute();
-    } catch (err) {
-      if (err instanceof PrepareError) {
-        return err.exitCode;
-      }
-      throw err;
-    }
-  }
-
-  protected async prepare(): Promise<PrepareResult> {
-    const logLevel = this.options.logLevel ?? "default";
-    setLogLevel(logLevel);
+    setLogLevel(this.options.logLevel ?? "default");
     const cwd = this.options.cwd ?? process.cwd();
 
     // Worktree guard: reject reopen from inside a specrunner job worktree.
@@ -101,7 +66,7 @@ export class ReopenCommand extends CommandRunner {
         const guardErr = worktreeGuardError("job reopen", mainPath);
         logError(guardErr.message);
         stderrWrite(`Hint: ${guardErr.hint}`);
-        throw new PrepareError(2, "Cannot reopen from inside a worktree");
+        return 2;
       }
     }
 
@@ -110,10 +75,8 @@ export class ReopenCommand extends CommandRunner {
     try {
       const resolved = await resolveJobStateBySlug(this.slug, cwd);
       if (resolved === null) {
-        // resolveJobStateBySlug returns null for terminal-only slugs (new resolver behavior:
-        // D2 — only non-terminal jobs are returned). Before falling back to resolveId,
-        // check if this slug has any terminal jobs so we can show the status gate message
-        // ('only awaiting-archive is eligible') rather than a misleading 'Job not found'.
+        // resolveJobStateBySlug returns null for terminal-only slugs.
+        // Check if this slug has any terminal jobs so we can show the right error.
         const allStates = await JobStateStore.list(cwd, { includeArchived: true });
         const terminalForSlug = allStates.filter(
           (s) => getJobSlug(s) === this.slug,
@@ -126,7 +89,7 @@ export class ReopenCommand extends CommandRunner {
             `Job '${this.slug}' has status '${terminalState.status}' and cannot be reopened. ` +
             `Only 'awaiting-archive' jobs are eligible for reopen.`,
           );
-          throw new PrepareError(1, `Cannot reopen from status '${terminalState.status}'`);
+          return 1;
         }
 
         // Slug not found — try resolving as short Job ID prefix
@@ -140,16 +103,15 @@ export class ReopenCommand extends CommandRunner {
           } else {
             logError((err as Error).message);
           }
-          throw new PrepareError(1, "Job not found");
+          return 1;
         }
         state = (await loadStateByJobId(cwd, fullId)) as JobState;
       } else {
         state = resolved;
       }
     } catch (err) {
-      if (err instanceof PrepareError) throw err;
       logError((err as Error).message);
-      throw new PrepareError(2, "Failed to resolve job");
+      return 2;
     }
 
     // Status gate: only awaiting-archive is reopenable
@@ -165,13 +127,13 @@ export class ReopenCommand extends CommandRunner {
           `Only jobs in 'awaiting-archive' status can be reopened.`,
         );
       }
-      throw new PrepareError(1, `Cannot reopen from status '${state.status}'`);
+      return 1;
     }
 
     // PR gate: job must have a recorded PR and the PR must be OPEN
     if (!state.pullRequest?.number) {
       logError(`Job '${this.slug}' has no recorded PR to reopen against.`);
-      throw new PrepareError(1, "No PR recorded on job");
+      return 1;
     }
 
     // Fail-closed: no client → cannot determine PR state → reject
@@ -180,7 +142,7 @@ export class ReopenCommand extends CommandRunner {
         `Cannot verify PR state for job '${this.slug}': no GitHub credentials available. ` +
         `Run 'specrunner login' to authenticate.`,
       );
-      throw new PrepareError(1, "GitHub client unavailable — run 'specrunner login'");
+      return 1;
     }
 
     let prState: string;
@@ -196,7 +158,7 @@ export class ReopenCommand extends CommandRunner {
         `Failed to query PR #${state.pullRequest.number} state: ${(err as Error).message}. ` +
         `Run 'specrunner login' to refresh credentials.`,
       );
-      throw new PrepareError(1, "PR state query failed — run 'specrunner login'");
+      return 1;
     }
 
     if (prState === "MERGED") {
@@ -204,7 +166,7 @@ export class ReopenCommand extends CommandRunner {
         `PR #${state.pullRequest.number} has already been merged. ` +
         `Reopening a job with a merged PR is not supported.`,
       );
-      throw new PrepareError(1, "PR is already merged");
+      return 1;
     }
 
     if (prState === "CLOSED") {
@@ -212,36 +174,14 @@ export class ReopenCommand extends CommandRunner {
         `PR #${state.pullRequest.number} is closed. ` +
         `Only jobs with an OPEN PR can be reopened.`,
       );
-      throw new PrepareError(1, "PR is closed");
+      return 1;
     }
 
     // Only OPEN PRs are allowed to proceed
 
-    // Resolve the start step from --from
-    let startStep: StepName;
-    try {
-      const allowedSteps = buildAllowedStepSet(state.reviewers);
-      startStep = resolveResumeStep(this.options.from, null, state.step, allowedSteps, state.reviewers);
-    } catch (err) {
-      logError((err as Error).message);
-      throw new PrepareError(2, "Failed to resolve reopen step");
-    }
-
-    logInfo(`Reopening job '${this.slug}' from step '${startStep}'`);
-
-    // Parse request.md before committing to "running" state
-    const resolvedSlug = getJobSlug(state);
-    const resolvedPath = resolveRequestPath(state.request.path, resolvedSlug, state.worktreePath, cwd);
-    let request;
-    try {
-      request = await parseRequestMd(resolvedPath);
-    } catch (err) {
-      logError(`Failed to read request.md at '${resolvedPath}': ${(err as Error).message}`);
-      throw new PrepareError(1, "Failed to parse request.md");
-    }
-
     // Build the job state store (needed for appendOperatorEvent + persist).
     // D6: a durable store is required — fail-closed when sidecar is missing.
+    const resolvedSlug = getJobSlug(state);
     const slug = resolvedSlug ?? this.slug;
     let store: JobStateStore;
     if (this.options.noWorktree) {
@@ -253,79 +193,43 @@ export class ReopenCommand extends CommandRunner {
           `Cannot locate a writable state store for job '${this.slug}' (sidecar missing). ` +
           `The job state is inaccessible — reopen cannot proceed without a durable store.`,
         );
-        throw new PrepareError(1, "State store unavailable — sidecar missing");
+        return 1;
       }
       store = resolved;
     }
 
     // Append the operator event BEFORE persisting the transition (D6 durability).
     // If persist subsequently fails, the event remains as evidence.
-    const operatorEventTs = new Date().toISOString();
+    // Note: fromStep is omitted — step selection has moved to `resume`.
     await store.appendOperatorEvent({
       type: "operator-event",
       action: "reopen",
       reason: this.options.reason,
-      fromStep: startStep,
-      ts: operatorEventTs,
+      ts: new Date().toISOString(),
     });
 
-    // Transition awaiting-archive → running (operator-scoped opt-in)
+    // Transition awaiting-archive → awaiting-resume (operator-scoped opt-in)
     // D4: patch clears only run-control fields; steps/reviewerStatuses/decisions/biteEvidence untouched
-    let updatedState: JobState;
     try {
       const { state: transitioned } = transitionJob(
         state,
-        "running",
+        "awaiting-resume",
         {
           trigger: "reopen",
           reason: this.options.reason,
-          patch: { error: null, resumePoint: null, mainCheckoutDrift: null, pid: process.pid },
+          patch: { error: null, resumePoint: null, mainCheckoutDrift: null, pid: null },
         },
         { allowReopen: true },
       );
       await store.persist(transitioned);
-      updatedState = transitioned;
     } catch (err) {
       logError(`Failed to update job state: ${(err as Error).message}`);
-      throw new PrepareError(1, "Failed to update state");
+      return 1;
     }
 
-    // Load config with project local overlay
-    let config;
-    try {
-      const repoRoot = await resolveRepoRoot(cwd);
-      config = await loadConfig(repoRoot ?? undefined);
-    } catch (err) {
-      if (err instanceof SpecRunnerError) {
-        logError(err.message);
-        if (err.hint) stderrWrite(`Hint: ${err.hint}`);
-      } else {
-        logError((err as Error).message);
-      }
-      throw new PrepareError(1, "Failed to load config");
-    }
-
-    // Resolve existing worktree path (mirror resume.ts logic)
-    const resolvedWorktreePath = await resolveLivenessWorktreePath(updatedState, resolvedSlug ?? "", cwd);
-
-    return {
-      jobState: updatedState,
-      startStep,
-      request,
-      config,
-      slug: this.slug,
-      logLevel,
-      repoRoot: cwd,
-      workspaceOpts: {
-        existingWorktreePath: resolvedWorktreePath,
-        baseBranch: request.baseBranch,
-        bootstrapState: updatedState,
-        noWorktree: this.options.noWorktree,
-      },
-      // Reopen is not a resume — no interrupted context to restore
-      resumeContext: undefined,
-      resumePrompt: undefined,
-      json: this.options.json ?? false,
-    };
+    logInfo(
+      `Job '${slug}' is now awaiting-resume. Run 'job resume ${slug} --from <step>' to continue.`,
+    );
+    return 0;
   }
 }

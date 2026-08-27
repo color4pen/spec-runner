@@ -1,18 +1,19 @@
 /**
- * TC-002, TC-016, TC-017 — FSM guard for the awaiting-archive → running reopen edge.
+ * TC-002, TC-016, TC-017 — FSM guard for the awaiting-archive → awaiting-resume reopen edge.
  *
  * TC-002: The general transition guard (canTransition / transitionJob without opts) still
  *         forbids awaiting-archive → running. This pins the invariant that widening
  *         VALID_TRANSITIONS is NOT part of this change.
  *
- * TC-016: transitionJob with { allowReopen: true } succeeds for awaiting-archive → running.
+ * TC-016: transitionJob with { allowReopen: true } succeeds for awaiting-archive → awaiting-resume.
  *         Tests the new REOPEN_TRANSITIONS table and the optional 4th argument on transitionJob.
- *         (RED until lifecycle.ts exports REOPEN_TRANSITIONS and transitionJob accepts opts)
  *
  * TC-017: transitionJob without the allowReopen opt-in throws for awaiting-archive → running.
  *         Pins the default (no-opts) path that resume and all other callers rely on.
+ *         Also asserts canTransition("awaiting-archive", "awaiting-resume") returns false
+ *         (general guard; TC-017-d).
  *
- * Source: spec.md › Requirement: reopen transitions an awaiting-archive job to running
+ * Source: spec.md › Requirement: reopen transitions an awaiting-archive job to awaiting-resume
  *         tasks.md T-01
  */
 import { describe, it, expect } from "vitest";
@@ -89,34 +90,32 @@ describe("TC-002: general FSM guard still forbids awaiting-archive → running",
     expect(state.status).toBe("awaiting-archive");
   });
 
-  it("TC-002-c: REOPEN_TRANSITIONS export exists with awaiting-archive → running edge", async () => {
-    // After T-01: lifecycle.ts must export REOPEN_TRANSITIONS with this single entry.
-    // This test fails (red) until REOPEN_TRANSITIONS is exported.
+  it("TC-002-c: REOPEN_TRANSITIONS export exists with awaiting-archive → awaiting-resume edge", async () => {
+    // After T-01: lifecycle.ts must export REOPEN_TRANSITIONS with awaiting-resume as target.
     const module = await import("../../state/lifecycle.js");
     const table = (module as Record<string, unknown>)["REOPEN_TRANSITIONS"];
     expect(table).toBeDefined();
     const targets = (table as Map<string, Set<string>>).get("awaiting-archive");
     expect(targets).toBeDefined();
-    expect(targets!.has("running")).toBe(true);
+    expect(targets!.has("awaiting-resume")).toBe(true);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-016: transitionJob with allowReopen:true succeeds for awaiting-archive → running
+// TC-016: transitionJob with allowReopen:true succeeds for awaiting-archive → awaiting-resume
 // ---------------------------------------------------------------------------
 
-describe("TC-016: transitionJob with { allowReopen: true } succeeds", () => {
-  it("TC-016: returns state with status='running' and appends a history entry", () => {
+describe("TC-016: transitionJob with { allowReopen: true } succeeds for awaiting-archive → awaiting-resume", () => {
+  it("TC-016: returns state with status='awaiting-resume' and appends a history entry", () => {
     // GIVEN a JobState with status awaiting-archive
     const state = makeAwaitingArchiveState();
     const initialHistoryLength = state.history.length;
 
-    // WHEN transitionJob(state, "running", ctx, { allowReopen: true }) is called
-    // RED until T-01 adds opts support — current impl throws "Invalid transition"
-    const result = transitionJobWithOpts(state, "running", REOPEN_CTX, { allowReopen: true });
+    // WHEN transitionJob(state, "awaiting-resume", ctx, { allowReopen: true }) is called
+    const result = transitionJobWithOpts(state, "awaiting-resume", REOPEN_CTX, { allowReopen: true });
 
-    // THEN the returned state has status running
-    expect(result.state.status).toBe("running");
+    // THEN the returned state has status awaiting-resume
+    expect(result.state.status).toBe("awaiting-resume");
     // AND a history entry is appended
     expect(result.state.history.length).toBeGreaterThan(initialHistoryLength);
     // AND noop is false
@@ -125,12 +124,13 @@ describe("TC-016: transitionJob with { allowReopen: true } succeeds", () => {
 
   it("TC-016-b: allowReopen:false still throws (default behaviour preserved)", () => {
     const state = makeAwaitingArchiveState();
-    expect(() => transitionJobWithOpts(state, "running", REOPEN_CTX, { allowReopen: false })).toThrow();
+    expect(() => transitionJobWithOpts(state, "awaiting-resume", REOPEN_CTX, { allowReopen: false })).toThrow();
   });
 });
 
 // ---------------------------------------------------------------------------
 // TC-017: transitionJob without allowReopen throws for awaiting-archive → running
+// Also: TC-017-d — canTransition("awaiting-archive", "awaiting-resume") returns false
 // ---------------------------------------------------------------------------
 
 describe("TC-017: transitionJob without allowReopen throws for awaiting-archive → running", () => {
@@ -155,5 +155,11 @@ describe("TC-017: transitionJob without allowReopen throws for awaiting-archive 
     // This is the guard that ResumeCommand.prepare() checks at line 155.
     // It must remain false so that the resume path stays blocked.
     expect(canTransition("awaiting-archive", "running")).toBe(false);
+  });
+
+  it("TC-017-d: canTransition('awaiting-archive', 'awaiting-resume') returns false", () => {
+    // General guard still forbids awaiting-archive → awaiting-resume without opt-in.
+    // The REOPEN_TRANSITIONS table is separate from VALID_TRANSITIONS.
+    expect(canTransition("awaiting-archive", "awaiting-resume")).toBe(false);
   });
 });

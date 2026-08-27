@@ -65,14 +65,17 @@ describe("TC-003: --from <member-name> accepted by CLI parser for resume", () =>
 });
 
 // ---------------------------------------------------------------------------
-// TC-004: reopen --from accepts arbitrary strings
+// TC-004: reopen --from is rejected by CLI parser (moved to resume)
+// After split-reopen-from-resume: --from is no longer a registered flag for job reopen.
 // ---------------------------------------------------------------------------
 
-describe("TC-004: --from regression-gate accepted by CLI parser for reopen", () => {
-  it("does not throw FlagParseError", () => {
+describe("TC-004: --from is rejected by CLI parser for reopen (flag removed)", () => {
+  it("throws FlagParseError when --from is passed to job reopen (flag not registered)", () => {
+    // --from has been removed from reopen flags (D3: step selection moved to resume).
+    // The flag parser must reject it as unknown.
     expect(() =>
       parseFlags(["--from", "regression-gate"], reopenFlags),
-    ).not.toThrow();
+    ).toThrow();
   });
 });
 
@@ -115,11 +118,15 @@ describe("TC-013: resume --help does not contain misleading composite-steps note
 });
 
 // ---------------------------------------------------------------------------
-// TC-014: reopen usage text mentions dynamic step support
+// TC-014: reopen usage text reflects new lifecycle-only contract
+// After split-reopen-from-resume: reopen no longer accepts --from, so the
+// custom reviewers / step enumeration note was removed from REOPEN_USAGE.
 // ---------------------------------------------------------------------------
 
-describe("TC-014: reopen --help mentions custom reviewers", () => {
-  it("TC-014: reopen usage text mentions custom reviewers", () => {
-    expect(REOPEN_USAGE).toContain("custom reviewers");
+describe("TC-014: reopen --help reflects new lifecycle-only contract (no --from step section)", () => {
+  it("TC-014: reopen usage text does not list --from as a reopen option", () => {
+    // The Options block of REOPEN_USAGE must not declare --from
+    const optionsSection = REOPEN_USAGE.slice(REOPEN_USAGE.indexOf("Options:"));
+    expect(optionsSection).not.toMatch(/^\s+--from\s/m);
   });
 });

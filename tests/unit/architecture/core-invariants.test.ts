@@ -1189,7 +1189,7 @@ describe("B-16 (arch pin): 並列 round 実行は共有 deps（orchestration 入
 describe("B-17 (arch pin): allowReopen: true は src/core/command/reopen.ts からのみ呼ばれる", () => {
   /**
    * B-17: The operator-scoped opt-in `{ allowReopen: true }` that unlocks the
-   * awaiting-archive → running transition must only be passed from
+   * awaiting-archive → awaiting-resume transition must only be passed from
    * src/core/command/reopen.ts.  Any other call site bypasses the intent of
    * D1 (reopen is a named operator action, not a widening of resume) and
    * undermines the FSM guard in lifecycle.ts.

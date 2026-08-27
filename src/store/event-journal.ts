@@ -135,8 +135,12 @@ export interface OperatorEventRecord {
   action: "reopen";
   /** Operator-supplied reason for the action (required by `job reopen --reason`). */
   reason: string;
-  /** Pipeline step from which execution will (re)start. */
-  fromStep: string;
+  /**
+   * Pipeline step from which execution was recorded to (re)start.
+   * Optional: was recorded from `--from` in old reopen records; step selection
+   * has moved to `resume` and new reopen events do not record this field.
+   */
+  fromStep?: string;
   /** ISO 8601 timestamp of the operator action. */
   ts: string;
 }
