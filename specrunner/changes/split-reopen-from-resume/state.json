@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T14:08:10.477Z",
+  "updatedAt": "2026-08-27T14:17:28.053Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
@@ -80,7 +80,9 @@
     "bb6504a542f982a8e8ac0e10e5011bb445d6a076",
     "a5d7be9651793c73838f09fda78b6b703f206cb1",
     "c44b1f2386ce4fb076af1db8cd1de8223dc13ac4",
-    "ee6401d448d25f314ec4390421944d8f36fb27cf"
+    "ee6401d448d25f314ec4390421944d8f36fb27cf",
+    "767b2305de78b0c544bbea6b550a588a9d9abd8a",
+    "db1ac6e8fd6f9f3a4e556e216e91d0e7c5fbb414"
   ],
   "touchedFiles": {
     "request-review": [
@@ -181,6 +183,24 @@
       ".github/workflows/specrunner-dispatch.yml",
       "src/core/inbox/planner.ts",
       "src/core/inbox/__tests__/planner.test.ts"
+    ],
+    "conformance": [
+      "src/core/command/reopen.ts",
+      "src/state/lifecycle.ts",
+      "src/cli/reopen.ts",
+      "src/cli/command-registry.ts",
+      "src/store/event-journal.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "architecture/conformance.md",
+      "src/core/command/guide.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "tests/unit/workflow/specrunner-dispatch.test.ts",
+      "src/cli/__tests__/from-flag-no-enum.test.ts",
+      "tests/unit/core/command/reopen-terminal-slug.test.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts"
     ]
   },
   "resumePoint": null,
@@ -239,7 +259,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 96,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -248,13 +268,14 @@
       "spec-fixer": 2,
       "implementer": 3,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
