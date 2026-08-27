@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-27T04:38:36.517Z",
+  "updatedAt": "2026-08-27T04:46:07.357Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -73,7 +73,8 @@
     "68f6b34f374e1a6dea2c5cf4831d4438c87632e3",
     "550f80cb98290d316e30bb2fd5aaf6b022aae4cb",
     "629a265d680a425818c4be1df5daff1c640b93e3",
-    "e67a2ad65c117a2bfcbb81cdb3d3d53ed38749d9"
+    "e67a2ad65c117a2bfcbb81cdb3d3d53ed38749d9",
+    "54209d9b1cffdd4f9ea371318ae21a7f2a319e5c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,6 +174,13 @@
       "specrunner/adr/2026-08-21-archive-state-after-merge.md",
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
       "tests/unit/no-worktree-archive.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/__tests__/orchestrator.test.ts",
+      "tests/unit/core/archive/orchestrator.test.ts",
+      "src/logger/stdout.ts",
+      "src/core/finish/escalation.ts"
     ]
   },
   "resumePoint": null,
@@ -185,7 +193,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -196,7 +204,7 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1
+      "code-fixer": 2
     }
   }
 }
