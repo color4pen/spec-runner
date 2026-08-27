@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-27T05:17:19.353Z",
+  "updatedAt": "2026-08-27T05:23:22.427Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,8 @@
     "0bfa619920f96f4abfe027f74beac738c18af16c",
     "d753024f9c8e895bef0e35897122c1ab307e2ff1",
     "819f86a1f412ed3dedafe668bc5f9c9ea04d6248",
-    "7e48c02923401870a82d179fca1a3ff0124352f9"
+    "7e48c02923401870a82d179fca1a3ff0124352f9",
+    "46178c1a6251895926ccdff7caaac8154a773727"
   ],
   "touchedFiles": {
     "request-review": [
@@ -214,6 +215,11 @@
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
       "tests/unit/no-worktree-archive.test.ts",
       "tests/dispatch-workflow-archive-action.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-21-archive-state-after-merge.md",
+      "specrunner/adr/2026-06-03-archive-command-client-closed.md",
+      "specrunner/adr/2026-08-26-single-phase-archive.md"
     ]
   },
   "resumePoint": null,
@@ -254,8 +260,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1087",
+    "number": 1087,
+    "createdAt": "2026-08-27T05:23:21.191Z"
+  },
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -271,7 +282,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
