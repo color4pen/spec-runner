@@ -416,6 +416,76 @@
         "peakActiveContextTokens": 84352,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T14:02:06.549Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 25,
+          "outputTokens": 17422,
+          "cacheReadInputTokens": 1682725,
+          "cacheCreationInputTokens": 140927
+        }
+      },
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "code-fixer",
+      "numTurns": 21,
+      "durationMs": 410817,
+      "durationApiMs": 307111,
+      "totalCostUsd": 0.9382321499999999,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 100664,
+        "compactionCount": 0
+      }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T14:03:44.001Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 429235,
+          "outputTokens": 3336,
+          "cacheReadInputTokens": 360448,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-27T14:04:31.774Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 9980,
+          "outputTokens": 19,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 12,
+          "outputTokens": 5627,
+          "cacheReadInputTokens": 385144,
+          "cacheCreationInputTokens": 49271
+        }
+      },
+      "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+      "stepName": "scale-tolerance",
+      "numTurns": 17,
+      "durationMs": 142957,
+      "durationApiMs": 143485,
+      "totalCostUsd": 0.39482545,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 57827,
+        "compactionCount": 0
+      }
     }
   ]
 }
