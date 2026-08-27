@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T08:48:55.113Z",
+  "updatedAt": "2026-08-27T09:03:16.080Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
@@ -65,7 +65,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "8fdeff766b001c909b4dbf866b9cedb5a9152177",
-    "0c117ed539470a91052208c9dbe6840d1f3b5fd5"
+    "0c117ed539470a91052208c9dbe6840d1f3b5fd5",
+    "35549f677252b6730c9851b089f33738ede4aa4f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,12 +82,30 @@
       "architecture/conformance.md",
       "src/core/command/guide.ts",
       "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md"
+    ],
+    "design": [
+      "src/core/command/reopen.ts",
+      "src/core/command/resume.ts",
+      "src/state/lifecycle.ts",
+      "src/core/command/runner.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md",
+      "src/cli/reopen.ts",
+      "architecture/conformance.md",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/core/command/guide.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/store/event-journal.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
