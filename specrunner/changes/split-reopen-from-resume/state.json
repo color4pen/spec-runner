@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T14:17:28.053Z",
+  "updatedAt": "2026-08-27T14:22:46.503Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,8 @@
     "c44b1f2386ce4fb076af1db8cd1de8223dc13ac4",
     "ee6401d448d25f314ec4390421944d8f36fb27cf",
     "767b2305de78b0c544bbea6b550a588a9d9abd8a",
-    "db1ac6e8fd6f9f3a4e556e216e91d0e7c5fbb414"
+    "db1ac6e8fd6f9f3a4e556e216e91d0e7c5fbb414",
+    "900849d3a2364967837a9fcb737eceb53244c90f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -201,6 +202,13 @@
       "src/cli/__tests__/from-flag-no-enum.test.ts",
       "tests/unit/core/command/reopen-terminal-slug.test.ts",
       "src/store/__tests__/event-journal-operator-event.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md",
+      "specrunner/adr/2026-07-31-deterministic-request-entrance.md",
+      "src/core/inbox/planner.ts",
+      "src/core/command/reopen.ts",
+      "specrunner/adr/2026-08-27-split-reopen-from-resume.md"
     ]
   },
   "resumePoint": null,
@@ -258,8 +266,13 @@
       "canonHash": "specrunner/changes/split-reopen-from-resume/design.md:sha256:3b3f97d76daf117b2937186da02ba0535b124b0d0324f65203564854814a8134|specrunner/changes/split-reopen-from-resume/request.md:sha256:b131dbde75ee776b3bc8c0db1812e50b76b6da0b292105bcb76748c76c5b0852|specrunner/changes/split-reopen-from-resume/spec.md:sha256:d39b101587cba17cfec64ffd81a76502ecfbc2f10d8498fd64b653b7ee4259ec|specrunner/changes/split-reopen-from-resume/tasks.md:sha256:c0b69d178278cab300205a79125297262adacf2e03d5404d8b20e7fe00b2c156|specrunner/changes/split-reopen-from-resume/test-cases.md:sha256:68733f2b3399c6ccdef698b57acd47a0e49e24675d6c29fc2a3e35cd2454ade5"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1088",
+    "number": 1088,
+    "createdAt": "2026-08-27T14:22:45.608Z"
+  },
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 101,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -275,7 +288,9 @@
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
