@@ -197,11 +197,28 @@ export function planResumes(
     // If no escalation marker found, skip (safe: we don't know what was seen)
     if (cutoff === null) continue;
 
+    // Guard against re-consumption of stale /resume comments after `job reopen`.
+    //
+    // When `job reopen` transitions awaiting-archive → awaiting-resume it does NOT
+    // post a new escalation marker, so the old cutoff would still let the already-
+    // consumed /resume comment qualify on the next inbox poll.
+    //
+    // job.updatedAt is set to the transition timestamp by transitionJob().
+    // For the normal escalation path:
+    //   updatedAt = state-transition time (before the notification comment is posted)
+    //   → effectiveCutoff = notification timestamp  (later, correct)
+    // After `job reopen`:
+    //   updatedAt = reopen time (after the original /resume was consumed and the
+    //   pipeline ran through to awaiting-archive and then back to awaiting-resume)
+    //   → effectiveCutoff = reopen time (later than the stale comment, correct)
+    const effectiveCutoff =
+      job.updatedAt && job.updatedAt > cutoff ? job.updatedAt : cutoff;
+
     // Find qualifying /resume comments after cutoff
     let bestCandidate: IssueComment | null = null;
     for (const comment of comments) {
-      // Must be after the cutoff
-      if (comment.createdAt <= cutoff) continue;
+      // Must be after the effective cutoff
+      if (comment.createdAt <= effectiveCutoff) continue;
       // Must not be a bot notification comment
       if (isNotificationComment(comment.body)) continue;
       // Must be from an authorized author

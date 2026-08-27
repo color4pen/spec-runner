@@ -1,0 +1,296 @@
+{
+  "version": 2,
+  "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
+  "createdAt": "2026-08-27T08:42:26.571Z",
+  "updatedAt": "2026-08-27T14:22:46.503Z",
+  "request": {
+    "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
+    "type": "bug-fix",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/split-reopen-from-resume-c7b04a5c",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1082,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "8fdeff766b001c909b4dbf866b9cedb5a9152177",
+    "0c117ed539470a91052208c9dbe6840d1f3b5fd5",
+    "35549f677252b6730c9851b089f33738ede4aa4f",
+    "f08d608880bd354ee7a30b2239301634f97c70da",
+    "74c093e481eaabdce440f10dfc5bc4db6987302a",
+    "4c9d9de941870e58dd89c1cb8a332c3595cadc26",
+    "d496d2cece961f2b3dc0c5c5a98abc106d054f90",
+    "54ec33d559391d98207d67128186f5e48bd233ea",
+    "575d49d29abb845ad0db050c83782cc3ae61d917",
+    "e20fcc13ea699ff27072feca05c92186001de279",
+    "f21b7bb97ba919886f3fda26f16cfd8b4cf58d36",
+    "db9ccf7d9aa5edcf4f0296d3e5689eae334a3fc3",
+    "6143b4692c93c5b2af96c4c57af47f083c46e2c8",
+    "bb6504a542f982a8e8ac0e10e5011bb445d6a076",
+    "a5d7be9651793c73838f09fda78b6b703f206cb1",
+    "c44b1f2386ce4fb076af1db8cd1de8223dc13ac4",
+    "ee6401d448d25f314ec4390421944d8f36fb27cf",
+    "767b2305de78b0c544bbea6b550a588a9d9abd8a",
+    "db1ac6e8fd6f9f3a4e556e216e91d0e7c5fbb414",
+    "900849d3a2364967837a9fcb737eceb53244c90f"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/command/reopen.ts",
+      "src/core/command/resume.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/state/lifecycle.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/cli/reopen.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "architecture/conformance.md",
+      "src/core/command/guide.ts",
+      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md"
+    ],
+    "design": [
+      "src/core/command/reopen.ts",
+      "src/core/command/resume.ts",
+      "src/state/lifecycle.ts",
+      "src/core/command/runner.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md",
+      "src/cli/reopen.ts",
+      "architecture/conformance.md",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/core/command/guide.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/store/event-journal.ts",
+      "src/cli/command-registry.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/state/lifecycle.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/state/lifecycle.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/core/command/reopen.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/cli/reopen.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts",
+      "src/store/event-journal.ts",
+      "src/core/command/guide.ts",
+      "architecture/conformance.md",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/command/runner.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "tests/unit/workflow/specrunner-dispatch.test.ts",
+      "tests/unit/core/command/reopen-terminal-slug.test.ts",
+      "src/cli/__tests__/from-flag-no-enum.test.ts",
+      "tests/dispatch-workflow-reopen-action.test.ts"
+    ],
+    "code-review": [
+      "src/core/command/reopen.ts",
+      "src/state/lifecycle.ts",
+      "src/cli/reopen.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/store/event-journal.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts",
+      "src/core/command/guide.ts",
+      "architecture/conformance.md",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/workflow/specrunner-dispatch.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/from-flag-no-enum.test.ts",
+      "tests/unit/core/command/reopen-terminal-slug.test.ts",
+      "tests/dispatch-workflow-reopen-action.test.ts",
+      ".github/workflows/specrunner-dispatch.yml"
+    ],
+    "code-fixer": [
+      "src/core/inbox/planner.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts",
+      "src/core/inbox/types.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/inbox/__tests__/planner.test.ts"
+    ],
+    "regression-gate": [
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/state/lifecycle.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/core/command/reopen.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/inbox/planner.ts",
+      "src/core/inbox/__tests__/planner.test.ts"
+    ],
+    "conformance": [
+      "src/core/command/reopen.ts",
+      "src/state/lifecycle.ts",
+      "src/cli/reopen.ts",
+      "src/cli/command-registry.ts",
+      "src/store/event-journal.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "architecture/conformance.md",
+      "src/core/command/guide.ts",
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "tests/unit/workflow/specrunner-dispatch.test.ts",
+      "src/cli/__tests__/from-flag-no-enum.test.ts",
+      "tests/unit/core/command/reopen-terminal-slug.test.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md",
+      "specrunner/adr/2026-07-31-deterministic-request-entrance.md",
+      "src/core/inbox/planner.ts",
+      "src/core/command/reopen.ts",
+      "specrunner/adr/2026-08-27-split-reopen-from-resume.md"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "操作者裁定: .github/workflows/specrunner-dispatch.yml の reopen 分岐の 2 段呼び出しへの分割（tasks.md の該当タスク）は operator が feature branch に適用済み (commit 8e1e1c8f)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。workflow 内容を検証するテスト (TC-019) は適用済みの現内容を読み取って書くこと。残りの実装（CLI の reopen/resume 分離とテスト）を tasks.md に従って行うこと。",
+      "step": "implementer",
+      "recordedAt": "2026-08-27T10:46:27.631Z"
+    },
+    {
+      "text": "操作者裁定: .github/workflows/specrunner-dispatch.yml の reopen 分岐の 2 段呼び出しへの分割（tasks.md の該当タスク）は operator が feature branch に適用済み (commit 8e1e1c8f)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。workflow 内容を検証するテスト (TC-019) は適用済みの現内容を読み取って書くこと。残りの実装（CLI の reopen/resume 分離とテスト）を tasks.md に従って行うこと。",
+      "step": "implementer",
+      "recordedAt": "2026-08-27T11:23:35.983Z"
+    },
+    {
+      "text": "操作者裁定: code-review iter1 の F-001（lifecycle.ts の TransitionOpts JSDoc の prepare() 参照を execute() に修正）と F-002（workflow ヘッダの reopen コメントを 2 段呼び出しの新契約に更新）は operator が feature branch に適用済み (commit 6af009b0)。環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。",
+      "step": "code-review",
+      "recordedAt": "2026-08-27T12:45:48.404Z"
+    },
+    {
+      "text": "操作者裁定: code-review の findings 3 件をすべて修正せよ。(1) reopen.ts の outer catch の return 2 → return 1（exit code 2 は worktree guard 専用）。(2) reopen-command.test.ts の重複 vi.mock（82-84 行）を削除。(3) decision-needed の TC-013 は option B を採用: TC-013 ラベルの明示的テスト（reopen → awaiting-resume → ResumeCommand が awaiting-resume を受理すること）を追加し、test-cases.md と tasks.md の整合性を回復すること。なお環境制約により .github/workflows/** はこの実行環境から push できないため、いかなる理由でも編集しないこと。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-27T13:46:47.521Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "a5d7be9651793c73838f09fda78b6b703f206cb1",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/split-reopen-from-resume/design.md:sha256:3b3f97d76daf117b2937186da02ba0535b124b0d0324f65203564854814a8134|specrunner/changes/split-reopen-from-resume/request.md:sha256:b131dbde75ee776b3bc8c0db1812e50b76b6da0b292105bcb76748c76c5b0852|specrunner/changes/split-reopen-from-resume/spec.md:sha256:d39b101587cba17cfec64ffd81a76502ecfbc2f10d8498fd64b653b7ee4259ec|specrunner/changes/split-reopen-from-resume/tasks.md:sha256:c0b69d178278cab300205a79125297262adacf2e03d5404d8b20e7fe00b2c156|specrunner/changes/split-reopen-from-resume/test-cases.md:sha256:68733f2b3399c6ccdef698b57acd47a0e49e24675d6c29fc2a3e35cd2454ade5"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "a5d7be9651793c73838f09fda78b6b703f206cb1",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/split-reopen-from-resume/design.md:sha256:3b3f97d76daf117b2937186da02ba0535b124b0d0324f65203564854814a8134|specrunner/changes/split-reopen-from-resume/request.md:sha256:b131dbde75ee776b3bc8c0db1812e50b76b6da0b292105bcb76748c76c5b0852|specrunner/changes/split-reopen-from-resume/spec.md:sha256:d39b101587cba17cfec64ffd81a76502ecfbc2f10d8498fd64b653b7ee4259ec|specrunner/changes/split-reopen-from-resume/tasks.md:sha256:c0b69d178278cab300205a79125297262adacf2e03d5404d8b20e7fe00b2c156|specrunner/changes/split-reopen-from-resume/test-cases.md:sha256:68733f2b3399c6ccdef698b57acd47a0e49e24675d6c29fc2a3e35cd2454ade5"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1088",
+    "number": 1088,
+    "createdAt": "2026-08-27T14:22:45.608Z"
+  },
+  "_journal": {
+    "historyCount": 101,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "spec-fixer": 2,
+      "implementer": 3,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

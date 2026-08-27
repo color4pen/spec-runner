@@ -1,5 +1,5 @@
 /**
- * Unit tests for the terminal-only slug path in ReopenCommand.prepare().
+ * Unit tests for the terminal-only slug path in ReopenCommand.execute().
  *
  * TC-RS-001: terminal-only slug → logError + ReopenCommand.execute() returns 1
  *   (spec.md > reopen terminal-only slug path > Scenario: terminal-only slug is rejected with status gate message)
@@ -10,14 +10,14 @@
  *
  * Source: spec.md, tasks.md (reopen path fix)
  *
- * These tests cover the new code block in ReopenCommand.prepare() that is reached when
+ * These tests cover the code block in ReopenCommand.execute() that is reached when
  * resolveJobStateBySlug returns null (all matching jobs are terminal) and
  * JobStateStore.list(cwd, { includeArchived: true }) returns terminal jobs for the slug.
+ *
+ * Updated (split-reopen-from-resume): constructor is now (slug, options) — no runtime/events.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { JobState } from "../../../../src/state/schema.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
-import { EventBus } from "../../../../src/core/event/event-bus.js";
 
 // ---------------------------------------------------------------------------
 // Hoist mocks
@@ -91,9 +91,6 @@ function makeTerminalJobState(
   } as JobState;
 }
 
-/** Minimal fake RuntimeStrategy — no assertProviderReadiness so the gate is skipped */
-const fakeRuntime: RuntimeStrategy = {} as RuntimeStrategy;
-
 const SLUG = "test-reopen-slug";
 const FAKE_CWD = "/fake/cwd";
 
@@ -121,8 +118,7 @@ afterEach(() => {
 describe("TC-RS-001: ReopenCommand returns exit code 1 for terminal-only slug", () => {
   it("execute() returns 1 when the slug has only a terminal job", async () => {
     const { ReopenCommand } = await import("../../../../src/core/command/reopen.js");
-    const cmd = new ReopenCommand(fakeRuntime, new EventBus(), SLUG, {
-      from: "implementer",
+    const cmd = new ReopenCommand(SLUG, {
       reason: "test",
       githubClient: null,
       cwd: FAKE_CWD,
@@ -134,8 +130,7 @@ describe("TC-RS-001: ReopenCommand returns exit code 1 for terminal-only slug", 
 
   it("does NOT throw when the slug has only a terminal job", async () => {
     const { ReopenCommand } = await import("../../../../src/core/command/reopen.js");
-    const cmd = new ReopenCommand(fakeRuntime, new EventBus(), SLUG, {
-      from: "implementer",
+    const cmd = new ReopenCommand(SLUG, {
       reason: "test",
       githubClient: null,
       cwd: FAKE_CWD,
@@ -155,8 +150,7 @@ describe("TC-RS-002: terminal slug with canceled job shows that status in error"
     mockList.mockResolvedValue([makeTerminalJobState("canceled", SLUG)]);
 
     const { ReopenCommand } = await import("../../../../src/core/command/reopen.js");
-    const cmd = new ReopenCommand(fakeRuntime, new EventBus(), SLUG, {
-      from: "implementer",
+    const cmd = new ReopenCommand(SLUG, {
       reason: "test",
       githubClient: null,
       cwd: FAKE_CWD,
@@ -183,8 +177,7 @@ describe("TC-RS-003: multiple terminal jobs — newest-by-updatedAt is shown in 
     mockList.mockResolvedValue([olderArchived, newerCanceled]);
 
     const { ReopenCommand } = await import("../../../../src/core/command/reopen.js");
-    const cmd = new ReopenCommand(fakeRuntime, new EventBus(), SLUG, {
-      from: "implementer",
+    const cmd = new ReopenCommand(SLUG, {
       reason: "test",
       githubClient: null,
       cwd: FAKE_CWD,
@@ -207,8 +200,7 @@ describe("TC-RS-003: multiple terminal jobs — newest-by-updatedAt is shown in 
     mockList.mockResolvedValue(jobs);
 
     const { ReopenCommand } = await import("../../../../src/core/command/reopen.js");
-    const cmd = new ReopenCommand(fakeRuntime, new EventBus(), SLUG, {
-      from: "implementer",
+    const cmd = new ReopenCommand(SLUG, {
       reason: "test",
       githubClient: null,
       cwd: FAKE_CWD,

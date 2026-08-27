@@ -17,6 +17,7 @@
  * TC-024: appendOperatorEvent round-trip via JobStateStore: calling
  *         store.appendOperatorEvent() writes a record to events.jsonl
  *         that fold() then collects in operatorEvents.
+ *         New-style records omit fromStep (D4: step selection moved to resume).
  *
  * Source: spec.md › Requirement: reopen records an operator event in the journal
  *         tasks.md T-02
@@ -42,16 +43,21 @@ function getOperatorEvents(result: FoldResult): unknown[] | undefined {
   return (result as unknown as Record<string, unknown>)["operatorEvents"] as unknown[] | undefined;
 }
 
-/** Build a single JSONL line representing an operator-event record. */
+/**
+ * Build a single JSONL line representing an operator-event record.
+ * fromStep is optional — when not provided, the field is omitted from the serialized JSON
+ * (D4: step selection has moved to resume; new records do not include fromStep).
+ */
 function makeOperatorEventLine(overrides: Record<string, unknown> = {}): string {
-  return JSON.stringify({
+  const base: Record<string, unknown> = {
     type: "operator-event",
     action: "reopen",
     reason: "post-review fix",
-    fromStep: "spec-review",
     ts: "2026-07-01T10:00:00.000Z",
     ...overrides,
-  });
+  };
+  // If fromStep was not provided in overrides, it is absent from the record
+  return JSON.stringify(base);
 }
 
 /** Build a step-attempt JSONL line for testing that existing fields are unaffected. */
@@ -148,12 +154,12 @@ describe("TC-023: ENOENT-branch FoldResult shape includes operatorEvents:[]", ()
 // ---------------------------------------------------------------------------
 
 describe("TC-009: fold() returns operatorEvents containing the reopen operator record", () => {
-  it("TC-009-a: single operator-event line is collected with all fields intact", () => {
-    // GIVEN a journal with one operator-event record
+  it("TC-009-a: single operator-event line with fromStep is collected with all fields intact (backward compat)", () => {
+    // GIVEN a journal with one operator-event record that includes fromStep (old-style record)
     const line = makeOperatorEventLine({
       action: "reopen",
       reason: "post-review fix",
-      fromStep: "implementer",
+      fromStep: "implementer",  // Explicit fromStep for backward-compat test
       ts: "2026-07-01T10:00:00.000Z",
     });
     const result = fold(line + "\n");
@@ -171,11 +177,11 @@ describe("TC-009: fold() returns operatorEvents containing the reopen operator r
   });
 
   it("TC-009-b: operator-event appears after and alongside other record types", () => {
-    // GIVEN a journal with mixed record types
+    // GIVEN a journal with mixed record types; the operator-event has an explicit fromStep (old-style)
     const content = [
       makeStepAttemptLine("spec-review"),
       makeTransitionLine(),
-      makeOperatorEventLine({ reason: "fix X", fromStep: "spec-review" }),
+      makeOperatorEventLine({ reason: "fix X", fromStep: "spec-review" }),  // Explicit fromStep
       makeStepAttemptLine("implementer"),
     ].join("\n") + "\n";
 
@@ -193,19 +199,24 @@ describe("TC-009: fold() returns operatorEvents containing the reopen operator r
     expect(evt["fromStep"]).toBe("spec-review");
   });
 
-  it("TC-009-c: multiple operator-event lines are all collected in chronological order", () => {
-    // GIVEN two operator-event records (e.g. two reopens)
+  it("TC-009-c: multiple operator-event lines — old-style (with fromStep) and new-style (without fromStep) both parse correctly", () => {
+    // GIVEN two operator-event records:
+    // first has fromStep (old record), second does not (new record after D4 change)
     const content = [
-      makeOperatorEventLine({ ts: "2026-07-01T10:00:00.000Z", reason: "first fix" }),
-      makeOperatorEventLine({ ts: "2026-07-01T12:00:00.000Z", reason: "second fix" }),
+      makeOperatorEventLine({ ts: "2026-07-01T10:00:00.000Z", reason: "first fix", fromStep: "implementer" }),
+      makeOperatorEventLine({ ts: "2026-07-01T12:00:00.000Z", reason: "second fix" }),  // No fromStep
     ].join("\n") + "\n";
 
     const result = fold(content);
 
     const events = getOperatorEvents(result);
     expect(events).toHaveLength(2);
+    // Old-style: fromStep present
     expect((events![0] as Record<string, unknown>)["reason"]).toBe("first fix");
+    expect((events![0] as Record<string, unknown>)["fromStep"]).toBe("implementer");
+    // New-style: fromStep absent
     expect((events![1] as Record<string, unknown>)["reason"]).toBe("second fix");
+    expect((events![1] as Record<string, unknown>)["fromStep"]).toBeUndefined();
   });
 
   it("TC-009-d: operator-event record with type='operator-event' is not treated as a corruption", () => {
@@ -221,6 +232,7 @@ describe("TC-009: fold() returns operatorEvents containing the reopen operator r
 
 // ---------------------------------------------------------------------------
 // TC-024: appendOperatorEvent round-trip via JobStateStore
+// New-style record: omits fromStep (D4 change)
 // ---------------------------------------------------------------------------
 
 describe("TC-024: appendOperatorEvent round-trip (JobStateStore → events.jsonl → fold)", () => {
@@ -251,6 +263,7 @@ describe("TC-024: appendOperatorEvent round-trip (JobStateStore → events.jsonl
       );
 
       // WHEN appendOperatorEvent is called on a real JobStateStore instance
+      // New-style record: no fromStep (D4 change — step selection moved to resume)
       const store = new JobStateStore("test-job-id", tempDir, {
         slug: "test-slug",
         stateRoot: tempDir,
@@ -259,8 +272,8 @@ describe("TC-024: appendOperatorEvent round-trip (JobStateStore → events.jsonl
         type: "operator-event",
         action: "reopen",
         reason: "post-review fix applied",
-        fromStep: "spec-review",
         ts: "2026-07-01T10:00:00.000Z",
+        // fromStep is intentionally omitted — new-style record after D4
       };
       await store.appendOperatorEvent(record);
 
@@ -274,8 +287,9 @@ describe("TC-024: appendOperatorEvent round-trip (JobStateStore → events.jsonl
       expect(evt["type"]).toBe("operator-event");
       expect(evt["action"]).toBe("reopen");
       expect(evt["reason"]).toBe("post-review fix applied");
-      expect(evt["fromStep"]).toBe("spec-review");
       expect(evt["ts"]).toBe("2026-07-01T10:00:00.000Z");
+      // fromStep is absent from new-style records
+      expect(evt["fromStep"]).toBeUndefined();
 
       // AND state.json is NOT modified (operator events are journal-only)
       const stateRaw = await fs.readFile(path.join(changeDir, "state.json"), "utf-8");

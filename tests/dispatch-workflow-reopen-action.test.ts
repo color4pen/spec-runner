@@ -241,16 +241,34 @@ describe("TC-R02: reopen branch resolves the job via attach and delegates to job
     expect(body).toContain("headRefName");
   });
 
-  it("delegates to 'job reopen' with --from and --reason", () => {
+  it("delegates to 'job reopen' with --reason only (not --from, per split-reopen-from-resume)", () => {
+    // After split-reopen-from-resume: job reopen handles lifecycle only (--reason).
+    // job resume handles pipeline execution (--from / --prompt).
     const body = reopenBranchBody(branches);
     expect(body).toContain("job reopen");
-    expect(body).toContain('--from "$FROM"');
     expect(body).toContain('--reason "$REASON"');
+    // --from must NOT be on the job reopen line (it moved to job resume)
+    const reopenLine = body.split("\n").find((l) => l.includes("job reopen") && !l.startsWith("#"));
+    expect(reopenLine).toBeDefined();
+    expect(reopenLine).not.toContain("--from");
   });
 
-  it("does not pass --prompt (reopen CLI contract rejects it)", () => {
+  it("delegates to 'job resume' with --from (and optionally --prompt)", () => {
+    // After split-reopen-from-resume: job resume is called in the same action=reopen branch.
     const body = reopenBranchBody(branches);
-    expect(body).not.toContain("--prompt");
+    expect(body).toContain("job resume");
+    // --from is forwarded to resume
+    expect(body).toContain('"$FROM"');
+  });
+
+  it("does not pass --prompt to job reopen (reopen CLI contract rejects it; passed to resume instead)", () => {
+    const body = reopenBranchBody(branches);
+    // The job reopen invocation must not contain --prompt
+    const reopenLine = body.split("\n").find((l) => l.includes("job reopen") && !l.startsWith("#"));
+    expect(reopenLine).toBeDefined();
+    expect(reopenLine).not.toContain("--prompt");
+    // But --prompt IS forwarded to job resume (optionally)
+    // (verified via the set -- / PROMPT conditional pattern in the workflow)
   });
 });
 

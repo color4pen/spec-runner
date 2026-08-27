@@ -48,11 +48,11 @@ export const VALID_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> =
  * Only accessible via the explicit `job reopen` command (allowReopen opt-in).
  * The general `canTransition` guard and `job resume` path must NOT consult this table.
  *
- * D1 (reopen-fsm): awaiting-archive → running is permitted only through
+ * D1 (reopen-fsm): awaiting-archive → awaiting-resume is permitted only through
  * an explicit operator action with reason + journal recording.
  */
 export const REOPEN_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> = new Map([
-  ["awaiting-archive", new Set(["running"])],
+  ["awaiting-archive", new Set(["awaiting-resume"])],
 ]);
 
 export const TERMINAL_STATUSES: ReadonlySet<JobStatus> = new Set(["archived", "canceled"]);
@@ -86,7 +86,7 @@ export function isTerminal(status: JobStatus): boolean {
 /**
  * Optional opts for operator-scoped transition overrides.
  * allowReopen: when true, also consults REOPEN_TRANSITIONS for allowed edges.
- * Must only be passed by ReopenCommand.prepare() — never by resume or other callers.
+ * Must only be passed by ReopenCommand.execute() — never by resume or other callers.
  */
 export interface TransitionOpts {
   allowReopen?: boolean;
@@ -99,9 +99,9 @@ export interface TransitionOpts {
  * Throws if the transition is invalid (non-noop transition from/to incompatible statuses).
  * Returns { state, noop: true } for same-status transitions without modifying the state.
  *
- * @param opts.allowReopen - When true, also permits edges in REOPEN_TRANSITIONS.
- *   Only ReopenCommand.prepare() should pass this. All other callers (resume, etc.)
- *   must omit opts so the general guard remains enforced.
+ * @param opts.allowReopen - When true, also permits edges in REOPEN_TRANSITIONS
+ *   (awaiting-archive → awaiting-resume). Only ReopenCommand should pass this.
+ *   All other callers (resume, etc.) must omit opts so the general guard remains enforced.
  */
 export function transitionJob(
   state: JobState,

@@ -501,24 +501,20 @@ Options:
 Note: <slug> and --from-issue are mutually exclusive. Specify exactly one.
 `;
 
-export const REOPEN_USAGE = `Usage: specrunner job reopen <slug> --from <step> --reason <text> [options]
+export const REOPEN_USAGE = `Usage: specrunner job reopen <slug> --reason <text> [options]
 
-Reopen an awaiting-archive job and restart the pipeline from the specified step.
+Transitions an awaiting-archive job to awaiting-resume without executing the pipeline.
 The associated PR must be OPEN (not merged or closed).
 
-This is an operator-scoped action: --from and --reason are both required.
-Prior evidence (steps, artifacts, reviewer statuses) is preserved; new iterations
-are appended without overwriting existing results.
+This is an operator-scoped lifecycle action: --reason is required.
+Prior evidence (steps, artifacts, reviewer statuses) is preserved.
+
+After reopen, run 'specrunner job resume <slug> --from <step> [--prompt ...]' to start pipeline execution.
 
 Arguments:
   <slug>              Slug of the job to reopen (required).
 
 Options:
-  --from <step>       Pipeline step to restart from (required).
-                      Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
-                      Note: jobs with custom reviewers also accept: regression-gate,
-                      custom-reviewers, or reviewer member names (member names are
-                      mapped to the custom-reviewers coordinator).
   --reason <text>     Operator rationale for the reopen (required, recorded in journal).
   --verbose           More detailed output
   --quiet             Suppress informational output
@@ -1221,7 +1217,6 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "reopen"],
         summary: "Reopen an awaiting-archive job",
         flags: {
-          from: { type: "string" },
           reason: { type: "string" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
@@ -1233,17 +1228,12 @@ export const COMMANDS: Record<string, CommandSpec> = {
         visibility: "operator",
         help: {
           group: "Job commands",
-          summary: "  job reopen <slug>               awaiting-archive job を指定 step から再開",
+          summary: "  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する",
           detail: REOPEN_USAGE,
         },
         handler: async (parsed, ctx) => {
-          const fromStep = parsed.flags["from"] as string | undefined;
           const reason = parsed.flags["reason"] as string | undefined;
 
-          if (!fromStep) {
-            logError("--from <step> is required for 'job reopen'.");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
           if (!reason) {
             logError("--reason <text> is required for 'job reopen'.");
             process.exit(EXIT_CODE.ARG_ERROR);
@@ -1257,7 +1247,6 @@ export const COMMANDS: Record<string, CommandSpec> = {
 
           try {
             await runReopen(parsed.positional!, {
-              from: fromStep,
               reason,
               logLevel,
               cwd: process.cwd(),

@@ -49,7 +49,7 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-14** StepHalt 適用オーナー集約 | `executor.ts` が `transitionJob` / `attachStateAndRethrow` を直接呼んでいないか（halt の FSM 遷移・rethrow は CommitOrchestrator のみ担う）| grep 検査（call-site, executor.ts 限定）|
 | **B-15** round git 副作用の coordinator 所有 | `parallel-review-round.ts` が indiscriminate な `commitAndPush` を呼ばず、`partitionRoundChanges` で宣言/非宣言を分離し宣言出力だけを scoped stage（`git add -A -- <paths>`）するか | grep 検査（call-site, parallel-review-round.ts）|
 | **B-16** round 入力の不変性 | `executor.ts` / `parallel-review-round.ts` が共有 `deps` を in-place 書き換え（`deps.<field> =` 代入）していないか | grep 検査（call-site, 代入のみ・比較除外）|
-| **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
+| **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか（ガード対象: awaiting-archive → awaiting-resume） | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
 | **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client / issue-fidelity-comparator）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index` — 削除済み。再導入検知）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
 
 - 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）。

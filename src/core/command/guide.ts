@@ -355,14 +355,18 @@ grep -n "CANON_FINDING\\|escalat" .specrunner/logs/<jobId>.log | tail -20
 
 ## 3. awaiting-archive からの再開
 
-resume ではなく reopen を使う:
+reopen で lifecycle 遷移のみ行い、resume で pipeline を再開する:
 
 \`\`\`bash
-specrunner job reopen <slug> --from <step> --reason "<理由>"
+# Step 1: lifecycle 遷移のみ（pipeline は起動しない）
+specrunner job reopen <slug> --reason "<理由>"
+
+# Step 2: pipeline 再開（--from / --prompt / --adopt-commits 等が使える）
+specrunner job resume <slug> --from <step> [--prompt "<修正指示>"] [--adopt-commits] [--apply-canon]
 \`\`\`
 
-**reopen の制約**: --apply-canon / --adopt-commits / --detach / --prompt は使えない。
---from と --reason が必須。
+**reopen の制約**: --reason のみ必須。pipeline 実行の指定（--from / --prompt /
+--apply-canon / --adopt-commits）は resume に渡す。
 
 ## 4. issue 番号からの再開 (--from-issue)
 

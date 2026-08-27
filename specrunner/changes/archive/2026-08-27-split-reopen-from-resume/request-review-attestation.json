@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:b131dbde75ee776b3bc8c0db1812e50b76b6da0b292105bcb76748c76c5b0852",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/reopen.ts:69 — ReopenCommand extends CommandRunner",
+    "src/core/command/reopen.ts:39-52 — ReopenOptions has no prompt/adoptCommits/applyCanon/wontfix fields",
+    "src/core/command/reopen.ts:328 — prepare() returns resumePrompt: undefined",
+    "src/core/command/resume.ts:41-57 — ResumeOptions has prompt/adoptCommits/applyCanon/wontfix fields",
+    "src/core/command/reopen.ts (entire file) — no detectCanonDirtyPaths call present",
+    ".github/workflows/specrunner-dispatch.yml:241 — reopen action calls only job reopen, no subsequent job resume",
+    "src/state/lifecycle.ts:54-56 — REOPEN_TRANSITIONS defines awaiting-archive → {running}",
+    "tests/unit/architecture/core-invariants.test.ts:1187-1266 — B-17 pins { allowReopen: true } to reopen.ts only"
+  ],
+  "sourceRevision": "5e186236c3802a4e1290fa42d0c60338a450b24f"
+}
