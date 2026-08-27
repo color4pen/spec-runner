@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T09:15:38.153Z",
+  "updatedAt": "2026-08-27T09:29:55.902Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
@@ -68,7 +68,8 @@
     "0c117ed539470a91052208c9dbe6840d1f3b5fd5",
     "35549f677252b6730c9851b089f33738ede4aa4f",
     "f08d608880bd354ee7a30b2239301634f97c70da",
-    "74c093e481eaabdce440f10dfc5bc4db6987302a"
+    "74c093e481eaabdce440f10dfc5bc4db6987302a",
+    "4c9d9de941870e58dd89c1cb8a332c3595cadc26"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,15 +115,24 @@
       "src/cli/__tests__/command-registry-reopen.test.ts",
       "src/store/event-journal.ts",
       "tests/unit/architecture/core-invariants.test.ts"
+    ],
+    "spec-fixer": [
+      "src/state/__tests__/lifecycle-reopen.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "src/state/lifecycle.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
