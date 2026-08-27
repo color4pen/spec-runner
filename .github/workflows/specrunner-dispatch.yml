@@ -205,7 +205,9 @@ jobs:
             fi
             bun ./bin/specrunner.ts job resume "$@"
           elif [ "$ACTION" = "reopen" ]; then
-            # awaiting-archive job の reopen（#1066）。from / reason は CLI 契約上も必須。
+            # awaiting-archive job の reopen（#1066 / #1082）。reopen は lifecycle 巻き戻し
+            # （--reason）、実行再開は resume（--from / --prompt）が担う。workflow の
+            # reopen action は両方を連続実行するため from / reason の両方が必須。
             if [ -z "$FROM" ] || [ -z "$REASON" ]; then
               echo "::error::reopen には from と reason の両方が必須"
               exit 1
@@ -238,7 +240,10 @@ jobs:
               echo "::error::attach 出力から slug を特定できない"
               exit 1
             fi
-            bun ./bin/specrunner.ts job reopen "$SLUG" --from "$FROM" --reason "$REASON"
+            bun ./bin/specrunner.ts job reopen "$SLUG" --reason "$REASON"
+            set -- --from "$FROM"
+            [ -n "$PROMPT" ] && set -- "$@" --prompt "$PROMPT"
+            bun ./bin/specrunner.ts job resume "$SLUG" "$@"
           elif [ "$ACTION" = "archive" ]; then
             bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"
           else
