@@ -187,11 +187,16 @@ worktree が残り続ける job class を温存するだけで、得るものが
 > push 前に `git ls-remote --heads origin <branch>` を実行する。
 > 該当 ref が無ければ push を skip し warning を出す。
 > ref があれば従来どおり push する（`Everything up-to-date` になる）。
-> この状態での push 失敗は escalation ではなく warning とする。
+> ref がある（または ls-remote が失敗した fail-open の）状態での push 失敗は
+> 従来どおり escalation / exit 1 とする。「新しい記帳を生んでいない」ことは
+> 「remote が record を持っている」ことを意味しない — 前回実行が commit まで成功して
+> push だけ失敗した場合、record commit は local にしか存在しないため、
+> push 成功前に archived / cleanup へ進めてはならない。
 
 新規記帳を生んだ実行（mv または commit が走った実行）では push は従来どおり**必須**であり、
 失敗は escalation である（D2 の順序保証）。crash 後の再実行（commit 済み・push 未了）は
-commit skip・mv skip だが remote ref は存在するため push が実行され、正しく復旧する。
+commit skip・mv skip だが remote ref は存在するため push が実行され、成功すれば正しく復旧し、
+再び失敗すれば escalation で停止する（record を失わない）。
 
 **Path B（degraded 経路）**: `archiveRecorded === true` かつ record working tree が使えないとき。
 具体的には:

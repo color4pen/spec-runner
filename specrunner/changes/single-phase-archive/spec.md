@@ -110,8 +110,11 @@ to `archived` fails
 
 When the change folder is already at the archive location, plain archive SHALL still reach
 `archived` + cleanup in a single run. In that state the run MUST NOT create a second archive
-commit; it MUST skip the push when the remote feature branch no longer exists, and a push
-failure MUST be reported as a warning instead of an escalation. When the recording working
+commit; it MUST skip the push when the remote feature branch no longer exists. When the
+remote feature branch still exists (or its existence cannot be determined), a push failure
+MUST exit with code 1 and an escalation — the record commit may exist only locally (a prior
+run committed but failed to push), so the job MUST NOT transition to `archived` or run
+cleanup until the push succeeds. When the recording working
 tree is unusable (the worktree directory is absent, or in `--no-worktree` mode the local
 feature branch is absent), plain archive SHALL bypass archive recording entirely and perform
 a best-effort transition followed by cleanup, exiting with code 0.
@@ -132,6 +135,15 @@ location and whose remote feature branch still exists
 **When** plain archive runs
 **Then** the existing archive commit is pushed again (a no-op push), the job status becomes
 `archived`, and cleanup runs
+
+#### Scenario: already-recorded job whose push fails again does not reach archived
+
+**Given** a job in status `awaiting-archive` whose change folder is already at the archive
+location, whose remote feature branch still exists, and whose previous archive run committed
+the record but failed to push it
+**When** plain archive runs and the push fails again
+**Then** the command exits with code 1 and an escalation, the job status stays
+`awaiting-archive`, and no cleanup is performed
 
 #### Scenario: recorded job with a missing worktree is finished without recording
 

@@ -334,12 +334,15 @@ export async function runArchiveOrchestrator(
     }
 
     // Idempotent push guard: when both mv and commit were skipped (no new content was
-    // recorded), the local HEAD may already match the remote. Check whether the remote
-    // branch exists before attempting the push.
+    // recorded), the record commit may still exist only locally — a previous run can
+    // have committed successfully and then failed the push, so "nothing new recorded"
+    // does NOT imply "remote already has the record". Only the absence of the remote
+    // branch (already-merged-and-deleted leftover) justifies skipping the push.
     // - Remote branch absent  → skip push (warning only, exit 0)
-    // - Remote branch present → push; if push fails → warning only (exit 0, not escalation)
+    // - Remote branch present → push; if push fails → escalation (exit 1); the record
+    //   must reach the remote before the job may transition to archived
     // - New content recorded  → push; if push fails → escalation (exit 1) as before
-    // - ls-remote failure     → fail-open: proceed with push attempt
+    // - ls-remote failure     → fail-open: proceed with push attempt (failure escalates)
     const recordedSomething = !mvSkipped || !commitSkipped;
 
     if (!recordedSomething) {
@@ -354,31 +357,26 @@ export async function runArchiveOrchestrator(
         const headShaResult2 = await spawn("git", ["rev-parse", "HEAD"], { cwd: recordDir });
         return { exitCode: 0, headSha: headShaResult2.exitCode === 0 ? (headShaResult2.stdout.trim() || undefined) : undefined };
       }
-
-      // Remote branch exists (or ls-remote failed — fail-open) → try push, but treat
-      // failure as a warning rather than an escalation (idempotent re-run scenario).
-      const idempotentPushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
-      if (idempotentPushResult.exitCode !== 0) {
-        stderrWrite(`Warning: git push origin ${branch} failed (exit ${idempotentPushResult.exitCode}): ${idempotentPushResult.stderr.trim()}. Archive commit was already recorded; continuing.`);
-      } else {
-        stdoutWrite(`Pushed archive commit to origin/${branch}.`);
-      }
-    } else {
-      // New content was recorded — push failure is a hard error
-      const pushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
-      if (pushResult.exitCode !== 0) {
-        return {
-          exitCode: 1,
-          escalation: formatEscalation({
-            failedStep: "Phase 1 (git push origin <feature-branch>)",
-            detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
-            recommendedAction: `Check network/auth and re-run: specrunner job archive ${slug}`,
-            resumeCommand: `specrunner job archive ${slug}`,
-          }),
-        };
-      }
-      stdoutWrite(`Pushed archive commit to origin/${branch}.`);
     }
+
+    // Remote branch exists (or ls-remote failed — fail-open), or new content was
+    // recorded: the archive record must reach the remote. Push failure is a hard
+    // error in both cases — treating it as a warning would let a re-run after
+    // "commit succeeded, push failed" proceed to archived + cleanup and destroy
+    // the only copy of the record commit.
+    const pushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
+    if (pushResult.exitCode !== 0) {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 1 (git push origin <feature-branch>)",
+          detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
+          recommendedAction: `Check network/auth and re-run: specrunner job archive ${slug}`,
+          resumeCommand: `specrunner job archive ${slug}`,
+        }),
+      };
+    }
+    stdoutWrite(`Pushed archive commit to origin/${branch}.`);
 
     // Capture HEAD SHA so the --with-merge path can wait for CI on the correct commit
     let headSha: string | undefined;

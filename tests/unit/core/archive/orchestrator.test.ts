@@ -879,13 +879,15 @@ describe("TC-AO-NO-INTERMEDIATE-STATUS: archive-recorded 等の中間 status が
 // TC-022〜026: ls-remote idempotent push guard
 // (D5 Path A: 旧 2 相契約残置 job — mv/commit 双方 skip シナリオでの push 判定)
 //
-// Guard logic in orchestrator.ts (L343–381):
+// Guard logic in orchestrator.ts:
 //   recordedSomething = !mvSkipped || !commitSkipped
 //   if (!recordedSomething):
 //     ls-remote --heads origin <branch>
 //       exitCode=0, stdout="" → remote branch absent → skip push, exit 0 (TC-022)
 //       exitCode=0, stdout≠"" → remote branch exists → push (TC-023)
-//         push fails → warning only, exit 0 (TC-024)
+//         push fails → escalation exit 1 (TC-024) — the record commit may exist
+//         only locally (prior run committed but failed the push), so the job must
+//         NOT proceed to archived/cleanup until the push succeeds
 //       exitCode≠0              → fail-open → push (TC-026)
 //   else (recordedSomething=true):
 //     push; if push fails → escalation exit 1 (TC-025)
@@ -1009,8 +1011,8 @@ describe("TC-023: mv/commit 双方 skip + ls-remote に branch あり → push �
   });
 });
 
-describe("TC-024: mv/commit 双方 skip + push 失敗 → warning のみ exit 0", () => {
-  it("両方 skip → ls-remote に branch あり → push 失敗 → warning のみ exit 0", async () => {
+describe("TC-024: mv/commit 双方 skip + remote branch あり + push 失敗 → escalation exit 1", () => {
+  it("両方 skip → ls-remote に branch あり → push 失敗 → escalation exit 1（archived へ進ませない）", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeJobState({ status: "awaiting-archive", branch: BRANCH }),
@@ -1047,12 +1049,15 @@ describe("TC-024: mv/commit 双方 skip + push 失敗 → warning のみ exit 0"
 
     const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
 
-    // Must exit 0 even when push fails — idempotent re-run treats push failure as warning only
-    expect(result.exitCode).toBe(0);
-
-    // A warning about the push failure must have been emitted to stderr
-    const stderrOutput = _stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("\n");
-    expect(stderrOutput.toLowerCase()).toContain("warning");
+    // Must exit 1 with escalation — the record commit may exist only locally
+    // (prior run: commit succeeded, push failed). Proceeding would transition the
+    // job to archived and destroy the only copy of the record during cleanup.
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      const { escalation } = result as { escalation: string };
+      expect(escalation).toBeDefined();
+      expect(escalation).toContain("push");
+    }
   });
 });
 

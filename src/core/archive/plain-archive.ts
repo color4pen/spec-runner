@@ -16,8 +16,10 @@
  * - Does NOT query GitHub PR state. No GitHub API client used.
  * - deleteRemoteBranch is always false — remote branch preserved for the still-open PR.
  * - markJobArchived is called BEFORE runArchiveCleanup (worktree may contain state.json).
- * - Push failure when no new content was recorded → warning (not escalation).
- * - Push failure when new content was recorded → escalation (exit 1), no transition, no cleanup.
+ * - Push is skipped only when the remote feature branch no longer exists (already
+ *   merged + deleted leftover). Any push failure while the remote branch exists (or
+ *   ls-remote fails) → escalation (exit 1), no transition, no cleanup — the record
+ *   commit may exist only locally and must reach the remote before archived.
  * - Transition failure → escalation (exit 1), no cleanup.
  */
 import type { SpawnFn } from "../../util/spawn.js";

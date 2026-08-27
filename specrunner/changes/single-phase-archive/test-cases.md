@@ -269,7 +269,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-024: orchestrator — mv/commit 双方 skip + push 失敗 → escalation せず warning のみ / exit 0
+### TC-024: orchestrator — mv/commit 双方 skip + remote branch あり + push 失敗 → escalation / exit 1
 
 **Category**: unit
 **Priority**: must
@@ -277,7 +277,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `archiveChangeFolder` と `commitArchive` が両方 `skipped: true` を返し、ls-remote が branch を返す。`git push origin <branch>` が exit code 1 で失敗する  
 **WHEN** `runArchiveOrchestrator` を実行する  
-**THEN** exit code は 0（escalation しない）。警告メッセージが出力される。`markJobArchived` は呼ばれない（transition は呼び出し元の責任）。
+**THEN** exit code は 1 で escalation を返す（record commit が local にしか無い可能性があるため、push 成功前に archived / cleanup へ進めない）。
 
 ---
 
