@@ -874,3 +874,252 @@ describe("TC-AO-NO-INTERMEDIATE-STATUS: archive-recorded 等の中間 status が
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-022〜026: ls-remote idempotent push guard
+// (D5 Path A: 旧 2 相契約残置 job — mv/commit 双方 skip シナリオでの push 判定)
+//
+// Guard logic in orchestrator.ts (L343–381):
+//   recordedSomething = !mvSkipped || !commitSkipped
+//   if (!recordedSomething):
+//     ls-remote --heads origin <branch>
+//       exitCode=0, stdout="" → remote branch absent → skip push, exit 0 (TC-022)
+//       exitCode=0, stdout≠"" → remote branch exists → push (TC-023)
+//         push fails → warning only, exit 0 (TC-024)
+//       exitCode≠0              → fail-open → push (TC-026)
+//   else (recordedSomething=true):
+//     push; if push fails → escalation exit 1 (TC-025)
+// ---------------------------------------------------------------------------
+
+describe("TC-022: mv/commit 双方 skip + ls-remote 空 → push skip, exit 0", () => {
+  it("両方 skip → ls-remote が空を返す → push を呼ばず exit 0 を返す", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    // Both mv and commit skipped → recordedSomething = false → guard activates
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "already moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "nothing to commit",
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (Array.isArray(args) && args[0] === "ls-remote") {
+        // Empty stdout → remote branch absent
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
+
+    expect(result.exitCode).toBe(0);
+
+    const allCalls = (spawnMock as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
+
+    // ls-remote must have been called to check remote branch existence
+    const lsRemoteCall = allCalls.find(
+      (c) => c[0] === "git" && Array.isArray(c[1]) && (c[1] as string[])[0] === "ls-remote",
+    );
+    expect(lsRemoteCall).toBeDefined();
+
+    // git push origin <branch> must NOT have been called (branch absent → skip push)
+    const pushCall = allCalls.find(
+      (c) => c[0] === "git" && Array.isArray(c[1]) &&
+        (c[1] as string[])[0] === "push" &&
+        (c[1] as string[])[1] === "origin" &&
+        (c[1] as string[])[2] === BRANCH,
+    );
+    expect(pushCall).toBeUndefined();
+  });
+});
+
+describe("TC-023: mv/commit 双方 skip + ls-remote に branch あり → push 試行", () => {
+  it("両方 skip → ls-remote が branch 情報を返す → push が呼ばれる", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "already moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "nothing to commit",
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    let pushCalled = false;
+    const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (Array.isArray(args) && args[0] === "ls-remote") {
+        // Non-empty → remote branch exists
+        return {
+          exitCode: 0,
+          stdout: `abc1234abc1234abc1234abc1234abc1234abc12\trefs/heads/${BRANCH}\n`,
+          stderr: "",
+        };
+      }
+      if (Array.isArray(args) && args[0] === "push" && args[1] === "origin" && args[2] === BRANCH) {
+        pushCalled = true;
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
+
+    expect(result.exitCode).toBe(0);
+    // push must have been attempted because remote branch is present
+    expect(pushCalled).toBe(true);
+  });
+});
+
+describe("TC-024: mv/commit 双方 skip + push 失敗 → warning のみ exit 0", () => {
+  it("両方 skip → ls-remote に branch あり → push 失敗 → warning のみ exit 0", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "already moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "nothing to commit",
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (Array.isArray(args) && args[0] === "ls-remote") {
+        return {
+          exitCode: 0,
+          stdout: `abc1234\trefs/heads/${BRANCH}\n`,
+          stderr: "",
+        };
+      }
+      if (Array.isArray(args) && args[0] === "push") {
+        return { exitCode: 1, stdout: "", stderr: "remote: error: push rejected" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
+
+    // Must exit 0 even when push fails — idempotent re-run treats push failure as warning only
+    expect(result.exitCode).toBe(0);
+
+    // A warning about the push failure must have been emitted to stderr
+    const stderrOutput = _stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("\n");
+    expect(stderrOutput.toLowerCase()).toContain("warning");
+  });
+});
+
+describe("TC-025: 新規記帳あり + push 失敗 → escalation exit 1", () => {
+  it("archiveChangeFolder が新規記録 → push 失敗 → escalation exit 1", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    // New content recorded: skipped=false → recordedSomething=true → hard error on push failure
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: false, message: "folder moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: false, message: "committed",
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (Array.isArray(args) && args[0] === "push") {
+        return { exitCode: 1, stdout: "", stderr: "remote: push rejected" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
+
+    // Must exit 1 with escalation — new content was recorded so push failure is critical
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      const { escalation } = result as { escalation: string };
+      expect(escalation).toBeDefined();
+      expect(escalation).toContain("push");
+    }
+  });
+});
+
+describe("TC-026: ls-remote 非 0 → fail-open push", () => {
+  it("両方 skip → ls-remote 失敗 → fail-open で push を試みる", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "already moved",
+    });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true, skipped: true, message: "nothing to commit",
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+
+    let pushCalled = false;
+    const spawnMock = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (Array.isArray(args) && args[0] === "ls-remote") {
+        // ls-remote non-zero exit → fail-open: proceed with push
+        return { exitCode: 1, stdout: "", stderr: "fatal: unable to connect to origin" };
+      }
+      if (Array.isArray(args) && args[0] === "push" && args[1] === "origin" && args[2] === BRANCH) {
+        pushCalled = true;
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: spawnMock, fs: makeFs() });
+
+    expect(result.exitCode).toBe(0);
+    // fail-open: push must have been attempted even though ls-remote failed
+    expect(pushCalled).toBe(true);
+  });
+});
