@@ -86,7 +86,7 @@ export function isTerminal(status: JobStatus): boolean {
 /**
  * Optional opts for operator-scoped transition overrides.
  * allowReopen: when true, also consults REOPEN_TRANSITIONS for allowed edges.
- * Must only be passed by ReopenCommand.prepare() — never by resume or other callers.
+ * Must only be passed by ReopenCommand.execute() — never by resume or other callers.
  */
 export interface TransitionOpts {
   allowReopen?: boolean;

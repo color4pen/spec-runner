@@ -18,15 +18,16 @@ run-name: "${{ inputs.action }} #${{ inputs.issue }}"
 #           レビュー可能な形で入るのが正道。
 #           wontfix / wontfix_reason は regression-gate findings への operator 不採用裁定
 #           （--wontfix / --wontfix-reason）をそのまま透過する。
-# - reopen: PR 作成後に awaiting-archive で待機する job を pipeline に戻す（#1066）。
+# - reopen: PR 作成後に awaiting-archive で待機する job を pipeline に戻す（#1066 / #1082）。
 #           Development linked branch（無ければ closing PR 参照）を解決して attach →
-#           job reopen <slug> --from <step> --reason <text>。reopen transition 自体は
-#           commit を作らない。canon の operator 修正が必要な場合は、operator が feature
+#           job reopen <slug> --reason <text>（lifecycle 巻き戻しのみ、commit を作らない）→
+#           job resume <slug> --from <step> [--prompt <text>]（実行再開）の 2 段呼び出し。
+#           --reason は job reopen へ、--from / --prompt は job resume へ渡る。
+#           canon の operator 修正が必要な場合は、operator が feature
 #           branch へ operator-apply commit を直接 push してから reopen する（dirty のまま
 #           置くと step 境界の write-scope 検査に誤帰属される — 実測: run 32569597460）。
 #           PR が OPEN であること・status が awaiting-archive であることは CLI の reopen
-#           gate が検証する。reopen は --apply-canon / --prompt を受けない（CLI 契約）ため
-#           prompt は透過しない。
+#           gate が検証する。
 # - archive: 完走した job を issue 番号から取り込む。1 回の実行で完結する。
 #            completed marker → archive record を feature branch に commit / push し、
 #            push 成功後に local cleanup を行って awaiting-archive → archived へ遷移する。
