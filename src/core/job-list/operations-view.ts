@@ -74,7 +74,7 @@ const CATEGORY_META: CategoryMeta[] = [
   },
   {
     id: "awaiting-archive",
-    label: "merge・archive 待ち",
+    label: "archive・merge 待ち",
     statuses: new Set<JobStatus>(["awaiting-archive"]),
   },
   {
@@ -201,12 +201,11 @@ export function deriveEscalationSourceStep(state: JobState): string | null {
  * Compute the recommended next CLI action for a job row.
  *
  * Returns a command string or null when no action is recommended.
- * Mapping (design.md D4):
+ * Mapping (design.md D4, updated for single-phase archive):
  *   running + not stale   → null
  *   running + stale       → "job resume <slug>"
  *   awaiting-resume       → "job resume <slug>"
- *   awaiting-archive + prMerged===true  → "job archive <slug>"
- *   awaiting-archive + other            → null
+ *   awaiting-archive      → "job archive <slug>" (unconditional — archive before or after merge)
  *   failed                → "job resume <slug>"
  *   terminated            → "job resume <slug>"
  *   archived              → null
@@ -218,14 +217,14 @@ export function deriveNextAction(input: {
   prMerged: boolean | null;
   slug: string;
 }): string | null {
-  const { status, isStale, prMerged, slug } = input;
+  const { status, isStale, slug } = input;
   switch (status) {
     case "running":
       return isStale ? `job resume ${slug}` : null;
     case "awaiting-resume":
       return `job resume ${slug}`;
     case "awaiting-archive":
-      return prMerged === true ? `job archive ${slug}` : null;
+      return `job archive ${slug}`;
     case "failed":
       return `job resume ${slug}`;
     case "terminated":

@@ -40,8 +40,8 @@ vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
   markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
-  runPostMergeCleanup: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../../../src/core/archive/cleanup.js", () => ({
+  runArchiveCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
@@ -330,8 +330,8 @@ describe("TC-001: custom verification.commands 環境で biteEvidence required f
         headSha: ARCHIVE_HEAD_SHA,
       });
 
-      const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-      (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+      (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       const client = makeGitHubClient({
         // PR touches a protected path
@@ -368,7 +368,7 @@ describe("TC-001: custom verification.commands 環境で biteEvidence required f
       // TC-001: anti-regression — runTestsAtCommit unavailable must not authorize merge.
       expect(result.exitCode).toBe(1);
       expect(client.mergePullRequest).not.toHaveBeenCalled();
-      expect(runPostMergeCleanup).not.toHaveBeenCalled();
+      expect(runArchiveCleanup).not.toHaveBeenCalled();
     },
   );
 });
@@ -392,8 +392,8 @@ describe("TC-003: 全 base-red かつ凍結 intact の job が floor を満た�
         headSha: ARCHIVE_HEAD_SHA,
       });
 
-      const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-      (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+      (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       const client = makeGitHubClient({
         listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -456,8 +456,8 @@ describe("TC-004: HEAD が全 green でない場合に fail-closed になる（H
         headSha: ARCHIVE_HEAD_SHA,
       });
 
-      const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-      (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+      (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       const client = makeGitHubClient({
         listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -515,8 +515,8 @@ describe("TC-005: baseOid で green の test（空洞）が base-red 要件を�
         headSha: ARCHIVE_HEAD_SHA,
       });
 
-      const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-      (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+      const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+      (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
       const client = makeGitHubClient({
         listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -568,8 +568,8 @@ describe("TC-005b: base test results が空 / 部分的なら base-red を満た
     ]);
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_HEAD_SHA });
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({ files: ["architecture/core/design.md"], truncated: false }),
     });
@@ -596,8 +596,8 @@ describe("TC-005b: base test results が空 / 部分的なら base-red を満た
     ]);
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_HEAD_SHA });
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({ files: ["architecture/core/design.md"], truncated: false }),
     });
@@ -641,8 +641,8 @@ describe("TC-006: 最終 HEAD OID undefined で constrained floor に対し fail
       headSha: undefined,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -695,8 +695,8 @@ describe("TC-007: synthesizedCommits 空で constrained floor に対し fail-clo
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -744,8 +744,8 @@ describe("TC-008: listChangedFilesBetweenCommits unavailable で constrained flo
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -795,8 +795,8 @@ describe("TC-009: HEAD runTestsAtCommit unavailable で constrained floor に対
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -846,8 +846,8 @@ describe("TC-010: runTestsOnSynthesizedTree unavailable で constrained floor �
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -895,8 +895,8 @@ describe("TC-011: materialized test 0 件で constrained floor に対し fail-cl
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       listPullRequestFiles: vi.fn().mockResolvedValue({
@@ -949,8 +949,8 @@ describe("TC-019 (provenance subset): floor gate is no-op for non-matching paths
       headSha: ARCHIVE_HEAD_SHA,
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // PR only touches non-protected paths → floor gate is not activated

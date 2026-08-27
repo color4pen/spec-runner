@@ -44,8 +44,8 @@ vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
   markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
-  runPostMergeCleanup: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../../../src/core/archive/cleanup.js", () => ({
+  runArchiveCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
@@ -156,7 +156,7 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("TC-014: PR が既に MERGED かつ archive 記録済み（archive/ 配下）は cleanup のみ実行（crash resume）", () => {
-  it("記帳(runArchiveOrchestrator)と mergePullRequest を呼ばず、runPostMergeCleanup を呼ぶ", async () => {
+  it("記帳(runArchiveOrchestrator)と mergePullRequest を呼ばず、runArchiveCleanup を呼ぶ", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     // archive-recorded: change folder is in archive/ dir (archiveRecorded = true).
     // This is the crash-resume path: archive rode the PR before it merged.
@@ -165,8 +165,8 @@ describe("TC-014: PR が既に MERGED かつ archive 記録済み（archive/ 配
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -194,7 +194,7 @@ describe("TC-014: PR が既に MERGED かつ archive 記録済み（archive/ 配
     expect(result).toMatchObject({ exitCode: 0 });
     expect(runArchiveOrchestrator).not.toHaveBeenCalled();
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -211,8 +211,8 @@ describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが archive 未記録（
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -243,7 +243,7 @@ describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが archive 未記録（
     // No recording, no merge, no cleanup — order error, nothing to salvage automatically.
     expect(runArchiveOrchestrator).not.toHaveBeenCalled();
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -252,15 +252,15 @@ describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが archive 未記録（
 // ---------------------------------------------------------------------------
 
 describe("TC-MTA-001: all checks success → merge → cleanup", () => {
-  it("getCheckStatus success → merge → runPostMergeCleanup", async () => {
+  it("getCheckStatus success → merge → runArchiveCleanup", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -292,7 +292,7 @@ describe("TC-MTA-001: all checks success → merge → cleanup", () => {
     expect(result).toMatchObject({ exitCode: 0 });
     expect(runArchiveOrchestrator).toHaveBeenCalled();
     expect(client.mergePullRequest).toHaveBeenCalledWith("user", "repo", 42, { mergeMethod: "squash" });
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
     expect(sleepFn).not.toHaveBeenCalled();
   });
 });
@@ -309,8 +309,8 @@ describe("TC-MTA-002: check state 'none' → grace 後に merge → cleanup", ()
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -348,7 +348,7 @@ describe("TC-MTA-002: check state 'none' → grace 後に merge → cleanup", ()
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
     // 初回 none で即 merge せず、少なくとも 1 回 sleep していること
     expect(sleepFn).toHaveBeenCalledTimes(1);
   });
@@ -366,8 +366,8 @@ describe("TC-MTA-003: check pending → success → merge → cleanup", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -406,7 +406,7 @@ describe("TC-MTA-003: check pending → success → merge → cleanup", () => {
     expect(result).toMatchObject({ exitCode: 0 });
     expect(sleepFn).toHaveBeenCalledWith(5_000);
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -422,8 +422,8 @@ describe("TC-MTA-004: check failure → escalation", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -454,7 +454,7 @@ describe("TC-MTA-004: check failure → escalation", () => {
       expect(result.escalation).toContain("ci/test");
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
     // archive recording still happened
     expect(runArchiveOrchestrator).toHaveBeenCalled();
   });
@@ -472,8 +472,8 @@ describe("TC-MTA-005: pending timeout → escalation", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -514,7 +514,7 @@ describe("TC-MTA-005: pending timeout → escalation", () => {
       expect(result.escalation).toContain("Timed out");
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -530,8 +530,8 @@ describe("TC-MTA-006: DIRTY → conflict escalation", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -561,7 +561,7 @@ describe("TC-MTA-006: DIRTY → conflict escalation", () => {
       expect(result.escalation).toMatch(/conflict/i);
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -577,8 +577,8 @@ describe("TC-MTA-007: mergeable CONFLICTING → escalation", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -605,7 +605,7 @@ describe("TC-MTA-007: mergeable CONFLICTING → escalation", () => {
 
     expect(result.exitCode).toBe(1);
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -622,8 +622,8 @@ describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -671,7 +671,7 @@ describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection 
     // Escalation fires after check polling (getCheckStatus must have been called)
     expect(client.getCheckStatus).toHaveBeenCalled();
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -687,8 +687,8 @@ describe("TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED+pending does not escalate; 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn()
@@ -743,7 +743,7 @@ describe("TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED+pending does not escalate; 
     // No escalation during pending poll
     expect(sleepFn).toHaveBeenCalledTimes(1);
     expect(client.mergePullRequest).toHaveBeenCalledWith("user", "repo", 42, { mergeMethod: "squash" });
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -759,8 +759,8 @@ describe("TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + no checks after gr
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -800,7 +800,7 @@ describe("TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + no checks after gr
       expect(result.escalation).toMatch(/branch protection/i);
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -816,8 +816,8 @@ describe("TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN with green checks proc
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -846,7 +846,7 @@ describe("TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN with green checks proc
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
     // No extra getPullRequest call for a mergeable gate (Step 5 gone)
     // Initial (Step 2) + wait loop iter 1 = 2 calls
     expect(client.getPullRequest).toHaveBeenCalledTimes(2);
@@ -865,8 +865,8 @@ describe("TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest conflict message → squa
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -896,7 +896,7 @@ describe("TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest conflict message → squa
     if (result.exitCode === 1) {
       expect(result.escalation).toContain("squash merge (conflict)");
     }
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -912,8 +912,8 @@ describe("TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed message → s
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -946,7 +946,7 @@ describe("TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed message → s
     if (result.exitCode === 1) {
       expect(result.escalation).toContain("squash merge (required checks failed)");
     }
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -962,8 +962,8 @@ describe("TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified message → gen
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -997,7 +997,7 @@ describe("TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified message → gen
       expect(result.escalation).toContain("squash merge (REST API)");
       expect(result.escalation).toContain(`specrunner job archive --with-merge ${SLUG}`);
     }
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1013,8 +1013,8 @@ describe("TC-MTA-009: headSha missing → escalation", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1044,7 +1044,7 @@ describe("TC-MTA-009: headSha missing → escalation", () => {
       expect(result.escalation).toContain("head SHA missing");
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1060,8 +1060,8 @@ describe("TC-MTA-010: waitTimeoutMs null → unlimited wait", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1102,7 +1102,7 @@ describe("TC-MTA-010: waitTimeoutMs null → unlimited wait", () => {
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -1118,8 +1118,8 @@ describe("TC-MTA-011: none → pending → success (grace 内に check 出現)",
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1158,7 +1158,7 @@ describe("TC-MTA-011: none → pending → success (grace 内に check 出現)",
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
     expect(sleepFn).toHaveBeenCalledTimes(2);
     expect(sleepFn).toHaveBeenCalledWith(5_000);
   });
@@ -1176,8 +1176,8 @@ describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure es
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1217,7 +1217,7 @@ describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure es
       expect(result.escalation).toContain("ci/test");
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
     expect(sleepFn).toHaveBeenCalledTimes(1);
   });
 });
@@ -1234,8 +1234,8 @@ describe("TC-MTA-013: waitTimeoutMs null + 常に none → grace 後に merge（
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1272,7 +1272,7 @@ describe("TC-MTA-013: waitTimeoutMs null + 常に none → grace 後に merge（
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
     expect(sleepFn).toHaveBeenCalledTimes(1);
   });
 });
@@ -1292,8 +1292,8 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     // getPullRequest responses:
     //   1: initial check (Step 2) → OPEN, old sha
@@ -1345,7 +1345,7 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
 
     // getCheckStatus only called once (when headSha matched archiveSha)
     expect(client.getCheckStatus).toHaveBeenCalledTimes(1);
@@ -1417,8 +1417,8 @@ describe("TC-MTA-CLEANUP-ONLY-MERGED: wait loop 中に MERGED → cleanup のみ
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn()
@@ -1456,7 +1456,7 @@ describe("TC-MTA-CLEANUP-ONLY-MERGED: wait loop 中に MERGED → cleanup のみ
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -1472,8 +1472,8 @@ describe("TC-MTA-CLEANUP-POST-MERGE: merge 成功後にのみ cleanup が呼ば�
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1500,7 +1500,7 @@ describe("TC-MTA-CLEANUP-POST-MERGE: merge 成功後にのみ cleanup が呼ば�
     });
 
     expect(result.exitCode).toBe(1);
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1509,10 +1509,10 @@ describe("TC-MTA-CLEANUP-POST-MERGE: merge 成功後にのみ cleanup が呼ば�
 // ---------------------------------------------------------------------------
 
 describe("TC-MTA-STATUS-NO-WRITE: post-merge cleanup は job status を書き換えない", () => {
-  it("runPostMergeCleanup は markJobArchived を呼ばない", async () => {
-    // This test verifies the post-merge-cleanup function itself
+  it("runArchiveCleanup は markJobArchived を呼ばない", async () => {
+    // This test verifies the archive-cleanup function itself
     // (not via merge-then-archive but directly)
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
 
     // The cleanup function does NOT import markJobArchived (no status writes).
     // We verify by checking that writeFile was not called.
@@ -1530,7 +1530,7 @@ describe("TC-MTA-STATUS-NO-WRITE: post-merge cleanup は job status を書き換
 
     // Should not throw; cleanup is best-effort
     await expect(
-      runPostMergeCleanup({
+      runArchiveCleanup({
         slug: SLUG,
         cwd: CWD,
         branch: null,
@@ -1559,8 +1559,8 @@ describe("TC-PPG-001: protected-path match → escalation, merge/cleanup not cal
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1596,7 +1596,7 @@ describe("TC-PPG-001: protected-path match → escalation, merge/cleanup not cal
       expect(result.escalation).toMatch(/merge.*by hand|manually merge|squash-merge/i);
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1612,8 +1612,8 @@ describe("TC-PPG-002: truncated file list + non-empty patterns → escalation", 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1648,7 +1648,7 @@ describe("TC-PPG-002: truncated file list + non-empty patterns → escalation", 
       expect(result.escalation).toMatch(/truncated|3000/i);
     }
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1664,8 +1664,8 @@ describe("TC-PPG-003: no protected-path match → merge proceeds normally", () =
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1699,7 +1699,7 @@ describe("TC-PPG-003: no protected-path match → merge proceeds normally", () =
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -1715,8 +1715,8 @@ describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles no
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1754,8 +1754,8 @@ describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles no
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1870,8 +1870,8 @@ describe("TC-MTA-E03: mergePullRequest throws → exitCode 1 escalation", () => 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1904,7 +1904,7 @@ describe("TC-MTA-E03: mergePullRequest throws → exitCode 1 escalation", () => 
     if (result.exitCode === 1) {
       expect(result.escalation).toContain("squash merge (REST API)");
     }
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1920,8 +1920,8 @@ describe("TC-MTA-E04: mergePullRequest returns merged: false → exitCode 1 esca
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -1954,7 +1954,7 @@ describe("TC-MTA-E04: mergePullRequest returns merged: false → exitCode 1 esca
     if (result.exitCode === 1) {
       expect(result.escalation).toContain("squash merge (REST API)");
     }
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -1971,8 +1971,8 @@ describe("TC-PPG-005: already-MERGED PR and archive-recorded → protected-path 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -2000,7 +2000,7 @@ describe("TC-PPG-005: already-MERGED PR and archive-recorded → protected-path 
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.listPullRequestFiles).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -2009,7 +2009,7 @@ describe("TC-PPG-005: already-MERGED PR and archive-recorded → protected-path 
 // ---------------------------------------------------------------------------
 
 describe("TC-MTA-WORKTREE-FALLBACK: resolveWorktreePathForArchive フォールバックが cleanup に伝播する", () => {
-  it("state.worktreePath=null でも resolveWorktreePathForArchive が解決したパスが runPostMergeCleanup に渡る", async () => {
+  it("state.worktreePath=null でも resolveWorktreePathForArchive が解決したパスが runArchiveCleanup に渡る", async () => {
     const RESOLVED_PATH = "/resolved/path/my-slug-abc12345";
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
@@ -2023,8 +2023,8 @@ describe("TC-MTA-WORKTREE-FALLBACK: resolveWorktreePathForArchive フォール�
     // Simulate sidecar / convention-path fallback returning a resolved path
     (resolveWorktreePathForArchive as ReturnType<typeof vi.fn>).mockResolvedValue(RESOLVED_PATH);
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getPullRequest: vi.fn().mockResolvedValue({
@@ -2053,7 +2053,7 @@ describe("TC-MTA-WORKTREE-FALLBACK: resolveWorktreePathForArchive フォール�
 
     expect(result).toMatchObject({ exitCode: 0 });
     // resolveWorktreePathForArchive フォールバック解決の結果が cleanup に渡ること
-    expect(runPostMergeCleanup).toHaveBeenCalledWith(
+    expect(runArchiveCleanup).toHaveBeenCalledWith(
       expect.objectContaining({ worktreePath: RESOLVED_PATH }),
       expect.any(Function),
     );

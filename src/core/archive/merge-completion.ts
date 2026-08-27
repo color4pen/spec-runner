@@ -1,14 +1,18 @@
 /**
- * Shared post-merge completion helpers for archive operations.
+ * Post-merge completion helpers for `job archive --with-merge`.
  *
- * Extracted so both runMergeThenArchive (--with-merge) and runPlainArchive (plain)
- * can reuse the same "mark archived then cleanup" and "merged-before-record escalation" logic.
+ * This module is ONLY used by `merge-then-archive.ts` (the `--with-merge` path).
+ * Plain archive (`plain-archive.ts`) does NOT import from this module.
+ *
+ * Provides:
+ * - `completeAfterMerge`: mark archived + run cleanup after a successful PR merge.
+ * - `mergedBeforeRecordEscalation`: escalation for when PR merged before archive was recorded.
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import { markJobArchived } from "../finish/job-state-update.js";
-import { runPostMergeCleanup } from "./post-merge-cleanup.js";
+import { runArchiveCleanup } from "./cleanup.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { ArchiveResult } from "./orchestrator.js";
@@ -31,10 +35,15 @@ export interface CompleteAfterMergeInput {
 /**
  * Best-effort post-merge status transition + cleanup.
  *
+ * Called only from `merge-then-archive.ts` (the `--with-merge` path).
+ * Not called from `plain-archive.ts`.
+ *
  * 1. Calls `markJobArchived(slug, recordDir)` (awaiting-archive → archived).
  *    Failures emit a warning via stderrWrite and do NOT abort — the merge is
  *    already done and cleanup must proceed regardless.
- * 2. Calls `runPostMergeCleanup` unconditionally (worktree teardown + branch delete).
+ * 2. Calls `runArchiveCleanup` unconditionally (worktree teardown + branch delete).
+ *    Remote branch is deleted (`deleteRemoteBranch` defaults to `true`) because
+ *    the PR has already been merged by the time this function runs.
  */
 export async function completeAfterMerge(
   input: CompleteAfterMergeInput,
@@ -50,7 +59,7 @@ export async function completeAfterMerge(
     stderrWrite(`Warning: failed to transition ${slug} to archived: ${message}. Continuing cleanup.`);
   }
 
-  await runPostMergeCleanup(
+  await runArchiveCleanup(
     { slug, cwd, branch, worktreePath, noWorktree, baseBranch, spawn, fs, worktreeManagerFn },
     stdoutWrite,
   );
@@ -59,9 +68,8 @@ export async function completeAfterMerge(
 /**
  * Build the escalation result for when a PR was merged before the archive record was created.
  *
- * The `resumeCommand` is injected by the caller so it can differ between:
- * - plain archive: `specrunner job archive <slug>`
- * - --with-merge: `specrunner job archive --with-merge <slug>`
+ * Only called from `merge-then-archive.ts` (the `--with-merge` path).
+ * The `resumeCommand` is injected by the caller.
  */
 export function mergedBeforeRecordEscalation({
   slug,

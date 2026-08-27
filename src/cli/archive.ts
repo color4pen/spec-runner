@@ -244,20 +244,16 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         logResult,
       );
     } else {
-      // No --with-merge: build GitHub client best-effort for merge-state detection.
+      // No --with-merge: resolve token and design layer (best-effort).
+      // Plain archive does NOT query GitHub PR state — no GitHub API client needed.
       let archiveToken: string | undefined;
       let designLayerNoMerge: ResolvedDesignLayer = disabledDesignLayer;
-      let plainGithubClient: import("../core/port/github-client.js").GitHubClient | undefined;
-      let plainOwner: string | undefined;
-      let plainRepo: string | undefined;
 
       try {
         let githubHost = "github.com";
-        let githubApiBaseUrl = "https://api.github.com";
         try {
           const config = await loadConfig();
           githubHost = resolveGitHubHost(config.github);
-          githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
           designLayerNoMerge = resolveDesignLayerConfig(config);
         } catch {
           // Config not available — use default host / disabled design layer
@@ -265,18 +261,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
 
         const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
         archiveToken = resolved.token;
-
-        try {
-          const originInfo = await getOriginInfo(opts.cwd, githubHost);
-          plainOwner = originInfo.owner;
-          plainRepo = originInfo.name;
-        } catch {
-          // Origin not resolvable — proceed without client (no merge-state check)
-        }
-
-        if (archiveToken && plainOwner && plainRepo) {
-          plainGithubClient = createGitHubClient(fetch, archiveToken, githubApiBaseUrl);
-        }
       } catch {
         // Token not required for non-merge path — best-effort
       }
@@ -290,9 +274,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           baseBranch,
           githubToken: archiveToken,
           designLayer: designLayerNoMerge,
-          githubClient: plainGithubClient,
-          owner: plainOwner,
-          repo: plainRepo,
         },
         logResult,
       );

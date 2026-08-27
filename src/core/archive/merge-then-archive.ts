@@ -19,7 +19,7 @@
  *    - check pending → wait (sleepFn), check deadline, repeat
  *    - timeout → escalation (no merge, no cleanup)
  * 6. squash merge via mergePullRequest (final mergeability decided by merge endpoint)
- * 7. merge success → runPostMergeCleanup → done
+ * 7. merge success → runArchiveCleanup (via completeAfterMerge) → done
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";

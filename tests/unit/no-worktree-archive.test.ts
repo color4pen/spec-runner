@@ -2,7 +2,7 @@
  * Archive orchestrator tests for --no-worktree mode.
  *
  * TC-NW-012: state.noWorktree=true → worktree remove/prune NOT called; branch delete NOT called
- *            (cleanup moved to runPostMergeCleanup; orchestrator only records on feature branch)
+ *            (cleanup handled by runArchiveCleanup; orchestrator only records on feature branch)
  * TC-NW-013: normal worktree job → remove/prune also NOT called in orchestrator (moved to cleanup)
  */
 
@@ -244,7 +244,7 @@ describe("TC-NW-013: archive — worktree job: remove/prune NOT called in orches
     });
 
     expect(result.exitCode).toBe(0);
-    // Cleanup (remove + prune) moved to runPostMergeCleanup — NOT called by orchestrator
+    // Cleanup (remove + prune) handled by runArchiveCleanup — NOT called by orchestrator
     expect(mockManager.remove).not.toHaveBeenCalled();
     expect(mockManager.prune).not.toHaveBeenCalled();
   });

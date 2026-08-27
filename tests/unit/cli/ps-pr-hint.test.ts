@@ -103,14 +103,14 @@ describe("TC-24: prMerged=false → normal display without PR merged hint", () =
     expect(output).not.toContain("(PR merged)");
   });
 
-  it("NEXT is '-' when PR not merged", () => {
+  it("NEXT is 'job archive test-slug' even when PR not merged (single-phase: archive before merge)", () => {
     const view = buildView(false);
     const output = formatOperationsViewHuman(view, { isTty: false });
     // In non-TTY: JOB_ID\tSLUG\tSTEP\tSTATUS\tNEXT\tAGE
     const dataLine = output.split("\n").find((l) => l.includes("\t") && !l.startsWith("JOB_ID") && !l.startsWith("["));
     expect(dataLine).toBeDefined();
     const fields = (dataLine ?? "").split("\t");
-    expect(fields[4]).toBe("-"); // NEXT column
+    expect(fields[4]).toBe("job archive test-slug"); // NEXT column — archive unconditionally
   });
 });
 

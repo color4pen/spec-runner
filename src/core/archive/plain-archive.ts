@@ -1,31 +1,36 @@
 /**
  * Plain archive path for `job archive <slug>` (without --with-merge).
  *
- * Behavior:
- * - Checks PR merge status (if GitHub client is available).
- *   - PR MERGED + archiveRecorded → completeAfterMerge (transition + cleanup) → done
- *   - PR MERGED + !archiveRecorded → escalation (order error)
- *   - PR OPEN/CLOSED/UNKNOWN or not checkable → fall through to record
- * - Records archive commit on feature branch (idempotent via orchestrator).
- * - After record:
- *   - prNumber present → stay in awaiting-archive; guidance printed for re-run post-merge
- *   - prNumber absent → markJobArchived immediately (no PR to wait for)
+ * Single-phase operation — completes in one run:
+ *   record (mv + commit + push) → archived transition → cleanup
+ *
+ * Two execution paths:
+ *   Path A (normal): archiveChangeFolder is not yet done, OR working tree is usable.
+ *     runArchiveOrchestrator → markJobArchived → runArchiveCleanup(deleteRemoteBranch:false) → exit 0
+ *
+ *   Path B (degraded): archiveRecorded=true AND working tree is unusable.
+ *     (Leftover 2-phase job whose worktree or local branch is gone.)
+ *     Best-effort markJobArchived → runArchiveCleanup(deleteRemoteBranch:false) → exit 0
  *
  * Design invariants:
- * - Does NOT call getCheckStatus / mergePullRequest (CI non-observation).
- * - Does NOT call runPostMergeCleanup except via completeAfterMerge on MERGED detection.
- * - GitHubClient is optional — if absent, skip merge-state check and record directly.
+ * - Does NOT query GitHub PR state. No GitHub API client used.
+ * - deleteRemoteBranch is always false — remote branch preserved for the still-open PR.
+ * - markJobArchived is called BEFORE runArchiveCleanup (worktree may contain state.json).
+ * - Push is skipped only when the remote feature branch no longer exists (already
+ *   merged + deleted leftover). Any push failure while the remote branch exists (or
+ *   ls-remote fails) → escalation (exit 1), no transition, no cleanup — the record
+ *   commit may exist only locally and must reach the remote before archived.
+ * - Transition failure → escalation (exit 1), no cleanup.
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import type { GitHubClient } from "../port/github-client.js";
 import type { ResolvedDesignLayer } from "../../config/schema.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { runArchiveOrchestrator } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { resolveArchiveJobContext } from "./job-context.js";
-import { completeAfterMerge, mergedBeforeRecordEscalation } from "./merge-completion.js";
+import { runArchiveCleanup } from "./cleanup.js";
 import { markJobArchived } from "../finish/job-state-update.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
@@ -43,17 +48,6 @@ export interface PlainArchiveInput {
   githubToken?: string;
   /** Resolved design-layer config for the mark-implemented hook. */
   designLayer?: ResolvedDesignLayer;
-  /**
-   * Optional GitHub client for merge-state detection.
-   * When absent (or when owner/repo are absent), the merge-state check is skipped
-   * and archive recording proceeds directly. Token/client unavailability is not
-   * an escalation — it is a best-effort check.
-   */
-  githubClient?: GitHubClient;
-  /** GitHub repo owner. Required alongside githubClient for merge-state check. */
-  owner?: string;
-  /** GitHub repo name. Required alongside githubClient for merge-state check. */
-  repo?: string;
   /** Injectable WorktreeManager for testing. */
   worktreeManagerFn?: () => WorktreeManager;
 }
@@ -66,19 +60,7 @@ export async function runPlainArchive(
   input: PlainArchiveInput,
   stdoutWrite: (msg: string) => void = logResult,
 ): Promise<ArchiveResult> {
-  const {
-    slug,
-    cwd,
-    spawn,
-    fs,
-    baseBranch,
-    githubToken,
-    designLayer,
-    githubClient,
-    owner,
-    repo,
-    worktreeManagerFn,
-  } = input;
+  const { slug, cwd, spawn, fs, baseBranch, githubToken, designLayer, worktreeManagerFn } = input;
   const resolvedBaseBranch = baseBranch ?? "main";
 
   // ---------------------------------------------------------------------------
@@ -107,59 +89,96 @@ export async function runPlainArchive(
   }
 
   // ---------------------------------------------------------------------------
-  // Step 3: Merge-state detection (only when GitHub client + PR context available).
+  // Step 3: Detect Path B — archiveRecorded=true AND working tree unusable.
+  //
+  // Path B: skip the orchestrator; best-effort markJobArchived + cleanup.
+  // Applies when:
+  //   - worktree mode (noWorktree=false) AND worktree dir is absent from disk
+  //   - no-worktree mode (noWorktree=true) AND local feature branch does not exist
   // ---------------------------------------------------------------------------
-  if (githubClient && owner && repo && prNumber !== undefined) {
-    let prData: { state: string };
-    try {
-      prData = await githubClient.getPullRequest(owner, repo, prNumber);
-    } catch (err: unknown) {
-      const detail = err instanceof Error ? err.message : String(err);
-      stderrWrite(
-        `Warning: could not check PR #${prNumber} merge state (${detail}). ` +
-        `Terminal transition will not be performed until merge is confirmed. Proceeding with archive record.`,
-      );
-      // Fall through to recording (best-effort: merge state unknown → treat as not merged)
-      prData = { state: "UNKNOWN" };
-    }
+  let isPathB = false;
 
-    if (prData.state === "MERGED") {
-      if (archiveRecorded) {
-        // Out-of-band merge detected after archive record → complete transition + cleanup.
-        stdoutWrite(
-          `PR #${prNumber} is already merged and archive record exists. Running post-merge cleanup...`,
+  if (archiveRecorded) {
+    if (noWorktree) {
+      // No-worktree mode: check if the local feature branch exists
+      if (branch) {
+        const verifyResult = await spawn(
+          "git",
+          ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}`],
+          { cwd },
         );
-        await completeAfterMerge(
-          {
-            slug,
-            recordDir,
-            cwd,
-            branch,
-            worktreePath,
-            noWorktree,
-            baseBranch: resolvedBaseBranch,
-            spawn,
-            fs,
-            worktreeManagerFn,
-          },
-          stdoutWrite,
-        );
-        return { exitCode: 0 };
+        if (verifyResult.exitCode !== 0) {
+          isPathB = true;
+        }
+      } else {
+        // No branch info at all → recording impossible
+        isPathB = true;
       }
-      // PR merged before archive was recorded → order error escalation.
-      return mergedBeforeRecordEscalation({
-        slug,
-        prNumber,
-        baseBranch: resolvedBaseBranch,
-        resumeCommand: `specrunner job archive ${slug}`,
-      });
+    } else {
+      // Worktree mode: check if the worktree directory exists on disk
+      if (!worktreePath || !(await fs.exists(worktreePath))) {
+        isPathB = true;
+      }
     }
-    // OPEN / CLOSED / UNKNOWN → fall through to record.
   }
 
   // ---------------------------------------------------------------------------
-  // Step 4: Record archive commit on feature branch (idempotent).
+  // Step 4: Execute the chosen path.
   // ---------------------------------------------------------------------------
+
+  if (isPathB) {
+    // -------------------------------------------------------------------------
+    // Path B: best-effort transition + cleanup (no archive recording)
+    //
+    // assertJobFinishable is intentionally omitted here.
+    // Design D5 Path B semantics: the archive record already exists on the remote
+    // branch; the only remaining work is to transition the job state and clean up.
+    // This path is best-effort by design — if markJobArchived throws (e.g. because
+    // the internal transitionJob validation rejects the transition), the error is
+    // caught and surfaced as a warning so that cleanup can still proceed.
+    // Calling assertJobFinishable before markJobArchived would introduce an
+    // unnecessary hard failure for a path whose contract is "warn on error,
+    // always run cleanup".
+    // -------------------------------------------------------------------------
+    stdoutWrite(`Archive record already exists; working tree unavailable. Running best-effort transition...`);
+
+    // Best-effort transition — failure is a warning, not an escalation
+    try {
+      await markJobArchived(slug, cwd);
+      stdoutWrite(`Job '${slug}' transitioned to archived.`);
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      stderrWrite(
+        `Warning: could not transition job '${slug}' to archived: ${detail}. ` +
+        `The job may still show as awaiting-archive. Run 'specrunner ps' to verify.`,
+      );
+    }
+
+    // Cleanup — runs regardless of transition outcome (best-effort overall)
+    await runArchiveCleanup(
+      {
+        slug,
+        cwd,
+        branch,
+        worktreePath,
+        noWorktree,
+        baseBranch: resolvedBaseBranch,
+        spawn,
+        fs,
+        worktreeManagerFn,
+        deleteRemoteBranch: false,
+      },
+      stdoutWrite,
+    );
+
+    return { exitCode: 0 };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Path A: record → transition → cleanup
+  // ---------------------------------------------------------------------------
+
+  // Step 4A: Record archive commit on feature branch (idempotent via orchestrator)
   const archiveResult = await runArchiveOrchestrator(
     {
       slug,
@@ -169,36 +188,21 @@ export async function runPlainArchive(
       baseBranch: resolvedBaseBranch,
       githubToken,
       designLayer,
-      deferArchivedTransition: true,
     },
     stdoutWrite,
   );
 
   if (archiveResult.exitCode !== 0) {
+    // Push / mv / commit failure → escalation, no transition, no cleanup
     return archiveResult;
   }
 
   const headSha = (archiveResult as { exitCode: 0; headSha?: string }).headSha;
 
-  // ---------------------------------------------------------------------------
-  // Step 5: Post-record handling.
-  // ---------------------------------------------------------------------------
-  if (prNumber !== undefined) {
-    // PR present but not yet merged → stay in awaiting-archive, print guidance.
-    stdoutWrite(
-      `Archive record pushed to feature branch. ` +
-      `Job '${slug}' remains in awaiting-archive until PR #${prNumber} is merged. ` +
-      `After the PR is merged, re-run: specrunner job archive ${slug}`,
-    );
-    return { exitCode: 0, headSha };
-  }
-
-  // No PR → terminal transition immediately (no merge boundary to wait for).
+  // Step 5A: Transition job to archived (must happen BEFORE cleanup — TC-039)
   try {
     await markJobArchived(slug, recordDir);
-    stdoutWrite(
-      `Job ${slug} marked as archived. (No PR — terminal transition applied at record time.)`,
-    );
+    stdoutWrite(`Job '${slug}' transitioned to archived.`);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return {
@@ -210,6 +214,31 @@ export async function runPlainArchive(
         resumeCommand: `specrunner job archive ${slug}`,
       }),
     };
+  }
+
+  // Step 6A: Cleanup — remote branch preserved (PR still open)
+  await runArchiveCleanup(
+    {
+      slug,
+      cwd,
+      branch,
+      worktreePath,
+      noWorktree,
+      baseBranch: resolvedBaseBranch,
+      spawn,
+      fs,
+      worktreeManagerFn,
+      deleteRemoteBranch: false,
+    },
+    stdoutWrite,
+  );
+
+  // Step 7A: Advisory — tell operator to merge the PR on GitHub
+  if (prNumber !== undefined) {
+    stdoutWrite(
+      `Archive complete. Next: merge PR #${prNumber} on GitHub. ` +
+      `Note: if the PR is already merged or closed, the archive commit will not reach the base branch automatically.`,
+    );
   }
 
   return { exitCode: 0, headSha };

@@ -27,12 +27,12 @@ run-name: "${{ inputs.action }} #${{ inputs.issue }}"
 #           PR が OPEN であること・status が awaiting-archive であることは CLI の reopen
 #           gate が検証する。reopen は --apply-canon / --prompt を受けない（CLI 契約）ため
 #           prompt は透過しない。
-# - archive: 完走した job を issue 番号から取り込む。2 相の実行を前提とする。
-#            1 回目（merge 前）: completed marker → archive record を feature branch に push し
-#            awaiting-archive を維持する。
-#            2 回目（merge 後・head branch 削除済み）: checkout 済み base の archive record から
-#            slug を解決し completeAfterMerge を実行して exit 0 で終わる。
-#            相の判定と完了処理はすべて CLI 側（runPlainArchive）にあり、workflow は状態を見ない。
+# - archive: 完走した job を issue 番号から取り込む。1 回の実行で完結する。
+#            completed marker → archive record を feature branch に commit / push し、
+#            push 成功後に local cleanup を行って awaiting-archive → archived へ遷移する。
+#            PR merge は GitHub UI に委譲される独立した操作で、workflow は merge を
+#            待たない・検出しない。完了処理はすべて CLI 側（runPlainArchive）にあり、
+#            workflow は状態を見ない。
 #
 # 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
 

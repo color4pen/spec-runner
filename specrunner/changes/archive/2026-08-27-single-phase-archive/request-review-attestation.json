@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:23acf66d7ecc1ff9545a436d2ace9fe698ec6376fb1d391db98aa00b9f9bba7c",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/plain-archive.ts: exists; L186-194 implements 2-phase contract (PR present → stay awaiting-archive, print re-run guidance)",
+    "src/core/archive/plain-archive.ts: L11 comment 'prNumber present → stay in awaiting-archive; guidance printed for re-run post-merge'",
+    "src/core/archive/plain-archive.ts: imports completeAfterMerge from ./merge-completion.js (L28)",
+    "src/core/archive/merge-completion.ts: exists; exports completeAfterMerge() and mergedBeforeRecordEscalation()",
+    ".github/workflows/specrunner-dispatch.yml: exists; L33-36 contains '2 相の実行を前提とする' and two-phase archive guidance comment"
+  ],
+  "sourceRevision": "a41a9660648bbba527ade4e070cfee3da5c4fcb4"
+}

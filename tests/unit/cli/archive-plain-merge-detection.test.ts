@@ -1,11 +1,10 @@
 /**
  * Unit tests for CLI wiring: runArchive (withMerge:false) → runPlainArchive.
- * Verifies that token / origin resolution feeds githubClient to runPlainArchive,
- * and that failures in token/origin are non-fatal.
+ * Single-phase archive: plain archive does NOT receive githubClient / owner / repo.
  *
  * TC-027: withMerge:false → runPlainArchive called, runMergeThenArchive NOT called
- * TC-028: GitHub token resolution fails → runPlainArchive called with githubClient: undefined, exit 0
- * TC-029: token + origin succeed → githubClient / owner / repo passed to runPlainArchive
+ * TC-028: GitHub token resolution fails → runPlainArchive still called (token is optional), exit 0
+ * TC-029: plain archive call does NOT receive githubClient / owner / repo (TC-027/TC-028 from new spec)
  * TC-030: withMerge:true → runMergeThenArchive called, runPlainArchive NOT called
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -95,7 +94,6 @@ const TEST_SLUG = "test-slug-plain-detection";
 const TEST_CWD = "/tmp/test-cwd-plain";
 
 // Lazily resolved imports shared across all tests (mocked versions).
-// We import once and reuse — the module cache keeps these consistent.
 let runPlainArchive: ReturnType<typeof vi.fn>;
 let runMergeThenArchive: ReturnType<typeof vi.fn>;
 let runArchive: (opts: {
@@ -105,13 +103,11 @@ let runArchive: (opts: {
   mergeWaitMs?: number;
 }) => Promise<number>;
 let resolveGitHubToken: ReturnType<typeof vi.fn>;
-let getOriginInfo: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
-  // Import mocked modules once per test lifecycle.
   const plainArchiveMod = await import("../../../src/core/archive/plain-archive.js");
   runPlainArchive = plainArchiveMod.runPlainArchive as ReturnType<typeof vi.fn>;
 
@@ -123,9 +119,6 @@ beforeEach(async () => {
 
   const credMod = await import("../../../src/core/credentials/github.js");
   resolveGitHubToken = credMod.resolveGitHubToken as ReturnType<typeof vi.fn>;
-
-  const remoteMod = await import("../../../src/git/remote.js");
-  getOriginInfo = remoteMod.getOriginInfo as ReturnType<typeof vi.fn>;
 });
 
 afterEach(() => {
@@ -153,56 +146,34 @@ describe("TC-027: withMerge:false → runPlainArchive called, runMergeThenArchiv
 });
 
 // ---------------------------------------------------------------------------
-// TC-028: GitHub token resolution fails → runPlainArchive called with githubClient: undefined, exit 0
+// TC-028 / TC-029: plain archive does NOT receive githubClient / owner / repo
+// Single-phase archive: plain archive determines outcome from local state only.
 // ---------------------------------------------------------------------------
-describe("TC-028: token resolution fails → runPlainArchive with githubClient: undefined, exit 0", () => {
-  it("when resolveGitHubToken throws, runPlainArchive is called with githubClient: undefined", async () => {
-    // Use mockRejectedValueOnce to limit override to a single call.
+describe("TC-028: token resolution fails → runPlainArchive still called, exit 0", () => {
+  it("when resolveGitHubToken throws, runPlainArchive is still called (token is optional)", async () => {
     resolveGitHubToken.mockRejectedValueOnce(new Error("no token available"));
 
     const exitCode = await runArchive({ slug: TEST_SLUG, cwd: TEST_CWD, withMerge: false });
 
     expect(exitCode).toBe(0);
     expect(runPlainArchive).toHaveBeenCalled();
-    const callArgs = runPlainArchive.mock.calls[0]?.[0];
-    expect(callArgs).toBeDefined();
-    expect(callArgs.githubClient).toBeUndefined();
-  });
-
-  it("when getOriginInfo throws, runPlainArchive is called with githubClient: undefined", async () => {
-    // Use mockRejectedValueOnce to limit override to a single call.
-    getOriginInfo.mockRejectedValueOnce(new Error("no remote origin"));
-
-    const exitCode = await runArchive({ slug: TEST_SLUG, cwd: TEST_CWD, withMerge: false });
-
-    expect(exitCode).toBe(0);
-    expect(runPlainArchive).toHaveBeenCalled();
-    const callArgs = runPlainArchive.mock.calls[0]?.[0];
-    expect(callArgs.githubClient).toBeUndefined();
-    // owner and repo also undefined when origin resolution fails
-    expect(callArgs.owner).toBeUndefined();
-    expect(callArgs.repo).toBeUndefined();
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-029: token + origin succeed → githubClient / owner / repo passed to runPlainArchive
-// ---------------------------------------------------------------------------
-describe("TC-029: token + origin succeed → githubClient / owner / repo passed to runPlainArchive", () => {
-  it("passes githubClient, owner, and repo to runPlainArchive when all succeed", async () => {
-    // Default mocks already make token + origin succeed.
+describe("TC-029: plain archive call does NOT receive githubClient / owner / repo", () => {
+  it("runPlainArchive is called without githubClient (single-phase: no PR API)", async () => {
     await runArchive({ slug: TEST_SLUG, cwd: TEST_CWD, withMerge: false });
 
     expect(runPlainArchive).toHaveBeenCalled();
     const callArgs = runPlainArchive.mock.calls[0]?.[0];
     expect(callArgs).toBeDefined();
-    // githubClient is the mock object returned by createGitHubClient
-    expect(callArgs.githubClient).toBeDefined();
-    expect(callArgs.owner).toBe("test-owner");
-    expect(callArgs.repo).toBe("test-repo");
+    // Plain archive must NOT receive githubClient / owner / repo
+    expect(callArgs.githubClient).toBeUndefined();
+    expect(callArgs.owner).toBeUndefined();
+    expect(callArgs.repo).toBeUndefined();
   });
 
-  it("also passes slug and cwd to runPlainArchive", async () => {
+  it("slug and cwd are still passed to runPlainArchive", async () => {
     await runArchive({ slug: TEST_SLUG, cwd: TEST_CWD, withMerge: false });
 
     const callArgs = runPlainArchive.mock.calls[0]?.[0];

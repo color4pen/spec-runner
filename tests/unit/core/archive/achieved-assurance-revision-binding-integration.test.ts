@@ -38,8 +38,8 @@ vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
   markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
-  runPostMergeCleanup: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../../../src/core/archive/cleanup.js", () => ({
+  runArchiveCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
