@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c7b04a5c-9aa6-4e07-a727-9abfbec9066c",
   "createdAt": "2026-08-27T08:42:26.571Z",
-  "updatedAt": "2026-08-27T12:45:48.737Z",
+  "updatedAt": "2026-08-27T12:54:44.672Z",
   "request": {
     "title": "job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/split-reopen-from-resume-c7b04a5c",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,8 @@
     "54ec33d559391d98207d67128186f5e48bd233ea",
     "575d49d29abb845ad0db050c83782cc3ae61d917",
     "e20fcc13ea699ff27072feca05c92186001de279",
-    "f21b7bb97ba919886f3fda26f16cfd8b4cf58d36"
+    "f21b7bb97ba919886f3fda26f16cfd8b4cf58d36",
+    "db9ccf7d9aa5edcf4f0296d3e5689eae334a3fc3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -145,21 +146,24 @@
       "src/cli/command-registry.ts",
       "src/core/command/__tests__/reopen-command.test.ts",
       "src/state/__tests__/lifecycle-reopen.test.ts",
-      ".github/workflows/specrunner-dispatch.yml",
       "src/store/event-journal.ts",
+      "src/store/__tests__/event-journal-operator-event.test.ts",
+      "src/core/command/guide.ts",
       "architecture/conformance.md",
       "tests/unit/architecture/core-invariants.test.ts",
       "tests/unit/workflow/specrunner-dispatch.test.ts",
       "src/cli/__tests__/command-registry-reopen.test.ts",
-      "src/core/command/guide.ts",
       "src/cli/__tests__/from-flag-no-enum.test.ts",
-      "tests/dispatch-workflow-reopen-action.test.ts",
       "tests/unit/core/command/reopen-terminal-slug.test.ts",
-      "src/store/__tests__/event-journal-operator-event.test.ts",
-      "specrunner/adr/2026-07-22-job-reopen-awaiting-archive.md"
+      "tests/dispatch-workflow-reopen-action.test.ts",
+      ".github/workflows/specrunner-dispatch.yml"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -179,7 +183,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -189,7 +193,7 @@
       "implementer": 3,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1
     }
   }
