@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:17:36.922Z",
+  "updatedAt": "2026-08-28T02:23:21.337Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/fixer-unpushable-path-coverage/design.md, title: \"Resume 条件（design.md / tasks.md ドキュメント更新）が未履行\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -84,7 +88,8 @@
     "c848d73fcf5fa90f5bd8e9292dc1501a440a5174",
     "bec45ddc54815fcd2174bf98ec05246a89956471",
     "fb837b8ba66caa4fd8cdd078983bf40f7ba04ab4",
-    "89ae2b1c8bc269a2553a8d70425fd8cde484b5d2"
+    "89ae2b1c8bc269a2553a8d70425fd8cde484b5d2",
+    "fce6987722e0149a95d4bde09dbc98f0e7297769"
   ],
   "touchedFiles": {
     "request-review": [
@@ -142,15 +147,9 @@
       "src/core/step/__tests__/fixer-push-capability.test.ts"
     ],
     "code-review": [
-      "src/core/step/fixer-helpers.ts",
-      "src/core/step/code-fixer.ts",
-      "src/core/step/spec-fixer.ts",
-      "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "tests/unit/step/unpushable-path-escalation.test.ts",
       "src/core/step/executor.ts",
-      "src/core/step/step-context-builder.ts",
-      "src/core/step/implementer.ts",
-      "src/git/push-capability.ts"
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/__tests__/fixer-push-capability.test.ts"
     ],
     "code-fixer": [
       "src/core/step/code-fixer.ts",
@@ -200,7 +199,11 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/fixer-unpushable-path-coverage/design.md, title: \"Resume 条件（design.md / tasks.md ドキュメント更新）が未履行\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -210,7 +213,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 91,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -220,7 +223,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
