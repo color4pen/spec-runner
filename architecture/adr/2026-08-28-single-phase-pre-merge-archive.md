@@ -25,17 +25,17 @@ accepted（実装は request `single-phase-archive`（#1083）で着地済み。
 
 `job archive <slug>` は 1 回の実行で record（change folder の archive 配置 → archive commit → **feature branch へ push**）→ `awaiting-archive → archived` の確定 → worktree 撤去まで行う。PR は OPEN のままでよい。
 
-### D2: terminal transition の唯一の条件は archive record push の成功とする
+### D2: plain archive の terminal transition の唯一の条件は archive record push の成功とする
 
-`awaiting-archive → archived` は record push が成功した時点で確定し、PR state（OPEN / MERGED / CLOSED）に依存しない。plain archive は `GitHubClient` 型を import しない module とし、PR state 照会の分岐を**依存の不在**として構造的に排除する（分岐を「使わない」約束ではなく、型が無ければ復活できない形にする）。
+**plain 経路（`job archive <slug>`）では**、`awaiting-archive → archived` は record push が成功した時点で確定し、PR state（OPEN / MERGED / CLOSED）に依存しない。plain archive は `GitHubClient` 型を import しない module とし、PR state 照会の分岐を**依存の不在**として構造的に排除する（分岐を「使わない」約束ではなく、型が無ければ復活できない形にする）。`--with-merge` 経路の遷移条件は別で、merge 成功後に `completeAfterMerge()` が archived 遷移 + cleanup を行う（D5）。本決定は archive 全体の不変条件ではなく plain 経路のもの。
 
-### D3: `archived` の意味を「SpecRunner 側の片づけ完了」に固定する
+### D3: `archived` が経路共通に保証するのは「archive record が remote feature branch に到達した」ことのみとする
 
-`archived` は「変更が main に入った」を含意しない。merge されたかどうかは GitHub 側の状態であり、job status に二重持ちしない（ADR-20260603 D3 と同じ原則の帰結）。
+`archived` は「変更が main に入った」を含意しない。merge されたかどうかは GitHub 側の状態であり、job status に二重持ちしない（ADR-20260603 D3 と同じ原則の帰結）。また worktree 撤去・branch 削除等の cleanup は遷移**後**の best-effort であり、`archived` は cleanup の完了も保証しない。遷移条件は経路ごとに異なる（plain = record push 成功（D2）／ `--with-merge` = merge 成功）が、どちらの経路でも遷移時点で record push は成功済みであり、これが `archived` の経路共通の保証。
 
 ### D4: archive commit は feature PR に同梱され、merge によって main に入る
 
-remote feature branch は archive で削除しない（OPEN な PR のために保存する）。archive 配置 commit は同一 feature PR の一部として merge で main に着地し、merge 後の main に archive 用の別 commit を積む経路は持たない。
+**plain archive は** remote feature branch を削除しない（OPEN な PR のために保存する。`deleteRemoteBranch: false` 固定）。`--with-merge` は merge 成功後の cleanup で remote branch を削除する（default）。いずれの経路でも archive 配置 commit は同一 feature PR の一部として merge で main に着地し、merge 後の main に archive 用の別 commit を積む経路は持たない。
 
 ### D5: opt-in merge 経路（--with-merge）は record → CI green 待ち → merge → cleanup の順で編成する
 
@@ -44,7 +44,7 @@ remote feature branch は archive で削除しない（OPEN な PR のために�
 ## 帰結
 
 - 運用順序が「**archive → merge**」になる。archive record が PR の head に載ってから merge するため、merge は archive 済みレイアウトごと main に着地する。
-- plain archive はネットワーク照会ゼロで決定的に完走し、client-closed が判定面まで貫徹される。
+- plain archive は **GitHub API / PR-state 照会ゼロ**で完結し、client-closed が判定面まで貫徹される（git transport の push と、既存 record の冪等経路での条件付き `ls-remote` は行う — これは GitHub API ではなく git transport）。
 - **reopen 窓の変化**: `job reopen` は awaiting-archive のみを対象とするため、archive を merge 前に実行した後は reopen できない（archived は terminal）。archive 後の手戻りは新しい issue / job として扱う。archive の起動が人間の明示ジェスチャーであること（ADR-20260612 D1）が、この不可逆点の選択を人間に残す。
 - 旧 2 相の leftover（merge + branch 削除後に archive されず残った job）には degraded path（best-effort の archived 遷移 + cleanup）で片づけのみ行う。
 - 却下した代替（merge 済み確認を warning として残す）: client 依存が必須経路に残り D2 の構造保証を失う。無条件の advisory 表示で十分に代替できる。
