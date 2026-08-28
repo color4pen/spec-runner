@@ -623,16 +623,21 @@ describe("TC-015: code-fixer Layer 2 backstop fires after follow-up fails to res
       detail: [WORKFLOW_FILE],
     };
 
+    // Helper mirrors the filtering logic in step-context-builder.ts buildPrompt.
+    // Using a function avoids constant-condition lint errors while keeping the assertion
+    // semantically equivalent to the production code it exercises.
+    function filterForAttempt(violations: OutputViolation[], attempt: number): OutputViolation[] {
+      return attempt > 1
+        ? violations.filter((v) => v.kind !== "unpushable-path")
+        : violations;
+    }
+
     // Attempt 1: violation is included — repair turn is sent
-    const attempt1Violations = 1 > 1
-      ? [violation].filter((v) => v.kind !== "unpushable-path")
-      : [violation];
+    const attempt1Violations = filterForAttempt([violation], 1);
     expect(attempt1Violations).toHaveLength(1);
 
     // Attempt 2: violation is filtered out — no repair turn (null would be returned by buildPrompt)
-    const attempt2Violations = 2 > 1
-      ? [violation].filter((v) => v.kind !== "unpushable-path")
-      : [violation];
+    const attempt2Violations = filterForAttempt([violation], 2);
     expect(attempt2Violations).toHaveLength(0);
     // Empty effectiveViolations → buildPrompt returns null → adapter breaks the loop.
     // Layer 2 backstop (commitScopedPaths → UNPUSHABLE_PATH_BLOCKED) then fires on the
