@@ -403,6 +403,31 @@
         "peakActiveContextTokens": 82134,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-28T01:58:21.123Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 5492,
+          "cacheReadInputTokens": 1899989,
+          "cacheCreationInputTokens": 290352
+        }
+      },
+      "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
+      "stepName": "implementer",
+      "numTurns": 14,
+      "durationMs": 112926,
+      "durationApiMs": 97103,
+      "totalCostUsd": 1.1852796,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 153218,
+        "compactionCount": 0
+      }
     }
   ]
 }
