@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T01:32:28.096Z",
+  "updatedAt": "2026-08-28T01:43:07.858Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
@@ -76,7 +76,9 @@
     "d6fb15fad0963ca23f4045adcf9d1b73efe3bb53",
     "e57555199f59a9126742641da4ab97d86a2ef483",
     "4d1162494609241655c599dea935f39e3185ab85",
-    "e3103a2479782c62411549f698ed039e3dcbf4d5"
+    "e3103a2479782c62411549f698ed039e3dcbf4d5",
+    "77d047acf1cd962271a5c26b0f811b9fea4a7cf0",
+    "f2dcf0be1fd5636d56b0bbace9c917ac0f2d4dcf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -161,22 +163,16 @@
     ],
     "code-fixer": [
       "src/core/step/code-fixer.ts",
-      "src/core/step/commit-push.ts",
-      "src/git/push-capability.ts",
-      "src/adapter/claude-code/agent-runner.ts",
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/core/runtime/local.ts",
-      "src/core/step/executor.ts",
       "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "tests/unit/step/executor-output-gate.test.ts",
+      "src/core/step/executor.ts",
       "tests/unit/step/unpushable-path-escalation.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "77d047acf1cd962271a5c26b0f811b9fea4a7cf0",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -186,7 +182,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/fixer-unpushable-path-coverage/design.md:sha256:f73cd81e949d032eef1395505f04dc3fce87d84af9770eb5dbb9c88d1013bc4a|specrunner/changes/fixer-unpushable-path-coverage/request.md:sha256:77149be4aa96f68937cc9daf13a3f95306f086fc15fdb5c74a19357a2229ac97|specrunner/changes/fixer-unpushable-path-coverage/spec.md:sha256:4bd83064d2f4a0165af4c7a9061089c17588942ac139e39aac8a7761973442de|specrunner/changes/fixer-unpushable-path-coverage/tasks.md:sha256:bbd6612f7430c757bf2799f21593bd8e08b2d5e3f234eb3faf86b05e996870d1|specrunner/changes/fixer-unpushable-path-coverage/test-cases.md:sha256:026454f594c4f913a1f4ec7b96ae1c4844e61d392efcf2a8ce0a62c6fe0501cc"
     },
     {
       "name": "scale-tolerance",
@@ -202,7 +199,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -213,10 +210,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 2,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 3
     }
   }
 }
