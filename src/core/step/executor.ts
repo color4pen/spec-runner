@@ -411,8 +411,17 @@ export class StepExecutor {
     }
 
     // Output contract gate (D3: step-completion-verification).
+    // "unpushable-path" contracts are deliberately excluded from this gate.
+    // Self-commits remain visible in git rev-list until commitAndPush's git reset --mixed
+    // normalization. Checking unpushable-path here would produce false-positive halts when
+    // the agent has self-committed an unpushable path, because the gate runs BEFORE the mixed
+    // reset that clears those commits. Layer 2 (commitAndPush → collectPublishablePaths) is
+    // the correct backstop — it runs AFTER the mixed reset and evaluates the final publishable
+    // state. Layer 1 (follow-up prompt) still fires via the adapter's OutputVerificationPolicy,
+    // which reads step.outputContracts independently of this gate.
     if (deps.runtimeStrategy) {
-      const allContracts = buildAllOutputContracts(step, state, deps);
+      const allContracts = buildAllOutputContracts(step, state, deps)
+        .filter((c) => c.kind !== "unpushable-path");
 
       if (allContracts.length > 0) {
         const checkResult = await deps.runtimeStrategy.validateStepOutputs(
@@ -422,25 +431,6 @@ export class StepExecutor {
 
         if (haltViolations.length > 0 || followUp.length > 0) {
           const allViolations = [...haltViolations, ...followUp];
-
-          // Route unpushable-path violations to awaiting-resume halt (escalation path).
-          // The violation persisted after the follow-up — escalate instead of fail-closed.
-          const unpushableViolations = allViolations.filter((v) => v.kind === "unpushable-path");
-          if (unpushableViolations.length > 0) {
-            const matchedPaths = unpushableViolations.flatMap((v) => v.detail);
-            const capabilitySource = deps.pushCapability?.source ?? "environment push constraint";
-            // agent-context-observability: forward context metrics from the successful runner.
-            const halt = makeUnpushablePathHalt(
-              matchedPaths,
-              capabilitySource,
-              step.name,
-              deps.slug,
-              { startedAt },
-              runResult.contextMetrics,
-              runResult.sessionRollovers,
-            );
-            return { kind: "halt", halt };
-          }
 
           // agent-context-observability: forward contextMetrics from the successful runner result
           // so commitHalt can persist them even though the halt is due to a post-success gate.

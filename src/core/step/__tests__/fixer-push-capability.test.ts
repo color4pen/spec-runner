@@ -4,8 +4,8 @@
  * TC-001: code-fixer initial message includes push capability notice
  * TC-002: code-fixer continuation message includes push capability notice
  * TC-003: code-fixer message omits notice when pushCapability is null
- * TC-004: CodeFixerStep has no outputContracts — Layer 2 (commitAndPush) is the sole backstop
- * TC-005: CodeFixerStep.outputContracts is absent regardless of pushCapability
+ * TC-004: code-fixer outputContracts returns unpushable-path contract with active pushCapability
+ * TC-005: code-fixer outputContracts returns empty array when pushCapability is null
  * TC-006: spec-fixer initial message with findings includes push capability notice
  * TC-007: spec-fixer fallback message includes push capability notice
  * TC-008: spec-fixer continuation message includes push capability notice
@@ -15,7 +15,7 @@
  * TC-012: buildUnpushablePathContracts returns empty array for null pushCapability
  * TC-013: buildUnpushablePathContracts returns empty array for empty patterns array
  * TC-014: buildUnpushablePathContracts returns one contract with correct shape for non-empty patterns
- * TC-015: code-fixer has no outputContracts — Layer 2 (commitAndPush) is the sole unpushable-path protection
+ * TC-015: code-fixer Layer 2 backstop fires after follow-up fails to resolve unpushable-path violation
  * TC-016: code-fixer conformance branch includes push capability notice
  * TC-017: code-fixer coordinator loop branch includes push capability notice
  * TC-022: spec-fixer conformance branch initial entry includes push capability notice
@@ -461,23 +461,26 @@ describe("buildUnpushablePathContracts", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-004 / TC-005: CodeFixerStep has no outputContracts — Layer 2 is sole backstop
+// TC-004 / TC-005: CodeFixerStep.outputContracts
 // ---------------------------------------------------------------------------
 
-describe("CodeFixerStep — no outputContracts (self-commit normalization compat)", () => {
-  it("TC-004: CodeFixerStep.outputContracts is undefined — Layer 2 (commitAndPush) is the sole unpushable-path protection", () => {
-    // Design: code-fixer uses guarded staging and its agent may self-commit files before
-    // commitAndPush's git reset --mixed normalization. Declaring outputContracts would
-    // cause the executor gate to halt BEFORE the mixed reset — a false-positive halt
-    // when self-commits contain unpushable paths. Layer 2 is the correct backstop.
-    expect(CodeFixerStep.outputContracts).toBeUndefined();
+describe("CodeFixerStep.outputContracts", () => {
+  it("TC-004: returns unpushable-path contract when pushCapability has patterns", () => {
+    const state = makeJobState(STEP_NAMES.CODE_FIXER);
+    const deps = makeStepDeps(WORKFLOW_CAPABILITY);
+    const contracts = CodeFixerStep.outputContracts!(state, deps);
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0]).toMatchObject({
+      kind: "unpushable-path",
+      policy: "follow-up",
+      patterns: [WORKFLOWS_PATTERN],
+    });
   });
 
-  it("TC-005: CodeFixerStep.outputContracts absent regardless of pushCapability value", () => {
-    // Both with and without pushCapability, code-fixer relies on Layer 2 only.
-    // Layer 2 (commitAndPush → collectPublishablePaths) skips when pushCapability is null,
-    // and enforces the constraint when patterns are declared.
-    expect(CodeFixerStep.outputContracts).toBeUndefined();
+  it("TC-005: returns [] when pushCapability is null", () => {
+    const state = makeJobState(STEP_NAMES.CODE_FIXER);
+    const deps = makeStepDeps(null);
+    expect(CodeFixerStep.outputContracts!(state, deps)).toEqual([]);
   });
 });
 
@@ -557,81 +560,95 @@ describe("CodeFixerStep.buildMessage — coordinator loop branch (TC-017)", () =
 });
 
 // ---------------------------------------------------------------------------
-// TC-015: code-fixer unpushable-path protection — Layer 2 only (no executor-gate false positive)
+// TC-015: code-fixer → Layer 1 follow-up → Layer 2 backstop end-to-end chain
 // ---------------------------------------------------------------------------
 
-describe("TC-015: code-fixer has no outputContracts — Layer 2 (commitAndPush) is the sole unpushable-path protection", () => {
+describe("TC-015: code-fixer Layer 2 backstop fires after follow-up fails to resolve unpushable-path violation", () => {
   /**
-   * Design: code-fixer uses guarded staging mode and its agent can self-commit files
-   * (including workflow files) before commitAndPush's git reset --mixed normalization.
-   * If outputContracts declared an unpushable-path contract, the executor output contract
-   * gate would halt BEFORE commitAndPush, preventing the mixed reset that clears
-   * self-commits — a false-positive UNPUSHABLE_PATH_BLOCKED halt.
+   * Integration-level chain test:
    *
-   * Fix: code-fixer has NO outputContracts. Layer 2 (commitAndPush →
-   * collectPublishablePaths → UnpushablePathBlockedError) is the sole protection.
-   * It runs AFTER git reset --mixed, correctly seeing only post-normalization paths.
+   * 1. CodeFixerStep.outputContracts declares an unpushable-path contract with policy "follow-up".
+   * 2. Layer 1: the violation generates a follow-up prompt at attempt 1 (via buildOutputFollowUpPrompt).
+   * 3. One-follow-up invariant: at attempt >= 2, unpushable-path violations are filtered out by
+   *    step-context-builder's buildPrompt → effectiveViolations is empty → null returned → adapter
+   *    skips the repair turn → no second follow-up is sent.
+   * 4. Layer 2 backstop: commitScopedPaths throws UNPUSHABLE_PATH_BLOCKED when the path is still
+   *    present after the follow-up (tested comprehensively in commit-scoped-paths.test.ts; this test
+   *    verifies the entry-point contract that enables the chain from code-fixer's side).
    *
-   * Source: spec.md > Requirement: code-fixer SHALL NOT declare outputContracts for
-   * unpushable-path (self-commit normalization compat). Layer 2 is sufficient and correct.
+   * Source: spec.md > Requirement: fixer steps SHALL rely on existing Layer 2 backstop when a
+   * follow-up cannot resolve the unpushable-path violation > Scenario: code-fixer follow-up does
+   * not resolve the violation
    */
 
   const WORKFLOW_FILE = ".github/workflows/ci.yml";
 
-  it("(1) CodeFixerStep has no outputContracts — no Layer 1 for code-fixer (Layer 2 is sole backstop)", () => {
-    // Verifies the fix: code-fixer does not declare outputContracts, preventing the
-    // executor gate from halting before commitAndPush's mixed-reset normalization.
-    expect(CodeFixerStep.outputContracts).toBeUndefined();
+  it("(1) CodeFixerStep.outputContracts declares unpushable-path contract with policy 'follow-up'", () => {
+    const state = makeJobState(STEP_NAMES.CODE_FIXER);
+    const deps = makeStepDeps(WORKFLOW_CAPABILITY);
+
+    const contracts = CodeFixerStep.outputContracts!(state, deps);
+
+    expect(contracts).toHaveLength(1);
+    const contract = contracts[0]!;
+    expect(contract.kind).toBe("unpushable-path");
+    expect(contract.policy).toBe("follow-up");
+    expect(contract.patterns).toEqual([WORKFLOWS_PATTERN]);
   });
 
-  it("(2) buildOutputFollowUpPrompt generates correct repair prompt for steps that do declare unpushable-path contracts", () => {
-    // buildOutputFollowUpPrompt is used by spec-fixer and implementer (steps that
-    // correctly declare outputContracts without the self-commit false-positive issue).
+  it("(2) Layer 1: unpushable-path violation generates a follow-up prompt on attempt 1", () => {
+    // Simulate the violation that the runtime detects when code-fixer touches a workflow file.
     const violation: OutputViolation = {
       kind: "unpushable-path",
       path: "",
       policy: "follow-up",
       detail: [WORKFLOW_FILE],
     };
+
+    // buildOutputFollowUpPrompt is what step-context-builder calls to build the repair prompt
+    // for the agent at attempt 1 (Layer 1 follow-up).
     const prompt = buildOutputFollowUpPrompt([violation]);
+
     expect(prompt).toContain("Unpushable path constraint");
     expect(prompt).toContain(WORKFLOW_FILE);
   });
 
-  it("(3) one-follow-up invariant: at attempt >= 2, unpushable-path violations are filtered out → null (no second follow-up)", () => {
-    // Replicate the buildPrompt logic from step-context-builder.ts (L143-161).
-    // Applies to steps that DO declare outputContracts (e.g., spec-fixer, implementer).
+  it("(3) one-follow-up invariant: at attempt >= 2 unpushable-path violations are filtered out → null (no second follow-up)", () => {
+    // Replicate the buildPrompt logic from step-context-builder.ts (L143-161):
+    //   attempt > 1 → filter unpushable-path out → if effectiveViolations is empty, return null.
     const violation: OutputViolation = {
       kind: "unpushable-path",
       path: "",
       policy: "follow-up",
       detail: [WORKFLOW_FILE],
     };
-    // Attempt 1: violation is included — repair turn is sent.
+
+    // Attempt 1: violation is included — repair turn is sent
     const attempt1Violations = 1 > 1
       ? [violation].filter((v) => v.kind !== "unpushable-path")
       : [violation];
     expect(attempt1Violations).toHaveLength(1);
-    // Attempt 2: violation is filtered out → null from buildPrompt → adapter breaks loop.
+
+    // Attempt 2: violation is filtered out — no repair turn (null would be returned by buildPrompt)
     const attempt2Violations = 2 > 1
       ? [violation].filter((v) => v.kind !== "unpushable-path")
       : [violation];
     expect(attempt2Violations).toHaveLength(0);
+    // Empty effectiveViolations → buildPrompt returns null → adapter breaks the loop.
+    // Layer 2 backstop (commitScopedPaths → UNPUSHABLE_PATH_BLOCKED) then fires on the
+    // next commit attempt.
   });
 
-  it("(4) buildUnpushablePathContracts still works for other steps; code-fixer does not invoke it", () => {
-    // Verifies the helper function is correct for steps that CAN safely use Layer 1
-    // (e.g., spec-fixer, implementer — steps without the self-commit false-positive issue).
-    // code-fixer's outputContracts being undefined confirms it does NOT use this helper.
-    const deps = makeStepDeps(WORKFLOW_CAPABILITY);
-    const contracts = buildUnpushablePathContracts(deps);
-    expect(contracts).toHaveLength(1);
-    expect(contracts[0]).toMatchObject({
-      kind: "unpushable-path",
-      policy: "follow-up",
-      patterns: [WORKFLOWS_PATTERN],
-    });
-    expect(CodeFixerStep.outputContracts).toBeUndefined();
+  it("(4) Layer 2 wiring: CodeFixerStep.outputContracts with null pushCapability returns [] (backstop not triggered by contract absence)", () => {
+    // When pushCapability is null, no follow-up contract is declared, and the agent receives
+    // no Layer 1 repair opportunity. Layer 2 in commitScopedPaths also skips the backstop
+    // (null pushCapability bypasses collectPublishablePaths).
+    // Verifies that the null-capability guard is symmetric across both layers.
+    const state = makeJobState(STEP_NAMES.CODE_FIXER);
+    const deps = makeStepDeps(null);
+
+    const contracts = CodeFixerStep.outputContracts!(state, deps);
+    expect(contracts).toEqual([]);
   });
 });
 
