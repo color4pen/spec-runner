@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:48:56.043Z",
+  "updatedAt": "2026-08-28T02:51:47.943Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
@@ -87,7 +87,8 @@
     "89ae2b1c8bc269a2553a8d70425fd8cde484b5d2",
     "fce6987722e0149a95d4bde09dbc98f0e7297769",
     "be47031999b253c420ec2028514b9eedc93f4bee",
-    "61774c427f852c4908d08cfed75828cb0d60c2f3"
+    "61774c427f852c4908d08cfed75828cb0d60c2f3",
+    "dc86bc24c7e989788f0dbb6ac7f438825d248045"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,7 +161,7 @@
     ],
     "regression-gate": [
       "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "src/core/step/executor.ts"
+      "src/core/step/code-fixer.ts"
     ],
     "conformance": [
       "src/core/step/fixer-helpers.ts",
@@ -215,7 +216,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 107,
+    "historyCount": 111,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -230,7 +231,7 @@
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "conformance": 1
     }
   }

@@ -208,6 +208,7 @@ function makeCodeFixerConformanceState(): JobState {
 /**
  * State for code-fixer coordinator loop branch:
  * reviewers present, coordinator has needs-fix, custom reviewer has needs-fix findings.
+ * Routes through the aggregated-findings sub-path (code-fixer.ts L189–206).
  */
 function makeCodeFixerCoordinatorState(): JobState {
   return {
@@ -259,6 +260,60 @@ function makeCodeFixerCoordinatorState(): JobState {
                 },
               ],
             },
+          },
+        },
+      ],
+    } as unknown as JobState["steps"],
+  };
+}
+
+/**
+ * State for code-fixer coordinator loop FALLBACK sub-path:
+ * isCoordinatorLoopActive=true, needsFixMembers is non-empty ('security'),
+ * but the security reviewer has no structured findings (no toolResult) so
+ * collectParallelFixerFindings returns [] → routes to fallback path (code-fixer.ts L209–232).
+ */
+function makeCodeFixerCoordinatorStateEmptyFindings(): JobState {
+  return {
+    ...makeJobState(STEP_NAMES.CODE_FIXER),
+    reviewers: [
+      {
+        name: "security",
+        maxIterations: 3,
+        purpose: "security reviewer",
+        criteria: "security criteria",
+        judgment: "judgment",
+        freeText: "",
+      },
+    ],
+    steps: {
+      [CUSTOM_REVIEWERS_STEP_NAME]: [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:02:00.000Z",
+          endedAt: "2026-01-01T00:02:30.000Z",
+          outcome: {
+            verdict: "needs-fix",
+            findingsPath: null,
+            error: null,
+            toolResult: { ok: true, findings: [] },
+          },
+        },
+      ],
+      // Security reviewer has needs-fix verdict but NO toolResult → getLatestJudgeFindings
+      // returns null → collectParallelFixerFindings aggregatedFindings is [] → fallback path.
+      security: [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:02:05.000Z",
+          endedAt: "2026-01-01T00:02:25.000Z",
+          outcome: {
+            verdict: "needs-fix",
+            findingsPath: "specrunner/changes/test-slug/security-result-001.md",
+            error: null,
+            // no toolResult → getLatestJudgeFindings returns null → aggregatedFindings = []
           },
         },
       ],
@@ -544,7 +599,9 @@ describe("CodeFixerStep.buildMessage — conformance branch (TC-016)", () => {
 // ---------------------------------------------------------------------------
 
 describe("CodeFixerStep.buildMessage — coordinator loop branch (TC-017)", () => {
-  it("TC-017: coordinator loop initial entry includes 'Push Capability Notice' when pushCapability set", () => {
+  it("TC-017: coordinator loop initial entry (aggregated-findings sub-path) includes 'Push Capability Notice' when pushCapability set", () => {
+    // Exercises aggregated-findings sub-path (code-fixer.ts L189–206):
+    // isCoordinatorLoopActive=true, aggregatedFindings.length > 0.
     const state = makeCodeFixerCoordinatorState();
     const deps = makeStepDeps(WORKFLOW_CAPABILITY);
     const msg = CodeFixerStep.buildMessage(state, deps);
@@ -553,6 +610,24 @@ describe("CodeFixerStep.buildMessage — coordinator loop branch (TC-017)", () =
 
   it("TC-017 (no notice): coordinator loop does NOT include notice when pushCapability null", () => {
     const state = makeCodeFixerCoordinatorState();
+    const deps = makeStepDeps(null);
+    const msg = CodeFixerStep.buildMessage(state, deps);
+    expect(msg).not.toContain("Push Capability Notice");
+  });
+
+  it("TC-017 (fallback sub-path): coordinator loop fallback (no aggregated findings, needsFixMembers non-empty) includes 'Push Capability Notice' when pushCapability set", () => {
+    // Exercises fallback sub-path (code-fixer.ts L209–232):
+    // isCoordinatorLoopActive=true, aggregatedFindings.length===0, needsFixMembers.length > 0.
+    // The security reviewer has needs-fix verdict but no toolResult, so collectParallelFixerFindings
+    // returns [] and the fallback path appends capabilityNotice at L232.
+    const state = makeCodeFixerCoordinatorStateEmptyFindings();
+    const deps = makeStepDeps(WORKFLOW_CAPABILITY);
+    const msg = CodeFixerStep.buildMessage(state, deps);
+    expect(msg).toContain("Push Capability Notice");
+  });
+
+  it("TC-017 (fallback sub-path, no notice): coordinator loop fallback does NOT include notice when pushCapability null", () => {
+    const state = makeCodeFixerCoordinatorStateEmptyFindings();
     const deps = makeStepDeps(null);
     const msg = CodeFixerStep.buildMessage(state, deps);
     expect(msg).not.toContain("Push Capability Notice");
