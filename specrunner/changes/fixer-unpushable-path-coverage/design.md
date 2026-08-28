@@ -54,6 +54,8 @@ The shared utility file `fixer-helpers.ts` is already imported by both `code-fix
 - Injecting the notice into reviewer steps (read-only; no writes).
 - Modifying `step-context-builder.ts`, `output-verify.ts`, or `commit-push.ts` — the
   infrastructure already supports any step that declares the contract.
+  (`executor.ts` is not covered by this non-goal: its output-contract gate was adjusted
+  during implementation — see D6, documented retrospectively.)
 
 ## Decisions
 
@@ -113,6 +115,31 @@ When a fixer's follow-up prompt does not resolve the violation:
 
 This is the same infrastructure used by `implementer`. No new escalation code is needed; the
 fixer steps need only to declare the contract.
+
+### D6: Exclude `unpushable-path` contracts from the executor's output-contract gate (retrospective)
+
+Documented retrospectively per operator decision (issue #1086 escalation, decision 1 =
+option 2). The implementation also modified `src/core/step/executor.ts`, which the original
+plan did not list as a target.
+
+**Change**: the executor's output contract gate now filters `kind: "unpushable-path"`
+contracts out of `buildAllOutputContracts(...)` before validation
+(`.filter((c) => c.kind !== "unpushable-path")`), and the gate's dedicated branch that routed
+persistent unpushable-path violations to an `awaiting-resume` halt was removed.
+
+**Rationale (correctness improvement)**: the gate runs BEFORE `commitAndPush`'s
+`git reset --mixed` normalization. Agent self-commits are still visible in `git rev-list` at
+that point, so evaluating unpushable-path contracts in the gate produced false-positive halts
+when the agent had self-committed an unpushable path that the follow-up had already resolved.
+Layer 2 (`commitAndPush → collectPublishablePaths`) runs AFTER the mixed reset and evaluates
+the final publishable state, making it the correct halt point. Layer 1's one-shot follow-up
+prompt is unaffected: the adapter's `OutputVerificationPolicy` reads `step.outputContracts`
+independently of this gate.
+
+**Observable behavior preserved**: persistent violations still halt with
+`UNPUSHABLE_PATH_BLOCKED` → `awaiting-resume` + escalation marker. The halt is raised solely
+by Layer 2 (`UnpushablePathBlockedError` from `commit-push.ts`, converted to the
+awaiting-resume halt in `executor.ts`'s finalize error handling via `makeUnpushablePathHalt`).
 
 ## Risks / Trade-offs
 

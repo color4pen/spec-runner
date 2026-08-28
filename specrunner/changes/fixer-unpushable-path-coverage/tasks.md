@@ -121,3 +121,22 @@ Create a new test file `src/core/step/__tests__/fixer-push-capability.test.ts`.
 - `bun run typecheck` exits 0
 - `bun run test` exits 0
 - No changes to `implementer.ts`, `request-review.ts`, `step-context-builder.ts`, `output-verify.ts`, or `commit-push.ts`
+
+## T-06: Executor gate adjustment (retrospective record — operator decision, issue #1086)
+
+Documented retrospectively: the implementation modified `src/core/step/executor.ts` beyond the
+original task list. Ratified by operator decision (escalation decision 1 = option 2) with this
+doc-only follow-up. See design.md D6 for the full rationale.
+
+- [x] In the `StepExecutor` output contract gate, filter `kind: "unpushable-path"` out of
+  `buildAllOutputContracts(step, state, deps)` (`.filter((c) => c.kind !== "unpushable-path")`)
+- [x] Remove the gate's branch that routed persistent unpushable-path violations to an
+  `awaiting-resume` halt — Layer 2 (`commitAndPush → collectPublishablePaths` →
+  `UnpushablePathBlockedError`, converted via `makeUnpushablePathHalt` in the finalize error
+  handling) is the sole `UNPUSHABLE_PATH_BLOCKED` halt point
+- [x] Rationale comment added at the gate explaining the pre-mixed-reset false-positive risk
+
+**Acceptance Criteria**:
+- Observable halt behavior unchanged: persistent violations still reach `UNPUSHABLE_PATH_BLOCKED`
+  → `awaiting-resume` + escalation marker (raised by Layer 2)
+- All verification phases green (12599 tests passed at verification iter 3)
