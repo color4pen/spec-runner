@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:77149be4aa96f68937cc9daf13a3f95306f086fc15fdb5c74a19357a2229ac97",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/implementer.ts:267 — comment '// When push capability declares patterns, add an unpushable-path contract.' at line 267, with contract push at lines 269-276",
+    "src/core/step/implementer.ts:284 — renderPushCapabilityNotice called via capabilityNotice variable",
+    "src/core/step/request-review.ts:113 — renderPushCapabilityNotice called and appended to base message",
+    "src/core/step/code-fixer.ts — no outputContracts method, no renderPushCapabilityNotice import or call",
+    "src/core/step/spec-fixer.ts — no outputContracts method, no renderPushCapabilityNotice import or call",
+    "src/core/step/step-context-builder.ts:125-160 — OutputVerificationPolicy buildPrompt filters unpushable-path violations at attempt > 1 (1-follow-up invariant)",
+    "src/core/step/output-verify.ts:235-253 — unpushable-path violation follow-up prompt text rendered in lines 235-257",
+    "src/core/step/fixer-helpers.ts — exists as shared utility imported by both spec-fixer and code-fixer",
+    "src/git/push-capability.ts:205 — renderPushCapabilityNotice exported from this path"
+  ],
+  "sourceRevision": "cbc26c77461ef013bc0e866226c41c9038948548"
+}

@@ -3,13 +3,15 @@ import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
+import type { OutputContract } from "../port/output-contract.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../prompts/spec-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath, conformanceResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { renderPushCapabilityNotice } from "../../git/push-capability.js";
 
 const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-5";
 
@@ -82,6 +84,10 @@ export const SpecFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 25,
 
+  outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
+    return buildUnpushablePathContracts(deps);
+  },
+
   reads(state: JobState, deps: StepDeps): IoRef[] {
     // Conformance-triggered entry: read conformance result file
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER);
@@ -109,6 +115,9 @@ export const SpecFixerStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.SPEC_FIXER);
 
+    // Capability notice: appended to all message variants when push capability is declared.
+    const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null);
+
     // Conformance-triggered entry: use conformance findings
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER);
     if (conformanceFindings !== null) {
@@ -120,7 +129,7 @@ export const SpecFixerStep: AgentStep = {
           slug: deps.slug,
           findings: conformanceFindings,
           reviewerName: "conformance",
-        });
+        }) + capabilityNotice;
       }
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
       return `<user-request>
@@ -140,7 +149,7 @@ Please:
 
 If any finding cannot be fixed, add a comment at the end of design.md:
 <!-- spec-fixer-deferred: [finding title] [reason] -->
-</user-request>`;
+</user-request>` + capabilityNotice;
     }
 
     // Normal entry: derive findingsPath from reads declaration (D4: replace state-lookup halt).
@@ -157,7 +166,7 @@ If any finding cannot be fixed, add a comment at the end of design.md:
         findingsPath,
         slug: deps.slug,
         findings,
-      });
+      }) + capabilityNotice;
     }
 
     // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
@@ -178,7 +187,7 @@ Please:
 
 If any finding cannot be fixed, add a comment at the end of design.md:
 <!-- spec-fixer-deferred: [finding title] [reason] -->
-</user-request>`;
+</user-request>` + capabilityNotice;
     }
 
     // フォールバック: 旧 toolResult を持つ job の resume → findingsPath 方式
@@ -186,7 +195,7 @@ If any finding cannot be fixed, add a comment at the end of design.md:
       slug: deps.slug,
       branch: state.branch,
       findingsPath,
-    });
+    }) + capabilityNotice;
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {

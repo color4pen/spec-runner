@@ -204,17 +204,31 @@ function makeStepWithContracts(contracts: OutputContract[]): AgentStep {
 }
 
 // ---------------------------------------------------------------------------
-// TC-014: Persisting violation after follow-up halts as awaiting-resume
+// TC-014: Executor gate excludes unpushable-path — Layer 2 is the backstop
 // ---------------------------------------------------------------------------
 
-describe("TC-014: unpushable-path violation persisting after follow-up → awaiting-resume halt", () => {
-  it("TC-014: executor routes unpushable-path violation to awaiting-resume halt", async () => {
+describe("TC-014: unpushable-path violations are excluded from the executor gate (Layer 2 is backstop)", () => {
+  /**
+   * Design: The executor output contract gate deliberately excludes "unpushable-path" contracts.
+   * Self-commits remain visible in git rev-list until commitAndPush's git reset --mixed
+   * normalization. If the gate checked unpushable-path, it would halt BEFORE the mixed reset
+   * clears the self-commits — a false positive. Layer 2 (commitAndPush → collectPublishablePaths)
+   * is the correct backstop: it runs AFTER the mixed reset and sees only the final publishable
+   * state. Layer 1 (follow-up prompt) still fires via the adapter's OutputVerificationPolicy,
+   * which reads step.outputContracts independently of this gate.
+   *
+   * The UNPUSHABLE_PATH_BLOCKED awaiting-resume halt requirement is satisfied by Layer 2:
+   * see TC-037 (commitAndPush Layer 2 backstop) and TC-036 (makeUnpushablePathHalt) in this file.
+   */
+
+  it("TC-014: executor gate does NOT halt when validateStepOutputs would return unpushable-path violation", async () => {
     const jobId = "tc-014";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    // validateStepOutputs returns an unpushable-path violation
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    // validateStepOutputs would return a violation if called for unpushable-path contracts,
+    // but the gate filters them out before calling validateStepOutputs.
+    const { strategy, finalizeSpy } = makeRuntimeStrategy(async () => ({
       violations: [
         {
           kind: "unpushable-path",
@@ -237,30 +251,25 @@ describe("TC-014: unpushable-path violation persisting after follow-up → await
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    // Should throw with UNPUSHABLE_PATH_BLOCKED (awaiting-resume escalation path)
-    await expect(executor.execute(step, state, makeDeps({
+    // Gate does NOT halt — it passes through to finalizeStepArtifacts (Layer 2).
+    await executor.execute(step, state, makeDeps({
       runtimeStrategy: strategy,
       pushCapability: declaringCapability,
-    }))).rejects.toMatchObject({
-      code: "UNPUSHABLE_PATH_BLOCKED",
-    });
+    }));
+
+    // finalizeStepArtifacts called (gate passed, Layer 2 is responsible for unpushable-path).
+    expect(finalizeSpy).toHaveBeenCalled();
   });
 
-  it("TC-014: halt reason includes the matched path", async () => {
+  it("TC-014: validateStepOutputs is NOT called when only unpushable-path contracts are declared", async () => {
     const jobId = "tc-014b";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
-      violations: [
-        {
-          kind: "unpushable-path",
-          path: "",
-          policy: "follow-up",
-          detail: [".github/workflows/ci.yml"],
-        },
-      ],
-    }));
+    const validateSpy = vi.fn<() => Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult>>()
+      .mockResolvedValue({ violations: [] });
+    const { strategy } = makeRuntimeStrategy(validateSpy);
+    strategy.validateStepOutputs = validateSpy;
 
     const step = makeStepWithContracts([
       {
@@ -274,59 +283,43 @@ describe("TC-014: unpushable-path violation persisting after follow-up → await
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    let thrown: unknown;
-    try {
-      await executor.execute(step, state, makeDeps({
-        runtimeStrategy: strategy,
-        pushCapability: declaringCapability,
-      }));
-    } catch (err) {
-      thrown = err;
-    }
+    await executor.execute(step, state, makeDeps({
+      runtimeStrategy: strategy,
+      pushCapability: declaringCapability,
+    }));
 
-    expect((thrown as Error).message).toContain(".github/workflows/ci.yml");
+    // Contracts filtered to empty before validateStepOutputs call → spy never invoked.
+    expect(validateSpy).not.toHaveBeenCalled();
   });
 
-  it("TC-014: halt reason includes the environment constraint", async () => {
+  it("TC-014: step succeeds (step run recorded) when only unpushable-path violations would be present", async () => {
     const jobId = "tc-014c";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
     const { strategy } = makeRuntimeStrategy(async () => ({
       violations: [
-        {
-          kind: "unpushable-path",
-          path: "",
-          policy: "follow-up",
-          detail: [".github/workflows/ci.yml"],
-        },
+        { kind: "unpushable-path", path: "", policy: "follow-up", detail: [".github/workflows/ci.yml"] },
       ],
     }));
 
     const step = makeStepWithContracts([
-      {
-        kind: "unpushable-path",
-        path: "",
-        policy: "follow-up",
-        patterns: [WORKFLOWS_PATTERN],
-      },
+      { kind: "unpushable-path", path: "", policy: "follow-up", patterns: [WORKFLOWS_PATTERN] },
     ]);
 
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    let thrown: unknown;
-    try {
-      await executor.execute(step, state, makeDeps({
-        runtimeStrategy: strategy,
-        pushCapability: declaringCapability,
-      }));
-    } catch (err) {
-      thrown = err;
-    }
+    const resultState = await executor.execute(step, state, makeDeps({
+      runtimeStrategy: strategy,
+      pushCapability: declaringCapability,
+    }));
 
-    // The error should contain the environment constraint from PushCapability.source
-    expect((thrown as Error).message).toContain("constraint");
+    // Step run recorded successfully — gate passed (Layer 2 would fire via commitAndPush).
+    const runs = resultState.steps?.["implementer"];
+    expect(runs).toBeDefined();
+    const lastRun = runs?.[runs.length - 1];
+    expect(lastRun?.outcome.error).toBeNull();
   });
 });
 
