@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:02:18.674Z",
+  "updatedAt": "2026-08-28T02:10:03.201Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,8 @@
     "3a601c3acc3fb4959144c6b265dc780b7646a1a7",
     "c848d73fcf5fa90f5bd8e9292dc1501a440a5174",
     "bec45ddc54815fcd2174bf98ec05246a89956471",
-    "fb837b8ba66caa4fd8cdd078983bf40f7ba04ab4"
+    "fb837b8ba66caa4fd8cdd078983bf40f7ba04ab4",
+    "89ae2b1c8bc269a2553a8d70425fd8cde484b5d2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -145,8 +146,10 @@
       "src/core/step/code-fixer.ts",
       "src/core/step/spec-fixer.ts",
       "src/core/step/__tests__/fixer-push-capability.test.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-context-builder.ts",
       "src/core/step/implementer.ts",
-      "src/core/step/__tests__/commit-scoped-paths.test.ts",
       "src/git/push-capability.ts"
     ],
     "code-fixer": [
@@ -197,8 +200,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 85,
+    "historyCount": 88,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -208,7 +216,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
