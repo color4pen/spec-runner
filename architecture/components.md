@@ -63,7 +63,7 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
 
 ### StepExecutor — step 実行エンジン（producer）
 - **責務**: AgentStep なら `AgentRunner.run(ctx)` を呼び、CliStep なら `step.run()` を呼ぶ。結果を `StepRun` として finalize する — **state への永続化・FSM 遷移・halt 適用は行わない**（B-13 / B-14。すべて CommitOrchestrator に委譲し、guard は `StepHalt` 値を生成するだけ）。`reportTool` 登録・follow-up 制御・project.md 注入（`needsProjectContext`）。
-- **出力契約ゲート**: runner 成功後・commit 前に、`writes()` 宣言 + `outputContracts()` を `RuntimeStrategy.validateStepOutputs` に渡して検証。violation あり → `STEP_OUTPUT_MISSING`。`follow-up` class の契約は `OutputVerificationPolicy`（`ctx.policy.outputVerification`）として adapter に注入し、同セッション内の repair loop を可能にする。
+- **出力契約ゲート**: runner 成功後・commit 前に、`writes()` 宣言 + `outputContracts()` を `RuntimeStrategy.validateStepOutputs` に渡して検証。violation あり → `STEP_OUTPUT_MISSING`。`follow-up` class の契約は `OutputVerificationPolicy`（`ctx.policy.outputVerification`）として adapter に注入し、同セッション内の repair loop を可能にする。**`unpushable-path` 契約は commit 前ゲートの対象外** — このゲートは commitAndPush の `git reset --mixed` 正規化より前に走るため、agent の self-commit を偽陽性で halt させてしまう。unpushable-path の担当は (1) adapter の follow-up（`OutputVerificationPolicy` は `step.outputContracts` をゲートと独立に読むため除外の影響を受けない。follow-up は 1 回限り）と (2) commit/push 時の backstop（`collectPublishablePaths` → `UnpushablePathBlockedError` → `UNPUSHABLE_PATH_BLOCKED` の awaiting-resume halt）の 2 層。
 - **協調**: AgentRunner（port）/ Step / CommitOrchestrator（永続）/ EventBus / RuntimeStrategy（output gate）。
 - → `src/core/step/executor.ts`
 
@@ -85,12 +85,13 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - **実イベント（`DomainEvent` union = 17種）**: `pipeline:start|complete|fail|iteration:start|iteration:verdict|iteration:exhausted|summary|cli-step|fixer:budget-skipped` ／ `step:start|complete|error|progress|retry|rollover` ／ `verdict:parsed` ／ `commit:push`
 - → `src/kernel/event-types.ts`（`DomainEvent` 正典）／ `src/core/event/types.ts`（`EventPayloadMap`）
 
-### ArchiveOrchestrator — archive（client-closed な最終片づけ）編成
-- **責務**: merge 済み change の片づけ。change folder を archive 配置・worktree を撤去・`awaiting-archive → archived` を確定。WorktreeManager / JobStateStore / git seam(spawn) を編成。
-- **不変条件**: **client-closed** — GitHubClient(port) に依存しない（merge も PR status 問い合わせも持たない）。外部状態の待ち・polling を含まず決定的に完結する。`archived` は change が実際に archive 済みであることを含意（forward-only）。
-- **merge の所在**: merge は CLI の片づけ責務の外（GitHub / 人が行う外部イベント・job status 遷移ではない）。opt-in の merge 便利経路のみ GitHubClient(port) に依存し、green 充足を前提に merge → archive を編成する（archive 本体とは別 path・client-closed 性はこの path を含まない）。
+### Archive subsystem（`core/archive/`）— merge 前に完結する単相 archive（client-closed な最終片づけ）
+- **所有境界（coordinator / component の分解）**: `runArchiveOrchestrator`（`orchestrator.ts`）は **archive record の作成・push のみ** — change folder の archive 配置 → archive commit → **feature branch へ push**。status 遷移は行わない（呼び出し側が所有）。plain 経路（`job archive <slug>`）の編成は `plain-archive.ts` — record → `markJobArchived`（`awaiting-archive → archived`）→ cleanup を 1 回の実行で行う（**単相**。PR は OPEN のままでよく、archive commit は後続の merge によって main に入る）。worktree 撤去・branch 削除は `cleanup.ts`（`runArchiveCleanup`）。`--with-merge` の merge 後遷移 + cleanup は `merge-completion.ts`（`completeAfterMerge`）。WorktreeManager / JobStateStore / git seam(spawn) を編成。
+- **不変条件（plain 経路）**: **client-closed** — GitHubClient(port) に依存しない（merge も PR status 問い合わせも持たない。git transport の push と冪等判定の条件付き `ls-remote` は行う）。外部状態の待ち・polling を含まず決定的に完結する。terminal transition の唯一の条件は **archive record push の成功**であり、PR state（OPEN / MERGED / CLOSED）に依らない。base branch への checkout / commit / push は行わず、remote feature branch も削除しない（`deleteRemoteBranch: false` 固定 — OPEN な PR のために保存）。
+- **`archived` の意味**: 経路共通に保証するのは「archive record が remote feature branch に到達した」こと。「変更が main に入った」は**含意せず**、cleanup（遷移後の best-effort）の完了も保証しない。遷移条件は経路ごと — plain は record push 成功、`--with-merge` は merge 成功。
+- **merge の所在**: merge は CLI の片づけ責務の外（GitHub / 人が行う外部イベント・job status 遷移ではない）。opt-in の merge 便利経路（`--with-merge` = `merge-then-archive.ts`）のみ GitHubClient(port) に依存し、archive record → CI green 待ち → squash merge → `completeAfterMerge`（archived 遷移 + cleanup。remote branch は削除）を編成する（archive 本体とは別 path・client-closed 性はこの path を含まない）。
 - **protected-path merge guard**: opt-in merge 経路は merge 直前に PR の変更ファイルを config の `archive.protectedPaths` glob と照合し、一致した場合は自動 merge せず escalation で停止する（fail-closed）。
-- → `src/core/archive/orchestrator.ts`（archive 本体）／ `src/core/archive/merge-then-archive.ts`（opt-in merge 経路）
+- → `src/core/archive/orchestrator.ts`（record）／ `src/core/archive/plain-archive.ts`（plain 経路の編成）／ `src/core/archive/cleanup.ts`（worktree/branch 片づけ）／ `src/core/archive/merge-then-archive.ts`（--with-merge 編成）／ `src/core/archive/merge-completion.ts`（merge 後の遷移 + cleanup）
 
 ### WorktreeManager — 並列実行の isolation seam
 - **責務**: job ごとに `.git/specrunner-worktrees/<slug>-<jobId>` の専用 worktree を作り（`create` / `remove` / `prune`）、main checkout を汚さない。lock 競合 retry・検出された PM の install コマンド実行・失敗時 cleanup を内包。
