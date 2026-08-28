@@ -4,12 +4,13 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
+import type { OutputContract } from "../port/output-contract.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, resolveReviewerResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import { conformanceResultPath } from "../../util/paths.js";
@@ -17,6 +18,7 @@ import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.js";
 import { selectFixerTargetFindings } from "./judge-verdict.js";
+import { renderPushCapabilityNotice } from "../../git/push-capability.js";
 // routing precedence は routed-findings.ts の collectRoutedFixerFindings と一致させること
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-5";
@@ -79,6 +81,10 @@ export const CodeFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 30,
 
+  outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
+    return buildUnpushablePathContracts(deps);
+  },
+
   reads(state: JobState, deps: StepDeps): IoRef[] {
     // Conformance-triggered entry: read conformance result file
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
@@ -119,6 +125,9 @@ export const CodeFixerStep: AgentStep = {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
 
+    // Capability notice: appended to all message variants when push capability is declared.
+    const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null);
+
     // routing precedence はこの 3 分岐が routed-findings.ts の collectRoutedFixerFindings と一致させること。
     // Conformance-triggered entry: use conformance findings
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
@@ -132,7 +141,7 @@ export const CodeFixerStep: AgentStep = {
           slug: deps.slug,
           findings: conformanceFindings,
           reviewerName: "conformance",
-        });
+        }) + capabilityNotice;
       }
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
       return `<user-request>
@@ -152,7 +161,7 @@ Please:
 
 Original request:
 ${deps.request.content}
-</user-request>`;
+</user-request>` + capabilityNotice;
     }
 
     // Composed path (custom reviewers) + coordinator loop active:
@@ -174,7 +183,7 @@ ${deps.request.content}
           slug: deps.slug,
           findings: aggregatedFindings.length > 0 ? aggregatedFindings : null,
           reviewerName: "custom reviewers",
-        });
+        }) + capabilityNotice;
       }
 
       if (aggregatedFindings.length > 0) {
@@ -194,7 +203,7 @@ Please:
 
 Original request:
 ${deps.request.content}
-</user-request>`;
+</user-request>` + capabilityNotice;
       }
 
       // Fallback: no structured findings → point to first result file
@@ -220,7 +229,7 @@ Please:
 
 Original request:
 ${deps.request.content}
-</user-request>`;
+</user-request>` + capabilityNotice;
       }
     }
 
@@ -251,7 +260,7 @@ ${deps.request.content}
         slug: deps.slug,
         findings,
         reviewerName: reviewerNameForMessage,
-      });
+      }) + capabilityNotice;
     }
 
     // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
@@ -272,7 +281,7 @@ Please:
 
 Original request:
 ${deps.request.content}
-</user-request>`;
+</user-request>` + capabilityNotice;
     }
 
     // フォールバック: 旧 toolResult を持つ job の resume → findingsPath 方式
@@ -292,7 +301,7 @@ Please:
 
 Original request:
 ${deps.request.content}
-</user-request>`;
+</user-request>` + capabilityNotice;
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): null {

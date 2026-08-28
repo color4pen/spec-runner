@@ -12,6 +12,8 @@ import { STEP_NAMES } from "./step-names.js";
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
+import type { OutputContract } from "../port/output-contract.js";
+import type { StepDeps } from "./types.js";
 
 /** fixer ステップ名の集合（build-fixer は廃止済み — verification 失敗は implementer 再入で直す） */
 export const FIXER_STEP_NAMES: ReadonlySet<string> = new Set([
@@ -171,6 +173,27 @@ export function buildFindingsBlock(findings: Finding[], reviewerName?: string): 
     lines.push("");
   }
   return lines.join("\n");
+}
+
+/**
+ * Build the outputContracts array for an unpushable-path contract.
+ *
+ * Returns an empty array when deps.pushCapability is null, undefined, or has no patterns.
+ * Returns a single "unpushable-path" contract with policy "follow-up" when patterns are declared.
+ *
+ * This mirrors the contract block in implementer.ts and is shared by fixer steps
+ * (code-fixer, spec-fixer) to avoid duplicating the contract logic.
+ */
+export function buildUnpushablePathContracts(deps: StepDeps): OutputContract[] {
+  if (!deps.pushCapability || deps.pushCapability.patterns.length === 0) return [];
+  return [
+    {
+      kind: "unpushable-path",
+      path: "", // sentinel — path is not used for unpushable-path contracts
+      policy: "follow-up",
+      patterns: deps.pushCapability.patterns,
+    },
+  ];
 }
 
 /**

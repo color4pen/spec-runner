@@ -2,9 +2,9 @@
 
 ## T-01: Add `buildUnpushablePathContracts` helper to `fixer-helpers.ts`
 
-- [ ] Add `import type { OutputContract } from "../port/output-contract.js"` to `fixer-helpers.ts`
-- [ ] Add `import type { StepDeps } from "./types.js"` to `fixer-helpers.ts` (the existing file imports from `step-names.ts` and `state/schema.js` but not `StepDeps` — check if already imported and add if missing)
-- [ ] Add exported function `buildUnpushablePathContracts(deps: StepDeps): OutputContract[]` to `fixer-helpers.ts`:
+- [x] Add `import type { OutputContract } from "../port/output-contract.js"` to `fixer-helpers.ts`
+- [x] Add `import type { StepDeps } from "./types.js"` to `fixer-helpers.ts` (the existing file imports from `step-names.ts` and `state/schema.js` but not `StepDeps` — check if already imported and add if missing)
+- [x] Add exported function `buildUnpushablePathContracts(deps: StepDeps): OutputContract[]` to `fixer-helpers.ts`:
   - Returns `[]` when `deps.pushCapability` is null, undefined, or has an empty `patterns` array
   - Returns `[{ kind: "unpushable-path", path: "", policy: "follow-up", patterns: deps.pushCapability.patterns }]` otherwise
   - This mirrors the contract block in `implementer.ts` L269-276 exactly
@@ -19,12 +19,12 @@
 
 ## T-02: Update `code-fixer.ts`: add `outputContracts` and notice injection
 
-- [ ] Add `import type { OutputContract } from "../port/output-contract.js"` to `code-fixer.ts`
-- [ ] Add `import { renderPushCapabilityNotice } from "../../git/push-capability.js"` to `code-fixer.ts`
-- [ ] Add `buildUnpushablePathContracts` to the import from `./fixer-helpers.js` in `code-fixer.ts`
-- [ ] Add `outputContracts(_state: JobState, deps: StepDeps): OutputContract[]` method to `CodeFixerStep` that returns `buildUnpushablePathContracts(deps)`
-- [ ] In `CodeFixerStep.buildMessage`, compute `const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null)` at the start of the method (before any branch logic)
-- [ ] Append `capabilityNotice` to every return path in `buildMessage`:
+- [x] Add `import type { OutputContract } from "../port/output-contract.js"` to `code-fixer.ts`
+- [x] Add `import { renderPushCapabilityNotice } from "../../git/push-capability.js"` to `code-fixer.ts`
+- [x] Add `buildUnpushablePathContracts` to the import from `./fixer-helpers.js` in `code-fixer.ts`
+- [x] Add `outputContracts(_state: JobState, deps: StepDeps): OutputContract[]` method to `CodeFixerStep` that returns `buildUnpushablePathContracts(deps)`
+- [x] In `CodeFixerStep.buildMessage`, compute `const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null)` at the start of the method (before any branch logic)
+- [x] Append `capabilityNotice` to every return path in `buildMessage`:
   - Conformance branch, continuation path: `return buildContinuationMessage(...) + capabilityNotice`
   - Conformance branch, initial path: append to the template literal before the closing backtick (or as a suffix after the closing backtick)
   - Coordinator loop branch, continuation path: `return buildContinuationMessage(...) + capabilityNotice`
@@ -47,12 +47,12 @@
 
 ## T-03: Update `spec-fixer.ts`: add `outputContracts` and notice injection
 
-- [ ] Add `import type { OutputContract } from "../port/output-contract.js"` to `spec-fixer.ts`
-- [ ] Add `import { renderPushCapabilityNotice } from "../../git/push-capability.js"` to `spec-fixer.ts`
-- [ ] Add `buildUnpushablePathContracts` to the import from `./fixer-helpers.js` in `spec-fixer.ts`
-- [ ] Add `outputContracts(_state: JobState, deps: StepDeps): OutputContract[]` method to `SpecFixerStep` that returns `buildUnpushablePathContracts(deps)`
-- [ ] In `SpecFixerStep.buildMessage`, compute `const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null)` at the start of the method (before any branch logic)
-- [ ] Append `capabilityNotice` to every return path in `buildMessage`:
+- [x] Add `import type { OutputContract } from "../port/output-contract.js"` to `spec-fixer.ts`
+- [x] Add `import { renderPushCapabilityNotice } from "../../git/push-capability.js"` to `spec-fixer.ts`
+- [x] Add `buildUnpushablePathContracts` to the import from `./fixer-helpers.js` in `spec-fixer.ts`
+- [x] Add `outputContracts(_state: JobState, deps: StepDeps): OutputContract[]` method to `SpecFixerStep` that returns `buildUnpushablePathContracts(deps)`
+- [x] In `SpecFixerStep.buildMessage`, compute `const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null)` at the start of the method (before any branch logic)
+- [x] Append `capabilityNotice` to every return path in `buildMessage`:
   - Conformance branch, continuation path: `return buildContinuationMessage(...) + capabilityNotice`
   - Conformance branch, initial path: append `capabilityNotice`
   - Normal branch, continuation path: `return buildContinuationMessage(...) + capabilityNotice`
@@ -80,28 +80,28 @@ Create a new test file `src/core/step/__tests__/fixer-push-capability.test.ts`.
 - `WORKFLOW_CAPABILITY: PushCapability` — `{ patterns: [WORKFLOWS_PATTERN], source: "Actions token" }`
 
 **Tests for `buildUnpushablePathContracts` (from `fixer-helpers.ts`)**:
-- [ ] Returns `[]` when `pushCapability` is null
-- [ ] Returns `[]` when `pushCapability.patterns` is empty
-- [ ] Returns one contract with `kind: "unpushable-path"` and `policy: "follow-up"` when patterns are declared
-- [ ] The returned contract carries the exact patterns array from `pushCapability.patterns`
+- [x] Returns `[]` when `pushCapability` is null
+- [x] Returns `[]` when `pushCapability.patterns` is empty
+- [x] Returns one contract with `kind: "unpushable-path"` and `policy: "follow-up"` when patterns are declared
+- [x] The returned contract carries the exact patterns array from `pushCapability.patterns`
 
 **Tests for `CodeFixerStep`**:
-- [ ] `CodeFixerStep.outputContracts(state, deps)` returns an `unpushable-path` contract when `deps.pushCapability` has patterns
-- [ ] `CodeFixerStep.outputContracts(state, deps)` returns `[]` when `deps.pushCapability` is null
-- [ ] `CodeFixerStep.buildMessage(state, deps)` (normal initial path, with findings injected via state) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `CodeFixerStep.buildMessage(state, deps)` (normal initial path) does NOT include `"Push Capability Notice"` when `pushCapability` is null
-- [ ] `CodeFixerStep.buildMessage(state, deps)` (continuation path — prior sessionId set on state) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `CodeFixerStep.buildMessage(state, deps)` (conformance branch — conformance run newer than predecessor) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `CodeFixerStep.outputContracts(state, deps)` returns an `unpushable-path` contract when `deps.pushCapability` has patterns
+- [x] `CodeFixerStep.outputContracts(state, deps)` returns `[]` when `deps.pushCapability` is null
+- [x] `CodeFixerStep.buildMessage(state, deps)` (normal initial path, with findings injected via state) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `CodeFixerStep.buildMessage(state, deps)` (normal initial path) does NOT include `"Push Capability Notice"` when `pushCapability` is null
+- [x] `CodeFixerStep.buildMessage(state, deps)` (continuation path — prior sessionId set on state) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `CodeFixerStep.buildMessage(state, deps)` (conformance branch — conformance run newer than predecessor) includes `"Push Capability Notice"` when `pushCapability` has patterns
 
 **Tests for `SpecFixerStep`**:
-- [ ] `SpecFixerStep.outputContracts(state, deps)` returns an `unpushable-path` contract when `deps.pushCapability` has patterns
-- [ ] `SpecFixerStep.outputContracts(state, deps)` returns `[]` when `deps.pushCapability` is null
-- [ ] `SpecFixerStep.buildMessage(state, deps)` (normal path, findings available) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `SpecFixerStep.buildMessage(state, deps)` (fallback path, no findings) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `SpecFixerStep.buildMessage(state, deps)` (continuation path) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `SpecFixerStep.buildMessage(state, deps)` does NOT include `"Push Capability Notice"` when `pushCapability` is null
-- [ ] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, initial entry — conformance run newer than spec-reviewer) includes `"Push Capability Notice"` when `pushCapability` has patterns
-- [ ] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, continuation — prior sessionId set on state with conformance context active) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `SpecFixerStep.outputContracts(state, deps)` returns an `unpushable-path` contract when `deps.pushCapability` has patterns
+- [x] `SpecFixerStep.outputContracts(state, deps)` returns `[]` when `deps.pushCapability` is null
+- [x] `SpecFixerStep.buildMessage(state, deps)` (normal path, findings available) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `SpecFixerStep.buildMessage(state, deps)` (fallback path, no findings) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `SpecFixerStep.buildMessage(state, deps)` (continuation path) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `SpecFixerStep.buildMessage(state, deps)` does NOT include `"Push Capability Notice"` when `pushCapability` is null
+- [x] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, initial entry — conformance run newer than spec-reviewer) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [x] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, continuation — prior sessionId set on state with conformance context active) includes `"Push Capability Notice"` when `pushCapability` has patterns
 
 **Acceptance Criteria**:
 - `src/core/step/__tests__/fixer-push-capability.test.ts` exists and all tests within pass
@@ -112,10 +112,10 @@ Create a new test file `src/core/step/__tests__/fixer-push-capability.test.ts`.
 
 ## T-05: Verify no regression in existing tests and typecheck
 
-- [ ] Run `bun run typecheck` — exit code 0, no new errors
-- [ ] Run `bun run test` — exit code 0, all pre-existing tests continue to pass
-- [ ] Confirm by inspection that `implementer.ts` and `request-review.ts` are unchanged (no modifications to those files)
-- [ ] Confirm by inspection that `step-context-builder.ts`, `output-verify.ts`, and `commit-push.ts` are unchanged
+- [x] Run `bun run typecheck` — exit code 0, no new errors
+- [x] Run `bun run test` — exit code 0, all pre-existing tests continue to pass
+- [x] Confirm by inspection that `implementer.ts` and `request-review.ts` are unchanged (no modifications to those files)
+- [x] Confirm by inspection that `step-context-builder.ts`, `output-verify.ts`, and `commit-push.ts` are unchanged
 
 **Acceptance Criteria**:
 - `bun run typecheck` exits 0
