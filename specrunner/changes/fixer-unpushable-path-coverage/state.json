@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T00:16:45.432Z",
+  "updatedAt": "2026-08-28T00:24:01.813Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
@@ -65,7 +65,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "ac29fd0bf0b91f55c4c242a8c0a7ad2a371fd9cf",
-    "8ac9e41dd7a8c99cedc7ca454cb0748478fe3c26"
+    "8ac9e41dd7a8c99cedc7ca454cb0748478fe3c26",
+    "dedda721e0a8a58ab466960dbde30371644a5c41"
   ],
   "touchedFiles": {
     "request-review": [
@@ -80,12 +81,30 @@
       "src/core/step/types.ts",
       "src/core/port/step-types.ts",
       "src/core/port/output-contract.ts"
+    ],
+    "design": [
+      "src/core/step/implementer.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/git/push-capability.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/__tests__/commit-scoped-paths.test.ts",
+      "src/core/port/step-context.ts",
+      "src/core/step/request-review.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/step/__tests__/fixer-reviewer.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
