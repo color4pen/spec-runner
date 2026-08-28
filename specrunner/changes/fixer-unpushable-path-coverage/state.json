@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:57:37.721Z",
+  "updatedAt": "2026-08-28T03:06:58.011Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
   "pipelineId": "standard",
@@ -90,7 +90,9 @@
     "61774c427f852c4908d08cfed75828cb0d60c2f3",
     "dc86bc24c7e989788f0dbb6ac7f438825d248045",
     "02964a8c92e7e8e287dcc26eab4a0818e50fad49",
-    "2729c205f506dbf5060db27e2c7db44b5c2d6bdb"
+    "2729c205f506dbf5060db27e2c7db44b5c2d6bdb",
+    "db219fcf5ca87ee68868f400d53fc5868666a3e8",
+    "c33261f73bb227816d1361ff22f8758c3dab201e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,7 +176,8 @@
       "src/core/step/code-fixer.ts",
       "src/core/step/spec-fixer.ts",
       "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "src/core/step/executor.ts"
+      "src/core/step/executor.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -221,8 +224,13 @@
       "recordedAt": "2026-08-28T02:42:58.242Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1090",
+    "number": 1090,
+    "createdAt": "2026-08-28T03:06:57.203Z"
+  },
   "_journal": {
-    "historyCount": 120,
+    "historyCount": 134,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -231,14 +239,16 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 4,
       "code-fixer": 4,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
