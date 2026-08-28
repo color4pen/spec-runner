@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 21 cases
-- **Automated** (unit/integration): 17
+- **Total**: 23 cases
+- **Automated** (unit/integration): 19
 - **Manual**: 0
-- **Priority**: must: 20, should: 1, could: 0
+- **Priority**: must: 22, should: 1, could: 0
 
 ---
 
@@ -221,7 +221,7 @@ Verification command: `bun run typecheck` — must exit with code 0 and introduc
 **Priority**: must
 **Source**: tasks.md T-05 (test regression acceptance criterion)
 
-Verification command: `bun run test` — must exit with code 0. All pre-existing tests must continue to pass. The new test file `src/core/step/__tests__/fixer-push-capability.test.ts` must exist and all tests within it must pass (minimum 14 tests: 4 helper + 5 code-fixer + 5 spec-fixer).
+Verification command: `bun run test` — must exit with code 0. All pre-existing tests must continue to pass. The new test file `src/core/step/__tests__/fixer-push-capability.test.ts` must exist and all tests within it must pass (minimum 18 tests: 4 helper + 6 code-fixer + 8 spec-fixer).
 
 ---
 
@@ -245,14 +245,44 @@ Verification: `git diff main -- src/core/step/step-context-builder.ts src/core/s
 
 ---
 
+### TC-022: spec-fixer conformance branch initial entry includes push capability notice
+
+**Category**: unit
+**Priority**: must
+**Source**: tasks.md T-03 (conformance branch, initial path) / design.md D3 / design.md D4
+
+**GIVEN** `deps.pushCapability` is set with `patterns: [".github/workflows/**"]`
+**AND** the state has a conformance step run with verdict `"needs-fix:spec-fixer"` whose `endedAt` is strictly later than the active spec-reviewer's last `endedAt`
+**AND** the conformance run's `toolResult.findings` is non-empty
+**AND** the step has no prior session (not a continuation — `isFixerContinuation` is false)
+**WHEN** `SpecFixerStep.buildMessage(state, deps)` is called
+**THEN** the returned string contains `"Push Capability Notice"`
+
+---
+
+### TC-023: spec-fixer conformance branch continuation includes push capability notice
+
+**Category**: unit
+**Priority**: must
+**Source**: tasks.md T-03 (conformance branch, continuation path) / design.md D3 / design.md D4
+
+**GIVEN** `deps.pushCapability` is set with `patterns: [".github/workflows/**"]`
+**AND** the state has a conformance step run with verdict `"needs-fix:spec-fixer"` whose `endedAt` is strictly later than the active spec-reviewer's last `endedAt`
+**AND** the conformance run's `toolResult.findings` is non-empty
+**AND** the step has a prior session recorded in state (`isFixerContinuation` is true)
+**WHEN** `SpecFixerStep.buildMessage(state, deps)` is called
+**THEN** the returned string contains `"Push Capability Notice"`
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 21
-automated: 17
+total: 23
+automated: 19
 manual: 0
-must: 20
+must: 22
 should: 1
 could: 0
 blocked_reasons: []

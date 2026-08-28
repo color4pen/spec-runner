@@ -100,10 +100,12 @@ Create a new test file `src/core/step/__tests__/fixer-push-capability.test.ts`.
 - [ ] `SpecFixerStep.buildMessage(state, deps)` (fallback path, no findings) includes `"Push Capability Notice"` when `pushCapability` has patterns
 - [ ] `SpecFixerStep.buildMessage(state, deps)` (continuation path) includes `"Push Capability Notice"` when `pushCapability` has patterns
 - [ ] `SpecFixerStep.buildMessage(state, deps)` does NOT include `"Push Capability Notice"` when `pushCapability` is null
+- [ ] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, initial entry — conformance run newer than spec-reviewer) includes `"Push Capability Notice"` when `pushCapability` has patterns
+- [ ] `SpecFixerStep.buildMessage(state, deps)` (conformance branch, continuation — prior sessionId set on state with conformance context active) includes `"Push Capability Notice"` when `pushCapability` has patterns
 
 **Acceptance Criteria**:
 - `src/core/step/__tests__/fixer-push-capability.test.ts` exists and all tests within pass
-- At minimum 14 tests covering: 4 helper tests + 5 code-fixer tests + 5 spec-fixer tests (totals above)
+- At minimum 18 tests covering: 4 helper tests + 6 code-fixer tests + 8 spec-fixer tests (totals above)
 - `bun run test` passes (entire test suite, no regressions)
 
 ---
