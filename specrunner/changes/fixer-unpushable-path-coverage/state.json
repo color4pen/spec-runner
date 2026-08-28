@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T00:58:40.069Z",
+  "updatedAt": "2026-08-28T01:05:40.503Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -72,7 +72,9 @@
     "77f478c1181942bfe22904356f2ad00a9c61129f",
     "34c6511e34e94b52f3674bb980d1c7821c9f8405",
     "3d81732e675e76d9148801c9c3dfe31556006c71",
-    "6eb30019f2c43e98578811be6e9889c7e265157a"
+    "6eb30019f2c43e98578811be6e9889c7e265157a",
+    "d6fb15fad0963ca23f4045adcf9d1b73efe3bb53",
+    "e57555199f59a9126742641da4ab97d86a2ef483"
   ],
   "touchedFiles": {
     "request-review": [
@@ -154,10 +156,46 @@
       "src/core/step/implementer.ts",
       "src/core/step/__tests__/commit-scoped-paths.test.ts",
       "src/git/push-capability.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/__tests__/fixer-push-capability.test.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/__tests__/commit-scoped-paths.test.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/output-contract.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -167,7 +205,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }

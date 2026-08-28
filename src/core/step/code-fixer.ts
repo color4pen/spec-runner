@@ -4,13 +4,12 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
-import type { OutputContract } from "../port/output-contract.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../prompts/code-fixer-system.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, resolveReviewerResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import { conformanceResultPath } from "../../util/paths.js";
@@ -81,9 +80,15 @@ export const CodeFixerStep: AgentStep = {
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 30,
 
-  outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
-    return buildUnpushablePathContracts(deps);
-  },
+  // Design: code-fixer intentionally does NOT declare outputContracts for unpushable-path.
+  // Code-fixer uses guarded staging mode and its agent may self-commit files before
+  // commitAndPush's git reset --mixed normalization. Declaring outputContracts would
+  // cause the executor output contract gate to halt BEFORE the mixed reset, preventing
+  // the normalization that clears self-commits — a false-positive UNPUSHABLE_PATH_BLOCKED
+  // halt even when the mixed reset would have resolved the violation.
+  // Layer 2 (commitAndPush → collectPublishablePaths → UnpushablePathBlockedError) is the
+  // sole backstop, running AFTER git reset --mixed so it correctly sees only the final
+  // post-normalization publishable paths. See: unpushable-path-escalation.test.ts.
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
     // Conformance-triggered entry: read conformance result file
