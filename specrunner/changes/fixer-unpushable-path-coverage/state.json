@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:51:47.943Z",
+  "updatedAt": "2026-08-28T02:54:30.965Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
@@ -88,7 +88,8 @@
     "fce6987722e0149a95d4bde09dbc98f0e7297769",
     "be47031999b253c420ec2028514b9eedc93f4bee",
     "61774c427f852c4908d08cfed75828cb0d60c2f3",
-    "dc86bc24c7e989788f0dbb6ac7f438825d248045"
+    "dc86bc24c7e989788f0dbb6ac7f438825d248045",
+    "02964a8c92e7e8e287dcc26eab4a0818e50fad49"
   ],
   "touchedFiles": {
     "request-review": [
@@ -154,10 +155,11 @@
       "tests/unit/step/unpushable-path-escalation.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/code-fixer.ts",
       "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "src/core/step/executor.ts",
-      "tests/unit/step/unpushable-path-escalation.test.ts"
+      "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/fixer-helpers.ts"
     ],
     "regression-gate": [
       "src/core/step/__tests__/fixer-push-capability.test.ts",
@@ -216,7 +218,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 111,
+    "historyCount": 115,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -227,7 +229,7 @@
       "bite-evidence": 1,
       "verification": 3,
       "code-review": 4,
-      "code-fixer": 3,
+      "code-fixer": 4,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
