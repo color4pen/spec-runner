@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e140dad-cd3d-44ee-b9d8-202152cd7cdd",
   "createdAt": "2026-08-28T00:13:33.762Z",
-  "updatedAt": "2026-08-28T02:54:30.965Z",
+  "updatedAt": "2026-08-28T02:57:37.721Z",
   "request": {
     "title": "push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/fixer-unpushable-path-coverage-6e140dad",
   "error": null,
@@ -89,7 +89,8 @@
     "be47031999b253c420ec2028514b9eedc93f4bee",
     "61774c427f852c4908d08cfed75828cb0d60c2f3",
     "dc86bc24c7e989788f0dbb6ac7f438825d248045",
-    "02964a8c92e7e8e287dcc26eab4a0818e50fad49"
+    "02964a8c92e7e8e287dcc26eab4a0818e50fad49",
+    "2729c205f506dbf5060db27e2c7db44b5c2d6bdb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -163,7 +164,10 @@
     ],
     "regression-gate": [
       "src/core/step/__tests__/fixer-push-capability.test.ts",
-      "src/core/step/code-fixer.ts"
+      "src/core/step/code-fixer.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/spec-fixer.ts"
     ],
     "conformance": [
       "src/core/step/fixer-helpers.ts",
@@ -218,7 +222,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 115,
+    "historyCount": 120,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -233,7 +237,7 @@
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 1
     }
   }
