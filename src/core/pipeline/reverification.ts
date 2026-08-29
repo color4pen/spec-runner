@@ -161,9 +161,9 @@ export function conformanceApprovedLatest(state: JobState): boolean {
 /**
  * Returns true when the most recent verification run has verdict "failed".
  *
- * Used as the `when` guard for `implementer success → verification` routing
- * (recovery re-entry: bite-evidence is bypassed so the loop budget accumulates
- * correctly without spurious resets).
+ * Previously used as a `when` guard for `implementer success → verification` routing
+ * (recovery re-entry: the transition is now unconditional, but this predicate is
+ * retained for step-context consumers that read it to detect re-entry scenarios).
  *
  * Returns false when:
  *   - No verification run exists (initial run, never verified yet)

@@ -64,12 +64,11 @@ describe("TC-033: egress failure → restackCheckpointOntoPublishedTip is not in
         { exitCode: 0 },                                // 0: add state.json
         { exitCode: 0 },                                // 1: add events.jsonl
         { exitCode: 0 },                                // 2: add usage.json
-        { exitCode: 0 },                                // 3: add bite-evidence-result.md
-        { exitCode: 0 },                                // 4: add pr-create-result.md
-        { exitCode: 1 },                                // 5: diff --cached --quiet → staged changes
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 6: commit
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 7: rev-parse HEAD (verifyEgressLedger)
-        { exitCode: 0, stdout: `${UNKNOWN_OID}\n` },    // 8: rev-list → UNKNOWN_OID not in ledger → throws
+        { exitCode: 0 },                                // 3: add pr-create-result.md
+        { exitCode: 1 },                                // 4: diff --cached --quiet → staged changes
+        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 5: commit
+        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 6: rev-parse HEAD (verifyEgressLedger)
+        { exitCode: 0, stdout: `${UNKNOWN_OID}\n` },    // 7: rev-list → UNKNOWN_OID not in ledger → throws
         // egress fails → early return; NO push, NO restack calls follow
       ]);
 
@@ -82,7 +81,7 @@ describe("TC-033: egress failure → restackCheckpointOntoPublishedTip is not in
           spawnFn: pipelineSpawnFn,
           messageLabel: "checkpoint",
           synthesizedCommits: [], // empty ledger → only CHECKPOINT_OID (from rev-parse HEAD)
-          // no persistBeforePush: keeps the sequence at exactly 9 calls
+          // no persistBeforePush: keeps the sequence at exactly 8 calls
         }),
       ).resolves.toBeUndefined();
 
@@ -93,8 +92,9 @@ describe("TC-033: egress failure → restackCheckpointOntoPublishedTip is not in
       expect(subcommands).not.toContain("push");
       expect(subcommands).not.toContain("fetch");
 
-      // Exact call count: 5 add + 1 diff + 1 commit + 1 rev-parse + 1 rev-list = 9
-      expect(calls).toHaveLength(9);
+      // Exact call count: 4 add + 1 diff + 1 commit + 1 rev-parse + 1 rev-list = 8
+      // (bite-evidence-result.md no longer in pipelineManagedPaths; only 4 managed files)
+      expect(calls).toHaveLength(8);
     },
   );
 });
@@ -124,15 +124,14 @@ describe("TC-026 (should): push double-failure warn appears before restack resul
           { exitCode: 0 },                                // 0: add state.json
           { exitCode: 0 },                                // 1: add events.jsonl
           { exitCode: 0 },                                // 2: add usage.json
-          { exitCode: 0 },                                // 3: add bite-evidence-result.md
-          { exitCode: 0 },                                // 4: add pr-create-result.md
-          { exitCode: 1 },                                // 5: diff --cached --quiet → staged changes
-          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 6: commit
-          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 7: rev-parse HEAD (verifyEgressLedger)
-          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 8: rev-list → CHECKPOINT_OID in ledger → passes
-          { exitCode: 1 },                                // 9: push1 → fails
-          { exitCode: 1 },                                // 10: push2 → fails → restack called
-          // excess: 11=fetch (exit 0, stdout ""), 12=rev-parse origin/<branch> (exit 0, stdout "")
+          { exitCode: 0 },                                // 3: add pr-create-result.md
+          { exitCode: 1 },                                // 4: diff --cached --quiet → staged changes
+          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 5: commit
+          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 6: rev-parse HEAD (verifyEgressLedger)
+          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // 7: rev-list → CHECKPOINT_OID in ledger → passes
+          { exitCode: 1 },                                // 8: push1 → fails
+          { exitCode: 1 },                                // 9: push2 → fails → restack called
+          // excess: 10=fetch (exit 0, stdout ""), 11=rev-parse origin/<branch> (exit 0, stdout "")
           // → parentOid="" → no-remote-tip → restack returns {kind:"skipped",reason:"no-remote-tip"}
         ]);
 
@@ -199,14 +198,13 @@ describe("TC-039 (must): messageLabel 'finalize' → restack git operations are 
         { exitCode: 0 },                                  // 0: add state.json
         { exitCode: 0 },                                  // 1: add events.jsonl
         { exitCode: 0 },                                  // 2: add usage.json
-        { exitCode: 0 },                                  // 3: add bite-evidence-result.md
-        { exitCode: 0 },                                  // 4: add pr-create-result.md
-        { exitCode: 1 },                                  // 5: diff --cached --quiet → staged changes
-        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 6: commit
-        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 7: rev-parse HEAD (verifyEgressLedger)
-        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 8: rev-list → FINALIZE_OID in synthesizedCommits → pass
-        { exitCode: 1 },                                  // 9: push1 → fails
-        { exitCode: 1 },                                  // 10: push2 → fails → existing warn emitted
+        { exitCode: 0 },                                  // 3: add pr-create-result.md
+        { exitCode: 1 },                                  // 4: diff --cached --quiet → staged changes
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 5: commit
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 6: rev-parse HEAD (verifyEgressLedger)
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 7: rev-list → FINALIZE_OID in synthesizedCommits → pass
+        { exitCode: 1 },                                  // 8: push1 → fails
+        { exitCode: 1 },                                  // 9: push2 → fails → existing warn emitted
         // NO further calls expected: restack is NOT triggered for finalize
       ]);
 

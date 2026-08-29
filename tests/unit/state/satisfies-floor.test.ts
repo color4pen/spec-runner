@@ -9,7 +9,7 @@
  * TC-006: STANDARD_PROFILE — assurance が任意の floor を満たす
  * TC-015: assurance:{} が ProfileAssurance に代入可能（後方互換）
  * TC-016: assurance:{ level:"high" } が ProfileAssurance に代入可能（index signature 互換）(should)
- * TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal
+ * TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal (two active dimensions: testDerivation, specReview)
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -25,24 +25,22 @@ import type { ProfileAssurance } from "../../../src/state/schema.js";
 // ---------------------------------------------------------------------------
 describe("TC-001: satisfiesFloor — 全制約フィールドが rank 以上のとき true を返す", () => {
   it("returns true when all constrained fields equal the floor rank", () => {
-    // Spec scenario: assurance testDerivation=frozen, biteEvidence=required, specReview=required
-    // floor: testDerivation=frozen, biteEvidence=required  (specReview unconstrained)
+    // Spec scenario: assurance testDerivation=frozen, specReview=required
+    // floor: testDerivation=frozen (specReview unconstrained)
     const assurance: ProfileAssurance = {
       testDerivation: "frozen",
-      biteEvidence: "required",
       specReview: "required",
     };
     const floor: AssuranceFloor = {
       testDerivation: "frozen",
-      biteEvidence: "required",
     };
     expect(satisfiesFloor(assurance, floor)).toBe(true);
   });
 
   it("returns true when assurance rank exceeds the floor rank for a field", () => {
     // testDerivation frozen > coupled → satisfies floor that requires "coupled"
-    const assurance: ProfileAssurance = { testDerivation: "frozen", biteEvidence: "required", specReview: "required" };
-    const floor: AssuranceFloor = { testDerivation: "coupled", biteEvidence: "optional" };
+    const assurance: ProfileAssurance = { testDerivation: "frozen", specReview: "required" };
+    const floor: AssuranceFloor = { testDerivation: "coupled" };
     expect(satisfiesFloor(assurance, floor)).toBe(true);
   });
 
@@ -67,17 +65,9 @@ describe("TC-002: satisfiesFloor — 制約フィールドが rank 未満のと�
     // Spec scenario: coupled < frozen in the lattice
     const assurance: ProfileAssurance = {
       testDerivation: "coupled",
-      biteEvidence: "required",
       specReview: "required",
     };
     const floor: AssuranceFloor = { testDerivation: "frozen" };
-    expect(satisfiesFloor(assurance, floor)).toBe(false);
-  });
-
-  it("returns false when biteEvidence is optional but floor requires required", () => {
-    // optional < required
-    const assurance: ProfileAssurance = { biteEvidence: "optional" };
-    const floor: AssuranceFloor = { biteEvidence: "required" };
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });
 
@@ -89,8 +79,8 @@ describe("TC-002: satisfiesFloor — 制約フィールドが rank 未満のと�
   });
 
   it("returns false when one field satisfies the floor but another does not", () => {
-    const assurance: ProfileAssurance = { testDerivation: "frozen", biteEvidence: "optional" };
-    const floor: AssuranceFloor = { testDerivation: "frozen", biteEvidence: "required" };
+    const assurance: ProfileAssurance = { testDerivation: "coupled", specReview: "required" };
+    const floor: AssuranceFloor = { testDerivation: "frozen", specReview: "required" };
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });
 });
@@ -100,16 +90,16 @@ describe("TC-002: satisfiesFloor — 制約フィールドが rank 未満のと�
 // ---------------------------------------------------------------------------
 describe("TC-003: satisfiesFloor — assurance にフィールドが欠落 / 未知値のとき fail-closed で false", () => {
   it("returns false when constrained field is absent from assurance (empty assurance)", () => {
-    // Spec scenario: assurance {} with floor { biteEvidence: "required" } → false (fail-closed)
+    // Spec scenario: assurance {} with floor { testDerivation: "frozen" } → false (fail-closed)
     const assurance: ProfileAssurance = {};
-    const floor: AssuranceFloor = { biteEvidence: "required" };
+    const floor: AssuranceFloor = { testDerivation: "frozen" };
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });
 
   it("returns false when constrained field is absent but other fields are present", () => {
     const assurance: ProfileAssurance = { testDerivation: "frozen" };
-    const floor: AssuranceFloor = { testDerivation: "frozen", biteEvidence: "required" };
-    // biteEvidence is absent from assurance
+    const floor: AssuranceFloor = { testDerivation: "frozen", specReview: "required" };
+    // specReview is absent from assurance
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });
 
@@ -124,7 +114,7 @@ describe("TC-003: satisfiesFloor — assurance にフィールドが欠落 / 未
 
   it("returns false when assurance is empty and floor constrains all fields", () => {
     const assurance: ProfileAssurance = {};
-    const floor: AssuranceFloor = { testDerivation: "frozen", biteEvidence: "required", specReview: "required" };
+    const floor: AssuranceFloor = { testDerivation: "frozen", specReview: "required" };
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });
 });
@@ -138,12 +128,12 @@ describe("TC-004: satisfiesFloor — 空 floor は任意の assurance に対し�
   });
 
   it("returns true for empty floor and full assurance", () => {
-    const assurance: ProfileAssurance = { testDerivation: "frozen", biteEvidence: "required", specReview: "required" };
+    const assurance: ProfileAssurance = { testDerivation: "frozen", specReview: "required" };
     expect(satisfiesFloor(assurance, {})).toBe(true);
   });
 
   it("returns true for empty floor and sub-floor assurance", () => {
-    const assurance: ProfileAssurance = { testDerivation: "coupled", biteEvidence: "optional", specReview: "omitted" };
+    const assurance: ProfileAssurance = { testDerivation: "coupled", specReview: "omitted" };
     expect(satisfiesFloor(assurance, {})).toBe(true);
   });
 });
@@ -174,20 +164,14 @@ describe("TC-006: STANDARD_PROFILE — assurance が任意の floor を満たす
     expect(satisfiesFloor(STANDARD_PROFILE.assurance, floor)).toBe(true);
   });
 
-  it("satisfies floor { biteEvidence: 'required' }", () => {
-    const floor: AssuranceFloor = { biteEvidence: "required" };
-    expect(satisfiesFloor(STANDARD_PROFILE.assurance, floor)).toBe(true);
-  });
-
   it("satisfies floor { specReview: 'required' }", () => {
     const floor: AssuranceFloor = { specReview: "required" };
     expect(satisfiesFloor(STANDARD_PROFILE.assurance, floor)).toBe(true);
   });
 
-  it("satisfies the maximum floor (all fields at highest rank)", () => {
+  it("satisfies the maximum floor (all active fields at highest rank)", () => {
     const floor: AssuranceFloor = {
       testDerivation: "frozen",
-      biteEvidence: "required",
       specReview: "required",
     };
     expect(satisfiesFloor(STANDARD_PROFILE.assurance, floor)).toBe(true);
@@ -239,13 +223,12 @@ describe("TC-016: assurance:{ level:'high' } が ProfileAssurance に代入可�
 });
 
 // ---------------------------------------------------------------------------
-// TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal
+// TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal (two active dimensions)
 // ---------------------------------------------------------------------------
 describe("TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal", () => {
-  it("STANDARD_PROFILE.assurance equals { testDerivation: 'frozen', biteEvidence: 'required', specReview: 'required' }", () => {
+  it("STANDARD_PROFILE.assurance equals { testDerivation: 'frozen', specReview: 'required' }", () => {
     expect(STANDARD_PROFILE.assurance).toEqual({
       testDerivation: "frozen",
-      biteEvidence: "required",
       specReview: "required",
     });
   });
@@ -254,11 +237,11 @@ describe("TC-017: STANDARD_PROFILE.assurance が最強値と deep-equal", () => 
     expect((STANDARD_PROFILE.assurance as Record<string, unknown>)["testDerivation"]).toBe("frozen");
   });
 
-  it("STANDARD_PROFILE.assurance has biteEvidence: 'required' (strongest)", () => {
-    expect((STANDARD_PROFILE.assurance as Record<string, unknown>)["biteEvidence"]).toBe("required");
-  });
-
   it("STANDARD_PROFILE.assurance has specReview: 'required' (strongest)", () => {
     expect((STANDARD_PROFILE.assurance as Record<string, unknown>)["specReview"]).toBe("required");
+  });
+
+  it("STANDARD_PROFILE.assurance does not include biteEvidence (dimension removed)", () => {
+    expect((STANDARD_PROFILE.assurance as Record<string, unknown>)["biteEvidence"]).toBeUndefined();
   });
 });

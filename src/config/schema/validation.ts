@@ -287,13 +287,6 @@ export const configSchema = object({
         commands: optional(
           array(shellCommandSchema, "must be an array."),
         ),
-        scopedTestCommand: optional(nonEmptyString("must be a non-empty string.")),
-        scopedTestPatterns: optional(
-          array(
-            nonEmptyString("must be a non-empty string."),
-            "must be an array.",
-          ).check(minLength(1, "must be a non-empty array.")),
-        ),
         coverage: optional(
           object(
             {
@@ -407,9 +400,6 @@ export const configSchema = object({
               ),
               testDerivation: optional(
                 union([literal("coupled"), literal("frozen")]),
-              ),
-              biteEvidence: optional(
-                union([literal("optional"), literal("required")]),
               ),
               specReview: optional(
                 union([literal("omitted"), literal("required")]),
@@ -745,12 +735,38 @@ function canReachNamespace(pattern: string, nsSegs: string[]): boolean {
 }
 
 /**
+ * Reject any config that declares the removed `biteEvidence` assurance dimension.
+ *
+ * `archive.minimumAssurance.biteEvidence` was removed when the bite-evidence feature
+ * was deprecated. Any value (including null) is an error — the dimension no longer
+ * exists and silently ignoring it would give a false sense of security.
+ *
+ * The check runs against the raw (pre-Zod) config so it fires even when Zod would
+ * otherwise strip the unknown key.
+ */
+function checkRemovedAssuranceDimension(raw: Record<string, unknown>): void {
+  const archive = raw["archive"];
+  if (!archive || typeof archive !== "object") return;
+  const minimumAssurance = (archive as Record<string, unknown>)["minimumAssurance"];
+  if (!minimumAssurance || typeof minimumAssurance !== "object") return;
+  if ("biteEvidence" in (minimumAssurance as Record<string, unknown>)) {
+    throw Object.assign(
+      new Error(
+        "CONFIG_INVALID: archive.minimumAssurance.biteEvidence is no longer a supported assurance dimension and must be removed from your config.",
+      ),
+      { code: "CONFIG_INVALID" },
+    );
+  }
+}
+
+/**
  * Run all post-schema semantic checks on the raw (unmodified) config object.
  */
 function runSemanticChecks(raw: Record<string, unknown>): void {
   checkModelRegistry(raw);
   checkByRequestTypeSemantics(raw);
   checkStagingExclusionNamespace(raw);
+  checkRemovedAssuranceDimension(raw);
 }
 
 // ---------------------------------------------------------------------------

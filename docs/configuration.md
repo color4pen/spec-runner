@@ -213,33 +213,17 @@ Declare `verification.coverage` to assert that changed lines (base…HEAD diff) 
 - Files that are legitimately untestable (generated code, fixtures, etc.) should be listed in `exclude`. Remaining genuine exceptions escalate through the normal escalation → human judgment → resume flow.
 - **In-job coverage re-resolution**: immediately before each verification attempt, the pipeline re-reads `verification.coverage` from `.specrunner/config.json` on disk. This means that if build-fixer edits the project config (e.g. adding an entry to `exclude`) during the same job, the subsequent verification reflects that change — without needing a resume. Re-resolution is limited to `verification.coverage`; `verification.commands` and all other config fields retain their job-start values. Config changes made this way are included in the PR and remain subject to human review as usual.
 
-### verification.scopedTestPatterns — bite-evidence test file selection
+## Removed keys
 
-`verification.scopedTestPatterns` declares which materialized files are run per-file during the bite-evidence gate. It pairs with `verification.scopedTestCommand` to define the per-file bite execution target set.
+The following configuration keys were removed in a prior release and are no longer supported:
 
-**Default** (applied when the field is absent):
+- **`archive.minimumAssurance.biteEvidence`** — The bite-evidence assurance dimension was removed.
+  Any config that declares this key is rejected at startup with a `CONFIG_INVALID` error.
+  **Action required**: delete the key from your `.specrunner/config.json`.
 
-```json
-["**/*.test.*", "**/*.spec.*", "**/*_test.*"]
-```
-
-Files in the test-materialize commit that do not match any pattern — fixture JSON, `package.json`, implementation files, `.rs` files, etc. — are excluded from per-file bite execution. Only files matching at least one pattern are run.
-
-**Configured patterns fully replace the default** — there is no merging. When set to a non-empty array, the default three patterns no longer apply.
-
-Glob semantics are intentionally simple: `**/` matches zero or more directory segments, single `*` matches within one path segment (does not cross `/`), and literal characters (including `.`) match literally.
-
-Polyglot and non-standard-naming repos should override this field to match their test naming convention:
-
-```jsonc
-// Go project
-{ "verification": { "scopedTestPatterns": ["**/*_test.go"] } }
-
-// Ruby project
-{ "verification": { "scopedTestPatterns": ["**/*_spec.rb"] } }
-```
-
-When the base commit of a test-materialize step contains no files matching the patterns, the bite-evidence gate returns `strategy-deferred` (unmeasurable) rather than `failed`. Whether `strategy-deferred` is acceptable for archiving is controlled by `archive.minimumAssurance.biteEvidence`.
+- **`verification.scopedTestCommand`** and **`verification.scopedTestPatterns`** — These keys
+  configured per-file test execution for the removed bite-evidence gate.
+  They are silently ignored if left in your config (no error is raised).
 
 ## Test placement
 

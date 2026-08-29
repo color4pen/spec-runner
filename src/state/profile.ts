@@ -10,7 +10,7 @@
  * TC-PROF-004: computePolicyDigest ignores policyDigest field; sensitive to body fields
  */
 import type { JobState, EffectiveProfile, ProfileAssurance } from "./schema.js";
-import type { TestDerivationLevel, BiteEvidenceLevel, SpecReviewLevel } from "./schema/types.js";
+import type { TestDerivationLevel, SpecReviewLevel } from "./schema/types.js";
 import { hashObject } from "../util/hash.js";
 
 /**
@@ -44,7 +44,6 @@ export function computePolicyDigest(
  */
 export interface AssuranceFloor {
   testDerivation?: TestDerivationLevel;
-  biteEvidence?: BiteEvidenceLevel;
   specReview?: SpecReviewLevel;
 }
 
@@ -55,11 +54,6 @@ export interface AssuranceFloor {
 const TEST_DERIVATION_RANK: Record<TestDerivationLevel, number> = {
   coupled: 0,
   frozen: 1,
-};
-
-const BITE_EVIDENCE_RANK: Record<BiteEvidenceLevel, number> = {
-  optional: 0,
-  required: 1,
 };
 
 const SPEC_REVIEW_RANK: Record<SpecReviewLevel, number> = {
@@ -88,15 +82,6 @@ export function satisfiesFloor(assurance: ProfileAssurance, floor: AssuranceFloo
     }
   }
 
-  if (floor.biteEvidence !== undefined) {
-    const assuranceValue = assurance["biteEvidence"];
-    const assuranceRank = typeof assuranceValue === "string" ? BITE_EVIDENCE_RANK[assuranceValue as BiteEvidenceLevel] : undefined;
-    const floorRank = BITE_EVIDENCE_RANK[floor.biteEvidence];
-    if (assuranceRank === undefined || assuranceRank < floorRank) {
-      return false;
-    }
-  }
-
   if (floor.specReview !== undefined) {
     const assuranceValue = assurance["specReview"];
     const assuranceRank = typeof assuranceValue === "string" ? SPEC_REVIEW_RANK[assuranceValue as SpecReviewLevel] : undefined;
@@ -117,7 +102,6 @@ const _standardBody = {
   budget: {} as Readonly<Record<string, unknown>>,
   assurance: {
     testDerivation: "frozen",
-    biteEvidence: "required",
     specReview: "required",
   } as ProfileAssurance,
 };

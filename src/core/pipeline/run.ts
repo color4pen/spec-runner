@@ -14,8 +14,6 @@ import {
 } from "./registry.js";
 import { composeReviewerDescriptor } from "./compose-reviewers.js";
 import { applyScopeConfig } from "./resolve-scope.js";
-import { authorizedCanonWriterSteps } from "../resume/canon-provenance.js";
-import { changeFolderPath } from "../../util/paths.js";
 
 /**
  * Loop step names used by the standard pipeline.
@@ -81,6 +79,7 @@ export function buildPipeline(
 /**
  * Resolve the pipeline descriptor from jobState.pipelineId and construct a Pipeline.
  * Applies composeReviewerDescriptor to inject any custom reviewers from job state.
+ * Applies applyScopeConfig to resolve forbidden surfaces from repo config.
  * Used by CommandRunner to build the pipeline for a specific job.
  *
  * @param jobState - job state carrying the pipelineId (defaults to "standard" if absent)
@@ -95,15 +94,6 @@ export function buildPipelineForJob(
   const base = getPipelineDescriptor(getPipelineId(jobState));
   const scoped = applyScopeConfig(base, deps.config);
   const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
-
-  // Inject authorized canon writers for the bite-evidence tamper gate (tamper-provenance-baseline).
-  // Must be computed here — deps.slug is needed but step.ts cannot import registry.ts
-  // (circular import: registry → step.ts → tamper.ts → registry).
-  const canonPath = `${changeFolderPath(deps.slug)}/test-cases.md`;
-  const writers = authorizedCanonWriterSteps(canonPath, descriptor.steps, jobState, deps);
-  if (writers.size > 0) {
-    deps.authorizedCanonWriters = writers;
-  }
 
   return buildPipeline(descriptor, deps, events);
 }
@@ -145,15 +135,6 @@ export async function runPipeline(
   const base = getPipelineDescriptor(getPipelineId(jobState));
   const scoped = applyScopeConfig(base, deps.config);
   const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
-
-  // Inject authorized canon writers for the bite-evidence tamper gate (tamper-provenance-baseline).
-  // Mirrors the injection in buildPipelineForJob so that callers of runPipeline (e.g. e2e tests)
-  // also get correct tamper judgments rather than silently falling back to inconclusive.
-  const canonPath = `${changeFolderPath(deps.slug)}/test-cases.md`;
-  const writers = authorizedCanonWriterSteps(canonPath, descriptor.steps, jobState, deps);
-  if (writers.size > 0) {
-    deps.authorizedCanonWriters = writers;
-  }
 
   const pipeline = buildPipeline(descriptor, deps, bus);
   return pipeline.run(descriptor.startStep, jobState, deps);

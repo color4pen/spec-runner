@@ -140,7 +140,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
         "specrunner/changes/example/state.json",
         "specrunner/changes/example/events.jsonl",
         "specrunner/changes/example/usage.json",
-        "specrunner/changes/example/bite-evidence-result.md",
         "specrunner/changes/example/pr-create-result.md",
       ],
     });

@@ -3,7 +3,7 @@
  * Pure declarations — no validation logic, no resolvers.
  */
 import type { AgentStepName } from "../../state/schema.js";
-import type { TestDerivationLevel, BiteEvidenceLevel, SpecReviewLevel } from "../../state/schema/types.js";
+import type { TestDerivationLevel, SpecReviewLevel } from "../../state/schema/types.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -155,21 +155,6 @@ export interface VerificationConfig {
    * When absent, the gate is skipped (existing behaviour preserved).
    */
   coverage?: CoverageConfig;
-  /**
-   * Command that runs only the test files appended as trailing arguments (file-scopable). Opt-in;
-   * enables scoped isolated execution under custom `commands`. Provider-neutral.
-   */
-  scopedTestCommand?: string;
-  /**
-   * Glob patterns that identify materialized test files for per-file bite execution. Paired with
-   * `scopedTestCommand`. When absent, defaults to `**\/*.test.*`, `**\/*.spec.*`,
-   * `**\/*_test.*`. Provider-neutral.
-   *
-   * Configured patterns fully replace the default — no merging. Polyglot / non-standard-naming
-   * repos should override to match their test naming convention (e.g. `["**\/*_test.go"]` for Go,
-   * `["**\/*_spec.rb"]` for Ruby).
-   */
-  scopedTestPatterns?: string[];
 }
 
 /**
@@ -407,8 +392,6 @@ export interface MinimumAssuranceConfig {
   protectedPaths: string[];
   /** Floor requirement for testDerivation. Absent = unconstrained. */
   testDerivation?: TestDerivationLevel;
-  /** Floor requirement for biteEvidence. Absent = unconstrained. */
-  biteEvidence?: BiteEvidenceLevel;
   /** Floor requirement for specReview. Absent = unconstrained. */
   specReview?: SpecReviewLevel;
 }

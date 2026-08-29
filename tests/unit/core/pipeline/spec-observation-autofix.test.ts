@@ -1421,13 +1421,14 @@ describe("TC-028: request.md spec-review fixable finding is excluded from ledger
 // GREEN: 51 - 2 test-materialize rows - 2 (spec-review→test-mat + spec-fixer→test-mat replaced by implementer)
 // ---------------------------------------------------------------------------
 
-describe("TC-029: STANDARD_TRANSITIONS length is 45 after spec-review-loop-single-fixer", () => {
-  it("TC-029: STANDARD_TRANSITIONS.length === 45 (-2 rows: spec-review-loop-single-fixer removes SPEC_REVIEW→TEST_CASE_GEN and SPEC_FIXER→TEST_CASE_GEN)", () => {
-    // Previously 47 rows (absorb-test-materialize);
-    // spec-review-loop-single-fixer: -2 rows:
-    //   - spec-review needs-fix → test-case-gen (TC-only guard) removed
-    //   - spec-fixer approved → test-case-gen (TC regeneration guard) removed
-    expect(STANDARD_TRANSITIONS.length).toBe(45);
+describe("TC-029: STANDARD_TRANSITIONS length is 39 after remove-bite-evidence", () => {
+  it("TC-029: STANDARD_TRANSITIONS.length === 39 (-6 rows: remove-bite-evidence removes bite-evidence gate rows + guarded implementer rows)", () => {
+    // Previously 45 rows (spec-review-loop-single-fixer);
+    // remove-bite-evidence: -6 rows:
+    //   - implementer success → verification (when: isTestGenExempt) removed
+    //   - implementer success → verification (when: verificationFailedLast) removed
+    //   - bite-evidence passed/strategy-deferred/failed/error rows (4) removed
+    expect(STANDARD_TRANSITIONS.length).toBe(39);
   });
 
   it("TC-029: the guarded rows are distinct from the existing unconditional rows", () => {

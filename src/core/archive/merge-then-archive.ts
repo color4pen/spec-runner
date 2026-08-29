@@ -25,7 +25,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig, SpecRunnerConfig } from "../../config/schema.js";
+import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig } from "../../config/schema.js";
 import { satisfiesFloor } from "../../state/profile.js";
 import type { JobState } from "../../state/schema.js";
 import { runArchiveOrchestrator } from "./orchestrator.js";
@@ -112,16 +112,10 @@ export interface MergeThenArchiveInput {
   minimumAssurance?: MinimumAssuranceConfig;
   /**
    * Runtime strategy providing git primitives for the achieved-assurance floor gate.
-   * Required for base-red + freeze provenance derivation at Step 3.6.
    * When absent, the floor gate evaluates achieved = {} (all fields absent → fail-closed
    * for any constrained floor field). Absent is safe: no provenance can be established.
    */
   assuranceRuntime?: AssuranceProvenanceRuntime;
-  /**
-   * Project config for runTestsAtCommit scoping in the floor gate.
-   * When absent, the floor gate treats runTestsAtCommit as unavailable → fail-closed.
-   */
-  config?: SpecRunnerConfig;
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -155,7 +149,6 @@ export async function runMergeThenArchive(
     postMergeVerify,
     minimumAssurance,
     assuranceRuntime,
-    config,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
@@ -390,7 +383,6 @@ export async function runMergeThenArchive(
         state: jobStateForFloor!,
         finalHeadOid: archiveSha,
         cwd,
-        config,
         floor,
         runtime: assuranceRuntime,
       });

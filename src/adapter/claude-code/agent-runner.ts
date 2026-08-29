@@ -248,7 +248,7 @@ export function createWorkspaceToolGuard(cwd: string, scope?: AgentWriteScope): 
 
         // ------------------------------------------------------------------
         // All-step deny: pipeline-managed paths (state.json, events.jsonl,
-        // usage.json, bite-evidence-result.md) — #894 permission-layer closure.
+        // usage.json, pr-create-result.md) — #894 permission-layer closure.
         // Pre-computed in buildStepContext (core layer) as scope.managedPaths.
         // ------------------------------------------------------------------
         if (scope.managedPaths.includes(rel)) {
@@ -256,7 +256,7 @@ export function createWorkspaceToolGuard(cwd: string, scope?: AgentWriteScope): 
             behavior: "deny",
             message:
               `Write to '${rel}' is denied: this is a pipeline-managed path ` +
-              `(state.json / events.jsonl / usage.json / bite-evidence-result.md). ` +
+              `(state.json / events.jsonl / usage.json / pr-create-result.md). ` +
               `Pipeline infrastructure writes these; agent writes are never needed.`,
           };
         }

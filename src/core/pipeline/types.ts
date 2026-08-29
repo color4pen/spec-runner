@@ -3,7 +3,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
-import { reverificationNeeded, conformanceApprovedForVerifiedRevision, verificationFailedLast } from "./reverification.js";
+import { reverificationNeeded, conformanceApprovedForVerifiedRevision } from "./reverification.js";
 import {
   specReviewHasRoutableFixables,
   specFixerObservationForward,
@@ -250,18 +250,9 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // needs-fix path and conformance reverification: spec-fixer → spec-review (re-review)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
-  // Test-gen bypass: exempt type skips bite-evidence and routes directly to verification (must precede unconditional BITE_EVIDENCE row)
-  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: isTestGenExempt },
-  // Recovery re-entry: verification failed → implementer fixed → skip bite-evidence and go back to verification
-  // (first-match-wins: must precede unconditional BITE_EVIDENCE row; placed after isTestGenExempt row above)
-  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: verificationFailedLast },
-  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },
+  // implementer always routes directly to verification (bite-evidence removed)
+  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
-  // --- bite-evidence gate (R4, forward strategy) ---
-  { step: STEP_NAMES.BITE_EVIDENCE, on: "passed",            to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.BITE_EVIDENCE, on: "strategy-deferred", to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.BITE_EVIDENCE, on: "failed",            to: "escalate" },
-  { step: STEP_NAMES.BITE_EVIDENCE, on: "error",             to: "escalate" },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedForVerifiedRevision },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
   // verification 失敗は implementer への再入（build-fixer を廃止し implementer が paired fixer として代替）

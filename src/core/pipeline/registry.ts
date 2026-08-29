@@ -21,18 +21,17 @@ import { CodeFixerStep } from "../step/code-fixer.js";
 import { ConformanceStep } from "../step/conformance.js";
 import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
-import { BiteEvidenceStep } from "../step/bite-evidence/step.js";
-
 /**
- * Standard 13-step pipeline descriptor.
+ * Standard 12-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  *
  * Step order: request-review → design → test-case-gen → spec-review → spec-fixer →
- *   implementer → bite-evidence → verification →
+ *   implementer → verification →
  *   code-review → code-fixer → conformance → adr-gen → pr-create
  *
  * test-materialize は廃止済み。テスト実体化は implementer に統合。
  * build-fixer は廃止済み。verification 失敗は implementer への再入で直す（loopFixerPairs 参照）。
+ * bite-evidence は廃止済み。implementer は直接 verification にルーティングする。
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.STANDARD,
@@ -43,7 +42,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.SPEC_REVIEW,      SpecReviewStep],
     [STEP_NAMES.SPEC_FIXER,       SpecFixerStep],
     [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
-    [STEP_NAMES.BITE_EVIDENCE,    BiteEvidenceStep],
     [STEP_NAMES.VERIFICATION,     VerificationStep],
     [STEP_NAMES.CODE_REVIEW,      CodeReviewStep],
     [STEP_NAMES.CODE_FIXER,       CodeFixerStep],
@@ -73,7 +71,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.SPEC_FIXER]:       { role: "fixer",    phase: "spec" },
     [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "spec" },
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
-    [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },
     [STEP_NAMES.VERIFICATION]:     { role: "gate",     phase: "impl" },
     [STEP_NAMES.CODE_REVIEW]:      { role: "reviewer", phase: "impl" },
     [STEP_NAMES.CODE_FIXER]:       { role: "fixer",    phase: "impl" },
@@ -172,7 +169,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (13-step), design-only (1-step), fast (8-step slim with scope).
+ * Three entries: standard (12-step), design-only (1-step), fast (8-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

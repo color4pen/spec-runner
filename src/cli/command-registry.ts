@@ -371,8 +371,6 @@ Options:
                       Note: jobs with custom reviewers also accept: regression-gate,
                       custom-reviewers, or reviewer member names (member names are
                       mapped to the custom-reviewers coordinator).
-                      Note: bite-evidence is an internal step not intended for regular
-                      operator use.
   --force             Override the 3× consecutive escalation guard and resume anyway.
   --verbose           More detailed log output.
   --quiet             Suppress informational log output.

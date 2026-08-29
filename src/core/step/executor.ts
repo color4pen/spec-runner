@@ -506,7 +506,7 @@ export class StepExecutor {
       }
     }
 
-    // Capture HEAD OID after the per-node commit (bite-evidence-forward R4, T-02).
+    // Capture HEAD OID after the per-node commit.
     // Only for sequential steps that own their own git commit (roundOwnsGitEffects === false).
     const commitOid: string | undefined =
       !deps.roundOwnsGitEffects && deps.runtimeStrategy

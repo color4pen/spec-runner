@@ -92,17 +92,6 @@ export type ChangedFilesResult =
   | { kind: "unavailable"; reason: string };
 
 /**
- * Port DTO for isolated per-file test execution results (bite-evidence-forward R4, T-04).
- *
- * - ran:         tests executed; results contains per-file pass/fail.
- * - unavailable: isolated execution could not be performed (spawn error, unsupported command,
- *               non-existent OID, etc.). Never throws — uses DU instead.
- */
-export type IsolatedTestResult =
-  | { kind: "ran"; results: { file: string; passed: boolean }[] }
-  | { kind: "unavailable"; reason: string };
-
-/**
  * Port DTO for a commit-scoped file read result (D5, achieved-assurance-completeness).
  *
  * Used by the archive floor gate to read events.jsonl / test-cases.md at the final
@@ -639,13 +628,11 @@ export interface RuntimeStrategy {
   ): Promise<JobState>;
 
   // ---------------------------------------------------------------------------
-  // Isolated test execution for bite-evidence gate (R4, bite-evidence-forward T-04)
+  // Commit-level file access
   // ---------------------------------------------------------------------------
 
   /**
    * List files changed by a specific commit vs its first parent.
-   *
-   * Used by the bite-evidence gate for single-commit file identification.
    *
    * Contract:
    * - Never throws — returns a ChangedFilesResult discriminated union instead.
@@ -659,93 +646,6 @@ export interface RuntimeStrategy {
    * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
   listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
-
-  /**
-   * List files changed between two arbitrary commit OIDs (no path filter).
-   *
-   * Used by the bite-evidence gate and archive floor to identify materialized test files
-   * via Evidence Base ↔ candidate diff (EB-native file-set identification).
-   *
-   * Contract:
-   * - Never throws — returns a ChangedFilesResult discriminated union instead.
-   * - success: git diff ran; files contains all repo-relative paths changed between the two OIDs.
-   * - unavailable: git command failed, either OID is non-existent, or runtime cannot perform
-   *   a local git diff (e.g. managed runtime).
-   *
-   * - local:   `git diff --name-only <baseOid> <headOid>` (no pathspec) in cwd.
-   *            exit 0 → success; non-zero exit / spawn error → unavailable.
-   * - managed: always returns unavailable (no local worktree; structural limitation).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
-   */
-  listChangedFilesBetweenCommits?(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
-
-  /**
-   * Run only the provided test files against the worktree at a specific commit OID
-   * using an isolated detached worktree.
-   *
-   * Used by the bite-evidence gate to verify base-red / candidate-green for each
-   * materialized test file.
-   *
-   * Contract:
-   * - Never throws — returns an IsolatedTestResult discriminated union instead.
-   * - ran: tests executed; results contains per-file pass/fail (true=passed, false=failed).
-   * - unavailable: isolated execution could not be performed (spawn error, non-existent OID,
-   *   unsupported command, etc.).
-   * - Cleans up the isolated worktree in a finally-style block (even when tests fail).
-   * - MUST NOT run the full suite — returns unavailable if the resolved command cannot be
-   *   scoped to the provided testFiles.
-   *
-   * - local:   `git worktree add --detach <tmp> <oid>` → run only testFiles → remove worktree.
-   * - managed: always returns unavailable (no local worktree; structural limitation).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
-   */
-  runTestsAtCommit?(
-    oid: string,
-    testFiles: string[],
-    cwd: string,
-    config: SpecRunnerConfig,
-  ): Promise<IsolatedTestResult>;
-
-  /**
-   * Run the provided test files on a synthesized tree: base revision with overlay files
-   * written from the overlay-source OID.
-   *
-   * Used by the bite-evidence gate and archive floor to establish Evidence Base red:
-   *   base tree = immutable job base (synthesizedCommits[0]^) + overlay of candidate test files.
-   *
-   * Contract:
-   * - Never throws — returns an IsolatedTestResult discriminated union instead.
-   * - ran: tests executed; results contains per-file pass/fail.
-   * - unavailable: on spawn error, non-existent baseRev, unresolvable overlay content,
-   *   missing node_modules, or unset/unsupported scopedTestCommand. Never throws.
-   * - Cleans up the detached worktree and node_modules symlink in a finally block.
-   * - MUST NOT run without a resolved scopedTestCommand — absent scopedTestCommand → unavailable.
-   *
-   * Algorithm:
-   *   1. `git worktree add --detach <tmp> <baseRev>` (non-existent rev → unavailable).
-   *   2. For each path in overlayFiles: `git show <overlayFromOid>:<path>` → write into worktree
-   *      (create parent dirs). Unresolvable path → unavailable (fail-closed).
-   *   3. Symlink `<cwd>/node_modules` → `<tmp>/node_modules` (absent → unavailable).
-   *   4. Run `<scopedTestCommand> '<file>'` per overlay file in the detached worktree.
-   *   5. finally: remove symlink, then `git worktree remove --force <tmp>`.
-   *
-   * - local:   implements the algorithm above.
-   * - managed: always returns unavailable (no local worktree; structural limitation).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
-   */
-  runTestsOnSynthesizedTree?(
-    baseRev: string,
-    overlayFiles: string[],
-    overlayFromOid: string,
-    cwd: string,
-    config: SpecRunnerConfig,
-  ): Promise<IsolatedTestResult>;
 
   /**
    * Read a file from a specific commit OID by trailing-suffix path resolution.
@@ -820,8 +720,8 @@ export interface RuntimeStrategy {
   /**
    * Return the commit that most recently changed the given path.
    *
-   * Used by the bite-evidence tamper gate to determine provenance: the commit subject
-   * encodes the step/operator that made the change (e.g. "spec-fixer: <slug>").
+   * The commit subject encodes the step/operator that made the change
+   * (e.g. "spec-fixer: <slug>").
    *
    * Contract:
    * - Never throws — returns a discriminated union instead.
@@ -878,20 +778,6 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     egressParams?: unknown,
   ): Promise<void>;
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
-  listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
-  runTestsAtCommit(
-    oid: string,
-    testFiles: string[],
-    cwd: string,
-    config: SpecRunnerConfig,
-  ): Promise<IsolatedTestResult>;
-  runTestsOnSynthesizedTree(
-    baseRev: string,
-    overlayFiles: string[],
-    overlayFromOid: string,
-    cwd: string,
-    config: SpecRunnerConfig,
-  ): Promise<IsolatedTestResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
   readRevisionContent(
     file: string,

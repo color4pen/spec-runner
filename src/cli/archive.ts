@@ -239,7 +239,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           minimumAssurance,
           designLayer: designLayerWithMerge,
           assuranceRuntime,
-          config: mergeConfig,
         },
         logResult,
       );

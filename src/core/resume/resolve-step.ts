@@ -12,13 +12,15 @@ const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAM
  *
  * build-fixer は廃止済み (absorb-build-fixer)。
  * test-materialize は廃止済み (absorb-test-materialize)。
- * resume 復帰点（`--from <alias>` / resumePoint.step="<alias>"）を implementer へ写すことで、
+ * bite-evidence は廃止済み (remove-bite-evidence)。
+ * resume 復帰点（`--from <alias>` / resumePoint.step="<alias>"）を後継ステップへ写すことで、
  * 旧 job の resume が壊れないようにする。
  * mapMemberToCoordinator と同じ「前段写像」パターン。
  */
 const LEGACY_STEP_ALIASES: Record<string, string> = {
   "build-fixer": STEP_NAMES.IMPLEMENTER,
   "test-materialize": STEP_NAMES.IMPLEMENTER,
+  "bite-evidence": STEP_NAMES.VERIFICATION,
 };
 
 /**

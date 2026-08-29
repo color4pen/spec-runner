@@ -705,7 +705,7 @@ function makeScopedScope(declaredRelPaths: string[]): AgentWriteScope {
       `specrunner/changes/${TEST_SLUG}/state.json`,
       `specrunner/changes/${TEST_SLUG}/events.jsonl`,
       `specrunner/changes/${TEST_SLUG}/usage.json`,
-      `specrunner/changes/${TEST_SLUG}/bite-evidence-result.md`,
+      `specrunner/changes/${TEST_SLUG}/pr-create-result.md`,
     ],
     forbiddenPaths: [], // unused in scoped mode
   };
@@ -736,7 +736,7 @@ function makeGuardedScope(declaredRelPaths: string[]): AgentWriteScope {
       `specrunner/changes/${TEST_SLUG}/state.json`,
       `specrunner/changes/${TEST_SLUG}/events.jsonl`,
       `specrunner/changes/${TEST_SLUG}/usage.json`,
-      `specrunner/changes/${TEST_SLUG}/bite-evidence-result.md`,
+      `specrunner/changes/${TEST_SLUG}/pr-create-result.md`,
     ],
     forbiddenPaths: CANON_PATHS.filter((p) => !declared.has(p)),
   };
@@ -1172,14 +1172,14 @@ describe("TC-033: allow 結果に updatedInput が含まれ元 input と同一�
 });
 
 // ---------------------------------------------------------------------------
-// TC-019: events.jsonl / usage.json / bite-evidence-result.md への Write が deny される
+// TC-019: events.jsonl / usage.json / pr-create-result.md への Write が deny される
 // ---------------------------------------------------------------------------
 
-describe("TC-019: events.jsonl / usage.json / bite-evidence-result.md への Write が deny される", () => {
+describe("TC-019: events.jsonl / usage.json / pr-create-result.md への Write が deny される", () => {
   const managedPaths = [
     `specrunner/changes/${TEST_SLUG}/events.jsonl`,
     `specrunner/changes/${TEST_SLUG}/usage.json`,
-    `specrunner/changes/${TEST_SLUG}/bite-evidence-result.md`,
+    `specrunner/changes/${TEST_SLUG}/pr-create-result.md`,
   ];
 
   for (const managedPath of managedPaths) {

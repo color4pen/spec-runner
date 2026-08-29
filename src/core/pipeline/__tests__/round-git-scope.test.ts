@@ -25,7 +25,6 @@ const SLUG = "my-change";
 const STATE_JSON = `specrunner/changes/${SLUG}/state.json`;
 const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
 const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
-const BITE_EVIDENCE = `specrunner/changes/${SLUG}/bite-evidence-result.md`;
 const PR_CREATE_RESULT = `specrunner/changes/${SLUG}/pr-create-result.md`;
 
 /** Declared output paths (typical reviewer result files) */
@@ -43,17 +42,18 @@ const UNDECLARED_OTHER = "some/other/file.md";
 describe("pipelineManagedPaths", () => {
   // TC-002: pipelineManagedPaths が pr-create-result.md を含む（長さ 5）
   //
-  // Destruction confirmation: prCreateResultPath を配列から外すと toHaveLength(5) および
+  // Destruction confirmation: prCreateResultPath を配列から外すと toHaveLength(4) および
   // toContain(PR_CREATE_RESULT) が fail する
-  it("TC-002: returns state.json, events.jsonl, usage.json, bite-evidence-result.md, pr-create-result.md for the given slug", () => {
+  it("TC-002: returns state.json, events.jsonl, usage.json, pr-create-result.md for the given slug (no bite-evidence-result.md)", () => {
     const paths = pipelineManagedPaths(SLUG);
     expect(paths).toContain(STATE_JSON);
     expect(paths).toContain(EVENTS_JSONL);
     expect(paths).toContain(USAGE_JSON);
-    expect(paths).toContain(BITE_EVIDENCE);
     // TC-002: prCreateResultPath must be included (#898 fix, T-01)
     expect(paths).toContain(PR_CREATE_RESULT);
-    expect(paths).toHaveLength(5);
+    // remove-bite-evidence: bite-evidence-result.md removed from pipeline-managed paths
+    expect(paths).not.toContain(`specrunner/changes/${SLUG}/bite-evidence-result.md`);
+    expect(paths).toHaveLength(4);
   });
 
   // Destruction confirmation: prCreateResultPath を pipelineManagedPaths から除去すると

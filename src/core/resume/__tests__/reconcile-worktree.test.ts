@@ -169,12 +169,11 @@ describe("TC-008: isReconcilableArtifact returns false for every path in pipelin
     }
   });
 
-  it("TC-008: specifically returns false for state.json, events.jsonl, usage.json, bite-evidence-result.md, pr-create-result.md", () => {
+  it("TC-008: specifically returns false for state.json, events.jsonl, usage.json, pr-create-result.md", () => {
     const specificPaths = [
       `${CHANGE_FOLDER}/state.json`,
       `${CHANGE_FOLDER}/events.jsonl`,
       `${CHANGE_FOLDER}/usage.json`,
-      `${CHANGE_FOLDER}/bite-evidence-result.md`,
       `${CHANGE_FOLDER}/pr-create-result.md`,
     ];
     for (const path of specificPaths) {
@@ -183,6 +182,13 @@ describe("TC-008: isReconcilableArtifact returns false for every path in pipelin
         `expected false for pipeline-managed path: ${path}`,
       ).toBe(false);
     }
+  });
+
+  it("TC-008b: bite-evidence-result.md is reconcilable (not pipeline-managed; remove-bite-evidence)", () => {
+    // After remove-bite-evidence, bite-evidence-result.md is no longer a pipeline-managed path.
+    // If found in a worktree (legacy run residue), it is treated as a reconcilable artifact
+    // and will be quarantined/cleaned up by reconcileWorktreeArtifacts.
+    expect(isReconcilableArtifact(`${CHANGE_FOLDER}/bite-evidence-result.md`, SLUG)).toBe(true);
   });
 });
 

@@ -466,13 +466,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
   },
   {
-    file: "src/core/step/bite-evidence/step.ts",
-    pattern: "deps.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-bite-evidence-step-di-default",
-    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
-  },
-  {
     file: "src/core/step/commit-push.ts",
     pattern: "deps.cwd ?? process.cwd()",
     invariant: "CWD",

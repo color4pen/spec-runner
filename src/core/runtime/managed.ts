@@ -649,49 +649,10 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * ManagedRuntime has no local worktree — always returns unavailable.
-   * Structural limitation: bite-evidence isolated execution requires a local git worktree.
+   * Structural limitation: git introspection requires a local git worktree.
    */
   async listCommitChangedFiles(_oid: string, _cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
     return { kind: "unavailable", reason: "managed runtime has no local worktree for listCommitChangedFiles" };
-  }
-
-  /**
-   * ManagedRuntime has no local worktree — always returns unavailable.
-   * Structural limitation: EB-native file-set identification requires a local git worktree.
-   */
-  async listChangedFilesBetweenCommits(
-    _baseOid: string,
-    _headOid: string,
-    _cwd: string,
-  ): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
-    return { kind: "unavailable", reason: "managed runtime has no local worktree for listChangedFilesBetweenCommits" };
-  }
-
-  /**
-   * ManagedRuntime has no local worktree — always returns unavailable.
-   * Structural limitation: bite-evidence isolated execution requires a local git worktree.
-   */
-  async runTestsAtCommit(
-    _oid: string,
-    _testFiles: string[],
-    _cwd: string,
-    _config: import("../../config/schema.js").SpecRunnerConfig,
-  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
-    return { kind: "unavailable", reason: "managed runtime has no local worktree for runTestsAtCommit" };
-  }
-
-  /**
-   * ManagedRuntime has no local worktree — always returns unavailable.
-   * Structural limitation: synthesized-tree execution requires a local git worktree.
-   */
-  async runTestsOnSynthesizedTree(
-    _baseRev: string,
-    _overlayFiles: string[],
-    _overlayFromOid: string,
-    _cwd: string,
-    _config: import("../../config/schema.js").SpecRunnerConfig,
-  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
-    return { kind: "unavailable", reason: "managed runtime has no local worktree for runTestsOnSynthesizedTree" };
   }
 
   /**

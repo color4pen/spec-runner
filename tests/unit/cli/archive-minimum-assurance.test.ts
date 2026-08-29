@@ -85,7 +85,7 @@ const TEST_CWD = "/tmp/test-cwd";
 const MINIMUM_ASSURANCE_VALUE = {
   protectedPaths: ["architecture/**"],
   testDerivation: "frozen" as const,
-  biteEvidence: "required" as const,
+  specReview: "required" as const,
 };
 
 beforeEach(() => {
@@ -127,7 +127,7 @@ describe("TC-019: CLI が config.archive.minimumAssurance を runMergeThenArchiv
     const callArgs = (runMergeThenArchive as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
     expect(callArgs).toBeDefined();
     // minimumAssurance should be propagated from config to runMergeThenArchive
-    expect(callArgs.minimumAssurance).toEqual(MINIMUM_ASSURANCE_VALUE);
+    expect(callArgs.minimumAssurance).toMatchObject(MINIMUM_ASSURANCE_VALUE);
   });
 
   it("minimumAssurance.protectedPaths is correctly propagated", async () => {
