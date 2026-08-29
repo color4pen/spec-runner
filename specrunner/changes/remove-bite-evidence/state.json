@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T16:00:11.785Z",
+  "updatedAt": "2026-08-29T16:17:35.122Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -75,7 +75,9 @@
     "c39b66f37957af818c6ea6086069a387e9f7cc12",
     "3aa0e5710f62317d660fbdba2aed2627c4fc82e7",
     "52d80ec9a2bf750cb4967558717aa02513f68477",
-    "605d3cb64c8665a8b457b0d811c5a834911ef80d"
+    "605d3cb64c8665a8b457b0d811c5a834911ef80d",
+    "b75b48a7d2bab2c33a476c784cabd50513dcca6b",
+    "c7ce27d0dbdfa6b520fb055447d241bd4a2b61dc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -241,6 +243,34 @@
       "src/store/event-journal.ts",
       "src/state/helpers.ts",
       "src/core/runtime/local.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/kernel/step-names.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/config/schema/validation.ts",
+      "src/state/schema/types.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/state/profile.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/prompts/pipeline-map.ts",
+      "README.md",
+      "src/core/pipeline/round-git-scope.ts",
+      "docs/configuration.md",
+      "src/config/__tests__/remove-bite-evidence-config-validation.test.ts",
+      "tests/unit/core/resume/resolve-step.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "architecture/domain-model.md",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "tests/unit/pipeline/descriptor-input-completeness.test.ts",
+      "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
+      "src/state/__tests__/bite-evidence-schema.test.ts",
+      "src/store/event-journal.ts",
+      "tests/unit/state/bite-evidence-record-schema.test.ts",
+      "tests/core/pipeline/pipeline.test.ts",
+      "tests/unit/core/attestation/build-attestation.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -275,7 +305,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -284,13 +314,14 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
