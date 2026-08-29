@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T07:01:33.393Z",
+  "updatedAt": "2026-08-29T07:13:32.667Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
   "pipelineId": "standard",
@@ -89,7 +89,9 @@
     "e4356e1f2479b97b1037525a36aaccf7ee7725a8",
     "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
     "a4337a5810ae123c090751c214cbadd6872dd998",
-    "472a5456d96d82629368e43f133ccbb54b8b52e8"
+    "472a5456d96d82629368e43f133ccbb54b8b52e8",
+    "67e3f9c224851cbef69376caedcfe0094553871b",
+    "8ccb2b4836ad7e5c9207e57e12fafee052edded0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,6 +166,25 @@
       "src/core/command/resume.ts",
       "src/core/step/commit-push.ts",
       "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "conformance": [
+      "src/git/push-capability.ts",
+      "src/core/step/staging-containment.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/design.ts",
+      "src/core/step/code-review.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/git/__tests__/push-capability.test.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/conformance.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -205,8 +226,13 @@
       "recordedAt": "2026-08-29T06:40:00.415Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1096",
+    "number": 1096,
+    "createdAt": "2026-08-29T07:13:31.873Z"
+  },
   "_journal": {
-    "historyCount": 108,
+    "historyCount": 122,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -215,13 +241,16 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 2,
       "code-fixer": 6,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 5,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
