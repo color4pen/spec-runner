@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T15:58:00.858Z",
+  "updatedAt": "2026-08-29T16:00:11.785Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -74,7 +74,8 @@
     "58d9212479a7d36b4e5f5719686806c6a34eb94d",
     "c39b66f37957af818c6ea6086069a387e9f7cc12",
     "3aa0e5710f62317d660fbdba2aed2627c4fc82e7",
-    "52d80ec9a2bf750cb4967558717aa02513f68477"
+    "52d80ec9a2bf750cb4967558717aa02513f68477",
+    "605d3cb64c8665a8b457b0d811c5a834911ef80d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -233,6 +234,13 @@
       "src/store/event-journal.ts",
       "src/state/helpers.ts",
       "src/core/runtime/local.ts"
+    ],
+    "regression-gate": [
+      "src/state/schema/types.ts",
+      "tests/unit/core/pipeline/pipeline.episode-reset.test.ts",
+      "src/store/event-journal.ts",
+      "src/state/helpers.ts",
+      "src/core/runtime/local.ts"
     ]
   },
   "reviewerStatuses": [
@@ -267,7 +275,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -281,7 +289,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
