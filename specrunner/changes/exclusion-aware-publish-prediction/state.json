@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T04:48:08.559Z",
+  "updatedAt": "2026-08-29T05:15:56.574Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -71,7 +71,9 @@
     "8ef0f1b32b74b69fe744ff7ea821f25838bc0d09",
     "1630a03ad65452e56ed38c8f1469c86673c20bf0",
     "40b1bfe7359e2d74f278e6778812b83a8366ac35",
-    "88d3cc526e3b70eb1e35de6d615d30e1a9f9997f"
+    "88d3cc526e3b70eb1e35de6d615d30e1a9f9997f",
+    "093c846e37850c7220460da9746fee48288ad302",
+    "c69d313971c0292c01691398c45f8546669519a0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -110,16 +112,42 @@
       "src/git/push-capability.ts",
       "src/core/step/commit-push.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/step/staging-containment.ts",
+      "src/core/runtime/local.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/design.ts",
+      "src/prompts/design-system.ts",
+      "src/core/step/__tests__/commit-push-guarded-staging.test.ts",
+      "src/core/step/code-review.ts",
+      "src/core/step/conformance.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "docs/configuration.md",
+      "src/core/step/write-scope.ts",
+      "src/core/resume/__tests__/reconcile-worktree.test.ts",
+      "src/git/__tests__/push-capability.test.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

@@ -306,9 +306,8 @@ describe("TC-005: excluded dirty path is not a scoped residual violation", () =>
     async () => {
       // GIVEN: stagingExcludePatterns: [".github/workflows/**"]
       // AND: worktree has .github/workflows/x.yml dirty (untracked)
-      // AND: scoped step declares specrunner/changes/${SLUG}/design.md
+      // AND: scoped step declares specrunner/changes/${SLUG}/design.md (via makeScopedStep())
       const workflowStatus = statusEntry("??", ".github/workflows/x.yml");
-      const SCOPED_PATH = `specrunner/changes/${SLUG}/design.md`;
       const COMMIT_SHA = "sha-tc005-abc";
 
       // Scoped mode call sequence:
