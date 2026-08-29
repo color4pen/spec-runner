@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T13:55:50.111Z",
+  "updatedAt": "2026-08-29T14:02:04.350Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -67,7 +67,8 @@
     "4a5658c91b2a777e172a64f5ce11c4afe5f95ae7",
     "b50b41f950e9ce33803344321a86f89b5dccbc0f",
     "ebb4634a917c6804217efa2edc147755b91819e9",
-    "2c267fe1f833409c7f619a2288e8231f031c6389"
+    "2c267fe1f833409c7f619a2288e8231f031c6389",
+    "f208cd320dc60a85ddc3aa0853e6b1c3aa5ca503"
   ],
   "touchedFiles": {
     "request-review": [
@@ -97,14 +98,28 @@
       "src/core/archive/achieved-assurance.ts",
       "src/state/schema/types.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/types.ts",
+      "src/state/profile.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/config/schema/validation.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/state/schema/types.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/kernel/step-names.ts",
+      "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }

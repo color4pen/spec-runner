@@ -283,7 +283,9 @@ reintroducing removed symbols.
       `list-changed-files-between-commits` under `src/core/runtime/__tests__/`;
       `src/config/__tests__/verification-scoped-command.test.ts` and
       `src/config/__tests__/verification-scoped-patterns.test.ts`;
-      `tests/unit/pipeline/pipeline-sole-committer-bite-evidence.test.ts`.
+      `tests/unit/pipeline/pipeline-sole-committer-bite-evidence.test.ts`;
+      `src/core/resume/__tests__/authorized-canon-writer-steps.test.ts` (imports
+      `authorizedCanonWriterSteps` from `canon-provenance.ts` which T-03 removes).
 - [ ] **Retarget** suites that assert still-live surrounding behavior: the pipeline transition-table
       suites (expect `implementer success → verification` unconditionally, no bite-evidence rows);
       `tests/unit/state/satisfies-floor.test.ts` (two dimensions);

@@ -460,7 +460,7 @@
 ```yaml
 result: completed
 total: 45
-automated: 37
+automated: 38
 manual: 7
 must: 27
 should: 16
