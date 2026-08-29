@@ -565,3 +565,44 @@ describe("TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost
     expect(attestation.cost.unpricedModels).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-ATT-08: legacy bite-evidence journal compatibility (remove-bite-evidence)
+// ---------------------------------------------------------------------------
+// The bite-evidence step was removed from the pipeline, but journals written by
+// older releases contain step-attempt records for it (including the legacy-only
+// "strategy-deferred" verdict). Folding such a journal and building an attestation
+// from it must keep working: the historical gate must appear in `gates` with its
+// original verdict, without error. Guards the legacy-read compatibility contract
+// (ADR-20260829 D9) against future regressions.
+
+describe("TC-ATT-08: legacy journal with bite-evidence run folds and appears in attestation gates", () => {
+  it("gates includes { step: bite-evidence, verdict: strategy-deferred } from a legacy journal", () => {
+    const journal = [
+      makeStepAttempt({ step: "implementer", startedAt: "2026-01-01T00:00:00Z", endedAt: "2026-01-01T00:01:00Z", verdict: "success" }),
+      makeStepAttempt({ step: "bite-evidence", startedAt: "2026-01-01T00:02:00Z", endedAt: "2026-01-01T00:03:00Z", verdict: "strategy-deferred" }),
+      makeStepAttempt({ step: "verification", startedAt: "2026-01-01T00:04:00Z", endedAt: "2026-01-01T00:05:00Z", verdict: "passed" }),
+    ].join("");
+
+    const attestation = buildAttestation({ journalContent: journal, usage: emptyUsage() });
+
+    const biteGate = attestation.gates.find((g) => g.step === "bite-evidence");
+    expect(biteGate).toBeDefined();
+    expect(biteGate?.verdict).toBe("strategy-deferred");
+
+    // The legacy gate keeps its chronological position between implementer and verification.
+    expect(attestation.gates.map((g) => g.step)).toEqual(["implementer", "bite-evidence", "verification"]);
+  });
+
+  it("legacy failed bite-evidence run is preserved verbatim (no re-interpretation)", () => {
+    const journal = [
+      makeStepAttempt({ step: "bite-evidence", startedAt: "2026-01-01T00:00:00Z", endedAt: "2026-01-01T00:01:00Z", verdict: "failed" }),
+    ].join("");
+
+    const attestation = buildAttestation({ journalContent: journal, usage: emptyUsage() });
+
+    expect(attestation.gates).toHaveLength(1);
+    expect(attestation.gates[0]?.step).toBe("bite-evidence");
+    expect(attestation.gates[0]?.verdict).toBe("failed");
+  });
+});

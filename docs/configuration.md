@@ -215,7 +215,7 @@ Declare `verification.coverage` to assert that changed lines (base…HEAD diff) 
 
 ## Removed keys
 
-The following configuration keys were removed in a prior release and are no longer supported:
+The following configuration keys have been removed and are no longer supported:
 
 - **`archive.minimumAssurance.biteEvidence`** — The bite-evidence assurance dimension was removed.
   Any config that declares this key is rejected at startup with a `CONFIG_INVALID` error.

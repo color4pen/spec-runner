@@ -340,3 +340,16 @@ reintroducing removed symbols.
 - The grep sweep produces no unintentional survivors; each remaining hit is justifiable as legacy-read
   compatibility or historical documentation.
 - All spec requirements have at least one corresponding passing test.
+
+## T-17: PR #1098 レビュー対応（operator-apply）
+
+- [x] `docs/configuration.md` の Removed keys 節の時制を修正（`removed in a prior release` →
+      `have been removed` — 削除するのは本 PR 自身であり、リリース時点に依存しない表現へ）。
+- [x] legacy journal 互換の回帰テストを追加（TC-ATT-08）: `bite-evidence` step-attempt
+      （`strategy-deferred` / `failed` verdict）を含む合成 journal を fold →
+      `buildAttestation` → `gates` に元 verdict のまま時系列順で現れることを assert
+      （design D13、ADR-20260829 D9 の契約の pin）。
+
+**Acceptance Criteria**:
+- `tests/unit/core/attestation/build-attestation.test.ts` の TC-ATT-08 が pass する。
+- typecheck / lint / 既存テストに回帰がない。

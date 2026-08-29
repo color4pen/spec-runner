@@ -317,6 +317,22 @@ references remain.
 - **Alternatives considered**: relying on typecheck alone — rejected, it cannot catch stale names in
   strings, comments and docs.
 
+### D13 — Legacy-journal attestation compatibility regression test (operator-apply, PR review)
+
+**Decision**: Add a dedicated regression test (`TC-ATT-08`) that folds a synthetic journal
+containing a legacy `bite-evidence` step-attempt (including the legacy-only
+`strategy-deferred` verdict) and asserts that `buildAttestation` surfaces the historical
+gate in `gates` with its original verdict and chronological position.
+
+**Rationale**: D9 retains the legacy read path, and this PR's own attestation demonstrated
+it works today — but no automated test pinned the contract, so a future change to
+`fold` / `buildAttestation` (e.g. filtering gates to known step names, or narrowing the
+`Verdict` union without the legacy member) could silently break historical attestations.
+The test encodes the D9 guarantee as a `must` regression.
+
+**Scope**: pure-function test on `buildAttestation` (journal → gates); no runtime or
+state-schema surface involved. Added retroactively from PR #1098 review (P2).
+
 ## Risks / Trade-offs
 
 - [Loss of hollow-test detection] Nothing will detect a test that passes against the pre-change tree →
