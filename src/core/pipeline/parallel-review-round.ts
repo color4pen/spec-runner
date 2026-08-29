@@ -30,6 +30,7 @@ import {
 } from "./reviewer-status.js";
 import { partitionRoundChanges, excludePipelineManagedChangePaths } from "./round-git-scope.js";
 import { canonicalDocPaths } from "../../util/paths.js";
+import { resolveStagingExcludePatterns } from "../step/staging-containment.js";
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -437,9 +438,12 @@ export class ParallelReviewRound {
                 infra,
                 // D4 backstop: pass egress params so LocalRuntime can verify publish range.
                 // Also forward pushCapability for the Layer 2 backstop in commitScopedPaths.
+                // excludeWorktreePatterns: paths matching stagingExcludePatterns must not
+                // trigger UNPUSHABLE_PATH_BLOCKED (worktree-only exclusion, not commit-side).
                 {
                   synthesizedCommits: state.synthesizedCommits ?? [],
                   pushCapability: deps.pushCapability ?? null,
+                  excludeWorktreePatterns: resolveStagingExcludePatterns(deps.config),
                 },
               );
             } catch (err) {

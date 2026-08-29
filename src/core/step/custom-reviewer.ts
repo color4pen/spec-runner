@@ -32,6 +32,7 @@ import {
   buildCustomReviewerPriorRoundBlock,
   buildOperatorAdjudicationBlock,
 } from "./custom-reviewer-round-context.js";
+import { resolveStagingExcludePatterns, buildDeliveryExclusionsBlock } from "./staging-containment.js";
 
 /** Default model for custom reviewer steps. */
 const DEFAULT_REVIEW_MODEL = "claude-sonnet-5";
@@ -47,6 +48,7 @@ export function buildCustomReviewerMessage(opts: {
   resultFilePath: string;
   requestContent: string;
   dynamicContext?: DynamicContext;
+  deliveryExclusionsBlock?: string;
 }): string {
   const contextSection = opts.dynamicContext?.diffStat
     ? `\n\n## Branch Context\n\n### Diff stat (main..HEAD)\n\n\`\`\`\n${opts.dynamicContext.diffStat}\n\`\`\``
@@ -54,6 +56,9 @@ export function buildCustomReviewerMessage(opts: {
 
   const constraintsBlock = buildRequestConstraintsBlock(opts.requestContent);
   const constraintsSection = constraintsBlock ? `\n\n${constraintsBlock}` : "";
+
+  // Inject delivery exclusions block (paths outside spec-runner's delivery scope).
+  const exclusionsSection = opts.deliveryExclusionsBlock ? `\n\n${opts.deliveryExclusionsBlock}` : "";
 
   // Inject prior-round context block (iteration ≥ 2 — populated by prepareRoundContext)
   const priorRoundSection = opts.dynamicContext?.customReviewerPriorRound
@@ -84,7 +89,7 @@ Do NOT write a verdict line. Verdict is derived by CLI from typed findings (repo
 
 Original request:
 ${opts.requestContent}
-</user-request>${constraintsSection}${contextSection}${priorRoundSection}${adjudicationSection}
+</user-request>${constraintsSection}${exclusionsSection}${contextSection}${priorRoundSection}${adjudicationSection}
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
 }
@@ -186,6 +191,7 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
     buildMessage(state: JobState, deps: StepDeps): string {
       const iteration = nextIteration(state, snapshot.name);
       const resultPath = customReviewerResultPath(deps.slug, snapshot.name, iteration);
+      const exclusionsBlock = buildDeliveryExclusionsBlock(resolveStagingExcludePatterns(deps.config));
       return buildCustomReviewerMessage({
         slug: deps.slug,
         reviewerName: snapshot.name,
@@ -194,6 +200,7 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
         resultFilePath: resultPath,
         requestContent: deps.request.content,
         dynamicContext: deps.dynamicContext,
+        deliveryExclusionsBlock: exclusionsBlock || undefined,
       });
     },
 

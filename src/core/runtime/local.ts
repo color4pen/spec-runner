@@ -931,10 +931,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   ): Promise<void> {
     const infra = commitPushInfra as CommitPushInfra;
     const egress = egressParams as
-      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null }
+      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null; excludeWorktreePatterns?: string[] }
       | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null, egress?.excludeWorktreePatterns);
   }
 
   /**
@@ -1530,11 +1530,15 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * Validate declared step output contracts after the agent session completes.
    * No-throw — returns OutputCheckResult with violations.
    * Empty contracts → empty result.
+   *
+   * `excludeWorktreePatterns` — when non-empty, filters worktree paths from the
+   * `unpushable-path` contract check. Committed paths are NOT filtered.
    */
   async validateStepOutputs(
     contracts: OutputContract[],
     cwd: string,
     _branch: string | null,
+    excludeWorktreePatterns?: string[],
   ): Promise<OutputCheckResult> {
     if (contracts.length === 0) return { violations: [] };
     const violations: import("../port/output-contract.js").OutputViolation[] = [];
@@ -1612,7 +1616,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         if (contractPatterns.length === 0) continue;
 
         // Enumerate the publishable path set and match against declared patterns.
-        const publishablePaths = await collectPublishablePaths(this.spawnFn, cwd);
+        // Apply worktree-only exclusion: paths that will never be staged/committed/pushed
+        // because of stagingExcludePatterns must not be flagged as unpushable violations.
+        const publishablePaths = await collectPublishablePaths(this.spawnFn, cwd, excludeWorktreePatterns);
         const matchedPaths = matchUnpushablePaths(publishablePaths, { patterns: contractPatterns, source: "contract" });
         if (matchedPaths.length > 0) {
           violations.push({

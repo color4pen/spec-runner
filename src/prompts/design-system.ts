@@ -157,6 +157,7 @@ export function buildInitialMessage(
   dynamicContext?: DynamicContext,
   requestType?: string,
   factCheckDirective?: string,
+  deliveryExclusionsBlock?: string,
 ): string {
   let base = DESIGN_INITIAL_MESSAGE_TEMPLATE
     .replaceAll("{{SLUG}}", slug)
@@ -178,6 +179,13 @@ export function buildInitialMessage(
   // importing from the domain layer (src/core/) in this shared-kernel module.
   if (factCheckDirective) {
     base = `${base}\n\n${factCheckDirective}`;
+  }
+
+  // Inject delivery exclusions block when stagingExcludePatterns are configured.
+  // Placed before Repository Context so the agent knows which paths are outside
+  // spec-runner's delivery scope before planning.
+  if (deliveryExclusionsBlock) {
+    base = `${base}\n\n${deliveryExclusionsBlock}`;
   }
 
   if (dynamicContext) {

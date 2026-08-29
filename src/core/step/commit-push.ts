@@ -521,7 +521,10 @@ export async function commitAndPush(
     // expected by collectPublishablePaths.
     const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
       runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
-    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
+    // Apply worktree-only exclusion: paths that will never be staged/committed/pushed
+    // because of stagingExcludePatterns must not trigger UNPUSHABLE_PATH_BLOCKED.
+    const layer2ExcludePatterns = resolveStagingExcludePatterns(deps.config);
+    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd, layer2ExcludePatterns);
     const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability);
     if (matchedPaths.length > 0) {
       throw unpushablePathBlockedError(
@@ -572,7 +575,14 @@ export async function commitAndPush(
       throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
     }
     {
-      const residualViolations = findScopedCommitViolations(slug, postStatus.paths, filePaths, allManagedPaths);
+      // Apply staging exclusion patterns before residual check.
+      // Paths matching stagingExcludePatterns will never be staged/committed/pushed,
+      // so they must not be treated as residual violations. The canonical-doc
+      // staged-only check (findWriteScopeViolations) is NOT filtered — exclusion
+      // cannot bypass scope enforcement over protected canon paths.
+      const residualExcludePatterns = resolveStagingExcludePatterns(deps.config);
+      const filteredResidualPaths = applyStagingExclusions(postStatus.paths, residualExcludePatterns);
+      const residualViolations = findScopedCommitViolations(slug, filteredResidualPaths, filePaths, allManagedPaths);
       const stagedCanonViolations = findWriteScopeViolations(step.name, slug, postStatus.stagedOnly, filePaths);
       const allViolations = [...new Set([...residualViolations, ...stagedCanonViolations])];
       if (allViolations.length > 0) {
@@ -998,6 +1008,7 @@ export async function commitScopedPaths(
   infra: CommitPushInfra,
   egress?: { synthesizedCommits: readonly string[] },
   pushCapability?: PushCapability | null,
+  worktreeExcludePatterns?: string[],
 ): Promise<void> {
   if (stagePaths.length === 0) return;
 
@@ -1011,7 +1022,9 @@ export async function commitScopedPaths(
     // expected by collectPublishablePaths.
     const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
       runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
-    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
+    // Apply worktree-only exclusion: paths that will never be staged/committed/pushed
+    // because of stagingExcludePatterns must not trigger UNPUSHABLE_PATH_BLOCKED.
+    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd, worktreeExcludePatterns);
     const matchedPaths = matchUnpushablePaths(publishablePaths, pushCapability);
     if (matchedPaths.length > 0) {
       throw unpushablePathBlockedError(

@@ -7,6 +7,7 @@ import { conformanceResultPath, changeFolderPath, requestMdPath } from "../../ut
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { CONFORMANCE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { resolveStagingExcludePatterns, buildDeliveryExclusionsBlock } from "./staging-containment.js";
 
 const CONFORMANCE_AGENT_MODEL = "claude-sonnet-5";
 
@@ -74,6 +75,9 @@ export const ConformanceStep: AgentStep = {
     const findingsPath = conformanceResultPath(deps.slug, iteration);
     const changeFolder = changeFolderPath(deps.slug);
 
+    const exclusionsBlock = buildDeliveryExclusionsBlock(resolveStagingExcludePatterns(deps.config));
+    const exclusionsSection = exclusionsBlock ? `\n\n${exclusionsBlock}` : "";
+
     return `<user-request>
 Please perform a conformance review for the following change:
 
@@ -91,7 +95,7 @@ Steps:
 8. Write your evidence report to: ${findingsPath}
 
 Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
-
+${exclusionsSection}
 Original request:
 ${deps.request.content}
 </user-request>
