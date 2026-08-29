@@ -411,20 +411,22 @@ When a changed file matches a forbidden surface, the conformance step synthesize
 
 ### Guarded staging containment
 
-Guarded write steps (implementer / build-fixer / code-fixer / test-materialize / adr-gen) stage all worktree changes after reset. Two optional settings limit what reaches the commit:
+Guarded write steps (implementer / code-fixer / adr-gen) stage all worktree changes after reset. Two optional settings limit what reaches the commit:
 
 **`pipeline.stagingExcludePatterns`** — glob patterns that remove paths from the guarded stage set. Matched paths are not staged and remain in the worktree. The target repo's `.gitignore` is the first line of defense; this is the second.
 
 This setting has two layers of effect:
 
-- **Staging behavior (guarded steps only)**: matched paths are removed from the stage set of guarded steps (implementer / build-fixer / code-fixer / test-materialize / adr-gen). They stay in the worktree, not in the commit.
+- **Staging behavior (guarded steps only)**: matched paths are removed from the stage set of guarded steps (implementer / code-fixer / adr-gen). They stay in the worktree, not in the commit.
 - **Delivery scope enforcement (pipeline-wide)**: the same patterns are applied across the full pipeline — Layer 1/2 unpushable-path judgment, scoped residual check, and design / code-review / conformance / custom-reviewer delivery context all treat matching paths as outside spec-runner's delivery scope. A matching path in the worktree will not trigger `UNPUSHABLE_PATH_BLOCKED` or `WRITE_SCOPE_VIOLATION`, and reviewers are informed that these paths must not be required in the synthesized commits.
+
+**Exception — the pipeline's own namespace cannot be excluded.** Declared step outputs and pipeline-managed paths (state, event journal, result files, canon documents — everything under `specrunner/changes/`) are always staged and committed by scoped and parallel-round staging, regardless of exclusion patterns: they are the pipeline's branch-borne state authority. To keep the exclusion contract uniform ("a matching path is never staged / committed / pushed") instead of varying by step mode, any pattern that can match a path under `specrunner/changes/` is rejected at config load with `CONFIG_INVALID`. Declare exclusions for repo content only (e.g. `vendor/**`, `.github/workflows/**`).
 
 **`pipeline.maxStagedFiles`** — fail-closed guard: if the post-exclusion file count exceeds this limit, the step halts (escalation) before any `git add` or commit. The error message lists the total count and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedFiles` for legitimately large changes.
 
 **`pipeline.maxStagedBytes`** — fail-closed guard: if the post-exclusion total worktree byte size (uncompressed, measured via `lstat` before `git add`) exceeds this limit, the step halts (escalation) before any `git add` or commit. The default of `52428800` (50 MiB) is chosen because legitimate source changes virtually never exceed 50 MiB uncompressed; exceedance is a strong signal of generated-artifact contamination. The error message states the total bytes, the threshold, and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedBytes` for legitimately large changes. The file-count guard and the byte-size guard are **independent** — either excess halts before commit.
 
-`maxStagedFiles` and `maxStagedBytes` affect **GUARDED steps only** (implementer / build-fixer / code-fixer / test-materialize / adr-gen). They have no effect on scoped steps (design, spec-review, etc.). `stagingExcludePatterns` staging applies to guarded steps only, but its delivery scope enforcement applies to the full pipeline.
+`maxStagedFiles` and `maxStagedBytes` affect **GUARDED steps only** (implementer / code-fixer / adr-gen). They have no effect on scoped steps (design, spec-review, etc.). `stagingExcludePatterns` staging applies to guarded steps only, but its delivery scope enforcement applies to the full pipeline.
 
 ```jsonc
 // .specrunner/config.json
@@ -439,7 +441,7 @@ This setting has two layers of effect:
 
 | Key | Default | Description |
 |---|---|---|
-| `pipeline.stagingExcludePatterns` | absent (no exclusions) | Glob patterns removed from the guarded stage set. Matched paths stay in the worktree, not in the commit. Guarded steps のみに staging 適用。ただし unpushable-path 判定・scoped residual check・design/review の delivery scope は pipeline 全体に適用。Uses bounded glob rules (`**/`, `*`, literal others). |
+| `pipeline.stagingExcludePatterns` | absent (no exclusions) | Glob patterns removed from the guarded stage set. Matched paths stay in the worktree, not in the commit. Staging applies to guarded steps only; delivery scope enforcement (unpushable-path judgment, scoped residual check, design/review delivery context) applies pipeline-wide. Patterns that can match paths under `specrunner/changes/` are rejected with `CONFIG_INVALID`. Uses bounded glob rules (`**/`, `*`, literal others). |
 | `pipeline.maxStagedFiles` | `2000` | Max post-exclusion file count for a guarded step before the step halts. Guarded steps only. |
 | `pipeline.maxStagedBytes` | `52428800` | Max post-exclusion total worktree byte size (uncompressed, via lstat) for a guarded step before the step halts. Independent of `maxStagedFiles`. Guarded steps only. |
 

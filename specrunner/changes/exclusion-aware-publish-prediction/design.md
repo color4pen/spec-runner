@@ -110,6 +110,31 @@ The following paths are outside spec-runner's delivery scope and must not be req
 
 ---
 
+### D6: pipeline 名前空間と重なる除外パターンを config load で拒否する（retrospective — PR #1096 レビュー対応、operator 適用）
+
+PR レビューで、delivery-exclusion 契約（「一致 path は stage / commit / push されない」）が
+scoped / parallel-round staging では成立しない指摘を受けた: declared step outputs と
+pipeline-managed paths（state.json / events.jsonl / 結果ファイル / canon 文書 —
+すべて `specrunner/changes/` 配下）は除外パターンに関係なく無条件に stage される。
+これらは branch-borne state authority であり、除外を適用すると pipeline 自体が壊れるため
+stage 側を変えることはできない。
+
+代わりに、**`specrunner/changes/` 名前空間に到達し得る除外パターンを config load 時に
+`CONFIG_INVALID` で拒否する**（`checkStagingExclusionNamespace` — validation.ts の
+semantic check）。到達可能性は bounded glob 構文上のセグメント解析で判定する:
+`**` を含むセグメントは常に到達可能、それ以外は名前空間セグメント
+（"specrunner" / "changes"）との単一セグメント照合 + 内側に一致し得る残余セグメントの有無。
+
+これにより契約は一様になる: 名前空間の外では「一致 path は絶対に stage / commit /
+push されない」が無条件に成立し、名前空間との重なりは設定時点で判明する
+（step 種別によって除外の意味が変わる状態を排除）。docs/configuration.md に例外を明記。
+
+あわせて同レビューの指摘により、実 git を使う統合テスト
+（`staging-exclusion-pipeline-integration.test.ts` — guarded → scoped を通しで実行し、
+除外 artifact の非 commit・非 halt・worktree 保全と、非除外残余の WRITE_SCOPE_VIOLATION
+非退行を検証）を追加し、docs の guarded step 列挙（build-fixer / test-materialize は
+退役済み）を実装（implementer / code-fixer / adr-gen）に一致させた。
+
 ## Risks / Trade-offs
 
 **[Risk] commit 成分の誤免除**: worktree フィルタが commit 成分に誤って適用された場合、実際に push される path がブロックされない — **軽減**: D1 の設計で worktree 成分と commit 成分を分離し、commit 成分にはフィルタを適用しないことをコードで明示する。テストで「commit 成分の除外対象は従来どおりブロック」を固定する。

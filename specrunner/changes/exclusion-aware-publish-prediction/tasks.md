@@ -311,3 +311,15 @@
 - `isReconcilableArtifact(".github/workflows/ci.yml", "<slug>")` → `false` が unit test で確認されている
 - `reconcileWorktreeArtifacts` が除外 path（change-folder 外）を `reconciled` に含めないことが test で固定されている
 - `bun run typecheck` exit 0、`bun run test` exit 0（T-15 テストを含む）
+
+## T-16: PR #1096 レビュー対応（retrospective — operator 適用、design D6）
+
+- [x] `checkStagingExclusionNamespace` を config semantic check に追加し、`specrunner/changes/` 名前空間に到達し得る除外パターンを `CONFIG_INVALID` で拒否する（`src/config/schema/validation.ts`）
+- [x] 拒否・許容の判定テストを追加する（`src/config/__tests__/staging-config-validation.test.ts` TC-NS: `specrunner/changes/**` / `specrunner/**` / `**` / `**/*.md` / `specrunner/*/...` 拒否、`vendor/**` / `.github/workflows/**` / `*.log` / 裸ディレクトリ文字列 許容）
+- [x] 実 git 統合テストを追加する（`tests/unit/step/staging-exclusion-pipeline-integration.test.ts` TC-INT-1/2: guarded → scoped 通しで除外 artifact の非 commit・非 halt・worktree 保全、非除外残余の WRITE_SCOPE_VIOLATION 非退行）
+- [x] docs/configuration.md: guarded step 列挙を実装（implementer / code-fixer / adr-gen）に修正し、pipeline 名前空間の除外不可（config error）と契約の例外を明記する
+
+### 受け入れ条件
+
+- 観測可能な halt 挙動・除外挙動は不変（追加は config load 時の早期エラーのみ）
+- typecheck / test / architecture tests green
