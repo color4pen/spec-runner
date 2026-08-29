@@ -2,14 +2,17 @@
  * Unit tests for exclusion-aware unpushable-path and scoped residual checks.
  *
  * Covers:
- *   TC-001 (must): worktree dirty な除外 path が guarded step で UNPUSHABLE_PATH_BLOCKED を引き起こさない
- *   TC-002 (must): worktree dirty な除外 path が commitScopedPaths で UNPUSHABLE_PATH_BLOCKED を引き起こさない
- *   TC-004 (must): unpushed commit に含まれる除外 path は従来どおりブロックされる
- *   TC-005 (must): scoped step が除外 dirty path を残留違反として検出しない
- *   TC-006 (must): 除外対象でない dirty path は従来どおり residual violation になる
- *   TC-007 (must): 除外パターンが protected canon path に一致しても write-scope 違反検査を迂回しない
- *   TC-029 (must): parallel-review-round 経由の commitRoundArtifacts が除外 path を UNPUSHABLE_PATH_BLOCKED しない
- *                  (tested via commitScopedPaths 8th-arg integration)
+ *   TC-001 (must):  worktree dirty な除外 path が guarded step で UNPUSHABLE_PATH_BLOCKED を引き起こさない
+ *   TC-002 (must):  worktree dirty な除外 path が commitScopedPaths で UNPUSHABLE_PATH_BLOCKED を引き起こさない
+ *   TC-004 (must):  unpushed commit に含まれる除外 path は従来どおりブロックされる
+ *   TC-005 (must):  scoped step が除外 dirty path を残留違反として検出しない
+ *   TC-006 (must):  除外対象でない dirty path は従来どおり residual violation になる
+ *   TC-007 (must):  除外パターンが protected canon path に一致しても write-scope 違反検査を迂回しない
+ *   TC-008 (must):  E2E — guarded step が除外未追跡ファイルを生成し後続 scoped step も halt しない
+ *   TC-015 (should): commitScopedPaths の省略引数での後方互換性（7-arg call）
+ *   TC-016 (should): validateStepOutputs の省略引数での後方互換性（3-arg call）
+ *   TC-029 (must):  parallel-review-round 経由の commitRoundArtifacts が除外 path を UNPUSHABLE_PATH_BLOCKED しない
+ *                   (tested via commitScopedPaths 8th-arg integration)
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -24,6 +27,8 @@ import type { AgentStep } from "../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { PushCapability } from "../../../git/push-capability.js";
+import type { OutputContract } from "../../port/output-contract.js";
+import { LocalRuntime } from "../../runtime/local.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -482,6 +487,248 @@ describe("TC-029: commitScopedPaths 8th arg worktreeExcludePatterns propagates t
           [".github/workflows/**"], // 8th arg: worktreeExcludePatterns
         ),
       ).resolves.toBeUndefined();
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-008: E2E — guarded step が除外未追跡ファイルを生成し後続 scoped step も halt しない
+// ---------------------------------------------------------------------------
+
+describe("TC-008: E2E guarded → scoped complete story — excluded untracked file stays in worktree", () => {
+  it(
+    "TC-008: guarded implementer commit then scoped design commit both succeed; vendor/generated.js never committed or violated",
+    async () => {
+      // GIVEN: stagingExcludePatterns: ["vendor/**"]
+      // AND: guarded implementer step generates vendor/generated.js (untracked)
+      //      AND also modifies src/impl.ts (in-scope)
+      // WHEN: guarded commitAndPush → scoped design commitAndPush
+      // THEN: vendor/generated.js is not committed (excluded from staging)
+      //       AND vendor/generated.js is not a residual violation in the scoped step
+      //       AND both steps succeed without halt
+      const IMPL_PATH = "src/impl.ts";
+      const VENDOR_PATH = "vendor/generated.js";
+      const DESIGN_PATH = `specrunner/changes/${SLUG}/design.md`;
+      const SHA1 = "sha1-guarded-commit-tc008";
+      const SHA2 = "sha2-scoped-commit-tc008";
+
+      // Guarded step status: vendor/generated.js (untracked) + src/impl.ts (modified)
+      const guardedStatus = statusEntry("??", VENDOR_PATH) + statusEntry(" M", IMPL_PATH);
+      // Scoped residual check status: vendor/generated.js still dirty after guarded commit
+      const scopedResidualStatus = statusEntry("??", VENDOR_PATH);
+
+      // Git call sequence:
+      // Guarded step (implementer):
+      //   [0] rev-parse HEAD (headAtEntry)
+      //   [1] status --untracked-files=all (getWorktreeChangedPaths) → vendor + impl
+      //   [2] add -A -- src/impl.ts (vendor excluded by stagingExcludePatterns)
+      //   [3] diff --cached --quiet → exit 1 (staged)
+      //   [4] commit -m "implementer: test-slug" -- src/impl.ts
+      //   [5] rev-parse HEAD → SHA1 (runInlineEgressCheck)
+      //   [6] rev-list HEAD --not --remotes=origin → SHA1 (egress: SHA1 ∈ {SHA1} ✓)
+      //   [7] push
+      // Scoped step (design):
+      //   [8]  rev-parse HEAD (headAtEntry)
+      //   [9]  add -A -- design.md
+      //   [10] status --porcelain -z (residual check) → vendor/generated.js dirty
+      //        applyStagingExclusions: vendor excluded → filteredResidualPaths=[] → no violation
+      //   [11] diff --cached --quiet -- design.md → exit 1 (staged)
+      //   [12] commit -m "design: test-slug" -- design.md
+      //   [13] rev-parse HEAD → SHA2 (runInlineEgressCheck)
+      //   [14] rev-list HEAD --not --remotes=origin → SHA2 (egress: SHA2 ∈ {SHA2} ✓)
+      //   [15] push
+      const { fn, calls } = makeGitSpawnFn([
+        // Guarded step
+        { exitCode: 0, stdout: "headBefore\n" },          // [0]  rev-parse HEAD
+        { exitCode: 0, stdout: guardedStatus },            // [1]  status (getWorktreeChangedPaths)
+        { exitCode: 0 },                                   // [2]  add -A -- src/impl.ts
+        { exitCode: 1 },                                   // [3]  diff --cached --quiet (staged)
+        { exitCode: 0, stdout: `${SHA1}\n` },              // [4]  commit
+        { exitCode: 0, stdout: `${SHA1}\n` },              // [5]  rev-parse HEAD (egress)
+        { exitCode: 0, stdout: `${SHA1}\n` },              // [6]  rev-list (egress: SHA1 ∈ {SHA1})
+        { exitCode: 0 },                                   // [7]  push
+        // Scoped step
+        { exitCode: 0, stdout: `${SHA1}\n` },              // [8]  rev-parse HEAD
+        { exitCode: 0 },                                   // [9]  add -A -- design.md
+        { exitCode: 0, stdout: scopedResidualStatus },     // [10] status (residual check)
+        { exitCode: 1 },                                   // [11] diff --cached --quiet -- design.md (staged)
+        { exitCode: 0, stdout: `${SHA2}\n` },              // [12] commit
+        { exitCode: 0, stdout: `${SHA2}\n` },              // [13] rev-parse HEAD (egress)
+        { exitCode: 0, stdout: `${SHA2}\n` },              // [14] rev-list (egress: SHA2 ∈ {SHA2})
+        { exitCode: 0 },                                   // [15] push
+      ]);
+
+      const infra = makeInfra(fn);
+      const deps = makeDeps({ stagingExcludePatterns: ["vendor/**"] });
+
+      // Step 1: guarded commitAndPush (implementer)
+      await expect(
+        commitAndPush(
+          makeGuardedStep(IMPL_PATH),
+          makeState("implementer"),
+          deps,
+          null,
+          infra,
+        ),
+      ).resolves.toBeUndefined();
+
+      // Step 2: scoped commitAndPush (design) — vendor/generated.js still dirty, not a violation
+      await expect(
+        commitAndPush(
+          {
+            kind: "agent",
+            name: "design",
+            agent: { id: "design-agent" } as never,
+            buildMessage: () => "design message",
+            resultFilePath: () => null,
+            parseResult: () => ({ verdict: "success", findingsPath: null }),
+            writes: () => [{ path: DESIGN_PATH }],
+          } as unknown as AgentStep,
+          makeState("design"),
+          deps,
+          null,
+          infra,
+        ),
+      ).resolves.toBeUndefined();
+
+      // THEN: two commits, two pushes; vendor path never appears in commit pathspec
+      const commitCalls = calls.filter((c) => c[0] === "commit");
+      expect(commitCalls).toHaveLength(2);
+      // vendor/generated.js must not appear in any commit call
+      const vendorInCommit = commitCalls.some((c) => c.some((arg) => arg.includes(VENDOR_PATH)));
+      expect(vendorInCommit).toBe(false);
+
+      const pushCalls = calls.filter((c) => c[0] === "push");
+      expect(pushCalls).toHaveLength(2);
+
+      // vendor/generated.js must not be cleaned (not quarantined/restored)
+      const cleanCalls = calls.filter((c) => c[0] === "clean");
+      const vendorCleaned = cleanCalls.some((c) => c.some((arg) => arg.includes(VENDOR_PATH)));
+      expect(vendorCleaned).toBe(false);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: commitScopedPaths backward compat — 7-arg call (no worktreeExcludePatterns)
+// ---------------------------------------------------------------------------
+
+describe("TC-015: commitScopedPaths backward compat — 7-arg call without worktreeExcludePatterns", () => {
+  it(
+    "TC-015: calling commitScopedPaths with 7 args (omitting worktreeExcludePatterns) succeeds without error",
+    async () => {
+      // GIVEN: no pushCapability (7th arg = null) → Layer 2 skipped
+      // AND: no worktreeExcludePatterns (8th arg omitted)
+      // WHEN: commitScopedPaths called with 7 positional args
+      // THEN: function behaves as before (no exclusion filter, no UNPUSHABLE_PATH_BLOCKED)
+      const COMMIT_SHA = "sha-tc015-abc";
+      const SCOPED_PATH = `specrunner/changes/${SLUG}/result.md`;
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0 },                            // add -A -- result.md
+        { exitCode: 1 },                            // diff --cached --quiet (staged)
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // commit
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // rev-parse HEAD (egress)
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // rev-list (egress)
+        { exitCode: 0 },                            // push
+      ]);
+
+      // 7-arg call: worktreeExcludePatterns (8th arg) is omitted
+      await expect(
+        commitScopedPaths(
+          [SCOPED_PATH],
+          CWD,
+          BRANCH,
+          "design: test-slug",
+          makeInfra(fn),
+          undefined, // egress
+          null,      // pushCapability (7th arg — Layer 2 skipped entirely)
+          // no 8th arg: backward-compat call site
+        ),
+      ).resolves.toBeUndefined();
+    },
+  );
+
+  it(
+    "TC-015b: 7-arg call with pushCapability but no worktreeExcludePatterns — dirty path matching pushCapability triggers UNPUSHABLE_PATH_BLOCKED (no exclusion applied)",
+    async () => {
+      // Verifies that omitting worktreeExcludePatterns means NO exclusion:
+      // a dirty path matching pushCapability patterns IS blocked (expected legacy behavior).
+      const workflowStatus = statusEntry("??", ".github/workflows/x.yml");
+      const SCOPED_PATH = `specrunner/changes/${SLUG}/result.md`;
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: workflowStatus }, // Layer 2: status (NOT excluded — no 8th arg)
+        { exitCode: 0, stdout: "" },             // Layer 2: rev-list
+      ]);
+
+      // 7-arg call: no worktreeExcludePatterns → workflow path is in publishablePaths → BLOCKED
+      await expect(
+        commitScopedPaths(
+          [SCOPED_PATH],
+          CWD,
+          BRANCH,
+          "design: test-slug",
+          makeInfra(fn),
+          undefined,
+          WORKFLOWS_CAPABILITY, // pushCapability with .github/workflows/** pattern
+          // no 8th arg: no exclusion → UNPUSHABLE_PATH_BLOCKED expected
+        ),
+      ).rejects.toMatchObject({ code: "UNPUSHABLE_PATH_BLOCKED" });
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-016: validateStepOutputs backward compat — 3-arg call (no excludeWorktreePatterns)
+// ---------------------------------------------------------------------------
+
+describe("TC-016: validateStepOutputs backward compat — 3-arg call without excludeWorktreePatterns", () => {
+  it(
+    "TC-016: calling validateStepOutputs with 3 args (omitting excludeWorktreePatterns) reports violation for dirty path matching contract",
+    async () => {
+      // GIVEN: no excludeWorktreePatterns (4th arg omitted)
+      // AND: worktree has .github/workflows/x.yml dirty
+      // AND: unpushable-path contract covers .github/workflows/**
+      // WHEN: validateStepOutputs called with 3 args
+      // THEN: violation IS reported (legacy behavior — no exclusion applied)
+      const workflowStatus = "?? .github/workflows/x.yml\0";
+
+      const spawnFn = async (_cmd: string, args: string[], _opts: { cwd: string }) => {
+        if (args[0] === "status") {
+          return { exitCode: 0, stdout: workflowStatus, stderr: "" };
+        }
+        // rev-list: no unpushed commits
+        return { exitCode: 0, stdout: "", stderr: "" };
+      };
+
+      const runtime = new LocalRuntime({
+        cwd: "/tmp/fake-tc016",
+        githubClient: {} as never,
+        spawnFn: spawnFn as never,
+      });
+
+      const contracts: OutputContract[] = [
+        {
+          kind: "unpushable-path",
+          path: ".github/workflows",
+          policy: "follow-up",
+          patterns: [".github/workflows/**"],
+        },
+      ];
+
+      // 3-arg call: excludeWorktreePatterns (4th arg) is omitted → no filtering
+      const result = await runtime.validateStepOutputs(
+        contracts,
+        "/tmp/fake-tc016",
+        "test-branch",
+        // no 4th arg: backward-compat call site
+      );
+
+      // THEN: violation is reported — dirty path not filtered (no exclusion)
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0]!.kind).toBe("unpushable-path");
+      expect(result.violations[0]!.detail).toContain(".github/workflows/x.yml");
     },
   );
 });

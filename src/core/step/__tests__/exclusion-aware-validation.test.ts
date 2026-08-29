@@ -2,6 +2,7 @@
  * Unit tests for exclusion-aware validation and delivery exclusions block injection.
  *
  * Covers:
+ *   TC-003 (must):   Layer 1 validateStepOutputs の unpushable-path 判定で除外 path が violation にならない
  *   TC-009 (must):   design 初期メッセージに delivery exclusions block が注入される
  *   TC-010 (must):   stagingExcludePatterns が未設定の場合 delivery exclusions block は含まれない
  *   TC-017 (must):   buildDeliveryExclusionsBlock — 空 patterns で空文字列を返す
@@ -12,7 +13,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildDeliveryExclusionsBlock } from "../staging-containment.js";
+import { buildDeliveryExclusionsBlock, resolveStagingExcludePatterns } from "../staging-containment.js";
 import { buildInitialMessage } from "../../../prompts/design-system.js";
 import { buildCodeReviewInitialMessage } from "../code-review.js";
 import { DesignStep } from "../design.js";
@@ -21,6 +22,8 @@ import { ConformanceStep } from "../conformance.js";
 import { buildCustomReviewerMessage } from "../custom-reviewer.js";
 import type { JobState } from "../../../state/schema.js";
 import type { StepDeps } from "../../port/step-types.js";
+import type { OutputContract } from "../../port/output-contract.js";
+import { LocalRuntime } from "../../runtime/local.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +78,123 @@ function makeDeps(stagingExcludePatterns?: string[]): StepDeps {
     dynamicContext: undefined,
   } as unknown as StepDeps;
 }
+
+// ---------------------------------------------------------------------------
+// TC-003: Layer 1 validateStepOutputs — excluded worktree paths don't violate
+// ---------------------------------------------------------------------------
+
+/**
+ * Asserts the chain:
+ *   step-context-builder.ts L137: resolveStagingExcludePatterns(deps.config) → excludeWorktreePatterns
+ *   → strategy.validateStepOutputs(contracts, cwd, branch, excludeWorktreePatterns)    [local.ts L1621]
+ *   → collectPublishablePaths(this.spawnFn, cwd, excludeWorktreePatterns)              [push-capability.ts]
+ *   → excluded worktree path is removed from publishablePaths before matchUnpushablePaths
+ *
+ * LocalRuntime.validateStepOutputs is called directly with a mock spawnFn to avoid real git I/O.
+ */
+describe("TC-003: validateStepOutputs with excludeWorktreePatterns suppresses excluded worktree paths", () => {
+  it("TC-003: .github/workflows/x.yml dirty + excludeWorktreePatterns match → no unpushable-path violation", async () => {
+    // GIVEN: worktree has .github/workflows/x.yml dirty (untracked)
+    // AND: an unpushable-path contract covers .github/workflows/**
+    // AND: excludeWorktreePatterns: [".github/workflows/**"]
+    const workflowStatus = "?? .github/workflows/x.yml\0";
+
+    const spawnFn = async (_cmd: string, args: string[], _opts: { cwd: string }) => {
+      if (args[0] === "status") {
+        return { exitCode: 0, stdout: workflowStatus, stderr: "" };
+      }
+      // rev-list: no unpushed commits
+      return { exitCode: 0, stdout: "", stderr: "" };
+    };
+
+    const runtime = new LocalRuntime({
+      cwd: "/tmp/fake-tc003",
+      githubClient: {} as never,
+      spawnFn: spawnFn as never,
+    });
+
+    const contracts: OutputContract[] = [
+      {
+        kind: "unpushable-path",
+        path: ".github/workflows",
+        policy: "follow-up",
+        patterns: [".github/workflows/**"],
+      },
+    ];
+
+    // WHEN: validateStepOutputs with excludeWorktreePatterns
+    const result = await runtime.validateStepOutputs(
+      contracts,
+      "/tmp/fake-tc003",
+      "test-branch",
+      [".github/workflows/**"], // excludeWorktreePatterns: excluded path filtered out
+    );
+
+    // THEN: no violation — excluded worktree path is not in publishablePaths
+    expect(result.violations).toHaveLength(0);
+  });
+
+  it("TC-003b: without excludeWorktreePatterns, same dirty path triggers unpushable-path violation (regression guard)", async () => {
+    // GIVEN: same worktree state but NO excludeWorktreePatterns (4th arg omitted)
+    // Verifies the exclusion actually suppresses the violation (not just an empty set)
+    const workflowStatus = "?? .github/workflows/x.yml\0";
+
+    const spawnFn = async (_cmd: string, args: string[], _opts: { cwd: string }) => {
+      if (args[0] === "status") {
+        return { exitCode: 0, stdout: workflowStatus, stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    };
+
+    const runtime = new LocalRuntime({
+      cwd: "/tmp/fake-tc003b",
+      githubClient: {} as never,
+      spawnFn: spawnFn as never,
+    });
+
+    const contracts: OutputContract[] = [
+      {
+        kind: "unpushable-path",
+        path: ".github/workflows",
+        policy: "follow-up",
+        patterns: [".github/workflows/**"],
+      },
+    ];
+
+    // WHEN: validateStepOutputs without excludeWorktreePatterns (3-arg backward-compat form)
+    const result = await runtime.validateStepOutputs(
+      contracts,
+      "/tmp/fake-tc003b",
+      "test-branch",
+      // excludeWorktreePatterns omitted → no filtering
+    );
+
+    // THEN: violation IS reported — dirty workflow path matches contract patterns
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]!.kind).toBe("unpushable-path");
+    expect(result.violations[0]!.detail).toContain(".github/workflows/x.yml");
+  });
+
+  it("TC-003c: resolveStagingExcludePatterns produces the excludeWorktreePatterns passed to validateStepOutputs", () => {
+    // Verifies step-context-builder.ts L137 wiring: resolveStagingExcludePatterns(deps.config)
+    // is used to build excludeWorktreePatterns before calling strategy.validateStepOutputs.
+    // This is a pure function test — no real git I/O required.
+
+    // With patterns configured → passed to validateStepOutputs as excludeWorktreePatterns
+    const configWithPatterns = {
+      version: 1 as const,
+      agents: {},
+      pipeline: { stagingExcludePatterns: [".github/workflows/**"] },
+    };
+    const patterns = resolveStagingExcludePatterns(configWithPatterns as never);
+    expect(patterns).toEqual([".github/workflows/**"]);
+
+    // Without patterns → empty array → no filtering in validateStepOutputs
+    const configWithout = { version: 1 as const, agents: {} };
+    const emptyPatterns = resolveStagingExcludePatterns(configWithout as never);
+    expect(emptyPatterns).toEqual([]);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // TC-017: buildDeliveryExclusionsBlock — 空 patterns で空文字列を返す
