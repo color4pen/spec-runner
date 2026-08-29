@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T06:27:41.960Z",
+  "updatedAt": "2026-08-29T06:40:00.616Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
-  "error": {
-    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
-    "message": "custom reviewers did not approve after 2 iterations",
-    "hint": "Review the latest reviewer results and address findings manually. (iteration 003)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -187,14 +183,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "custom reviewers did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "Operator 裁定（issue #1095 コメント参照・cross-boundary-invariants iter3 F-001 対応）: (1) scoped residual check（commit-push.ts）で除外適用前に温存する集合を protectedCanonPaths 限定から write-scope 述語と同一の集合（protected canon + 宣言外 judge artifact）に拡張する。findWriteScopeViolations と同じ述語（forbidden ∪ isJudgeArtifact、declared 除外）を再利用し、集合の二重定義を作らないこと。(2) 同じ拡張を parallel-review-round.ts の round inspection にも適用する。(3) regression test: 除外パターンに一致する宣言外の review-feedback-*.md / *-result-*.md が scoped residual check と parallel round inspection の両経路で violation として検出されることを固定する。(4) 本 issue の他の受け入れ基準（除外 path の非 halt / 非破壊・未 push commit のブロック維持等）は既実装のまま退行させないこと。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-29T06:40:00.415Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

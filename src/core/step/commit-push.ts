@@ -31,7 +31,7 @@ import {
   summarizeTopDirectoriesBySize,
   type StagedPathSizeProbe,
 } from "./staging-containment.js";
-import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations, protectedCanonPaths } from "./write-scope.js";
+import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
 import { restackCheckpointOntoPublishedTip } from "./checkpoint-restack.js";
 import type { CheckpointRestackRecord } from "../../store/event-journal.js";
@@ -579,17 +579,23 @@ export async function commitAndPush(
       // Paths matching stagingExcludePatterns will never be staged/committed/pushed,
       // so they must not be treated as residual violations.
       //
-      // IMPORTANT: exclusion is applied ONLY to non-protected-canon paths.
-      // Protected canon paths (spec.md, design.md, etc.) must always be checked
-      // regardless of exclusion patterns — an excluded unstaged canon path would be
-      // invisible to both stagedOnly check and filteredResidualPaths, effectively
-      // bypassing write-scope enforcement entirely. The exclusion pattern must not
-      // allow a scoped step to silently modify protected canon files.
+      // IMPORTANT: exclusion is applied ONLY to paths that are NOT potential write-scope
+      // violations. We reuse findWriteScopeViolations predicate (forbidden ∪ isJudgeArtifact,
+      // !declared) as the bypass set — this covers:
+      //   (a) Protected canon paths (spec.md, design.md, etc.): an excluded unstaged canon
+      //       path would be invisible to both stagedOnly check and filteredResidualPaths,
+      //       effectively bypassing write-scope enforcement entirely.
+      //   (b) Undeclared judge artifacts (review-feedback-*.md, *-result-*.md): an excluded
+      //       unstaged judge artifact would silently escape the residual check, allowing
+      //       tampered review evidence to persist undetected.
+      // Reusing findWriteScopeViolations (single source of truth) avoids a duplicate
+      // predicate definition. Declared paths are correctly excluded from the bypass set —
+      // a step may write to its own declared canon path (e.g. spec-review writes spec.md).
       const residualExcludePatterns = resolveStagingExcludePatterns(deps.config);
-      const canonSet = new Set(protectedCanonPaths(slug));
+      const potentialViolations = new Set(findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths));
       const filteredResidualPaths = [
-        ...postStatus.paths.filter((p) => canonSet.has(p)), // always checked (bypass exclusion)
-        ...applyStagingExclusions(postStatus.paths.filter((p) => !canonSet.has(p)), residualExcludePatterns),
+        ...postStatus.paths.filter((p) => potentialViolations.has(p)), // always checked (bypass exclusion)
+        ...applyStagingExclusions(postStatus.paths.filter((p) => !potentialViolations.has(p)), residualExcludePatterns),
       ];
       const residualViolations = findScopedCommitViolations(slug, filteredResidualPaths, filePaths, allManagedPaths);
       const stagedCanonViolations = findWriteScopeViolations(step.name, slug, postStatus.stagedOnly, filePaths);

@@ -817,3 +817,145 @@ describe("TC-016: validateStepOutputs backward compat — 3-arg call without exc
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// TC-030: 除外パターンに一致する undeclared judge artifact が scoped residual check で violation になる
+// ---------------------------------------------------------------------------
+// Regression guard for the write-scope invariant extension (iter-3, F-001):
+//
+// The scoped residual check bypass predicate was previously limited to protectedCanonPaths.
+// A reviewer that modifies an undeclared review-feedback-*.md / *-result-*.md file
+// (a "judge artifact") could tamper with review evidence and bypass detection if the
+// path matched a stagingExcludePatterns entry.
+//
+// After the fix, findWriteScopeViolations predicate (forbidden ∪ isJudgeArtifact, !declared)
+// is used as the bypass set, ensuring undeclared judge artifacts always reach the residual
+// check regardless of exclusion patterns.
+
+describe("TC-030: undeclared judge artifact matching exclusion pattern → still WRITE_SCOPE_VIOLATION in scoped step", () => {
+  it(
+    "TC-030a: review-feedback-001.md (undeclared) matching 'specrunner/changes/**' exclusion → WRITE_SCOPE_VIOLATION",
+    async () => {
+      // GIVEN: stagingExcludePatterns: ["specrunner/changes/**"]
+      // AND: scoped step (design) declares only design.md as output
+      // AND: worktree has review-feedback-001.md dirty (untracked, "??" status)
+      //      review-feedback-001.md is an isJudgeArtifact and NOT in declared writes
+      // INVARIANT: the exclusion pattern matches review-feedback-001.md, but the
+      //   findWriteScopeViolations bypass set includes it (isJudgeArtifact && !declared)
+      //   → filteredResidualPaths includes it → findScopedCommitViolations detects violation
+      const JUDGE_ARTIFACT = `specrunner/changes/${SLUG}/review-feedback-001.md`;
+      const judgeArtifactStatus = statusEntry("??", JUDGE_ARTIFACT);
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },        // [0] rev-parse HEAD
+        { exitCode: 0 },                                 // [1] add -A -- design.md
+        { exitCode: 0, stdout: judgeArtifactStatus },   // [2] status (residual check) → review-feedback-001.md untracked
+        // findScopedCommitViolations fires on review-feedback-001.md (bypass exclusion) → violation
+        // quarantineViolationEvidence: git diff HEAD -- review-feedback-001.md (untracked → empty diff)
+        { exitCode: 0, stdout: "" },                     // [3] diff HEAD -- review-feedback-001.md
+        // restoreViolatedPaths: untracked → git clean -f
+        { exitCode: 0 },                                 // [4] clean -f -- review-feedback-001.md
+      ]);
+
+      // WHEN: scoped design step with stagingExcludePatterns covering specrunner/changes/**
+      await expect(
+        commitAndPush(
+          makeScopedStep(), // design step, declares specrunner/changes/<slug>/design.md
+          makeState("design"),
+          makeDeps({ stagingExcludePatterns: ["specrunner/changes/**"] }),
+          null,
+          makeInfra(fn),
+        ),
+      // THEN: WRITE_SCOPE_VIOLATION — undeclared judge artifact bypasses exclusion filter
+      ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+    },
+  );
+
+  it(
+    "TC-030b: *-result-*.md (undeclared) matching 'specrunner/changes/**' exclusion → WRITE_SCOPE_VIOLATION",
+    async () => {
+      // GIVEN: stagingExcludePatterns: ["specrunner/changes/**"]
+      // AND: scoped step (design) declares only design.md
+      // AND: worktree has code-review-result-001.md dirty (untracked)
+      //      This is a judge artifact via /-result-/ pattern
+      const RESULT_ARTIFACT = `specrunner/changes/${SLUG}/code-review-result-001.md`;
+      const resultArtifactStatus = statusEntry("??", RESULT_ARTIFACT);
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },         // [0] rev-parse HEAD
+        { exitCode: 0 },                                  // [1] add -A -- design.md
+        { exitCode: 0, stdout: resultArtifactStatus },   // [2] status (residual check)
+        { exitCode: 0, stdout: "" },                      // [3] diff HEAD -- result artifact (quarantine)
+        { exitCode: 0 },                                  // [4] clean -f -- result artifact
+      ]);
+
+      await expect(
+        commitAndPush(
+          makeScopedStep(), // design step, declares design.md
+          makeState("design"),
+          makeDeps({ stagingExcludePatterns: ["specrunner/changes/**"] }),
+          null,
+          makeInfra(fn),
+        ),
+      ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+    },
+  );
+
+  it(
+    "TC-030c: declared judge artifact is NOT blocked (positive control — step may write its own declared result)",
+    async () => {
+      // GIVEN: a scoped step that DECLARES its own result file (e.g., code-review declares result)
+      // AND: stagingExcludePatterns: ["specrunner/changes/**"]
+      // AND: worktree has the result file staged/changed (it was written by the step)
+      // INVARIANT: findWriteScopeViolations predicate excludes declared paths from bypass set.
+      //   The declared result file does NOT appear in potentialViolations, so it IS subject
+      //   to applyStagingExclusions. Since the step declared it, filteredResidualPaths may
+      //   not include it — but that's fine because declared paths are NOT violations.
+      //   findScopedCommitViolations allows declared paths through (they're in `allowed`).
+      //   The step should succeed without WRITE_SCOPE_VIOLATION.
+      const RESULT_PATH = `specrunner/changes/${SLUG}/code-review-result-001.md`;
+      const COMMIT_SHA = "sha-tc030c-abc";
+
+      // Scoped step that declares the result path
+      const scopedResultStep: AgentStep = {
+        kind: "agent",
+        name: "code-review",
+        agent: { id: "code-review-agent" } as never,
+        buildMessage: () => "code-review message",
+        resultFilePath: () => null,
+        parseResult: () => ({ verdict: "approved", findingsPath: null }),
+        writes: () => [{ path: RESULT_PATH }],
+      } as unknown as AgentStep;
+
+      // After staging, the result file is staged (stagedOnly), not in worktree dirty.
+      // postStatus.paths = [] (empty with worktreeOnly=true, file is purely staged)
+      // postStatus.stagedOnly = [] or [RESULT_PATH] depending on status after add.
+      // For simplicity: the step succeeds with no residual violation.
+      const { fn, calls } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },   // [0] rev-parse HEAD
+        { exitCode: 0 },                            // [1] add -A -- RESULT_PATH
+        { exitCode: 0, stdout: "" },                // [2] status (residual check — no worktree dirty)
+        { exitCode: 1 },                            // [3] diff --cached --quiet (staged changes → exit 1)
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // [4] commit
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // [5] rev-parse HEAD (egress)
+        { exitCode: 0, stdout: `${COMMIT_SHA}\n` }, // [6] rev-list (egress)
+        { exitCode: 0 },                            // [7] push
+      ]);
+
+      await expect(
+        commitAndPush(
+          scopedResultStep,
+          makeState("code-review"),
+          makeDeps({ stagingExcludePatterns: ["specrunner/changes/**"] }),
+          null,
+          makeInfra(fn),
+        ),
+      ).resolves.toBeUndefined();
+
+      // THEN: commit and push proceeded; no WRITE_SCOPE_VIOLATION
+      const subcommands = calls.map((c) => c[0]);
+      expect(subcommands).toContain("commit");
+      expect(subcommands).toContain("push");
+    },
+  );
+});

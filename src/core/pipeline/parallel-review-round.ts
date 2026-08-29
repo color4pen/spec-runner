@@ -31,7 +31,7 @@ import {
 import { partitionRoundChanges, excludePipelineManagedChangePaths } from "./round-git-scope.js";
 import { canonicalDocPaths } from "../../util/paths.js";
 import { resolveStagingExcludePatterns, applyStagingExclusions } from "../step/staging-containment.js";
-import { protectedCanonPaths } from "../step/write-scope.js";
+import { findWriteScopeViolations } from "../step/write-scope.js";
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -399,15 +399,22 @@ export class ParallelReviewRound {
           // Excluded paths must not trigger ROUND_NONDECLARED_CHANGE — they are intentionally
           // kept in the worktree and must not be staged or treated as offending.
           //
-          // IMPORTANT: exclusion is applied ONLY to non-protected-canon paths.
-          // Protected canon paths (spec.md, design.md, etc.) must always go through
-          // partition check — an exclusion pattern must not let a reviewer silently
-          // modify spec.md and bypass ROUND_NONDECLARED_CHANGE enforcement.
+          // IMPORTANT: exclusion is applied ONLY to paths that are NOT potential write-scope
+          // violations. We reuse findWriteScopeViolations predicate (forbidden ∪ isJudgeArtifact,
+          // !declared) as the bypass set — this covers:
+          //   (a) Protected canon paths (spec.md, design.md, etc.): an exclusion pattern must
+          //       not let a reviewer silently modify spec.md and bypass ROUND_NONDECLARED_CHANGE.
+          //   (b) Undeclared judge artifacts (review-feedback-*.md, *-result-*.md): an excluded
+          //       unstaged judge artifact would silently escape the offending-path check,
+          //       allowing tampered review evidence to bypass ROUND_NONDECLARED_CHANGE enforcement.
+          // Reusing findWriteScopeViolations (single source of truth) avoids a duplicate
+          // predicate definition. Declared member outputs are correctly excluded from the
+          // bypass set — members may write to their own declared result paths.
           const excludePatterns = resolveStagingExcludePatterns(deps.config);
-          const canonSet = new Set(protectedCanonPaths(deps.slug));
+          const potentialViolations = new Set(findWriteScopeViolations(coordinatorName, deps.slug, inspection.paths, declared));
           const filteredPaths = [
-            ...inspection.paths.filter((p) => canonSet.has(p)), // always included (bypass exclusion)
-            ...applyStagingExclusions(inspection.paths.filter((p) => !canonSet.has(p)), excludePatterns),
+            ...inspection.paths.filter((p) => potentialViolations.has(p)), // always included (bypass exclusion)
+            ...applyStagingExclusions(inspection.paths.filter((p) => !potentialViolations.has(p)), excludePatterns),
           ];
           const { toStage, offending } = partitionRoundChanges({ changed: filteredPaths, declared, slug: deps.slug });
 
