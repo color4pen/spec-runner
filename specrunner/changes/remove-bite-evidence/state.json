@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T13:27:56.329Z",
+  "updatedAt": "2026-08-29T13:34:51.648Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -64,10 +64,35 @@
   "issueNumber": 1097,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "4a5658c91b2a777e172a64f5ce11c4afe5f95ae7"
+    "4a5658c91b2a777e172a64f5ce11c4afe5f95ae7",
+    "b50b41f950e9ce33803344321a86f89b5dccbc0f"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/state/profile.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/types.ts",
+      "src/config/schema/types.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/config/schema/validation.ts",
+      "src/state/schema.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/bite-evidence/test-file-selection.ts",
+      "src/core/pr-create/body-template.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
