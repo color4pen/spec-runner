@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T05:15:56.574Z",
+  "updatedAt": "2026-08-29T05:21:19.905Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -73,7 +73,9 @@
     "40b1bfe7359e2d74f278e6778812b83a8366ac35",
     "88d3cc526e3b70eb1e35de6d615d30e1a9f9997f",
     "093c846e37850c7220460da9746fee48288ad302",
-    "c69d313971c0292c01691398c45f8546669519a0"
+    "c69d313971c0292c01691398c45f8546669519a0",
+    "8ad68dfac84d398bbb36b1de6566b034a84949f9",
+    "444fe5f9ef06b9d363044ca264732a21cdd4a3cb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,40 +116,20 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/git/push-capability.ts",
-      "src/core/step/commit-push.ts",
-      "src/core/step/staging-containment.ts",
-      "src/core/runtime/local.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/step/step-context-builder.ts",
-      "src/core/pipeline/parallel-review-round.ts",
-      "src/core/step/design.ts",
-      "src/prompts/design-system.ts",
-      "src/core/step/__tests__/commit-push-guarded-staging.test.ts",
-      "src/core/step/code-review.ts",
-      "src/core/step/conformance.ts",
-      "src/core/step/custom-reviewer.ts",
-      "src/core/resume/reconcile-worktree.ts",
-      "docs/configuration.md",
-      "src/core/step/write-scope.ts",
-      "src/core/resume/__tests__/reconcile-worktree.test.ts",
-      "src/git/__tests__/push-capability.test.ts",
-      "src/core/step/__tests__/commit-push-exclusion.test.ts",
-      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
-      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts"
+      "src/core/step/__tests__/commit-push-exclusion.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
