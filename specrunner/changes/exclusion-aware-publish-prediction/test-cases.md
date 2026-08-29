@@ -328,6 +328,7 @@ result: completed
 total: 29
 automated: 26
 manual: 2
+gate: 1
 must: 22
 should: 7
 could: 0

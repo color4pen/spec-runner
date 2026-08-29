@@ -275,3 +275,39 @@
 **Acceptance Criteria**:
 - `bun run typecheck` exit 0
 - `bun run test` exit 0（全テスト pass）
+
+---
+
+## T-15: integration test — reconcile が除外 path を破壊しない（TC-024 対応）
+
+**対象ファイル**: `src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts`（新規）または既存テストファイルへの追加
+
+### 背景・実装根拠
+
+`reconcileWorktreeArtifacts` は内部で `isReconcilableArtifact` を使い、**change-folder（`specrunner/changes/<slug>/`）配下のパスのみ**を reconcile 対象とする。`.github/workflows/**` や `vendor/**` 等の change-folder 外パスは `isReconcilableArtifact` の条件 1（`path.startsWith(folder + "/")` を満たさない）により自然に除外される。この充足は `stagingExcludePatterns` 設定に依存せず、かつ追加の実装変更を必要としない。
+
+ただし、この充足が**仕様書・テストで明示的に保証されていない**ため、将来の `isReconcilableArtifact` 改修時に誤って壊される恐れがある。TC-024 の integration test を追加し、reconcile が除外 path を削除しないことを回帰テストとして固定する。
+
+### タスク内容
+
+- [ ] `isReconcilableArtifact("some-slug", ".github/workflows/ci.yml")` が `false` を返すことを unit test で確認する
+  - GIVEN: `.github/workflows/ci.yml`（change-folder 外パス）、slug `"some-slug"`
+  - THEN: `isReconcilableArtifact` が `false` を返す（reconcile 対象外）
+
+- [ ] integration シナリオとして以下のテストを追加する（TC-024）:
+  - GIVEN: `stagingExcludePatterns: [".github/workflows/**"]` が設定されており、guarded step が `.github/workflows/ci.yml` を未追跡ファイルとして生成して worktree に保持している状態で job が halt する
+  - WHEN: resume 時に `reconcileWorktreeArtifacts` が実行される
+  - THEN: `.github/workflows/ci.yml` が `reconciled` リストに含まれない（削除されない）
+  - AND: worktree に `.github/workflows/ci.yml` が引き続き存在する
+
+- [ ] テストでは `quarantineAndRemoveMatching` への入力（`git status` の mock 出力）に除外 path が含まれることを確認した上で、`reconcileWorktreeArtifacts` の戻り値 `reconciled` が空であることをアサートする
+
+**実装注記**:
+- `isReconcilableArtifact` の修正は不要（既存実装が要件を充足している）
+- テストは `isReconcilableArtifact` の分類ロジックを白箱テストとして固定するもの
+- `reconcileWorktreeArtifacts` 全体の E2E test を書く場合は、`SpawnFn` を mock して `git status` 出力を制御すること
+
+**Acceptance Criteria**:
+- `isReconcilableArtifact("<slug>", ".github/workflows/ci.yml")` → `false` が unit test で確認されている
+- `reconcileWorktreeArtifacts` が除外 path（change-folder 外）を `reconciled` に含めないことが test で固定されている
+- `bun run typecheck` exit 0、`bun run test` exit 0（T-15 テストを含む）
