@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T04:41:03.093Z",
+  "updatedAt": "2026-08-29T04:42:11.206Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -68,7 +68,8 @@
     "cb0ea621f281ee440c6f2d5dd426fd0e5d1caff0",
     "bd250c9e1792d69d5439b418535a2dde2ff0f1ef",
     "0c0bed4ca95115fba6e27a26b84dcca5aa2f1313",
-    "8ef0f1b32b74b69fe744ff7ea821f25838bc0d09"
+    "8ef0f1b32b74b69fe744ff7ea821f25838bc0d09",
+    "1630a03ad65452e56ed38c8f1469c86673c20bf0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,15 +120,19 @@
       "src/core/step/__tests__/commit-push-guarded-staging.test.ts",
       "src/core/resume/reconcile-worktree.ts",
       "src/core/runtime/managed.ts"
+    ],
+    "spec-fixer": [
+      "src/core/resume/reconcile-worktree.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
