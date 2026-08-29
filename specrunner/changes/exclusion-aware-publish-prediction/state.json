@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T06:51:27.417Z",
+  "updatedAt": "2026-08-29T06:58:17.165Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -86,7 +86,9 @@
     "4053f49c3b8c5b2caf50992421764b98ebd8246f",
     "bd42dd0d53cfbf462e36ac81d5f11d000446bf3b",
     "498ccd78a966bbbdc2b3c96a5e81c6eec480f458",
-    "e4356e1f2479b97b1037525a36aaccf7ee7725a8"
+    "e4356e1f2479b97b1037525a36aaccf7ee7725a8",
+    "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
+    "a4337a5810ae123c090751c214cbadd6872dd998"
   ],
   "touchedFiles": {
     "request-review": [
@@ -149,21 +151,15 @@
       "src/prompts/design-system.ts"
     ],
     "code-fixer": [
-      "src/core/step/commit-push.ts",
-      "src/core/step/write-scope.ts",
       "src/core/pipeline/parallel-review-round.ts",
-      "src/core/step/__tests__/commit-push-exclusion.test.ts",
-      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
-      "src/core/pipeline/round-git-scope.ts",
-      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts",
       "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -173,7 +169,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/exclusion-aware-publish-prediction/design.md:sha256:4b80ba31311a6b79c356b3fe913d2ee9c0d38fe3380a1506a8e82f6b048a6938|specrunner/changes/exclusion-aware-publish-prediction/request.md:sha256:6e98956df2f980eed3e8aea71a50312c44016bd2327e9dbfb64b358cb4720022|specrunner/changes/exclusion-aware-publish-prediction/spec.md:sha256:1c016925eeb37f98de24d402db752acef4a0d5fb5688151d000462154053d429|specrunner/changes/exclusion-aware-publish-prediction/tasks.md:sha256:aeea6dc543800b46493245279bc283db5c09a14a4315e78d6352adfdf9cd6f01|specrunner/changes/exclusion-aware-publish-prediction/test-cases.md:sha256:60c570934d8903745e2f2042510eba455cf3c878054c2c431420d13185522ac0"
     },
     {
       "name": "scale-tolerance",
@@ -198,7 +195,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,10 +206,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 2,
-      "code-fixer": 5,
-      "cross-boundary-invariants": 4,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 4
+      "custom-reviewers": 5
     }
   }
 }
