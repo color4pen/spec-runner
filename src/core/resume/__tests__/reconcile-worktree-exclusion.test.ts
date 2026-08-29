@@ -168,3 +168,97 @@ describe("TC-024 (integration): reconcileWorktreeArtifacts does not delete exclu
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// TC-024 (exclusion-patterns): non-canon path inside change folder matching
+// excludePatterns is NOT reconciled — Finding 2 regression guard.
+// ---------------------------------------------------------------------------
+// A path like specrunner/changes/<slug>/vendor/generated.js is inside the change
+// folder and would normally be classified as a reconcilable artifact by
+// isReconcilableArtifact. If stagingExcludePatterns includes a matching glob,
+// reconcileWorktreeArtifacts must skip it (not quarantine, not git clean -f).
+//
+// This scenario is distinct from TC-024a–h which test paths OUTSIDE the change
+// folder (which are excluded by isReconcilableArtifact itself, independent of
+// stagingExcludePatterns).
+
+describe("TC-024 (inside-change-folder exclusion): reconcileWorktreeArtifacts respects excludePatterns", () => {
+  it(
+    "TC-024i: path inside change folder matching excludePatterns → NOT reconciled (preserved)",
+    async () => {
+      // GIVEN: a non-canon, non-managed path inside the change folder
+      // that matches a stagingExcludePatterns entry
+      const insideChangeFolder = `specrunner/changes/${SLUG}/vendor/generated.js`;
+      const statusOut = `?? ${insideChangeFolder}\0`;
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: statusOut }, // git status
+        // No quarantine or clean calls expected
+      ]);
+
+      // WHEN: reconcileWorktreeArtifacts with excludePatterns that match the path
+      const result = await reconcileWorktreeArtifacts(
+        SLUG,
+        WORKTREE_PATH,
+        fn,
+        [`specrunner/changes/*/vendor/**`], // matches the inside-change-folder path
+      );
+
+      // THEN: path is NOT reconciled — exclusion pattern preserves it in worktree
+      expect(result.reconciled).not.toContain(insideChangeFolder);
+      expect(result.reconciled).toHaveLength(0);
+      expect(result.quarantineDir).toBeNull();
+    },
+  );
+
+  it(
+    "TC-024j: same inside-change-folder path WITHOUT excludePatterns → IS reconciled (regression guard)",
+    async () => {
+      // GIVEN: same path, no excludePatterns
+      const insideChangeFolder = `specrunner/changes/${SLUG}/vendor/generated.js`;
+      const statusOut = `?? ${insideChangeFolder}\0`;
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: statusOut },          // git status
+        { exitCode: 0, stdout: "file content" },     // git diff HEAD -- (quarantine evidence)
+        { exitCode: 0 },                             // git clean -f
+      ]);
+
+      // WHEN: reconcileWorktreeArtifacts WITHOUT excludePatterns (default behavior)
+      const result = await reconcileWorktreeArtifacts(SLUG, WORKTREE_PATH, fn);
+
+      // THEN: path IS reconciled (normal behavior — no exclusion applied)
+      expect(result.reconciled).toContain(insideChangeFolder);
+    },
+  );
+
+  it(
+    "TC-024k: mixed — inside-change-folder excluded path preserved, non-excluded reconciled",
+    async () => {
+      // GIVEN: two paths inside the change folder — one excluded, one not
+      const excludedPath = `specrunner/changes/${SLUG}/vendor/generated.js`;
+      const reconcilablePath = `specrunner/changes/${SLUG}/spec-review-result-003.md`;
+      const statusOut = `?? ${excludedPath}\0?? ${reconcilablePath}\0`;
+
+      const { fn, calls } = makeGitSpawnFn([
+        { exitCode: 0, stdout: statusOut },          // git status
+        { exitCode: 0, stdout: "diff content" },     // git diff HEAD -- reconcilablePath (quarantine evidence)
+        { exitCode: 0 },                             // git clean -f -- reconcilablePath
+      ]);
+
+      // WHEN: reconcileWorktreeArtifacts with excludePatterns matching only the vendor path
+      const result = await reconcileWorktreeArtifacts(
+        SLUG,
+        WORKTREE_PATH,
+        fn,
+        [`specrunner/changes/*/vendor/**`],
+      );
+
+      // THEN: only the non-excluded path was reconciled
+      expect(result.reconciled).toContain(reconcilablePath);
+      expect(result.reconciled).not.toContain(excludedPath);
+
+      // AND: git clean -f was NOT called for the excluded path
+      const cleanCalls = calls.filter((c) => c[0] === "clean");
+      expect(cleanCalls.every((c) => !c.includes(excludedPath))).toBe(true);
+    },
+  );
+});

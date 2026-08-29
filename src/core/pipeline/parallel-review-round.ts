@@ -30,7 +30,7 @@ import {
 } from "./reviewer-status.js";
 import { partitionRoundChanges, excludePipelineManagedChangePaths } from "./round-git-scope.js";
 import { canonicalDocPaths } from "../../util/paths.js";
-import { resolveStagingExcludePatterns } from "../step/staging-containment.js";
+import { resolveStagingExcludePatterns, applyStagingExclusions } from "../step/staging-containment.js";
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -394,7 +394,12 @@ export class ParallelReviewRound {
           );
         } else {
           // inspection.kind === "success"
-          const { toStage, offending } = partitionRoundChanges({ changed: inspection.paths, declared, slug: deps.slug });
+          // Filter out paths matching stagingExcludePatterns before partition check.
+          // Excluded paths must not trigger ROUND_NONDECLARED_CHANGE — they are intentionally
+          // kept in the worktree and must not be staged or treated as offending.
+          const excludePatterns = resolveStagingExcludePatterns(deps.config);
+          const filteredPaths = applyStagingExclusions(inspection.paths, excludePatterns);
+          const { toStage, offending } = partitionRoundChanges({ changed: filteredPaths, declared, slug: deps.slug });
 
           if (offending.length > 0) {
             // Non-declared changes detected — halt the entire round.

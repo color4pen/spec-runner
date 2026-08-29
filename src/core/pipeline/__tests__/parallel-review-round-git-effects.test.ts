@@ -992,3 +992,90 @@ describe("ParallelReviewRound git effects — both HEAD observations non-null, d
     expect(result.state.error?.code).toBe("ROUND_COMMIT_PUSH_FAILED");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Scenario 13: stagingExcludePatterns → excluded path does not trigger
+// ROUND_NONDECLARED_CHANGE (Finding 1 regression guard)
+// ---------------------------------------------------------------------------
+// When a guarded step generates an excluded untracked file (e.g., a CI workflow
+// updated by an implementer), the parallel-review coordinator must NOT classify it
+// as an offending non-declared change. The excluded path is filtered from
+// inspection.paths before partitionRoundChanges is called.
+
+describe("ParallelReviewRound git effects — stagingExcludePatterns prevents ROUND_NONDECLARED_CHANGE", () => {
+  const EXCLUDED_PATH = ".github/workflows/ci.yml";
+  const EXCLUDE_PATTERN = ".github/workflows/**";
+
+  it("excluded path in worktreeChanges + stagingExcludePatterns → outcome is approved (not escalation)", async () => {
+    // GIVEN: worktree has a declared path AND an excluded path
+    // AND: config has stagingExcludePatterns that matches the excluded path
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with config that excludes the path
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
+    }));
+
+    // THEN: round completes as approved — excluded path is not treated as offending
+    expect(result.outcome).toBe("approved");
+    expect(result.state.error).toBeNull();
+  });
+
+  it("commitRoundArtifacts called with declared paths only (excluded path NOT staged)", async () => {
+    // GIVEN: same setup as above
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
+    }));
+
+    // THEN: commitRoundArtifacts called with only the declared path (excluded path filtered out)
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toContain(DECLARED_A);
+    expect(stagePaths).not.toContain(EXCLUDED_PATH);
+  });
+
+  it("regression guard: same excluded path WITHOUT stagingExcludePatterns → escalation (ROUND_NONDECLARED_CHANGE)", async () => {
+    // GIVEN: worktree has a declared path AND an undeclared path
+    // AND: config has NO stagingExcludePatterns
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with NO exclusion config
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      // config has no stagingExcludePatterns
+    }));
+
+    // THEN: round escalates — the path is undeclared and no exclusion applies
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(EXCLUDED_PATH);
+  });
+});
