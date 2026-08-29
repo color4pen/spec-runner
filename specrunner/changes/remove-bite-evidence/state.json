@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T13:51:10.990Z",
+  "updatedAt": "2026-08-29T13:55:50.111Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "4a5658c91b2a777e172a64f5ce11c4afe5f95ae7",
     "b50b41f950e9ce33803344321a86f89b5dccbc0f",
-    "ebb4634a917c6804217efa2edc147755b91819e9"
+    "ebb4634a917c6804217efa2edc147755b91819e9",
+    "2c267fe1f833409c7f619a2288e8231f031c6389"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,13 +96,15 @@
       "src/core/step/bite-evidence/step.ts",
       "src/core/archive/achieved-assurance.ts",
       "src/state/schema/types.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
