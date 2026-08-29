@@ -220,6 +220,82 @@
         "peakActiveContextTokens": 151348,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-29T15:53:41.387Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 5923,
+          "outputTokens": 19,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 31,
+          "outputTokens": 11927,
+          "cacheReadInputTokens": 769889,
+          "cacheCreationInputTokens": 65363
+        }
+      },
+      "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
+      "stepName": "code-fixer",
+      "numTurns": 31,
+      "durationMs": 152244,
+      "durationApiMs": 153218,
+      "totalCostUsd": 0.5052369,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 40989,
+        "compactionCount": 0
+      }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-29T15:55:35.361Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 581577,
+          "outputTokens": 4377,
+          "cacheReadInputTokens": 489216,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
+      "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-29T15:57:59.693Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 9426,
+          "outputTokens": 17,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 21,
+          "outputTokens": 12320,
+          "cacheReadInputTokens": 1527952,
+          "cacheCreationInputTokens": 119775
+        }
+      },
+      "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
+      "stepName": "scale-tolerance",
+      "numTurns": 32,
+      "durationMs": 256080,
+      "durationApiMs": 254781,
+      "totalCostUsd": 1.10191585,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 119776,
+        "compactionCount": 0
+      }
     }
   ]
 }

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T15:50:53.380Z",
+  "updatedAt": "2026-08-29T15:58:00.858Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -72,7 +72,9 @@
     "dfbd6dde8c1b524dfd5e1dcf2ee0ded35c5cb160",
     "11665797d0dbd9c75147777688095ad0e1bb8157",
     "58d9212479a7d36b4e5f5719686806c6a34eb94d",
-    "c39b66f37957af818c6ea6086069a387e9f7cc12"
+    "c39b66f37957af818c6ea6086069a387e9f7cc12",
+    "3aa0e5710f62317d660fbdba2aed2627c4fc82e7",
+    "52d80ec9a2bf750cb4967558717aa02513f68477"
   ],
   "touchedFiles": {
     "request-review": [
@@ -224,10 +226,48 @@
       "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
       "tests/unit/core/pipeline/pipeline.episode-reset.test.ts",
       "src/core/step/step-completion.ts"
+    ],
+    "code-fixer": [
+      "src/state/schema/types.ts",
+      "tests/unit/core/pipeline/pipeline.episode-reset.test.ts",
+      "src/store/event-journal.ts",
+      "src/state/helpers.ts",
+      "src/core/runtime/local.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3aa0e5710f62317d660fbdba2aed2627c4fc82e7",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/remove-bite-evidence/design.md:sha256:3d2bde3c12ed3296f782362a26c7d780dee31ff16cb9c71eb8b40a6e6d1fa763|specrunner/changes/remove-bite-evidence/request.md:sha256:9fcc9f8e017ebdccf933273f406842a2749bc3954be544646d7d3ceef8810d38|specrunner/changes/remove-bite-evidence/spec.md:sha256:6ad799f11aeab30cf76a15099688f71b1ae368cfdb74d0822b604a9b2117e2f8|specrunner/changes/remove-bite-evidence/tasks.md:sha256:63e40b73d002999f8b55ef9d7d21b46706248b3f37b6e75525276805ab761c4b|specrunner/changes/remove-bite-evidence/test-cases.md:sha256:14f0cfea9fa8aeaa243bad43cf0f6ca7825b6ec70d905a6713bc6b52af60f233"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "3aa0e5710f62317d660fbdba2aed2627c4fc82e7",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/remove-bite-evidence/design.md:sha256:3d2bde3c12ed3296f782362a26c7d780dee31ff16cb9c71eb8b40a6e6d1fa763|specrunner/changes/remove-bite-evidence/request.md:sha256:9fcc9f8e017ebdccf933273f406842a2749bc3954be544646d7d3ceef8810d38|specrunner/changes/remove-bite-evidence/spec.md:sha256:6ad799f11aeab30cf76a15099688f71b1ae368cfdb74d0822b604a9b2117e2f8|specrunner/changes/remove-bite-evidence/tasks.md:sha256:63e40b73d002999f8b55ef9d7d21b46706248b3f37b6e75525276805ab761c4b|specrunner/changes/remove-bite-evidence/test-cases.md:sha256:14f0cfea9fa8aeaa243bad43cf0f6ca7825b6ec70d905a6713bc6b52af60f233"
+    }
+  ],
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -237,7 +277,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
