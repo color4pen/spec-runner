@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T04:11:47.737Z",
+  "updatedAt": "2026-08-29T04:15:44.351Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -64,10 +64,22 @@
   "issueNumber": 1095,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "dc307f5b52b1e0419315947c6e16831ebb2dc8db"
+    "dc307f5b52b1e0419315947c6e16831ebb2dc8db",
+    "cb0ea621f281ee440c6f2d5dd426fd0e5d1caff0"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/staging-containment.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
