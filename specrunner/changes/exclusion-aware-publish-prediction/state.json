@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T06:20:01.076Z",
+  "updatedAt": "2026-08-29T06:27:41.960Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
-  "error": null,
+  "error": {
+    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
+    "message": "custom reviewers did not approve after 2 iterations",
+    "hint": "Review the latest reviewer results and address findings manually. (iteration 003)"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +86,9 @@
     "efe02d70de92fbac4b14158ebaf08d66bc1b0473",
     "52a0a2b38e06e371bef265ef22f7737de7b4a6e9",
     "68fd1713620c289c6d2baea79d1ef360bc3a19ef",
-    "9550bd9fc848422e2d16c4bbb44fe026df80d86b"
+    "9550bd9fc848422e2d16c4bbb44fe026df80d86b",
+    "4053f49c3b8c5b2caf50992421764b98ebd8246f",
+    "bd42dd0d53cfbf462e36ac81d5f11d000446bf3b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -145,12 +151,10 @@
       "src/prompts/design-system.ts"
     ],
     "code-fixer": [
+      "src/core/step/commit-push.ts",
       "src/core/pipeline/parallel-review-round.ts",
-      "src/core/command/resume.ts",
-      "src/core/resume/reconcile-worktree.ts",
-      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts",
-      "src/core/step/staging-containment.ts",
-      "src/util/glob-match.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
       "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
     ]
   },
@@ -183,8 +187,14 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "custom reviewers did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -195,10 +205,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 2,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 3
     }
   }
 }
