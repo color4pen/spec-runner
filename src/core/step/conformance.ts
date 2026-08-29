@@ -95,10 +95,10 @@ Steps:
 8. Write your evidence report to: ${findingsPath}
 
 Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
-${exclusionsSection}
+
 Original request:
 ${deps.request.content}
-</user-request>
+</user-request>${exclusionsSection}
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
   },

@@ -447,6 +447,47 @@ describe("TC-007: exclusion pattern on protected canon path does not bypass writ
       ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
     },
   );
+
+  it(
+    "TC-007b: scoped step — stagingExcludePatterns: ['specrunner/changes/**'] does NOT bypass write-scope for staged canon path in postStatus.stagedOnly",
+    async () => {
+      // GIVEN: stagingExcludePatterns: ["specrunner/changes/**"]
+      // AND: scoped step (design) declares only design.md as output
+      // AND: specrunner/changes/<slug>/spec.md is STAGED (X='A', Y=' ' → postStatus.stagedOnly)
+      //
+      // INVARIANT: postStatus.stagedOnly feeds directly into findWriteScopeViolations WITHOUT
+      // going through applyStagingExclusions. The exclusion pattern cannot bypass this check.
+      // (filteredResidualPaths = applyStagingExclusions(postStatus.paths, ...) — paths is empty
+      //  because worktreeOnly=true skips staged-only entries → exclusion has no effect here)
+      const CANON_PATH = `specrunner/changes/${SLUG}/spec.md`;
+      // "A " = staged-new: X='A' (added to index), Y=' ' (worktree clean)
+      // → getWorktreeChangedPaths puts it in stagedOnly+stagedNew; worktreeOnly=true skips it in paths
+      const canonStagedStatus = statusEntry("A ", CANON_PATH);
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },     // [0] rev-parse HEAD
+        { exitCode: 0 },                             // [1] add -A -- design.md
+        { exitCode: 0, stdout: canonStagedStatus },  // [2] status (residual check) → spec.md staged
+        // quarantineViolationEvidence: diff HEAD -- spec.md (file not in HEAD → empty diff)
+        { exitCode: 0, stdout: "" },                 // [3] diff HEAD -- spec.md
+        // restoreViolatedPaths: stagedNew → rm --cached then clean -f
+        { exitCode: 0 },                             // [4] rm --cached -- spec.md
+        { exitCode: 0 },                             // [5] clean -f -- spec.md
+      ]);
+
+      // WHEN: scoped design step with stagingExcludePatterns covering specrunner/changes/**
+      await expect(
+        commitAndPush(
+          makeScopedStep(), // design step, declares specrunner/changes/<slug>/design.md
+          makeState("design"),
+          makeDeps({ stagingExcludePatterns: ["specrunner/changes/**"] }),
+          null,
+          makeInfra(fn),
+        ),
+      // THEN: WRITE_SCOPE_VIOLATION — spec.md is a protected canon path regardless of exclusion
+      ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
