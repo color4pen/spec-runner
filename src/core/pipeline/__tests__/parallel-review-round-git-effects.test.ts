@@ -1078,4 +1078,42 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
     expect(result.state.error?.message).toContain(EXCLUDED_PATH);
   });
+
+  // ---------------------------------------------------------------------------
+  // Regression guard: protected canon path matching exclusion pattern must still
+  // trigger ROUND_NONDECLARED_CHANGE (Finding: parallel-review exclusion ordering)
+  // ---------------------------------------------------------------------------
+  // Before the fix, applyStagingExclusions filtered ALL paths including protected
+  // canon paths. A reviewer that modifies spec.md (and the pattern covers it) would
+  // bypass the partition check entirely. After the fix, canon paths bypass exclusion
+  // and always reach partitionRoundChanges.
+
+  it("regression guard: protected canon path in worktreeChanges + matching exclusion → still escalation (ROUND_NONDECLARED_CHANGE)", async () => {
+    // GIVEN: worktree has a declared path AND a protected canon path (spec.md)
+    // AND: config has stagingExcludePatterns that matches the canon path
+    const CANON_PATH = `specrunner/changes/${SLUG}/spec.md`;
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, CANON_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with stagingExcludePatterns that matches spec.md
+    // (specrunner/changes/** would match spec.md — but spec.md must NOT be excluded
+    //  from the offending-path check)
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
+    }));
+
+    // THEN: round escalates — spec.md is a protected canon path and must not be
+    // silently excluded from the partition check regardless of exclusion patterns
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(CANON_PATH);
+  });
 });

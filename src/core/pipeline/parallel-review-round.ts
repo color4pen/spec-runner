@@ -31,6 +31,7 @@ import {
 import { partitionRoundChanges, excludePipelineManagedChangePaths } from "./round-git-scope.js";
 import { canonicalDocPaths } from "../../util/paths.js";
 import { resolveStagingExcludePatterns, applyStagingExclusions } from "../step/staging-containment.js";
+import { protectedCanonPaths } from "../step/write-scope.js";
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -397,8 +398,17 @@ export class ParallelReviewRound {
           // Filter out paths matching stagingExcludePatterns before partition check.
           // Excluded paths must not trigger ROUND_NONDECLARED_CHANGE — they are intentionally
           // kept in the worktree and must not be staged or treated as offending.
+          //
+          // IMPORTANT: exclusion is applied ONLY to non-protected-canon paths.
+          // Protected canon paths (spec.md, design.md, etc.) must always go through
+          // partition check — an exclusion pattern must not let a reviewer silently
+          // modify spec.md and bypass ROUND_NONDECLARED_CHANGE enforcement.
           const excludePatterns = resolveStagingExcludePatterns(deps.config);
-          const filteredPaths = applyStagingExclusions(inspection.paths, excludePatterns);
+          const canonSet = new Set(protectedCanonPaths(deps.slug));
+          const filteredPaths = [
+            ...inspection.paths.filter((p) => canonSet.has(p)), // always included (bypass exclusion)
+            ...applyStagingExclusions(inspection.paths.filter((p) => !canonSet.has(p)), excludePatterns),
+          ];
           const { toStage, offending } = partitionRoundChanges({ changed: filteredPaths, declared, slug: deps.slug });
 
           if (offending.length > 0) {

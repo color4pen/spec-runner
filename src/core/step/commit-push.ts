@@ -31,7 +31,7 @@ import {
   summarizeTopDirectoriesBySize,
   type StagedPathSizeProbe,
 } from "./staging-containment.js";
-import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
+import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations, protectedCanonPaths } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
 import { restackCheckpointOntoPublishedTip } from "./checkpoint-restack.js";
 import type { CheckpointRestackRecord } from "../../store/event-journal.js";
@@ -577,11 +577,20 @@ export async function commitAndPush(
     {
       // Apply staging exclusion patterns before residual check.
       // Paths matching stagingExcludePatterns will never be staged/committed/pushed,
-      // so they must not be treated as residual violations. The canonical-doc
-      // staged-only check (findWriteScopeViolations) is NOT filtered — exclusion
-      // cannot bypass scope enforcement over protected canon paths.
+      // so they must not be treated as residual violations.
+      //
+      // IMPORTANT: exclusion is applied ONLY to non-protected-canon paths.
+      // Protected canon paths (spec.md, design.md, etc.) must always be checked
+      // regardless of exclusion patterns — an excluded unstaged canon path would be
+      // invisible to both stagedOnly check and filteredResidualPaths, effectively
+      // bypassing write-scope enforcement entirely. The exclusion pattern must not
+      // allow a scoped step to silently modify protected canon files.
       const residualExcludePatterns = resolveStagingExcludePatterns(deps.config);
-      const filteredResidualPaths = applyStagingExclusions(postStatus.paths, residualExcludePatterns);
+      const canonSet = new Set(protectedCanonPaths(slug));
+      const filteredResidualPaths = [
+        ...postStatus.paths.filter((p) => canonSet.has(p)), // always checked (bypass exclusion)
+        ...applyStagingExclusions(postStatus.paths.filter((p) => !canonSet.has(p)), residualExcludePatterns),
+      ];
       const residualViolations = findScopedCommitViolations(slug, filteredResidualPaths, filePaths, allManagedPaths);
       const stagedCanonViolations = findWriteScopeViolations(step.name, slug, postStatus.stagedOnly, filePaths);
       const allViolations = [...new Set([...residualViolations, ...stagedCanonViolations])];
