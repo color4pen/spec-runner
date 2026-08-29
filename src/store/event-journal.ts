@@ -67,7 +67,6 @@ export interface StepAttemptRecord {
    * Commit OID (SHA) captured immediately after this node's per-node commit.
    * Set only for sequential steps that own their own git commit.
    * Absent for round (parallel reviewer) members and legacy records (backward compat).
-   * Added in bite-evidence-forward (R4).
    */
   commitOid?: string;
 }

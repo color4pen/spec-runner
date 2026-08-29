@@ -107,7 +107,6 @@ export interface StepResultInput {
   /**
    * Commit OID captured after this step's per-node commit.
    * Set only for sequential steps that own their own git commit (not round members).
-   * Added in bite-evidence-forward (R4).
    */
   commitOid?: string;
 }

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T15:42:13.955Z",
+  "updatedAt": "2026-08-29T15:50:53.380Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
@@ -71,7 +71,8 @@
     "f208cd320dc60a85ddc3aa0853e6b1c3aa5ca503",
     "dfbd6dde8c1b524dfd5e1dcf2ee0ded35c5cb160",
     "11665797d0dbd9c75147777688095ad0e1bb8157",
-    "58d9212479a7d36b4e5f5719686806c6a34eb94d"
+    "58d9212479a7d36b4e5f5719686806c6a34eb94d",
+    "c39b66f37957af818c6ea6086069a387e9f7cc12"
   ],
   "touchedFiles": {
     "request-review": [
@@ -200,10 +201,33 @@
       "tests/unit/core/pipeline/pipeline.episode-reset.test.ts",
       "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
+    ],
+    "code-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/config/schema/validation.ts",
+      "src/state/schema/types.ts",
+      "src/state/profile.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/kernel/step-names.ts",
+      "src/config/__tests__/remove-bite-evidence-config-validation.test.ts",
+      "tests/unit/core/resume/resolve-step.test.ts",
+      "tests/unit/config/schema-minimum-assurance.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "src/store/event-journal.ts",
+      "src/core/runtime/local.ts",
+      "src/state/helpers.ts",
+      "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
+      "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
+      "tests/unit/core/pipeline/pipeline.episode-reset.test.ts",
+      "src/core/step/step-completion.ts"
     ]
   },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 35,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -212,7 +236,8 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }

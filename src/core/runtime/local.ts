@@ -993,7 +993,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   // ---------------------------------------------------------------------------
-  // Git commit introspection helpers (retained from bite-evidence-forward R4)
+  // Git commit introspection helpers
   // ---------------------------------------------------------------------------
 
   /**

@@ -185,10 +185,10 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
     let conformanceCallCount = 0;
 
     // driver sequence (call-count indexed)
-    // episode 1: implementer(initial) → bite-evidence → verification(fail) → implementer(fixer1)
+    // episode 1: implementer(initial) → verification(fail) → implementer(fixer1)
     //   → verification(fail) → implementer(fixer2) → verification(pass)
     //   → code-review(approved) → conformance(needs-fix)
-    // episode 2: implementer(ep2-outer, verificationFailedLast=false) → bite-evidence
+    // episode 2: implementer(ep2-outer, verificationFailedLast=false)
     //   → verification(fail) → implementer(fixer1-ep2) → verification(pass)
     //   → code-review(approved) → conformance(approved) → adr-gen → pr-create → end
     const verificationVerdicts = ["failed", "failed", "passed", "failed", "passed"] as const;
@@ -197,9 +197,6 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
       if (step.name === "implementer") {
         implementerCallCount++;
         return appendStepResult(currentState, "implementer", "success");
-      }
-      if (step.name === "bite-evidence") {
-        return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       }
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
@@ -229,13 +226,6 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
 
     const steps = new Map<string, Step>([
       ["implementer",  makeAgentStep("implementer", "success")],
-      ["bite-evidence", {
-        kind: "cli",
-        name: "bite-evidence",
-        run: async () => {},
-        resultFilePath: () => "/tmp/bite-evidence-result.md",
-        parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
-      }],
       ["verification", {
         kind: "cli",
         name: "verification",
@@ -299,9 +289,6 @@ describe("TC-071: conformance lifetime counter bounds impl-phase re-execution", 
       if (step.name === "implementer") {
         return appendStepResult(currentState, "implementer", "success");
       }
-      if (step.name === "bite-evidence") {
-        return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
-      }
       if (step.name === "verification") {
         return appendStepResult(currentState, "verification", "passed");
       }
@@ -317,13 +304,6 @@ describe("TC-071: conformance lifetime counter bounds impl-phase re-execution", 
 
     const steps = new Map<string, Step>([
       ["implementer",  makeAgentStep("implementer", "success")],
-      ["bite-evidence", {
-        kind: "cli",
-        name: "bite-evidence",
-        run: async () => {},
-        resultFilePath: () => "/tmp/bite-evidence-result.md",
-        parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
-      }],
       ["verification", {
         kind: "cli",
         name: "verification",
@@ -382,16 +362,13 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
     let implementerCallCount = 0;
 
     // implementer succeeds; verification always fails; implementer is now the fixer (build-fixer abolished)
-    // Expected: implementer(initial) → bite-evidence → verification(fail)
+    // Expected: implementer(initial) → verification(fail)
     //           → implementer(fixer1) → verification(fail)
     //           → implementer(fixer2) → verification(fail) → fixer-exhausted → escalate
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") {
         implementerCallCount++;
         return appendStepResult(currentState, "implementer", "success");
-      }
-      if (step.name === "bite-evidence") {
-        return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       }
       if (step.name === "verification") {
         verificationCallCount++;
@@ -402,13 +379,6 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
 
     const steps = new Map<string, Step>([
       ["implementer",  makeAgentStep("implementer", "success")],
-      ["bite-evidence", {
-        kind: "cli",
-        name: "bite-evidence",
-        run: async () => {},
-        resultFilePath: () => "/tmp/bite-evidence-result.md",
-        parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
-      }],
       ["verification", {
         kind: "cli",
         name: "verification",
@@ -463,13 +433,6 @@ function makeChainPipelineParams() {
 function makeChainSteps(): Map<string, Step> {
   return new Map<string, Step>([
     ["implementer",  makeAgentStep("implementer", "success")],
-    ["bite-evidence", {
-      kind: "cli",
-      name: "bite-evidence",
-      run: async () => {},
-      resultFilePath: () => "/tmp/bite-evidence-result.md",
-      parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
-    }],
     ["verification", {
       kind: "cli",
       name: "verification",
@@ -518,7 +481,6 @@ describe("TC-073: shared-fixer forward entry resets the next reviewer's fixer bu
     //   → conformance → adr-gen → pr-create → end
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
-      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") {
         codeReviewCallCount++;
@@ -584,7 +546,6 @@ describe("TC-074: same-reviewer fixer returns keep the counter (termination guar
     // sec always needs-fix; code-fixer always approves → must exhaust, not loop.
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
-      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "sec") {
