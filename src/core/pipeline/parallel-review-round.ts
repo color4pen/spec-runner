@@ -399,22 +399,32 @@ export class ParallelReviewRound {
           // Excluded paths must not trigger ROUND_NONDECLARED_CHANGE — they are intentionally
           // kept in the worktree and must not be staged or treated as offending.
           //
-          // IMPORTANT: exclusion is applied ONLY to paths that are NOT potential write-scope
-          // violations. We reuse findWriteScopeViolations predicate (forbidden ∪ isJudgeArtifact,
-          // !declared) as the bypass set — this covers:
-          //   (a) Protected canon paths (spec.md, design.md, etc.): an exclusion pattern must
-          //       not let a reviewer silently modify spec.md and bypass ROUND_NONDECLARED_CHANGE.
-          //   (b) Undeclared judge artifacts (review-feedback-*.md, *-result-*.md): an excluded
-          //       unstaged judge artifact would silently escape the offending-path check,
-          //       allowing tampered review evidence to bypass ROUND_NONDECLARED_CHANGE enforcement.
-          // Reusing findWriteScopeViolations (single source of truth) avoids a duplicate
-          // predicate definition. Declared member outputs are correctly excluded from the
-          // bypass set — members may write to their own declared result paths.
+          // IMPORTANT: exclusion is applied ONLY to paths that are neither potential write-scope
+          // violations NOR declared round outputs. Exclusion must never prevent declared outputs
+          // from reaching partitionRoundChanges — a declared result filtered before the partition
+          // is not staged/committed, leaving it in the worktree where it will be classified as an
+          // undeclared judge artifact by the downstream step and trigger WRITE_SCOPE_VIOLATION.
+          //
+          // Bypass set = potentialViolations ∪ declared, covering three classes:
+          //   (a) Declared member outputs (declaredSet): exclusion must not suppress their commit.
+          //       A declared result filtered here is lost — not in toStage → not committed →
+          //       downstream step sees it as undeclared judge artifact → WRITE_SCOPE_VIOLATION.
+          //   (b) Undeclared protected canon paths (spec.md, design.md, etc.): exclusion must not
+          //       let a reviewer silently modify spec.md and bypass ROUND_NONDECLARED_CHANGE.
+          //   (c) Undeclared judge artifacts (review-feedback-*.md, *-result-*.md): exclusion must
+          //       not hide tampered review evidence from the offending-path check.
+          // Classes (b) and (c) use findWriteScopeViolations (single source of truth, !declared).
+          // Class (a) uses declaredSet directly — the !declared filter in findWriteScopeViolations
+          // intentionally omits declared paths (they are not violations), so declaredSet must be
+          // added explicitly to ensure declared outputs reach toStage.
           const excludePatterns = resolveStagingExcludePatterns(deps.config);
           const potentialViolations = new Set(findWriteScopeViolations(coordinatorName, deps.slug, inspection.paths, declared));
           const filteredPaths = [
-            ...inspection.paths.filter((p) => potentialViolations.has(p)), // always included (bypass exclusion)
-            ...applyStagingExclusions(inspection.paths.filter((p) => !potentialViolations.has(p)), excludePatterns),
+            ...inspection.paths.filter((p) => potentialViolations.has(p) || declaredSet.has(p)), // bypass exclusion
+            ...applyStagingExclusions(
+              inspection.paths.filter((p) => !potentialViolations.has(p) && !declaredSet.has(p)),
+              excludePatterns,
+            ),
           ];
           const { toStage, offending } = partitionRoundChanges({ changed: filteredPaths, declared, slug: deps.slug });
 

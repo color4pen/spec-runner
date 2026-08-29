@@ -1182,13 +1182,21 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     expect(result.state.error?.message).toContain(UNDECLARED_RESULT);
   });
 
-  it("declared *-result-*.md is NOT offending (positive control — member may write its declared result)", async () => {
+  it("declared *-result-*.md bypasses exclusion and IS committed (positive control — member must write its declared result)", async () => {
     // GIVEN: worktree has DECLARED_A (a *-result-*.md declared by MEMBER_A)
     // AND: config has stagingExcludePatterns: ["specrunner/changes/**"]
     // DECLARED_A = "specrunner/changes/my-change/alpha-result-001.md" (is a judge artifact)
-    // INVARIANT: because DECLARED_A is declared, findWriteScopeViolations excludes it from
-    //   potentialViolations. It IS subject to applyStagingExclusions. But since it's also
-    //   in `declared`, partitionRoundChanges puts it in toStage (not offending). No escalation.
+    //
+    // REGRESSION GUARD (F-002 / iter-4 fix):
+    // findWriteScopeViolations uses !declared in its predicate, so DECLARED_A is NOT in
+    // potentialViolations. Without the declaredSet bypass, DECLARED_A would be subject to
+    // applyStagingExclusions: "specrunner/changes/**" matches → DECLARED_A filtered from
+    // filteredPaths → partitionRoundChanges sees nothing → toStage=[] → NOT committed.
+    // The file then remains in the worktree and is flagged as an undeclared judge artifact
+    // by the downstream step, triggering WRITE_SCOPE_VIOLATION.
+    //
+    // After the fix, declaredSet paths bypass exclusion, so DECLARED_A always reaches
+    // partitionRoundChanges → toStage=[DECLARED_A] → commitRoundArtifacts is called.
     const runtimeStrategy = makeRuntimeStrategy({
       worktreeChanges: [DECLARED_A],
     });
@@ -1208,5 +1216,13 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     // THEN: round completes as approved — declared result file is not offending
     expect(result.outcome).toBe("approved");
     expect(result.state.error).toBeNull();
+
+    // AND: commitRoundArtifacts IS called with DECLARED_A (bypasses exclusion → committed)
+    // This is the critical invariant: declared round evidence must be committed regardless
+    // of stagingExcludePatterns, or the downstream step will see it as an undeclared judge
+    // artifact and trigger WRITE_SCOPE_VIOLATION.
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toContain(DECLARED_A);
   });
 });
