@@ -22,6 +22,7 @@ import { protectedCanonPaths } from "../step/write-scope.js";
 import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
 import { changeFolderPath, localSidecarDir } from "../../util/paths.js";
 import { runSubprocess, gitExec, gitExecResult, type SpawnFn } from "../../util/git-exec.js";
+import { matchesGlob } from "../../util/glob-match.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -282,19 +283,28 @@ async function quarantineAndRemoveMatching(
  * Thin wrapper around the internal quarantineAndRemoveMatching core, using
  * isReconcilableArtifact as the path predicate and "reconcile" as the directory prefix.
  *
- * @param slug         - Job slug.
- * @param worktreePath - Absolute path to the git worktree.
- * @param spawnFn      - Injected spawn function (do NOT use defaultSpawnFn internally).
+ * Paths that match any `excludePatterns` entry are preserved in the worktree and NOT
+ * reconciled — they are intentional staging exclusions that must survive halt → resume.
+ * When `excludePatterns` is empty (default), behavior is unchanged.
+ *
+ * @param slug            - Job slug.
+ * @param worktreePath    - Absolute path to the git worktree.
+ * @param spawnFn         - Injected spawn function (do NOT use defaultSpawnFn internally).
+ * @param excludePatterns - Optional glob patterns from `stagingExcludePatterns` config.
+ *                          Paths matching any pattern are skipped (not quarantined or removed).
  */
 export async function reconcileWorktreeArtifacts(
   slug: string,
   worktreePath: string,
   spawnFn: SpawnFn,
+  excludePatterns: string[] = [],
 ): Promise<ReconcileResult> {
   return quarantineAndRemoveMatching(
     slug,
     worktreePath,
-    (p) => isReconcilableArtifact(p, slug),
+    (p) =>
+      isReconcilableArtifact(p, slug) &&
+      (excludePatterns.length === 0 || !excludePatterns.some((pat) => matchesGlob(p, pat))),
     [],
     "reconcile",
     spawnFn,

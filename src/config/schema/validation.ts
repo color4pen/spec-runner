@@ -21,6 +21,8 @@ import {
   boolean,
 } from "zod/v4-mini";
 import { BUILTIN_MODEL_REGISTRY } from "../model-registry.js";
+import { globMatch } from "../../util/glob-match.js";
+import { CHANGES_DIR } from "../../util/paths.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import type { SpecRunnerConfig } from "./types.js";
 
@@ -687,11 +689,68 @@ function checkByRequestTypeSemantics(raw: Record<string, unknown>): void {
 }
 
 /**
+ * Reject stagingExcludePatterns that can reach the pipeline's own change-folder
+ * namespace (specrunner/changes/).
+ *
+ * The delivery-exclusion contract ("matching paths are never staged / committed /
+ * pushed") deliberately does NOT apply to declared step outputs and pipeline-managed
+ * paths — scoped staging and parallel-round staging commit those unconditionally,
+ * because they are the pipeline's branch-borne state authority (state.json,
+ * events.jsonl, canon documents, result files). All of those live under
+ * specrunner/changes/. Rather than letting the exclusion semantics silently differ
+ * by step mode when a pattern overlaps that namespace, the overlap is rejected at
+ * config load (fail at declaration time, not at commit time).
+ *
+ * Reachability analysis over the bounded glob syntax (see util/glob-match.ts):
+ *   - a segment containing `**` can cross into any namespace → reachable
+ *   - otherwise the pattern's leading segments must match the namespace segments
+ *     ("specrunner", "changes") one-to-one (`*` / `?` / literals, single-segment
+ *     semantics), with at least one pattern segment remaining to match a path
+ *     inside the namespace. A pattern equal to exactly "specrunner/changes"
+ *     matches only the bare directory string (never a file path) → not reachable.
+ */
+function checkStagingExclusionNamespace(raw: Record<string, unknown>): void {
+  const pipeline = raw["pipeline"];
+  if (!pipeline || typeof pipeline !== "object") return;
+  const patterns = (pipeline as Record<string, unknown>)["stagingExcludePatterns"];
+  if (!Array.isArray(patterns)) return;
+
+  const nsSegs = CHANGES_DIR.split("/");
+  for (const pattern of patterns) {
+    if (typeof pattern !== "string") continue;
+    if (canReachNamespace(pattern, nsSegs)) {
+      throw Object.assign(
+        new Error(
+          `CONFIG_INVALID: pipeline.stagingExcludePatterns pattern "${pattern}" can match paths under ${CHANGES_DIR}/ — ` +
+          `the pipeline's own change-folder namespace (state, results, canon documents) cannot be excluded from delivery. ` +
+          `Narrow the pattern (e.g. "vendor/**").`,
+        ),
+        { code: "CONFIG_INVALID" },
+      );
+    }
+  }
+}
+
+/** True when `pattern` can match at least one file path under the namespace. */
+function canReachNamespace(pattern: string, nsSegs: string[]): boolean {
+  const segs = pattern.split("/");
+  for (let i = 0; i < nsSegs.length; i++) {
+    const p = segs[i];
+    if (p === undefined) return false; // pattern shorter than namespace, no ** seen
+    if (p.includes("**")) return true; // cross-segment wildcard reaches everything below
+    if (!globMatch(nsSegs[i]!, p)) return false; // single-segment match (* / ? / literal)
+  }
+  // Namespace dirs consumed — reachable iff the pattern can still match a path inside.
+  return segs.length > nsSegs.length;
+}
+
+/**
  * Run all post-schema semantic checks on the raw (unmodified) config object.
  */
 function runSemanticChecks(raw: Record<string, unknown>): void {
   checkModelRegistry(raw);
   checkByRequestTypeSemantics(raw);
+  checkStagingExclusionNamespace(raw);
 }
 
 // ---------------------------------------------------------------------------

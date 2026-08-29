@@ -1,0 +1,256 @@
+{
+  "version": 2,
+  "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
+  "createdAt": "2026-08-29T04:11:45.475Z",
+  "updatedAt": "2026-08-29T07:13:32.667Z",
+  "request": {
+    "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
+    "type": "bug-fix",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1095,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "dc307f5b52b1e0419315947c6e16831ebb2dc8db",
+    "cb0ea621f281ee440c6f2d5dd426fd0e5d1caff0",
+    "bd250c9e1792d69d5439b418535a2dde2ff0f1ef",
+    "0c0bed4ca95115fba6e27a26b84dcca5aa2f1313",
+    "8ef0f1b32b74b69fe744ff7ea821f25838bc0d09",
+    "1630a03ad65452e56ed38c8f1469c86673c20bf0",
+    "40b1bfe7359e2d74f278e6778812b83a8366ac35",
+    "88d3cc526e3b70eb1e35de6d615d30e1a9f9997f",
+    "093c846e37850c7220460da9746fee48288ad302",
+    "c69d313971c0292c01691398c45f8546669519a0",
+    "8ad68dfac84d398bbb36b1de6566b034a84949f9",
+    "444fe5f9ef06b9d363044ca264732a21cdd4a3cb",
+    "ddfc229797a416f3311d3634774e402e2a552b9d",
+    "80a6195fb2b80c5f4668e652ea992c35e681ba8d",
+    "56499bee501f97cb8ee3bb2861cc2b519cef8ac5",
+    "efe02d70de92fbac4b14158ebaf08d66bc1b0473",
+    "52a0a2b38e06e371bef265ef22f7737de7b4a6e9",
+    "68fd1713620c289c6d2baea79d1ef360bc3a19ef",
+    "9550bd9fc848422e2d16c4bbb44fe026df80d86b",
+    "4053f49c3b8c5b2caf50992421764b98ebd8246f",
+    "bd42dd0d53cfbf462e36ac81d5f11d000446bf3b",
+    "498ccd78a966bbbdc2b3c96a5e81c6eec480f458",
+    "e4356e1f2479b97b1037525a36aaccf7ee7725a8",
+    "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
+    "a4337a5810ae123c090751c214cbadd6872dd998",
+    "472a5456d96d82629368e43f133ccbb54b8b52e8",
+    "67e3f9c224851cbef69376caedcfe0094553871b",
+    "8ccb2b4836ad7e5c9207e57e12fafee052edded0"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/staging-containment.ts"
+    ],
+    "design": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/staging-containment.ts",
+      "src/prompts/builder.ts",
+      "src/prompts/design-system.ts",
+      "src/prompts/conformance-system.ts",
+      "src/prompts/code-review-system.ts",
+      "src/core/step/design.ts",
+      "src/core/step/conformance.ts",
+      "src/core/step/code-review.ts",
+      "src/core/step/types.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/port/step-types.ts",
+      "src/core/port/step-context.ts",
+      "src/core/step/__tests__/commit-push-guarded-staging.test.ts",
+      "docs/configuration.md",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/pipeline/parallel-review-round.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/resume/reconcile-worktree.ts",
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/step/__tests__/commit-push-exclusion.test.ts"
+    ],
+    "code-review": [
+      "src/git/push-capability.ts",
+      "src/core/step/staging-containment.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "docs/configuration.md",
+      "src/git/__tests__/push-capability.test.ts",
+      "src/core/step/design.ts",
+      "src/core/step/code-review.ts",
+      "src/core/step/conformance.ts",
+      "src/prompts/design-system.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/conformance.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "conformance": [
+      "src/git/push-capability.ts",
+      "src/core/step/staging-containment.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/design.ts",
+      "src/core/step/code-review.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/git/__tests__/push-capability.test.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/conformance.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/exclusion-aware-publish-prediction/design.md:sha256:4b80ba31311a6b79c356b3fe913d2ee9c0d38fe3380a1506a8e82f6b048a6938|specrunner/changes/exclusion-aware-publish-prediction/request.md:sha256:6e98956df2f980eed3e8aea71a50312c44016bd2327e9dbfb64b358cb4720022|specrunner/changes/exclusion-aware-publish-prediction/spec.md:sha256:1c016925eeb37f98de24d402db752acef4a0d5fb5688151d000462154053d429|specrunner/changes/exclusion-aware-publish-prediction/tasks.md:sha256:aeea6dc543800b46493245279bc283db5c09a14a4315e78d6352adfdf9cd6f01|specrunner/changes/exclusion-aware-publish-prediction/test-cases.md:sha256:60c570934d8903745e2f2042510eba455cf3c878054c2c431420d13185522ac0"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "Operator 裁定（issue #1095 コメント参照・cross-boundary-invariants iter3 F-001 対応）: (1) scoped residual check（commit-push.ts）で除外適用前に温存する集合を protectedCanonPaths 限定から write-scope 述語と同一の集合（protected canon + 宣言外 judge artifact）に拡張する。findWriteScopeViolations と同じ述語（forbidden ∪ isJudgeArtifact、declared 除外）を再利用し、集合の二重定義を作らないこと。(2) 同じ拡張を parallel-review-round.ts の round inspection にも適用する。(3) regression test: 除外パターンに一致する宣言外の review-feedback-*.md / *-result-*.md が scoped residual check と parallel round inspection の両経路で violation として検出されることを固定する。(4) 本 issue の他の受け入れ基準（除外 path の非 halt / 非破壊・未 push commit のブロック維持等）は既実装のまま退行させないこと。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-29T06:40:00.415Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1096",
+    "number": 1096,
+    "createdAt": "2026-08-29T07:13:31.873Z"
+  },
+  "_journal": {
+    "historyCount": 122,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "spec-fixer": 2,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 3,
+      "code-review": 2,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 1,
+      "custom-reviewers": 5,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

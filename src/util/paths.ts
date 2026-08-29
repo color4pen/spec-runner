@@ -9,8 +9,8 @@
  * TC-034: this file MUST NOT import from any other src/ module.
  */
 
-/** Base directory for all changes. */
-const CHANGES_DIR = "specrunner/changes";
+/** Base directory for all changes. Exported for namespace-overlap validation (config). */
+export const CHANGES_DIR = "specrunner/changes";
 
 /**
  * Returns the relative path to the change folder for the given slug.

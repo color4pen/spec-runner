@@ -36,6 +36,7 @@ import { detectUnadoptedCommits, buildAdoptEscalationMessage, buildAdoptionHaltM
 import { resolveWontfixDispositions } from "../decision/wontfix.js";
 import { reconcileWorktreeArtifacts, quarantinePartialCanon } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
+import { resolveStagingExcludePatterns } from "../step/staging-containment.js";
 import type { StepDeps } from "../step/types.js";
 
 export interface ResumeOptions {
@@ -516,9 +517,11 @@ export class ResumeCommand extends CommandRunner {
       // Runs after the apply-canon gate (canon paths handled above) and before step start.
       // Best-effort detection: git status failure → no-op (D7).
       // Quarantine failure → fail-closed (evidence not lost, removal not attempted).
+      // Pass stagingExcludePatterns so that excluded worktree paths are not deleted
+      // during reconcile — they are intentional artifacts that must survive halt → resume.
       let reconcileResult;
       try {
-        reconcileResult = await reconcileWorktreeArtifacts(resolvedSlug, resolvedWorktreePath, defaultSpawnFn);
+        reconcileResult = await reconcileWorktreeArtifacts(resolvedSlug, resolvedWorktreePath, defaultSpawnFn, resolveStagingExcludePatterns(config));
       } catch (err) {
         logError(`Failed to reconcile worktree residue: ${(err as Error).message}`);
         stderrWrite("Hint: interrupted-attempt residue was preserved and NOT removed. Check .specrunner/local/<slug>/ writability, then resume again.");

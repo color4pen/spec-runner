@@ -11,6 +11,7 @@ import { evaluateFactCheckAttestation, buildFactCheckDirective } from "../factch
 import { readSourceRevision } from "../../git/source-revision.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { resolveStagingExcludePatterns, buildDeliveryExclusionsBlock } from "./staging-containment.js";
 import type { OutputContract } from "../port/output-contract.js";
 
 const DESIGN_AGENT_MODEL = "claude-opus-5";
@@ -156,7 +157,11 @@ export const DesignStep: AgentStep = {
       ? buildFactCheckDirective(deps.dynamicContext.factCheckAttestation)
       : undefined;
 
-    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext, deps.request.type, factCheckDirective);
+    const deliveryExclusionsBlock = buildDeliveryExclusionsBlock(
+      resolveStagingExcludePatterns(deps.config),
+    );
+
+    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext, deps.request.type, factCheckDirective, deliveryExclusionsBlock || undefined);
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {

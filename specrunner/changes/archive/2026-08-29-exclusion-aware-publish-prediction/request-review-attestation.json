@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:6e98956df2f980eed3e8aea71a50312c44016bd2327e9dbfb64b358cb4720022",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/git/push-capability.ts:121-193 — collectPublishablePaths combines worktree (git status) and unpushed-commit (git rev-list) paths with no stagingExcludePatterns reference",
+    "src/git/push-capability.ts:228 — renderPushCapabilityNotice calls matchUnpushablePaths(predictedTouchedFiles, pushCapability) with no exclusion applied",
+    "src/core/step/commit-push.ts:519-533 — Layer 2 backstop calls collectPublishablePaths then matchUnpushablePaths before resolveStagingExcludePatterns/applyStagingExclusions (which are at L665-666)",
+    "src/core/step/commit-push.ts:1004-1023 — commitScopedPaths Layer 2 backstop calls collectPublishablePaths without exclusion",
+    "src/core/step/commit-push.ts:568-591 — scoped residual check calls findScopedCommitViolations(slug, postStatus.paths, filePaths, allManagedPaths) at L575 with no exclude patterns",
+    "src/core/step/commit-push.ts:665-666 — resolveStagingExcludePatterns/applyStagingExclusions exist only in guarded branch, after the Layer 2 unpushable-path check",
+    "src/core/step/write-scope.ts:163-171 — findScopedCommitViolations accepts no exclude patterns; returns all changedPaths not in allowed set",
+    "src/core/step/write-scope.ts:33-37 — GUARDED_WRITE_STEPS = {implementer, code-fixer, adr-gen} (3 steps only)",
+    "src/core/runtime/local.ts:1609-1624 — validateStepOutputs unpushable-path branch calls collectPublishablePaths(this.spawnFn, cwd) with no exclusion"
+  ],
+  "sourceRevision": "e3cc84ff2152c8c3c4551a5ab84140f8be5a4384"
+}

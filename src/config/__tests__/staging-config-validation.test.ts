@@ -381,3 +381,85 @@ describe("TC-008: valid staging config is accepted and fields are preserved", ()
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// TC-NS: patterns reaching the pipeline change-folder namespace are rejected
+// (delivery-exclusion contract: declared/managed pipeline paths cannot be
+//  excluded — overlap fails at config load, not at commit time)
+// ---------------------------------------------------------------------------
+
+describe("TC-NS: stagingExcludePatterns overlapping specrunner/changes/ are rejected with CONFIG_INVALID", () => {
+  function expectConfigInvalid(pattern: string): void {
+    const raw = {
+      version: 1,
+      agents: {},
+      pipeline: { stagingExcludePatterns: [pattern] },
+    };
+    let caught: unknown;
+    try {
+      validateConfig(raw);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught, `pattern "${pattern}" should be rejected`).toBeDefined();
+    expect((caught as { code?: string }).code).toBe("CONFIG_INVALID");
+    expect((caught as Error).message).toContain(pattern);
+    expect((caught as Error).message).toContain("specrunner/changes/");
+  }
+
+  it("TC-NS: 'specrunner/changes/**' is rejected", () => {
+    expectConfigInvalid("specrunner/changes/**");
+  });
+
+  it("TC-NS: 'specrunner/**' is rejected (parent-dir wildcard reaches the namespace)", () => {
+    expectConfigInvalid("specrunner/**");
+  });
+
+  it("TC-NS: '**' is rejected (matches everything)", () => {
+    expectConfigInvalid("**");
+  });
+
+  it("TC-NS: '**/*.md' is rejected (cross-segment wildcard reaches canon documents)", () => {
+    expectConfigInvalid("**/*.md");
+  });
+
+  it("TC-NS: 'specrunner/*/review-feedback-*.md' is rejected (segment wildcard matches 'changes')", () => {
+    expectConfigInvalid("specrunner/*/review-feedback-*.md");
+  });
+
+  it("TC-NS: 'vendor/**' is accepted (does not reach the namespace)", () => {
+    const cfg = validateConfig({
+      version: 1,
+      agents: {},
+      pipeline: { stagingExcludePatterns: ["vendor/**"] },
+    });
+    expect(cfg.pipeline?.stagingExcludePatterns).toEqual(["vendor/**"]);
+  });
+
+  it("TC-NS: '.github/workflows/**' is accepted", () => {
+    const cfg = validateConfig({
+      version: 1,
+      agents: {},
+      pipeline: { stagingExcludePatterns: [".github/workflows/**"] },
+    });
+    expect(cfg.pipeline?.stagingExcludePatterns).toEqual([".github/workflows/**"]);
+  });
+
+  it("TC-NS: '*.log' is accepted (single-segment wildcard cannot cross into the namespace)", () => {
+    const cfg = validateConfig({
+      version: 1,
+      agents: {},
+      pipeline: { stagingExcludePatterns: ["*.log"] },
+    });
+    expect(cfg.pipeline?.stagingExcludePatterns).toEqual(["*.log"]);
+  });
+
+  it("TC-NS: literal 'specrunner/changes' (bare directory string, no file reachable) is accepted", () => {
+    const cfg = validateConfig({
+      version: 1,
+      agents: {},
+      pipeline: { stagingExcludePatterns: ["specrunner/changes"] },
+    });
+    expect(cfg.pipeline?.stagingExcludePatterns).toEqual(["specrunner/changes"]);
+  });
+});

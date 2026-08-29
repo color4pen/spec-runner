@@ -413,6 +413,7 @@ export interface RuntimeStrategy {
     contracts: OutputContract[],
     cwd: string,
     branch: string | null,
+    excludeWorktreePatterns?: string[],
   ): Promise<OutputCheckResult>;
 
   // ---------------------------------------------------------------------------

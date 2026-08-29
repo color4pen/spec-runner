@@ -35,6 +35,7 @@ import { buildOutputFollowUpPrompt, OUTPUT_FOLLOWUP_MAX_ATTEMPTS } from "./outpu
 import { DEFAULT_TOOL_RETRY } from "../port/report-result.js";
 import { stagingModeFor, forbiddenWritePaths } from "./write-scope.js";
 import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
+import { resolveStagingExcludePatterns } from "./staging-containment.js";
 import type { AgentWriteScope } from "../port/agent-runner.js";
 
 /**
@@ -130,6 +131,10 @@ export async function buildStepContext(
     if (followUpContracts.length > 0) {
       const strategy = deps.runtimeStrategy;
       const branch = state.branch ?? null;
+      // Resolve exclusion patterns once (outside closure) so they are not re-computed
+      // on every detect() call. Paths matching stagingExcludePatterns will never be
+      // staged/committed/pushed and must not be flagged as unpushable violations.
+      const excludeWorktreePatterns = resolveStagingExcludePatterns(deps.config);
       // maxAttempts stays at the default OUTPUT_FOLLOWUP_MAX_ATTEMPTS (2) for ALL contracts,
       // including unpushable-path. This preserves the maximum 2-attempt repair window for
       // tasks-complete violations even when an unpushable-path contract is also present.
@@ -138,7 +143,7 @@ export async function buildStepContext(
       // unpushable-path violations are filtered out of the prompt. Tasks-complete violations
       // continue to appear on both attempt 0 and attempt 1 (up to 2 repair opportunities).
       outputVerification = {
-        detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
+        detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch, excludeWorktreePatterns),
         maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
         buildPrompt: (violations, attempt) => {
           // All adapters use 1-based attempt numbering (loop starts at attempt=1).

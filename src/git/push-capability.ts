@@ -109,6 +109,11 @@ export function matchUnpushablePaths(
  * A path contributed by any single unpushed commit is included even when a
  * later commit reverts it.
  *
+ * `worktreeExcludePatterns` — when non-empty, filters the worktree component
+ * (section a) only. Paths matching any pattern are removed from the set before
+ * returning. The unpushed-commit component (section b) is NOT filtered:
+ * committed paths are actually pushed and must not be exempted from the check.
+ *
  * Failure semantics — all three git commands are fail-closed:
  *   - git status failure: throws — a failing status command cannot prove the
  *     worktree is clean; an uncommitted workflow change would be silently missed,
@@ -121,6 +126,7 @@ export function matchUnpushablePaths(
 export async function collectPublishablePaths(
   spawnFn: SpawnFn,
   cwd: string,
+  worktreeExcludePatterns?: string[],
 ): Promise<string[]> {
   const paths = new Set<string>();
 
@@ -144,6 +150,16 @@ export async function collectPublishablePaths(
     if (part.length < 4) continue;
     const filePath = part.slice(3);
     if (filePath) paths.add(filePath);
+  }
+
+  // Apply worktree exclusion patterns to section (a) only.
+  // Committed paths (section b) are not filtered — they are actually pushed.
+  if (worktreeExcludePatterns && worktreeExcludePatterns.length > 0) {
+    for (const p of Array.from(paths)) {
+      if (worktreeExcludePatterns.some((pattern) => matchesGlob(p, pattern))) {
+        paths.delete(p);
+      }
+    }
   }
 
   // (b) Unpushed commits: all commits reachable from HEAD not on any origin ref.
@@ -200,11 +216,17 @@ export async function collectPublishablePaths(
  * Returns empty string when pushCapability is null/undefined or has no patterns.
  * Includes advance warning for predictedTouchedFiles that match declared patterns.
  *
+ * `worktreeExcludePatterns` — when non-empty, removes matching paths from
+ * `predictedTouchedFiles` before the unpushable-path match. This prevents the
+ * advance warning from flagging paths that will never be staged or pushed due to
+ * staging exclusion configuration.
+ *
  * Pure function — no I/O.
  */
 export function renderPushCapabilityNotice(
   pushCapability: PushCapability | null | undefined,
   predictedTouchedFiles?: string[],
+  worktreeExcludePatterns?: string[],
 ): string {
   if (!pushCapability || pushCapability.patterns.length === 0) return "";
 
@@ -225,7 +247,14 @@ export function renderPushCapabilityNotice(
 
   // Advance warning for predicted matches
   if (predictedTouchedFiles && predictedTouchedFiles.length > 0) {
-    const matchedFiles = matchUnpushablePaths(predictedTouchedFiles, pushCapability);
+    // Filter out paths that are excluded from staging (they will never be pushed).
+    const effectivePredicted =
+      worktreeExcludePatterns && worktreeExcludePatterns.length > 0
+        ? predictedTouchedFiles.filter(
+            (p) => !worktreeExcludePatterns.some((pattern) => matchesGlob(p, pattern)),
+          )
+        : predictedTouchedFiles;
+    const matchedFiles = matchUnpushablePaths(effectivePredicted, pushCapability);
     if (matchedFiles.length > 0) {
       lines.push("");
       lines.push("**Advance warning**: the following predicted files match the unpushable pattern:");

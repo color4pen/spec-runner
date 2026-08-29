@@ -9,6 +9,7 @@ import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { CODE_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { resolveStagingExcludePatterns, buildDeliveryExclusionsBlock } from "./staging-containment.js";
 import type { OutputContract } from "../port/output-contract.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-5";
@@ -55,6 +56,7 @@ export function buildCodeReviewInitialMessage(opts: {
   findingsPath: string;
   requestContent: string;
   dynamicContext?: DynamicContext;
+  deliveryExclusionsBlock?: string;
 }): string {
   const contextSection = opts.dynamicContext?.diffStat
     ? `\n\n## Branch Context\n\n### Diff stat (main..HEAD)\n\n\`\`\`\n${opts.dynamicContext.diffStat}\n\`\`\``
@@ -65,6 +67,9 @@ export function buildCodeReviewInitialMessage(opts: {
   // regardless of whether it reads request.md itself (D1, D2, D3 in design.md).
   const constraintsBlock = buildRequestConstraintsBlock(opts.requestContent);
   const constraintsSection = constraintsBlock ? `\n\n${constraintsBlock}` : "";
+
+  // Inject delivery exclusions block (paths outside spec-runner's delivery scope).
+  const exclusionsSection = opts.deliveryExclusionsBlock ? `\n\n${opts.deliveryExclusionsBlock}` : "";
 
   return `<user-request>
 Please perform a code review for the following change:
@@ -84,7 +89,7 @@ Do NOT write a verdict line. Verdict is derived by CLI from typed findings (repo
 
 Original request:
 ${opts.requestContent}
-</user-request>${constraintsSection}${contextSection}
+</user-request>${constraintsSection}${exclusionsSection}${contextSection}
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
 }
@@ -163,6 +168,7 @@ export const CodeReviewStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = nextIteration(state, STEP_NAMES.CODE_REVIEW);
     const findingsPath = buildReviewFeedbackPath(deps.slug, iteration);
+    const exclusionsBlock = buildDeliveryExclusionsBlock(resolveStagingExcludePatterns(deps.config));
     return buildCodeReviewInitialMessage({
       slug: deps.slug,
       branch: state.branch ?? undefined,
@@ -170,6 +176,7 @@ export const CodeReviewStep: AgentStep = {
       findingsPath,
       requestContent: deps.request.content,
       dynamicContext: deps.dynamicContext,
+      deliveryExclusionsBlock: exclusionsBlock || undefined,
     });
   },
 

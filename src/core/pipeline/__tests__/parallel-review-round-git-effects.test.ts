@@ -992,3 +992,237 @@ describe("ParallelReviewRound git effects — both HEAD observations non-null, d
     expect(result.state.error?.code).toBe("ROUND_COMMIT_PUSH_FAILED");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Scenario 13: stagingExcludePatterns → excluded path does not trigger
+// ROUND_NONDECLARED_CHANGE (Finding 1 regression guard)
+// ---------------------------------------------------------------------------
+// When a guarded step generates an excluded untracked file (e.g., a CI workflow
+// updated by an implementer), the parallel-review coordinator must NOT classify it
+// as an offending non-declared change. The excluded path is filtered from
+// inspection.paths before partitionRoundChanges is called.
+
+describe("ParallelReviewRound git effects — stagingExcludePatterns prevents ROUND_NONDECLARED_CHANGE", () => {
+  const EXCLUDED_PATH = ".github/workflows/ci.yml";
+  const EXCLUDE_PATTERN = ".github/workflows/**";
+
+  it("excluded path in worktreeChanges + stagingExcludePatterns → outcome is approved (not escalation)", async () => {
+    // GIVEN: worktree has a declared path AND an excluded path
+    // AND: config has stagingExcludePatterns that matches the excluded path
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with config that excludes the path
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
+    }));
+
+    // THEN: round completes as approved — excluded path is not treated as offending
+    expect(result.outcome).toBe("approved");
+    expect(result.state.error).toBeNull();
+  });
+
+  it("commitRoundArtifacts called with declared paths only (excluded path NOT staged)", async () => {
+    // GIVEN: same setup as above
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
+    }));
+
+    // THEN: commitRoundArtifacts called with only the declared path (excluded path filtered out)
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toContain(DECLARED_A);
+    expect(stagePaths).not.toContain(EXCLUDED_PATH);
+  });
+
+  it("regression guard: same excluded path WITHOUT stagingExcludePatterns → escalation (ROUND_NONDECLARED_CHANGE)", async () => {
+    // GIVEN: worktree has a declared path AND an undeclared path
+    // AND: config has NO stagingExcludePatterns
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, EXCLUDED_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with NO exclusion config
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      // config has no stagingExcludePatterns
+    }));
+
+    // THEN: round escalates — the path is undeclared and no exclusion applies
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(EXCLUDED_PATH);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression guard: protected canon path matching exclusion pattern must still
+  // trigger ROUND_NONDECLARED_CHANGE (Finding: parallel-review exclusion ordering)
+  // ---------------------------------------------------------------------------
+  // Before the fix, applyStagingExclusions filtered ALL paths including protected
+  // canon paths. A reviewer that modifies spec.md (and the pattern covers it) would
+  // bypass the partition check entirely. After the fix, canon paths bypass exclusion
+  // and always reach partitionRoundChanges.
+
+  it("regression guard: protected canon path in worktreeChanges + matching exclusion → still escalation (ROUND_NONDECLARED_CHANGE)", async () => {
+    // GIVEN: worktree has a declared path AND a protected canon path (spec.md)
+    // AND: config has stagingExcludePatterns that matches the canon path
+    const CANON_PATH = `specrunner/changes/${SLUG}/spec.md`;
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, CANON_PATH],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with stagingExcludePatterns that matches spec.md
+    // (specrunner/changes/** would match spec.md — but spec.md must NOT be excluded
+    //  from the offending-path check)
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
+    }));
+
+    // THEN: round escalates — spec.md is a protected canon path and must not be
+    // silently excluded from the partition check regardless of exclusion patterns
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(CANON_PATH);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression guard: undeclared judge artifact matching exclusion pattern must
+  // still trigger ROUND_NONDECLARED_CHANGE (iter-3 F-001 fix).
+  // ---------------------------------------------------------------------------
+  // Before the fix, the bypass set was limited to protectedCanonPaths. An undeclared
+  // review-feedback-*.md / *-result-*.md matching an exclusion pattern would be
+  // silently filtered from inspection.paths before partitionRoundChanges, allowing
+  // tampered review evidence to bypass ROUND_NONDECLARED_CHANGE enforcement.
+  //
+  // After the fix, findWriteScopeViolations predicate (forbidden ∪ isJudgeArtifact,
+  // !declared) is used as the bypass set, covering undeclared judge artifacts too.
+
+  it("regression guard: undeclared review-feedback-*.md matching 'specrunner/changes/**' exclusion → still ROUND_NONDECLARED_CHANGE", async () => {
+    // GIVEN: worktree has a declared path AND an undeclared review-feedback artifact
+    // AND: config has stagingExcludePatterns: ["specrunner/changes/**"] that matches both
+    // AND: review-feedback-001.md is NOT declared by any round member
+    const REVIEW_FEEDBACK = `specrunner/changes/${SLUG}/review-feedback-001.md`;
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, REVIEW_FEEDBACK],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with stagingExcludePatterns that matches the review-feedback path
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
+    }));
+
+    // THEN: round escalates — undeclared judge artifact bypasses exclusion filter
+    // and is detected as offending by partitionRoundChanges
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(REVIEW_FEEDBACK);
+  });
+
+  it("regression guard: undeclared *-result-*.md matching 'specrunner/changes/**' exclusion → still ROUND_NONDECLARED_CHANGE", async () => {
+    // GIVEN: worktree has a declared path AND an undeclared *-result-*.md artifact
+    // AND: config has stagingExcludePatterns: ["specrunner/changes/**"]
+    // AND: code-review-result-001.md is NOT declared by any round member
+    const UNDECLARED_RESULT = `specrunner/changes/${SLUG}/code-review-result-001.md`;
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED_RESULT],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(UNDECLARED_RESULT);
+  });
+
+  it("declared *-result-*.md bypasses exclusion and IS committed (positive control — member must write its declared result)", async () => {
+    // GIVEN: worktree has DECLARED_A (a *-result-*.md declared by MEMBER_A)
+    // AND: config has stagingExcludePatterns: ["specrunner/changes/**"]
+    // DECLARED_A = "specrunner/changes/my-change/alpha-result-001.md" (is a judge artifact)
+    //
+    // REGRESSION GUARD (F-002 / iter-4 fix):
+    // findWriteScopeViolations uses !declared in its predicate, so DECLARED_A is NOT in
+    // potentialViolations. Without the declaredSet bypass, DECLARED_A would be subject to
+    // applyStagingExclusions: "specrunner/changes/**" matches → DECLARED_A filtered from
+    // filteredPaths → partitionRoundChanges sees nothing → toStage=[] → NOT committed.
+    // The file then remains in the worktree and is flagged as an undeclared judge artifact
+    // by the downstream step, triggering WRITE_SCOPE_VIOLATION.
+    //
+    // After the fix, declaredSet paths bypass exclusion, so DECLARED_A always reaches
+    // partitionRoundChanges → toStage=[DECLARED_A] → commitRoundArtifacts is called.
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // WHEN: round.run with stagingExcludePatterns matching the declared result file
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+      config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
+    }));
+
+    // THEN: round completes as approved — declared result file is not offending
+    expect(result.outcome).toBe("approved");
+    expect(result.state.error).toBeNull();
+
+    // AND: commitRoundArtifacts IS called with DECLARED_A (bypasses exclusion → committed)
+    // This is the critical invariant: declared round evidence must be committed regardless
+    // of stagingExcludePatterns, or the downstream step will see it as an undeclared judge
+    // artifact and trigger WRITE_SCOPE_VIOLATION.
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toContain(DECLARED_A);
+  });
+});

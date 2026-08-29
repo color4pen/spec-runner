@@ -191,6 +191,31 @@ export function applyStagingExclusions(paths: string[], excludePatterns: string[
 }
 
 /**
+ * Build a markdown block that communicates delivery exclusions to agents.
+ *
+ * When `patterns` is non-empty, returns a markdown section headed
+ * "## Delivery exclusions" listing each pattern as a bullet.
+ * Agents inject this block into design / code-review / conformance / custom-reviewer
+ * messages so they do not flag excluded paths as missing deliverables.
+ *
+ * Returns an empty string when `patterns` is empty (no block injected).
+ *
+ * Example output for patterns [".github/workflows/**", "vendor/**"]:
+ *
+ *   ## Delivery exclusions
+ *
+ *   The following paths are outside spec-runner's delivery scope and must not be required in the synthesized commits:
+ *
+ *   - .github/workflows/**
+ *   - vendor/**
+ */
+export function buildDeliveryExclusionsBlock(patterns: string[]): string {
+  if (patterns.length === 0) return "";
+  const items = patterns.map((p) => `- ${p}`).join("\n");
+  return `## Delivery exclusions\n\nThe following paths are outside spec-runner's delivery scope and must not be required in the synthesized commits:\n\n${items}`;
+}
+
+/**
  * Group paths by their first path segment and return the top-N groups by
  * count, descending. Ties are broken by directory name ascending.
  *
