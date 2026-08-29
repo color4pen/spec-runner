@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7de8861a-ab42-40c1-bc80-2721ceda2d90",
   "createdAt": "2026-08-29T13:27:53.968Z",
-  "updatedAt": "2026-08-29T16:17:35.122Z",
+  "updatedAt": "2026-08-29T16:24:05.292Z",
   "request": {
     "title": "test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/remove-bite-evidence-7de8861a",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,8 @@
     "52d80ec9a2bf750cb4967558717aa02513f68477",
     "605d3cb64c8665a8b457b0d811c5a834911ef80d",
     "b75b48a7d2bab2c33a476c784cabd50513dcca6b",
-    "c7ce27d0dbdfa6b520fb055447d241bd4a2b61dc"
+    "c7ce27d0dbdfa6b520fb055447d241bd4a2b61dc",
+    "4b00b6d56bd673db1048b1ab9ba250c14336a64c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -271,6 +272,12 @@
       "tests/unit/state/bite-evidence-record-schema.test.ts",
       "tests/core/pipeline/pipeline.test.ts",
       "tests/unit/core/attestation/build-attestation.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-10-config-schema-zod-validation.md",
+      "specrunner/adr/2026-08-16-absorb-test-materialize.md",
+      "specrunner/adr/2026-08-27-split-reopen-from-resume.md",
+      "specrunner/adr/2026-08-29-remove-bite-evidence.md"
     ]
   },
   "reviewerStatuses": [
@@ -304,8 +311,13 @@
       "canonHash": "specrunner/changes/remove-bite-evidence/design.md:sha256:3d2bde3c12ed3296f782362a26c7d780dee31ff16cb9c71eb8b40a6e6d1fa763|specrunner/changes/remove-bite-evidence/request.md:sha256:9fcc9f8e017ebdccf933273f406842a2749bc3954be544646d7d3ceef8810d38|specrunner/changes/remove-bite-evidence/spec.md:sha256:6ad799f11aeab30cf76a15099688f71b1ae368cfdb74d0822b604a9b2117e2f8|specrunner/changes/remove-bite-evidence/tasks.md:sha256:63e40b73d002999f8b55ef9d7d21b46706248b3f37b6e75525276805ab761c4b|specrunner/changes/remove-bite-evidence/test-cases.md:sha256:14f0cfea9fa8aeaa243bad43cf0f6ca7825b6ec70d905a6713bc6b52af60f233"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1098",
+    "number": 1098,
+    "createdAt": "2026-08-29T16:24:04.701Z"
+  },
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -321,7 +333,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
