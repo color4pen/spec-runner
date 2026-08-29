@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T06:58:17.165Z",
+  "updatedAt": "2026-08-29T07:01:33.393Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -88,7 +88,8 @@
     "498ccd78a966bbbdc2b3c96a5e81c6eec480f458",
     "e4356e1f2479b97b1037525a36aaccf7ee7725a8",
     "37e5df01068ad0a24dffe4e1032e237f7ab87eab",
-    "a4337a5810ae123c090751c214cbadd6872dd998"
+    "a4337a5810ae123c090751c214cbadd6872dd998",
+    "472a5456d96d82629368e43f133ccbb54b8b52e8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -153,6 +154,16 @@
     "code-fixer": [
       "src/core/pipeline/parallel-review-round.ts",
       "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/__tests__/exclusion-aware-validation.test.ts",
+      "src/core/step/__tests__/commit-push-exclusion.test.ts",
+      "src/core/step/conformance.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -195,7 +206,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 103,
+    "historyCount": 108,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +220,8 @@
       "code-fixer": 6,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 5
+      "custom-reviewers": 5,
+      "regression-gate": 1
     }
   }
 }
