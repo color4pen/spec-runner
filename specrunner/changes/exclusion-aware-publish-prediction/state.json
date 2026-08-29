@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ce51ff02-226f-42d3-9058-1a03de296859",
   "createdAt": "2026-08-29T04:11:45.475Z",
-  "updatedAt": "2026-08-29T04:42:11.206Z",
+  "updatedAt": "2026-08-29T04:47:38.568Z",
   "request": {
     "title": "unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "fix/exclusion-aware-publish-prediction-ce51ff02",
   "error": null,
@@ -69,7 +69,8 @@
     "bd250c9e1792d69d5439b418535a2dde2ff0f1ef",
     "0c0bed4ca95115fba6e27a26b84dcca5aa2f1313",
     "8ef0f1b32b74b69fe744ff7ea821f25838bc0d09",
-    "1630a03ad65452e56ed38c8f1469c86673c20bf0"
+    "1630a03ad65452e56ed38c8f1469c86673c20bf0",
+    "40b1bfe7359e2d74f278e6778812b83a8366ac35"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,34 +105,21 @@
     ],
     "test-case-gen": [],
     "spec-review": [
-      "src/git/push-capability.ts",
-      "src/core/step/commit-push.ts",
-      "src/core/step/write-scope.ts",
-      "src/core/runtime/local.ts",
-      "src/core/step/staging-containment.ts",
-      "src/core/step/step-context-builder.ts",
-      "src/core/step/design.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/prompts/design-system.ts",
-      "src/core/pipeline/parallel-review-round.ts",
-      "src/core/step/code-review.ts",
-      "src/core/step/conformance.ts",
-      "src/core/step/custom-reviewer.ts",
-      "src/core/step/__tests__/commit-push-guarded-staging.test.ts",
       "src/core/resume/reconcile-worktree.ts",
-      "src/core/runtime/managed.ts"
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts"
     ],
     "spec-fixer": [
       "src/core/resume/reconcile-worktree.ts"
     ]
   },
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }

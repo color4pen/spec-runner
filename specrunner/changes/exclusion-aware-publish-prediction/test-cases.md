@@ -5,6 +5,7 @@
 - **Total**: 29 cases
 - **Automated** (unit/integration): 26
 - **Manual**: 2
+- **Gate**: 1
 - **Priority**: must: 22, should: 7, could: 0
 
 ---

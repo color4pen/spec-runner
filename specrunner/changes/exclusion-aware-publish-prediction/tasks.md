@@ -290,7 +290,7 @@
 
 ### タスク内容
 
-- [ ] `isReconcilableArtifact("some-slug", ".github/workflows/ci.yml")` が `false` を返すことを unit test で確認する
+- [ ] `isReconcilableArtifact(".github/workflows/ci.yml", "some-slug")` が `false` を返すことを unit test で確認する
   - GIVEN: `.github/workflows/ci.yml`（change-folder 外パス）、slug `"some-slug"`
   - THEN: `isReconcilableArtifact` が `false` を返す（reconcile 対象外）
 
@@ -308,6 +308,6 @@
 - `reconcileWorktreeArtifacts` 全体の E2E test を書く場合は、`SpawnFn` を mock して `git status` 出力を制御すること
 
 **Acceptance Criteria**:
-- `isReconcilableArtifact("<slug>", ".github/workflows/ci.yml")` → `false` が unit test で確認されている
+- `isReconcilableArtifact(".github/workflows/ci.yml", "<slug>")` → `false` が unit test で確認されている
 - `reconcileWorktreeArtifacts` が除外 path（change-folder 外）を `reconciled` に含めないことが test で固定されている
 - `bun run typecheck` exit 0、`bun run test` exit 0（T-15 テストを含む）
