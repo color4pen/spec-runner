@@ -86,12 +86,6 @@ export interface StepCompletion {
   /** Pull request info extracted from prose parse (pr-create step only). */
   pullRequest?: { url: string; number: number; createdAt: string };
   /**
-   * Bite-evidence records extracted from the bite-evidence gate result file.
-   * Present only when BiteEvidenceStep returns a non-deferred verdict with records.
-   * commitSuccess() reflects this into state.biteEvidence (T-08, R4).
-   */
-  biteEvidence?: import("../../state/schema.js").BiteEvidenceRecord[];
-  /**
    * Canon-finding escalation reason.
    * Set when the verdict is "escalation" caused by a fixable finding on a
    * protected canon path that the effective fixer cannot legally write.
@@ -366,7 +360,6 @@ export async function deriveStepCompletion(
     verdict: verdict as Verdict,
     persistToolResult,
     pullRequest: parsed?.pullRequest,
-    ...(parsed?.biteEvidence !== undefined ? { biteEvidence: parsed.biteEvidence } : {}),
     ...(escalationReason !== undefined ? { escalationReason } : {}),
   };
 }

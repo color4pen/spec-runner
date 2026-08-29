@@ -1,14 +1,11 @@
 /**
  * Achieved-assurance archive-floor tests.
  *
- * Verifies:
- *   - Contaminated baseline (re-run shape: an implementer commit predates the base
- *     test-materialize commit) leaves biteEvidence/testDerivation absent without
- *     running any provenance I/O — the archive floor must not grant assurance on
- *     a base with implementation mixed in. Mirrors the bite-evidence gate check.
- *
- * The clean-shape counterpart (biteEvidence achieved on a normal run) is covered by
- * src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts (TC-010 floor).
+ * Verifies testDerivation derivation:
+ *   - testDerivation absent when test-case-gen commitOid is absent
+ *   - testDerivation "frozen" when scenario is intact
+ *   - testDerivation absent when scenario is tampered
+ *   - The narrowed runtime only needs readFileAtCommit
  */
 
 import { describe, it, expect } from "vitest";
@@ -50,101 +47,203 @@ function makeState(overrides: Partial<JobState> = {}): JobState {
   } as JobState;
 }
 
-describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
-  it("leaves biteEvidence absent and performs no provenance I/O when synthesizedCommits is absent and floor requires biteEvidence", async () => {
-    // synthesizedCommits absent → resolveEvidenceBaseRev returns null → early return at P2.5
-    // (P2.5 is guarded by floorConstrainsBite, so it short-circuits before any I/O).
+const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
+const TC_CONTENT_TAMPERED = "# Test Cases\n\n## TC-001: sample\nTAMPERED content!\n";
+const TCG_OID = "tcg-oid-001";
+const FINAL_HEAD_OID = "final-head-oid-001";
+
+describe("deriveAchievedAssurance — testDerivation derivation", () => {
+  it("leaves testDerivation absent when test-case-gen commitOid is absent", async () => {
     const state = makeState({
       steps: {
-        "test-materialize": [
-          makeRunAt("2026-01-01T00:02:00.000Z", "mat-oid"),
-        ],
-        "implementer": [
-          makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid"),
-        ],
+        "implementer": [makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid")],
+        // no test-case-gen step
       },
-      // synthesizedCommits absent → resolveEvidenceBaseRev → null → fail-closed (biteEvidence only)
     });
 
-    const neverCalled = (name: string) => () => {
-      throw new Error(`runtime.${name} must not be called when EB ref is absent`);
-    };
     const runtime = {
-      listChangedFilesBetweenCommits: neverCalled("listChangedFilesBetweenCommits"),
-      runTestsAtCommit: neverCalled("runTestsAtCommit"),
-      runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
-      readFileAtCommit: neverCalled("readFileAtCommit"),
+      async readFileAtCommit(_oid: string, _path: string, _cwd: string) {
+        throw new Error("readFileAtCommit must not be called without testCaseGenOid");
+      },
     };
 
     const output = await deriveAchievedAssurance({
       state,
-      finalHeadOid: "final-head-oid",
+      finalHeadOid: FINAL_HEAD_OID,
       cwd: "/tmp/assurance-test-cwd",
-      config: {} as never,
-      floor: { biteEvidence: "required" } as never,
-      runtime: runtime as never,
+      floor: { testDerivation: "frozen" },
+      runtime,
     });
 
-    expect(output.achieved.biteEvidence).toBeUndefined();
     expect(output.achieved.testDerivation).toBeUndefined();
-    expect(
-      output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
-    ).toBe(true);
+    expect(output.diagnostics.some((d) => d.includes("testCaseGenOid") || d.includes("test-case-gen"))).toBe(true);
   });
 
-  it("achieves testDerivation when synthesizedCommits is absent but floor only requires testDerivation", async () => {
-    // Pins the corrected behavior: P2.5 (Evidence Base ref check) is guarded by
-    // floorConstrainsBite, so absent synthesizedCommits does NOT block testDerivation.
-    // testDerivation depends only on blob freeze + scenario freeze, not on the Evidence Base.
-    const TCG_OID = "tcg-oid-001";
-    const MAT_OID = "mat-oid-001";
-    const HEAD_OID = "final-head-oid-001";
-const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
-
+  it("achieves testDerivation=frozen when scenario is intact", async () => {
     const state = makeState({
       steps: {
-        "test-materialize": [makeRunAt("2026-01-01T00:02:00.000Z", MAT_OID)],
         "test-case-gen": [makeRunAt("2026-01-01T00:01:00.000Z", TCG_OID)],
+        "implementer": [makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid")],
       },
-      // synthesizedCommits absent — no Evidence Base ref resolvable.
-      // testDerivation must NOT be gated on this.
     });
 
-    const neverCalled = (name: string) => () => {
-      throw new Error(`runtime.${name} must not be called for testDerivation-only floor`);
-    };
     const runtime = {
-      // listChangedFilesBetweenCommits is required by P3 capability check but not called
-      // for testDerivation-only floor (biteEvidence I/O is skipped entirely).
-      listChangedFilesBetweenCommits: neverCalled("listChangedFilesBetweenCommits"),
       async readFileAtCommit(oid: string, _path: string, _cwd: string) {
         // Same content at both anchor and HEAD → scenario freeze intact
-        if (oid === TCG_OID || oid === HEAD_OID) {
+        if (oid === TCG_OID || oid === FINAL_HEAD_OID) {
           return { kind: "found" as const, path: _path, content: TC_CONTENT };
         }
         return { kind: "unavailable" as const, reason: `unexpected oid: ${oid}` };
       },
-      // These must NOT be called: biteEvidence I/O is skipped for testDerivation-only floor.
-      runTestsAtCommit: neverCalled("runTestsAtCommit"),
-      runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
     };
 
     const output = await deriveAchievedAssurance({
       state,
-      finalHeadOid: HEAD_OID,
+      finalHeadOid: FINAL_HEAD_OID,
       cwd: "/tmp/assurance-test-cwd",
-      config: {} as never,
-      floor: { testDerivation: "frozen" } as never,
-      runtime: runtime as never,
+      floor: { testDerivation: "frozen" },
+      runtime,
     });
 
-    // testDerivation achievable despite absent synthesizedCommits
     expect(output.achieved.testDerivation).toBe("frozen");
-    // biteEvidence not constrained → absent (not a failure, just unconstrained)
+  });
+
+  it("leaves testDerivation absent when scenario is tampered", async () => {
+    const state = makeState({
+      steps: {
+        "test-case-gen": [makeRunAt("2026-01-01T00:01:00.000Z", TCG_OID)],
+        "implementer": [makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid")],
+      },
+    });
+
+    const runtime = {
+      async readFileAtCommit(oid: string, _path: string, _cwd: string) {
+        if (oid === TCG_OID) return { kind: "found" as const, path: _path, content: TC_CONTENT };
+        if (oid === FINAL_HEAD_OID) return { kind: "found" as const, path: _path, content: TC_CONTENT_TAMPERED };
+        return { kind: "unavailable" as const, reason: `unexpected oid: ${oid}` };
+      },
+    };
+
+    const output = await deriveAchievedAssurance({
+      state,
+      finalHeadOid: FINAL_HEAD_OID,
+      cwd: "/tmp/assurance-test-cwd",
+      floor: { testDerivation: "frozen" },
+      runtime,
+    });
+
+    expect(output.achieved.testDerivation).toBeUndefined();
+    expect(output.diagnostics.some((d) => d.includes("mismatch") || d.includes("tampered"))).toBe(true);
+  });
+
+  it("runtime only needs readFileAtCommit (narrowed AssuranceProvenanceRuntime)", async () => {
+    // The AssuranceProvenanceRuntime is narrowed to Pick<RuntimeStrategy, "readFileAtCommit">.
+    // This test verifies that no other runtime method is called.
+    const state = makeState({
+      steps: {
+        "test-case-gen": [makeRunAt("2026-01-01T00:01:00.000Z", TCG_OID)],
+      },
+    });
+
+    // Minimal runtime with only readFileAtCommit
+    const minimalRuntime = {
+      async readFileAtCommit(oid: string, _path: string, _cwd: string) {
+        if (oid === TCG_OID || oid === FINAL_HEAD_OID) {
+          return { kind: "found" as const, path: _path, content: TC_CONTENT };
+        }
+        return { kind: "unavailable" as const, reason: "not found" };
+      },
+    };
+
+    // Should not throw even with a minimal runtime
+    const output = await deriveAchievedAssurance({
+      state,
+      finalHeadOid: FINAL_HEAD_OID,
+      cwd: "/tmp/assurance-test-cwd",
+      floor: { testDerivation: "frozen" },
+      runtime: minimalRuntime,
+    });
+
+    expect(output.achieved.testDerivation).toBe("frozen");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-13: deriveAchievedAssurance returns exactly testDerivation and specReview
+//       (no biteEvidence) with a minimal readFileAtCommit runtime
+// ---------------------------------------------------------------------------
+
+describe("T-13: deriveAchievedAssurance — runtime with readFileAtCommit only; result has testDerivation + specReview (no biteEvidence)", () => {
+  const SPEC_CONTENT = "# Spec\n\nSame content at anchor and HEAD.\n";
+  const SPEC_REVIEW_OID = "spec-review-oid-001";
+
+  it("returns testDerivation and specReview; biteEvidence absent from achieved", async () => {
+    const state = makeState({
+      steps: {
+        "spec-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "approved", findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:30.000Z",
+            endedAt: "2026-01-01T00:01:00.000Z",
+            commitOid: SPEC_REVIEW_OID,
+          } as StepRun,
+        ],
+        "test-case-gen": [makeRunAt("2026-01-01T00:01:30.000Z", TCG_OID)],
+        "implementer": [makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid")],
+      },
+    });
+
+    // Runtime exposes ONLY readFileAtCommit (T-13: narrowed type verification)
+    const readFileAtCommit = async (oid: string, path: string, _cwd: string) => {
+      if (path.endsWith("/spec.md") && (oid === SPEC_REVIEW_OID || oid === FINAL_HEAD_OID)) {
+        return { kind: "found" as const, path, content: SPEC_CONTENT };
+      }
+      if (path.endsWith("/test-cases.md") && (oid === TCG_OID || oid === FINAL_HEAD_OID)) {
+        return { kind: "found" as const, path, content: TC_CONTENT };
+      }
+      return { kind: "unavailable" as const, reason: `unexpected: ${oid} ${path}` };
+    };
+
+    const minimalRuntime = { readFileAtCommit };
+
+    const output = await deriveAchievedAssurance({
+      state,
+      finalHeadOid: FINAL_HEAD_OID,
+      cwd: "/tmp/assurance-test-cwd",
+      floor: { testDerivation: "frozen", specReview: "required" },
+      runtime: minimalRuntime,
+    });
+
+    // Both live dimensions must be achieved
+    expect(output.achieved.testDerivation).toBe("frozen");
+    expect(output.achieved.specReview).toBe("required");
+
+    // biteEvidence must be absent from result (removed dimension)
     expect(output.achieved.biteEvidence).toBeUndefined();
-    // P2.5 must NOT have blocked testDerivation
-    expect(
-      output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
-    ).toBe(false);
+    expect("biteEvidence" in output.achieved).toBe(false);
+
+    expect(output.diagnostics).toHaveLength(0);
+  });
+
+  it("achieved object has no biteEvidence key even when floor is unconstrained", async () => {
+    const state = makeState({ steps: {} });
+
+    const minimalRuntime = {
+      async readFileAtCommit(_oid: string, _path: string, _cwd: string) {
+        return { kind: "unavailable" as const, reason: "no data" };
+      },
+    };
+
+    const output = await deriveAchievedAssurance({
+      state,
+      finalHeadOid: FINAL_HEAD_OID,
+      cwd: "/tmp/assurance-test-cwd",
+      floor: {},
+      runtime: minimalRuntime,
+    });
+
+    expect("biteEvidence" in output.achieved).toBe(false);
   });
 });

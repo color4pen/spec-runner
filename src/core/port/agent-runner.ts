@@ -143,7 +143,7 @@ export interface AgentWriteScope {
   stagingMode: "scoped" | "guarded";
   /**
    * Pre-computed pipelineManagedPaths(slug): paths denied for ALL steps regardless of mode.
-   * Includes state.json, events.jsonl, usage.json, bite-evidence-result.md.
+   * Includes state.json, events.jsonl, usage.json, pr-create-result.md.
    * Populated by buildStepContext using round-git-scope.ts (core layer).
    */
   managedPaths: string[];

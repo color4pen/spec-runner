@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:9fcc9f8e017ebdccf933273f406842a2749bc3954be544646d7d3ceef8810d38",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/registry.ts: STANDARD_DESCRIPTOR.steps contains [STEP_NAMES.BITE_EVIDENCE, BiteEvidenceStep] between implementer and verification",
+    "src/core/pipeline/types.ts: STANDARD_TRANSITIONS contains implementer→BITE_EVIDENCE and BITE_EVIDENCE→VERIFICATION transitions",
+    "src/state/profile.ts: STANDARD_PROFILE.assurance.biteEvidence = 'required'",
+    "src/core/step/bite-evidence/step.ts: BiteEvidenceStep CliStep implementation exists",
+    "src/core/step/bite-evidence/gate.ts: runBiteEvidenceGate uses listChangedFilesBetweenCommits, runTestsOnSynthesizedTree, runTestsAtCommit",
+    "src/core/step/bite-evidence/test-file-selection.ts: selectMaterializedTestFiles uses verification.scopedTestPatterns",
+    "src/core/archive/achieved-assurance.ts: deriveAchievedAssurance() derives biteEvidence dimension using listChangedFilesBetweenCommits, runTestsOnSynthesizedTree, runTestsAtCommit",
+    "src/config/schema/types.ts: VerificationConfig.scopedTestCommand and VerificationConfig.scopedTestPatterns fields exist",
+    "src/config/schema/types.ts: MinimumAssuranceConfig.biteEvidence field exists at line 411",
+    "src/core/port/runtime-strategy.ts: listChangedFilesBetweenCommits, runTestsAtCommit, runTestsOnSynthesizedTree are defined as optional methods in RuntimeStrategy",
+    "src/core/resume/resolve-step.ts: LEGACY_STEP_ALIASES does NOT contain 'bite-evidence' entry",
+    "src/kernel/step-names.ts: CLI_STEP_NAMES includes 'bite-evidence'",
+    "src/state/schema/types.ts: JobState.biteEvidence?: BiteEvidenceRecord[] is optional backward-compat field",
+    "README.md: bite-evidence listed as step 7 in pipeline description",
+    "docs/configuration.md: verification.scopedTestPatterns and archive.minimumAssurance.biteEvidence documented",
+    "src/prompts/pipeline-map.ts: pipeline-map shown to agents includes bite-evidence row",
+    "src/core/pr-create/body-template.ts: workflowPhases does NOT include bite-evidence (no bite records in PR body)",
+    "src/core/pipeline/registry.ts: FAST_DESCRIPTOR does NOT include bite-evidence step"
+  ],
+  "sourceRevision": "2214acd6ebe3bbe6e3f44f3560c06fd4e5df0cc0"
+}

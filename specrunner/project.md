@@ -17,20 +17,19 @@ CLI-first の dual runtime アーキテクチャ。
 
 - **Local runtime**: Claude Agent SDK 経由でローカルに agent セッションを実行
 - **Managed runtime**: Anthropic Managed Agents API 経由でクラウド上の agent を実行
-- **Pipeline**: 13 ステップの state-machine で request.md → PR を自動生成
+- **Pipeline**: 12 ステップの state-machine で request.md → PR を自動生成
   1. request-review — request の受け入れ判定（不明瞭・却下は即 escalation）
   2. design — ブランチ作成・仕様生成
   3. test-case-gen — テストケース生成（テスト生成免除 type（chore 等）は skip して spec-review へ）
   4. spec-review — 仕様レビュー（spec / design / tasks / test-cases の正典全体が対象）
   5. spec-fixer — 仕様修正（spec-review ⇄ spec-fixer の単一収束ループ。test-cases.md も targeted 修正の対象）
   6. implementer — コード実装（テストの実体化を含む。verification 失敗時の paired fixer も兼ねる — build-fixer は廃止済み）
-  7. bite-evidence — 新規テストが実装の破壊を検出できることの証拠確認（internal gate。免除 type は skip）
-  8. verification — ビルド・テスト検証（失敗は implementer へ再入）
-  9. code-review — コードレビュー
-  10. code-fixer — コード修正（code-review または custom reviewer が needs-fix の場合）
-  11. conformance — アーキテクチャ適合性検証（needs-fix は fix 対象別に spec-fixer / implementer / code-fixer へ routing）
-  12. adr-gen — ADR 生成（request.adr === true の場合。false は skip）
-  13. pr-create — GitHub PR 作成
+  7. verification — ビルド・テスト検証（失敗は implementer へ再入）
+  8. code-review — コードレビュー
+  9. code-fixer — コード修正（code-review または custom reviewer が needs-fix の場合）
+  10. conformance — アーキテクチャ適合性検証（needs-fix は fix 対象別に spec-fixer / implementer / code-fixer へ routing）
+  11. adr-gen — ADR 生成（request.adr === true の場合。false は skip）
+  12. pr-create — GitHub PR 作成
 
   pipeline profile は `standard` のほかに `design-only` / `fast` があり、request.md Meta の `pipeline` で選択する（省略時は standard）。
 

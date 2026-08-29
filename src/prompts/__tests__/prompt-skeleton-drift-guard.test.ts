@@ -611,9 +611,10 @@ describe("TC-017: producer prompt が COMPLETION_DIRECTIVE を保持する", () 
 // Source: tasks.md > T-01 Acceptance Criteria
 // ============================================================================
 
-describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責務が付く", () => {
+describe("TC-018: PIPELINE_MAP が全 14 step を列挙し各 step に一行責務が付く", () => {
   // build-fixer は廃止済み (absorb-build-fixer)
   // test-materialize は廃止済み (absorb-test-materialize)
+  // bite-evidence は廃止済み (remove-bite-evidence)
   const EXPECTED_STEPS = [
     "request-review",
     "design",
@@ -621,7 +622,6 @@ describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責�
     "spec-fixer",
     "test-case-gen",
     "implementer",
-    "bite-evidence",
     "verification",
     "code-review",
     "code-fixer",
@@ -646,12 +646,16 @@ describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責�
     expect(PIPELINE_MAP).not.toContain("test-materialize");
   });
 
-  it("TC-018: PIPELINE_MAP has exactly 15 data rows (one per step)", () => {
+  it("TC-018: PIPELINE_MAP does not contain bite-evidence (廃止済み)", () => {
+    expect(PIPELINE_MAP).not.toContain("bite-evidence");
+  });
+
+  it("TC-018: PIPELINE_MAP has exactly 14 data rows (one per step)", () => {
     // Count table rows: lines starting with "|" that are not the header or separator
     const rows = PIPELINE_MAP.split("\n").filter(
       (line) => line.startsWith("|") && !line.includes("Step") && !line.includes("---"),
     );
-    expect(rows.length).toBe(15);
+    expect(rows.length).toBe(14);
   });
 });
 
@@ -878,24 +882,25 @@ describe("TC-033: rules 出力に verification continuation 例外記述が含�
 });
 
 // ============================================================================
-// TC-034: PIPELINE_MAP に bite-evidence 行が存在する
-// Source: prompt-rules-consistency request > 受け入れ基準 AC-4
+// TC-034: PIPELINE_MAP に bite-evidence 行が存在しない（remove-bite-evidence 後）
+// Source: remove-bite-evidence change > bite-evidence は pipeline から除去済み
 // ============================================================================
 
-describe("TC-034: PIPELINE_MAP に bite-evidence 行が存在する", () => {
-  it("TC-034: PIPELINE_MAP contains 'bite-evidence'", () => {
-    expect(PIPELINE_MAP).toContain("bite-evidence");
+describe("TC-034: PIPELINE_MAP に bite-evidence 行が存在しない (remove-bite-evidence 後)", () => {
+  it("TC-034: PIPELINE_MAP does not contain 'bite-evidence' (step removed)", () => {
+    expect(PIPELINE_MAP).not.toContain("bite-evidence");
   });
-  it("TC-034: PIPELINE_MAP has bite-evidence between implementer and verification", () => {
+  it("TC-034: PIPELINE_MAP does not contain 'Evidence Base' (removed with bite-evidence)", () => {
+    expect(PIPELINE_MAP).not.toContain("Evidence Base");
+  });
+  it("TC-034: PIPELINE_MAP has implementer directly before verification (no bite-evidence in between)", () => {
     const lines = PIPELINE_MAP.split("\n");
     const implementerIdx = lines.findIndex((l) => l.includes("| implementer "));
-    const biteIdx = lines.findIndex((l) => l.includes("| bite-evidence "));
     const verificationIdx = lines.findIndex((l) => l.includes("| verification "));
-    expect(biteIdx).toBeGreaterThan(implementerIdx);
-    expect(verificationIdx).toBeGreaterThan(biteIdx);
-  });
-  it("TC-034: PIPELINE_MAP contains 'Evidence Base'", () => {
-    expect(PIPELINE_MAP).toContain("Evidence Base");
+    expect(implementerIdx).toBeGreaterThan(-1);
+    expect(verificationIdx).toBeGreaterThan(-1);
+    // implementer row must immediately precede verification row (adjacent in the table)
+    expect(verificationIdx).toBe(implementerIdx + 1);
   });
 });
 

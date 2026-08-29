@@ -136,8 +136,7 @@ describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", ()
     { step: "spec-review",    on: "approved",   to: "implementer" }, // absorb-test-materialize: was test-materialize
     { step: "test-case-gen",  on: "success",    to: "spec-review" },
     { step: "test-case-gen",  on: "error",      to: "escalate" },
-    { step: "implementer",    on: "success",    to: "bite-evidence" },
-    { step: "implementer",    on: "success",    to: "verification" }, // recovery when verificationFailedLast
+    { step: "implementer",    on: "success",    to: "verification" }, // unconditional (bite-evidence removed)
     { step: "implementer",    on: "error",      to: "escalate" },
     { step: "verification",   on: "passed",     to: "code-review" },
     { step: "verification",   on: "failed",     to: "implementer" }, // build-fixer abolished
@@ -270,11 +269,13 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 45 rows total (spec-review-loop-single-fixer: -2 rows from test-case-gen routing removal)", () => {
-    // Previous: 47 rows. spec-review-loop-single-fixer removes 2 rows:
-    //   - spec-review needs-fix → test-case-gen (guarded by specReviewNeedsFixIsTcOnly) removed
-    //   - spec-fixer approved → test-case-gen (guarded by specFixerNeedsFixForward) removed
-    expect(STANDARD_TRANSITIONS.length).toBe(45);
+  it("has 39 rows total (remove-bite-evidence: -6 rows from bite-evidence gate removal)", () => {
+    // Previous: 45 rows. remove-bite-evidence removes 6 rows:
+    //   - implementer success → verification (when: isTestGenExempt) removed
+    //   - implementer success → verification (when: verificationFailedLast) removed
+    //   - bite-evidence passed/strategy-deferred/failed/error rows (4) removed
+    // implementer success → bite-evidence replaced by implementer success → verification (unconditional)
+    expect(STANDARD_TRANSITIONS.length).toBe(39);
   });
 
   it("verification --passed→ end does NOT exist", () => {

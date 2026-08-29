@@ -798,7 +798,7 @@ export async function commitAndPush(
  * - awaiting-resume:  messageLabel = "checkpoint".
  *
  * Stages only pipeline-managed paths (state.json, events.jsonl, usage.json,
- * bite-evidence-result.md) using a per-path `git add -- <path>` loop (exit codes ignored
+ * pr-create-result.md) using a per-path `git add -- <path>` loop (exit codes ignored
  * to tolerate non-existent optional paths). Then commits with an explicit pathspec
  * (`git commit -- <managedPaths>`) so pre-staged unauthorized files cannot leak into the
  * checkpoint/finalize commit. This replaces the previous bare `git add -A`
@@ -847,7 +847,7 @@ export async function commitFinalState(params: {
   // Per-path staging is used instead of a single `git add -- <all-paths>` call because:
   //   - `git add -- <path>` exits 128 for any path that doesn't exist and isn't tracked,
   //     which would abort the entire add and leave nothing staged.
-  //   - Optional pipeline outputs (events.jsonl, usage.json, bite-evidence-result.md)
+  //   - Optional pipeline outputs (events.jsonl, usage.json, pr-create-result.md)
   //     may not have been written in every run.
   //
   // Paths where `git add` succeeds (exit 0) are recorded in `stagedPaths` for use as

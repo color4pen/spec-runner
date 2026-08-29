@@ -521,7 +521,14 @@ export class Pipeline {
       if (pairedFixerForNext !== undefined) {
         // A new episode starts when entering the loop step from any step that is NOT
         // its paired fixer (initial arrival, conformance re-entry, resume).
-        let newEpisode = currentStep !== pairedFixerForNext;
+        //
+        // Special case: when the paired fixer IS the entry point for the very first loop
+        // iteration (loopIter === 0), the fixer ran as the normal impl phase entry, not as
+        // a recovery step. Treat this as a new episode so the fixer's budget starts fresh
+        // for the actual fix-and-retry cycles. This preserves the "3 runs with maxRetries=2"
+        // invariant that was previously guaranteed by the bite-evidence intermediate step.
+        let newEpisode = currentStep !== pairedFixerForNext
+          || budget.getLoopIter(nextStep as string) === 0;
         if (!newEpisode) {
           const siblings = Object.entries(this.loopFixerPairs)
             .filter(([, fixer]) => fixer === pairedFixerForNext)

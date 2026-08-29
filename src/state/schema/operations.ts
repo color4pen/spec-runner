@@ -300,7 +300,9 @@ export function validateJobState(raw: unknown): JobState {
   }
 
   // Validate biteEvidence when present (backward compat: absence is OK → treated as undefined)
-  // Design (bite-evidence-forward R4): lightweight check — array with expected fields per entry.
+  // @legacy-read-only — The bite-evidence feature was removed. This validation block is retained
+  // so that historical state files with biteEvidence records continue to round-trip without error.
+  // No new producer writes biteEvidence values.
   if ("biteEvidence" in obj && obj["biteEvidence"] !== null && obj["biteEvidence"] !== undefined) {
     if (!Array.isArray(obj["biteEvidence"])) {
       throw new Error("biteEvidence must be an array when present.");

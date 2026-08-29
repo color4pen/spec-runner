@@ -201,58 +201,49 @@ describe("TC-014: loopFixerPairs[VERIFICATION] === implementer", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-015: STANDARD の IMPLEMENTER→VERIFICATION(verificationFailedLast) が
-//         BITE_EVIDENCE 行より前に並ぶ
+// TC-015: IMPLEMENTER→VERIFICATION 遷移は単一の無条件行（remove-bite-evidence 後）
+//
+// After remove-bite-evidence: no guarded verificationFailedLast row,
+// no BITE_EVIDENCE row — exactly one unconditional IMPLEMENTER→VERIFICATION row.
+// See also TC-037 in absorb-test-materialize-transitions.test.ts.
 // ---------------------------------------------------------------------------
 
-describe("TC-015: STANDARD_TRANSITIONS — IMPLEMENTER→VERIFICATION(when verificationFailedLast) は BITE_EVIDENCE 行より前", () => {
-  it("TC-015: implementer success → verification(when=verificationFailedLast) の行が存在する", () => {
-    const row = STANDARD_TRANSITIONS.find(
-      (t) =>
-        t.step === STEP_NAMES.IMPLEMENTER &&
-        t.on === "success" &&
-        t.to === STEP_NAMES.VERIFICATION &&
-        t.when === verificationFailedLast,
+describe("TC-015: STANDARD_TRANSITIONS — IMPLEMENTER→VERIFICATION は単一の無条件行（remove-bite-evidence 後）", () => {
+  it("TC-015: implementer success rows のカウントが 1（unconditional のみ）", () => {
+    const rows = STANDARD_TRANSITIONS.filter(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
     );
-    expect(row).toBeDefined();
+    expect(rows).toHaveLength(1);
   });
 
-  it("TC-015: implementer success → verification(when=verificationFailedLast) の行が → bite-evidence の行より前に出現する(first-match-wins)", () => {
-    const rows = STANDARD_TRANSITIONS;
-    const toVerificationIdx = rows.findIndex(
-      (t) =>
-        t.step === STEP_NAMES.IMPLEMENTER &&
-        t.on === "success" &&
-        t.to === STEP_NAMES.VERIFICATION &&
-        t.when === verificationFailedLast,
+  it("TC-015: 唯一の implementer success 行は無条件で verification へ向かう", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
     );
-    const toBiteEvidenceIdx = rows.findIndex(
-      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && t.to === STEP_NAMES.BITE_EVIDENCE,
+    expect(row).toBeDefined();
+    expect(row!.to).toBe(STEP_NAMES.VERIFICATION);
+    expect(row!.when).toBeUndefined();
+  });
+
+  it("TC-015: bite-evidence 行が STANDARD_TRANSITIONS に存在しない (remove-bite-evidence)", () => {
+    const biteEvidenceRows = STANDARD_TRANSITIONS.filter(
+      (t) => t.to === "bite-evidence" || t.step === "bite-evidence",
     );
-    expect(toVerificationIdx).toBeGreaterThan(-1);
-    expect(toBiteEvidenceIdx).toBeGreaterThan(-1);
-    expect(toVerificationIdx).toBeLessThan(toBiteEvidenceIdx);
+    expect(biteEvidenceRows).toHaveLength(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-016: 回復再入の implementer 完了後、bite-evidence をバイパスして VERIFICATION に直帰する
+// TC-016: 回復再入も通常実行も同じ unconditional IMPLEMENTER→VERIFICATION 行に収束する
+//
+// After remove-bite-evidence: the verificationFailedLast guard is no longer used
+// as a transition guard. The implementer→verification transition is unconditional,
+// so all paths (recovery re-entry and normal) converge to verification.
+// verificationFailedLast() still exists as a utility for step-context consumers.
 // ---------------------------------------------------------------------------
 
-describe("TC-016: verificationFailedLast=true のとき implementer success → verification(when)", () => {
-  it("TC-016: verificationFailedLast guard の when が失敗 state で true を返す", () => {
-    // Find the implementer→verification(when: verificationFailedLast) row specifically
-    // (there may be multiple implementer→verification rows with different guards)
-    const row = STANDARD_TRANSITIONS.find(
-      (t) =>
-        t.step === STEP_NAMES.IMPLEMENTER &&
-        t.on === "success" &&
-        t.to === STEP_NAMES.VERIFICATION &&
-        t.when === verificationFailedLast,
-    );
-    expect(row).toBeDefined();
-
-    // The guard must return true for verificationFailedLast=true state
+describe("TC-016: IMPLEMENTER success は常に verification へ（recovery re-entry も通常も同じ行）", () => {
+  it("TC-016: verification failed 後の implementer success も verification へ解決する", () => {
     const state = makeMinimalState({
       steps: {
         [STEP_NAMES.VERIFICATION]: [
@@ -263,30 +254,31 @@ describe("TC-016: verificationFailedLast=true のとき implementer success → 
         ],
       },
     });
-    expect(row!.when!(state)).toBe(true);
+    const transitions = STANDARD_TRANSITIONS;
+    const next = transitions.find(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && (!t.when || t.when(state)),
+    )?.to;
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
   });
 
-  it("TC-016: verificationFailedLast=false(初回)のとき when guard は false を返す", () => {
-    const row = STANDARD_TRANSITIONS.find(
+  it("TC-016: 初回 implementer success も verification へ解決する", () => {
+    const state = makeMinimalState({ steps: {} });
+    const next = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && (!t.when || t.when(state)),
+    )?.to;
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+
+  it("TC-016: verificationFailedLast は IMPLEMENTER→VERIFICATION の when guard として使われていない", () => {
+    // verificationFailedLast is still exported for step-context consumers, but the
+    // implementer→verification transition is now unconditional (no when guard).
+    const guardedRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.IMPLEMENTER &&
         t.on === "success" &&
-        t.to === STEP_NAMES.VERIFICATION &&
         t.when === verificationFailedLast,
     );
-    expect(row).toBeDefined();
-
-    // Fresh state — no verification run yet
-    const state = makeMinimalState({ steps: {} });
-    expect(row!.when!(state)).toBe(false);
-  });
-
-  it("TC-016: 通常 implementer success は bite-evidence 行が存在する", () => {
-    // The unconditional bite-evidence row must exist so that non-recovery path still works
-    const row = STANDARD_TRANSITIONS.find(
-      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && t.to === STEP_NAMES.BITE_EVIDENCE,
-    );
-    expect(row).toBeDefined();
+    expect(guardedRow).toBeUndefined();
   });
 });
 

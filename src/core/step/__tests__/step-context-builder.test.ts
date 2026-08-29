@@ -245,7 +245,6 @@ describe("TC-039: scoped step の AgentRunContext に正しい writeScope が設
       `specrunner/changes/${slug}/state.json`,
       `specrunner/changes/${slug}/events.jsonl`,
       `specrunner/changes/${slug}/usage.json`,
-      `specrunner/changes/${slug}/bite-evidence-result.md`,
       `specrunner/changes/${slug}/pr-create-result.md`,
     ]);
 
@@ -307,7 +306,6 @@ describe("TC-040: guarded step の AgentRunContext に正しい writeScope が�
       `specrunner/changes/${slug}/state.json`,
       `specrunner/changes/${slug}/events.jsonl`,
       `specrunner/changes/${slug}/usage.json`,
-      `specrunner/changes/${slug}/bite-evidence-result.md`,
       `specrunner/changes/${slug}/pr-create-result.md`,
     ]);
 

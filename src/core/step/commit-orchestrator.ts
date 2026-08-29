@@ -82,7 +82,7 @@ export type StepExecutionResult =
        */
       touchedFiles?: string[];
       /**
-       * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
+       * Commit OID captured after this step's per-node commit.
        * Set only for sequential steps with roundOwnsGitEffects === false.
        * Absent for round (parallel reviewer) members and managed-runtime steps.
        *
@@ -456,11 +456,6 @@ export class CommitOrchestrator {
       s = { ...s, pullRequest: completion.pullRequest };
     }
 
-    // biteEvidence reflection (T-08, bite-evidence-forward R4)
-    if (completion.biteEvidence && completion.biteEvidence.length > 0) {
-      s = { ...s, biteEvidence: completion.biteEvidence };
-    }
-
     // Canon-finding escalation: persist error info so the operator can identify the cause.
     // CANON_FINDING_ESCALATION is NOT in FATAL_ERROR_CODES → job lands in awaiting-resume.
     if (verdict === "escalation" && completion.escalationReason) {
@@ -501,7 +496,7 @@ export class CommitOrchestrator {
       s = { ...s, touchedFiles: { ...existing, [step.name]: result.touchedFiles } } as JobState;
     }
 
-    // Persist branch/pullRequest/biteEvidence patch (write 2)
+    // Persist branch/pullRequest patch (write 2)
     await store.persist(s);
 
     // Post-persist effects: usage + lineage + verdict:parsed emit

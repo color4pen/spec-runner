@@ -100,17 +100,4 @@ export interface PipelineDeps extends StepContext {
    * D3 (round-owned-git-effects): round ownership flag for the executor gate.
    */
   roundOwnsGitEffects?: boolean;
-  /**
-   * Pre-computed set of step names and operator tokens authorized to write the canon
-   * test-cases.md path for this job. Injected by `buildPipelineForJob` and `runPipeline`
-   * before the pipeline runs so that BiteEvidenceStep can use it without importing
-   * registry.ts (which would create a circular import: registry → step.ts → tamper.ts
-   * → registry).
-   *
-   * When absent or empty, BiteEvidenceStep treats tamper evidence as unavailable and
-   * returns `inconclusive` (fail-open, not fail-closed).
-   *
-   * tamper-provenance-baseline: authorized writers for the provenance-based tamper gate.
-   */
-  authorizedCanonWriters?: ReadonlySet<string>;
 }

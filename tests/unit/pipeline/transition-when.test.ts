@@ -165,9 +165,9 @@ describe("TC-4: existing transitions without `when` still work (regression)", ()
     expect(found!.when).toBeUndefined();
   });
 
-  it("implementer --success→ bite-evidence has no `when` and is found", () => {
+  it("implementer --success→ verification has no `when` and is found (bite-evidence removed)", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "implementer" && t.on === "success" && t.to === "bite-evidence",
+      (t) => t.step === "implementer" && t.on === "success" && t.to === "verification",
     );
     expect(found).toBeDefined();
     expect(found!.when).toBeUndefined();
@@ -191,11 +191,16 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has 45 rows (spec-review-loop-single-fixer: -2 from test-case-gen routing removal)", () => {
-    // Previous: 47 rows. spec-review-loop-single-fixer removes 2 guarded rows:
-    //   - spec-review needs-fix → test-case-gen (when: specReviewNeedsFixIsTcOnly) removed
-    //   - spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward) removed
-    expect(STANDARD_TRANSITIONS.length).toBe(45);
+  it("has 39 rows (remove-bite-evidence: -6 from bite-evidence gate + guarded implementer rows)", () => {
+    // Previous: 45 rows. remove-bite-evidence removes 6 rows:
+    //   - implementer success → verification (when: isTestGenExempt) removed
+    //   - implementer success → verification (when: verificationFailedLast) removed
+    //   - bite-evidence passed → verification removed
+    //   - bite-evidence strategy-deferred → verification removed
+    //   - bite-evidence failed → escalate removed
+    //   - bite-evidence error → escalate removed
+    // implementer success → bite-evidence replaced by implementer success → verification (unconditional)
+    expect(STANDARD_TRANSITIONS.length).toBe(39);
   });
 });
 

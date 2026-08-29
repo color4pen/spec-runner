@@ -2,16 +2,19 @@
  * Integration tests for achieved-assurance-completeness via runMergeThenArchive.
  *
  * These tests exercise the floor gate (Step 3.6) through the full merge-then-archive
- * pipeline, verifying that the new derivation behaviors (HEAD-green, type gate,
- * spec-review verdict, scenario freeze) block or allow merges as expected.
+ * pipeline, verifying that scenario-freeze and spec-review behaviors block or allow
+ * merges as expected.
  *
- * TC-001: base:red but HEAD:red → biteEvidence:required floor is fail-closed (exitCode 1)
- *         DESTRUCTIVE INVARIANT: removing HEAD-green check would cause this to pass (exitCode 0).
- * TC-002: base:red + HEAD:green + scenario frozen + forward type → biteEvidence satisfied
- * TC-005: non-forward type (refactoring/spec-change) with base:red + HEAD:green → fail-closed
- * TC-006: latest spec-review verdict not approved (needs-fix/escalation/run-absent) → fail-closed
- * TC-026: real config (scopedTestCommand absent → runTestsAtCommit unavailable) → fail-closed
- *         (anti-regression: must not break #848 behavior)
+ * After remove-bite-evidence:
+ * - testDerivation depends solely on scenario binding (test-cases.md content match).
+ * - biteEvidence is removed; testDerivation and specReview are the two dimensions.
+ * - AssuranceProvenanceRuntime is narrowed to { readFileAtCommit } only.
+ * - MergeThenArchiveInput no longer has a `config` field.
+ *
+ * TC-001: scenario tampered → testDerivation:frozen floor fail-closed (exitCode 1)
+ *         DESTRUCTIVE INVARIANT: removing commit-OID binding would allow tamper to pass.
+ * TC-002: scenario intact → testDerivation achieved → exitCode 0, merge proceeds
+ * TC-006: latest spec-review verdict not approved → specReview:required fail-closed
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
@@ -48,44 +51,32 @@ vi.mock("../../../../src/core/archive/cleanup.js", () => ({
 const SUCCESS_ROLLUP: CheckRollup = { state: "success", total: 1, failing: [], pending: [] };
 const CWD = "/tmp/test-repo-aac";
 const SLUG = "my-slug";
-const BASE_OID = "base-commit-sha-aac-001";
-const CANDIDATE_OID = "candidate-commit-sha-aac-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-aac-001";
 
 // Commit OID anchors for revision-binding checks (D1 / D2).
 const TEST_CASE_GEN_OID = "test-case-gen-commit-sha-aac-001";
 const SPEC_REVIEW_OID = "spec-review-commit-sha-aac-001";
 
-// Predefined test-cases.md and spec.md content (same at anchor and HEAD = fully-achieved by default).
+// Predefined test-cases.md and spec.md content.
 const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
+const TEST_CASES_TAMPERED = "# Test Cases\n\n## TC-001: TAMPERED\n";
 const SPEC_CONTENT = "# Spec\n\n## Requirement: foo\n";
 
-// Floor configs
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FLOOR_BITE_EVIDENCE_REQUIRED: any = {
+// Floor configs (properly typed — no biteEvidence)
+const FLOOR_TEST_DERIVATION = {
   protectedPaths: ["architecture/**"],
-  biteEvidence: "required",
+  testDerivation: "frozen" as const,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FLOOR_SPEC_REVIEW_REQUIRED: any = {
+const FLOOR_SPEC_REVIEW_REQUIRED = {
   protectedPaths: ["architecture/**"],
-  specReview: "required",
+  specReview: "required" as const,
 };
 
 // ---------------------------------------------------------------------------
 // Type aliases
 // ---------------------------------------------------------------------------
 
-type ChangedFilesResult =
-  | { kind: "success"; files: string[] }
-  | { kind: "unavailable"; reason: string };
-
-type IsolatedTestResult =
-  | { kind: "ran"; results: { file: string; passed: boolean }[] }
-  | { kind: "unavailable"; reason: string };
-
-// CommitFileResult is the NEW type added in T-01 (not yet in runtime-strategy.ts).
 type CommitFileResult =
   | { kind: "found"; path: string; content: string }
   | { kind: "unavailable"; reason: string };
@@ -95,32 +86,19 @@ type CommitFileResult =
 // ---------------------------------------------------------------------------
 
 /**
- * Fake AssuranceProvenanceRuntime with OID-discriminated readFileAtCommit.
+ * Fake AssuranceProvenanceRuntime with only readFileAtCommit (narrowed interface).
  *
- * readFileAtCommit dispatches by OID + suffix:
+ * readFileAtCommit dispatches by OID + path suffix:
  *   test-cases.md: TEST_CASE_GEN_OID → testCasesMdAtAnchor; ARCHIVE_HEAD_SHA → testCasesMdAtHead
- *   spec.md:       SPEC_REVIEW_OID   → specMdAtAnchor;     ARCHIVE_HEAD_SHA → specMdAtHead
- *   Default (same content at anchor and HEAD) → both bindings intact (fully-achieved).
+ *   spec.md:       SPEC_REVIEW_OID   → specMdAtAnchor;      ARCHIVE_HEAD_SHA → specMdAtHead
+ *   Default: same content at anchor and HEAD (fully-achieved by default).
  */
 function makeFakeRuntime(options: {
-  changedFiles?: string[] | "unavailable";
-  baseTestResults?: IsolatedTestResult;
-  headTestResults?: IsolatedTestResult;
   testCasesMdAtAnchor?: CommitFileResult | "unavailable";
   testCasesMdAtHead?: CommitFileResult | "unavailable";
   specMdAtAnchor?: CommitFileResult | "unavailable";
   specMdAtHead?: CommitFileResult | "unavailable";
 } = {}) {
-  const {
-    changedFiles = ["tests/unit/foo.test.ts"],
-    baseTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
-    headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-    testCasesMdAtAnchor,
-    testCasesMdAtHead,
-    specMdAtAnchor,
-    specMdAtHead,
-  } = options;
-
   const defaultTcResult: CommitFileResult = {
     kind: "found",
     path: `specrunner/changes/${SLUG}/test-cases.md`,
@@ -132,40 +110,17 @@ function makeFakeRuntime(options: {
     content: SPEC_CONTENT,
   };
 
-  const resolvedTcAtAnchor = testCasesMdAtAnchor === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake test-cases.md@anchor unavailable" }
-    : (testCasesMdAtAnchor ?? defaultTcResult);
-  const resolvedTcAtHead = testCasesMdAtHead === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake test-cases.md@head unavailable" }
-    : (testCasesMdAtHead ?? defaultTcResult);
-  const resolvedSpecAtAnchor = specMdAtAnchor === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake spec.md@anchor unavailable" }
-    : (specMdAtAnchor ?? defaultSpecResult);
-  const resolvedSpecAtHead = specMdAtHead === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake spec.md@head unavailable" }
-    : (specMdAtHead ?? defaultSpecResult);
+  const resolve = (opt: CommitFileResult | "unavailable" | undefined, def: CommitFileResult): CommitFileResult =>
+    opt === "unavailable"
+      ? { kind: "unavailable", reason: "fake unavailable" }
+      : (opt ?? def);
+
+  const resolvedTcAtAnchor = resolve(options.testCasesMdAtAnchor, defaultTcResult);
+  const resolvedTcAtHead = resolve(options.testCasesMdAtHead, defaultTcResult);
+  const resolvedSpecAtAnchor = resolve(options.specMdAtAnchor, defaultSpecResult);
+  const resolvedSpecAtHead = resolve(options.specMdAtHead, defaultSpecResult);
 
   return {
-    async listChangedFilesBetweenCommits(_baseOid: string, _headOid: string, _cwd: string): Promise<ChangedFilesResult> {
-      if (changedFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake listChangedFilesBetweenCommits unavailable" };
-      }
-      return { kind: "success", files: changedFiles };
-    },
-    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
-    async runTestsOnSynthesizedTree(
-      _baseRev: string, _overlayFiles: string[], _overlayFromOid: string, _cwd: string, _config: unknown,
-    ): Promise<IsolatedTestResult> {
-      return baseTestResults;
-    },
-    async runTestsAtCommit(
-      oid: string, _files: string[], _cwd: string, _config: unknown,
-    ): Promise<IsolatedTestResult> {
-      if (oid === ARCHIVE_HEAD_SHA) {
-        return headTestResults;
-      }
-      return { kind: "unavailable", reason: `fake: no results for oid ${oid} (not ARCHIVE_HEAD_SHA)` };
-    },
     async readFileAtCommit(
       oid: string, pathSuffix: string, _cwd: string,
     ): Promise<CommitFileResult> {
@@ -242,6 +197,7 @@ function makeSpecReviewStepRun(verdict: string | null, attempt = 1, commitOid?: 
 /**
  * Build a job state with configurable type, spec-review runs, and step history.
  * Includes test-case-gen step by default (commitOid = TEST_CASE_GEN_OID) for D1 binding.
+ * No test-materialize step (absorbed into implementer per absorb-test-materialize).
  */
 function makeJobStateWithSteps(options: {
   prNumber?: number;
@@ -253,8 +209,7 @@ function makeJobStateWithSteps(options: {
 
   const steps: Record<string, StepRun[]> = {
     "test-case-gen": [makeStepRunWithOid(TEST_CASE_GEN_OID)],
-    "test-materialize": [makeStepRunWithOid(BASE_OID)],
-    "implementer": [makeStepRunWithOid(CANDIDATE_OID)],
+    "implementer": [makeStepRunWithOid("impl-commit-sha-aac-001")],
   };
 
   if (specReviewRuns !== undefined) {
@@ -320,18 +275,17 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-001: base:red but HEAD:red → biteEvidence:required floor fail-closed
+// TC-001: scenario tampered → testDerivation:frozen floor fail-closed
 //
-// DESTRUCTIVE INVARIANT: if HEAD-green measurement is removed from derivation,
-// base:red alone would satisfy biteEvidence and this test would PASS (exitCode 0).
-// The test MUST fail (exitCode 1) to confirm HEAD-green is required.
+// DESTRUCTIVE INVARIANT: removing commit-OID cross-compare (falling back to same-commit
+// self-consistency) would make a tampered test-cases.md appear intact, causing
+// testDerivation to be falsely achieved and exitCode to be 0.
 // ---------------------------------------------------------------------------
 
-describe("TC-001: base:red but HEAD:red → biteEvidence:required fail-closed", () => {
+describe("TC-001: scenario tampered → testDerivation:frozen floor fail-closed", () => {
   it(
-    "TC-001: base:red + HEAD:red (still red at finalHeadOid) → exitCode 1, mergePullRequest not called",
+    "TC-001: test-cases.md@testCaseGenOid ≠ @finalHeadOid → testDerivation absent → exitCode 1",
     async () => {
-      // DESTRUCTIVE INVARIANT: removing HEAD-green check → exitCode 0 (test passes for wrong reason).
       const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
       (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
         makeActiveEntry(makeJobStateWithSteps({ type: "new-feature" })),
@@ -352,11 +306,18 @@ describe("TC-001: base:red but HEAD:red → biteEvidence:required fail-closed", 
 
       const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
-      // base: all red, HEAD: still all red (implementation did not fix the tests)
+      // Tampered: test-cases.md at HEAD differs from anchor
       const assuranceRuntime = makeFakeRuntime({
-        changedFiles: ["tests/unit/foo.test.ts"],
-        baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
-        headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
+        testCasesMdAtAnchor: {
+          kind: "found",
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT, // original at anchor
+        },
+        testCasesMdAtHead: {
+          kind: "found",
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_TAMPERED, // tampered at HEAD
+        },
       });
 
       const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
@@ -368,13 +329,11 @@ describe("TC-001: base:red but HEAD:red → biteEvidence:required fail-closed", 
         owner: "user",
         repo: "repo",
         waitTimeoutMs: 60_000,
-        minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
+        minimumAssurance: FLOOR_TEST_DERIVATION,
         assuranceRuntime,
-        config: { version: 1, agents: {} },
       });
 
-      // TC-001: HEAD still red → biteEvidence absent → fail-closed
-      // DESTRUCTIVE INVARIANT: without HEAD-green check, exitCode would be 0 (incorrect pass).
+      // TC-001: scenario tampered → testDerivation absent → fail-closed
       expect(result.exitCode).toBe(1);
       expect(client.mergePullRequest).not.toHaveBeenCalled();
     },
@@ -382,12 +341,12 @@ describe("TC-001: base:red but HEAD:red → biteEvidence:required fail-closed", 
 });
 
 // ---------------------------------------------------------------------------
-// TC-002: base:red + HEAD:green + scenario frozen + forward type → biteEvidence satisfied
+// TC-002: scenario intact → testDerivation achieved → exitCode 0, merge proceeds
 // ---------------------------------------------------------------------------
 
-describe("TC-002: base:red + HEAD:green + scenario frozen + forward → floor satisfied", () => {
+describe("TC-002: scenario intact → testDerivation achieved → exitCode 0", () => {
   it(
-    "TC-002: all conditions met → biteEvidence achieved → exitCode 0, mergePullRequest called",
+    "TC-002: test-cases.md content same at anchor and HEAD → testDerivation=frozen → exitCode 0, merge proceeds",
     async () => {
       const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
       (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -411,12 +370,8 @@ describe("TC-002: base:red + HEAD:green + scenario frozen + forward → floor sa
 
       const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
-      // base: all red, HEAD: all green, scenario frozen (events.jsonl + test-cases.md match)
-      const assuranceRuntime = makeFakeRuntime({
-        changedFiles: ["tests/unit/foo.test.ts"],
-        baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
-        headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-      });
+      // Intact: test-cases.md same content at anchor and HEAD (default runtime returns TEST_CASES_CONTENT for both)
+      const assuranceRuntime = makeFakeRuntime();
 
       const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
         slug: SLUG,
@@ -427,119 +382,13 @@ describe("TC-002: base:red + HEAD:green + scenario frozen + forward → floor sa
         owner: "user",
         repo: "repo",
         waitTimeoutMs: 60_000,
-        minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
+        minimumAssurance: FLOOR_TEST_DERIVATION,
         assuranceRuntime,
-        config: { version: 1, agents: {} },
       });
 
-      // TC-002: biteEvidence achieved → merge proceeds
+      // TC-002: scenario intact → testDerivation achieved → merge proceeds
       expect(result.exitCode).toBe(0);
       expect(client.mergePullRequest).toHaveBeenCalled();
-    },
-  );
-});
-
-// ---------------------------------------------------------------------------
-// TC-005: non-forward type with base:red + HEAD:green → biteEvidence:required fail-closed
-// ---------------------------------------------------------------------------
-
-describe("TC-005: non-forward type → biteEvidence:required fail-closed", () => {
-  it(
-    "TC-005: type=refactoring + base:red + HEAD:green → biteEvidence absent → exitCode 1",
-    async () => {
-      const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-      (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
-        makeActiveEntry(makeJobStateWithSteps({ type: "refactoring" })),
-      ]);
-
-      const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
-      (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({
-        exitCode: 0,
-        headSha: ARCHIVE_HEAD_SHA,
-      });
-
-      const client = makeGitHubClient({
-        listPullRequestFiles: vi.fn().mockResolvedValue({
-          files: ["architecture/core/design.md"],
-          truncated: false,
-        }),
-      });
-
-      const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
-
-      // base:red, HEAD:green, scenario frozen — all would satisfy forward strategy
-      // but type=refactoring is NOT a forward-strategy type → biteEvidence must be absent
-      const assuranceRuntime = makeFakeRuntime({
-        changedFiles: ["tests/unit/foo.test.ts"],
-        baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
-        headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-      });
-
-      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
-        slug: SLUG,
-        cwd: CWD,
-        spawn: spawnFn,
-        fs: fsMock,
-        githubClient: client,
-        owner: "user",
-        repo: "repo",
-        waitTimeoutMs: 60_000,
-        minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
-        assuranceRuntime,
-        config: { version: 1, agents: {} },
-      });
-
-      // TC-005: type gate blocks biteEvidence for non-forward type
-      expect(result.exitCode).toBe(1);
-      expect(client.mergePullRequest).not.toHaveBeenCalled();
-    },
-  );
-
-  it(
-    "TC-005b: type=spec-change (this change itself) + base:red + HEAD:green → biteEvidence absent → exitCode 1",
-    async () => {
-      const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-      (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
-        makeActiveEntry(makeJobStateWithSteps({ type: "spec-change" })),
-      ]);
-
-      const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
-      (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({
-        exitCode: 0,
-        headSha: ARCHIVE_HEAD_SHA,
-      });
-
-      const client = makeGitHubClient({
-        listPullRequestFiles: vi.fn().mockResolvedValue({
-          files: ["architecture/core/design.md"],
-          truncated: false,
-        }),
-      });
-
-      const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
-
-      const assuranceRuntime = makeFakeRuntime({
-        changedFiles: ["tests/unit/foo.test.ts"],
-        baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
-        headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-      });
-
-      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
-        slug: SLUG,
-        cwd: CWD,
-        spawn: spawnFn,
-        fs: fsMock,
-        githubClient: client,
-        owner: "user",
-        repo: "repo",
-        waitTimeoutMs: 60_000,
-        minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
-        assuranceRuntime,
-        config: { version: 1, agents: {} },
-      });
-
-      expect(result.exitCode).toBe(1);
-      expect(client.mergePullRequest).not.toHaveBeenCalled();
     },
   );
 });
@@ -582,8 +431,7 @@ describe("TC-006: spec-review verdict not approved → specReview:required fail-
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: FLOOR_SPEC_REVIEW_REQUIRED,
-      assuranceRuntime: makeFakeRuntime() as never,
-      config: { version: 1, agents: {} },
+      assuranceRuntime: makeFakeRuntime(),
     });
 
     expect(result.exitCode).toBe(1);
@@ -623,8 +471,7 @@ describe("TC-006: spec-review verdict not approved → specReview:required fail-
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: FLOOR_SPEC_REVIEW_REQUIRED,
-      assuranceRuntime: makeFakeRuntime() as never,
-      config: { version: 1, agents: {} },
+      assuranceRuntime: makeFakeRuntime(),
     });
 
     expect(result.exitCode).toBe(1);
@@ -665,8 +512,7 @@ describe("TC-006: spec-review verdict not approved → specReview:required fail-
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: FLOOR_SPEC_REVIEW_REQUIRED,
-      assuranceRuntime: makeFakeRuntime() as never,
-      config: { version: 1, agents: {} },
+      assuranceRuntime: makeFakeRuntime(),
     });
 
     expect(result.exitCode).toBe(1);
@@ -708,79 +554,10 @@ describe("TC-006: spec-review verdict not approved → specReview:required fail-
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: FLOOR_SPEC_REVIEW_REQUIRED,
-      assuranceRuntime: makeFakeRuntime() as never,
-      config: { version: 1, agents: {} },
+      assuranceRuntime: makeFakeRuntime(),
     });
 
     expect(result.exitCode).toBe(0);
     expect(client.mergePullRequest).toHaveBeenCalled();
   });
-});
-
-// ---------------------------------------------------------------------------
-// TC-026: real config anti-regression (scopedTestCommand absent → runTestsAtCommit unavailable)
-//
-// This verifies that the existing #848 behavior is preserved after adding HEAD-green check.
-// With scopedTestCommand absent, runTestsAtCommit returns unavailable for both base and HEAD.
-// biteEvidence:required floor must remain fail-closed.
-// ---------------------------------------------------------------------------
-
-describe("TC-026: real config (scopedTestCommand absent) → biteEvidence:required fail-closed", () => {
-  it(
-    "TC-026: runTestsAtCommit unavailable for both base and HEAD → biteEvidence absent → exitCode 1",
-    async () => {
-      const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-      (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
-        makeActiveEntry(makeJobStateWithSteps({ type: "new-feature" })),
-      ]);
-
-      const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
-      (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({
-        exitCode: 0,
-        headSha: ARCHIVE_HEAD_SHA,
-      });
-
-      const client = makeGitHubClient({
-        listPullRequestFiles: vi.fn().mockResolvedValue({
-          files: ["architecture/core/design.md"],
-          truncated: false,
-        }),
-      });
-
-      const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
-
-      // Simulate real config: scopedTestCommand absent → runTestsAtCommit always unavailable
-      const assuranceRuntime = makeFakeRuntime({
-        changedFiles: ["tests/unit/foo.test.ts"],
-        // Both base and HEAD return unavailable (no scopedTestCommand configured)
-        baseTestResults: {
-          kind: "unavailable",
-          reason: "Cannot scope custom verification.commands to individual test files",
-        },
-        headTestResults: {
-          kind: "unavailable",
-          reason: "Cannot scope custom verification.commands to individual test files",
-        },
-      });
-
-      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
-        slug: SLUG,
-        cwd: CWD,
-        spawn: spawnFn,
-        fs: fsMock,
-        githubClient: client,
-        owner: "user",
-        repo: "repo",
-        waitTimeoutMs: 60_000,
-        minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
-        assuranceRuntime,
-        // Real repo config: no scopedTestCommand
-        config: { version: 1, agents: {}, verification: { commands: ["bun run test"] } },
-      });
-
-      // TC-026: anti-regression — runTestsAtCommit unavailable must not authorize merge (#848 preserved)
-      expect(result.exitCode).toBe(1);
-      expect(client.mergePullRequest).not.toHaveBeenCalled();
-    },
-  );
 });

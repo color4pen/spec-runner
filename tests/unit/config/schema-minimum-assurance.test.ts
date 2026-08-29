@@ -1,10 +1,10 @@
 /**
  * Unit tests for minimumAssurance config validation.
- * Tests the new archive.minimumAssurance field added by T-04 and T-05.
  *
  * TC-008: well-formed な minimumAssurance config が検証を通過する
  * TC-009: 不正な level 値が config 検証で拒否される
  * TC-018: protectedPaths が配列でない場合に config 検証が拒否する (should)
+ * TC-038: archive.minimumAssurance.biteEvidence は CONFIG_INVALID エラーを発生させる
  */
 import { describe, it, expect } from "vitest";
 import { validateConfig } from "../../../src/config/schema.js";
@@ -15,14 +15,13 @@ const baseConfig = { version: 1, agents: {} };
 // TC-008: well-formed minimumAssurance config parses
 // ---------------------------------------------------------------------------
 describe("TC-008: well-formed な minimumAssurance config が検証を通過する", () => {
-  it("accepts minimumAssurance with protectedPaths and all level fields", () => {
+  it("accepts minimumAssurance with protectedPaths and active level fields (testDerivation, specReview)", () => {
     const raw = {
       ...baseConfig,
       archive: {
         minimumAssurance: {
           protectedPaths: ["architecture/**"],
           testDerivation: "frozen",
-          biteEvidence: "required",
           specReview: "required",
         },
       },
@@ -31,7 +30,6 @@ describe("TC-008: well-formed な minimumAssurance config が検証を通過す�
     const result = validateConfig(raw);
     expect(result.archive?.minimumAssurance?.protectedPaths).toEqual(["architecture/**"]);
     expect(result.archive?.minimumAssurance?.testDerivation).toBe("frozen");
-    expect(result.archive?.minimumAssurance?.biteEvidence).toBe("required");
     expect(result.archive?.minimumAssurance?.specReview).toBe("required");
   });
 
@@ -49,22 +47,19 @@ describe("TC-008: well-formed な minimumAssurance config が検証を通過す�
     expect(result.archive?.minimumAssurance?.protectedPaths).toEqual(["architecture/**"]);
   });
 
-  it("accepts minimumAssurance with partial level fields", () => {
-    // Spec scenario: protectedPaths + testDerivation + biteEvidence (specReview absent)
+  it("accepts minimumAssurance with partial level fields (testDerivation only)", () => {
     const raw = {
       ...baseConfig,
       archive: {
         minimumAssurance: {
           protectedPaths: ["architecture/**"],
           testDerivation: "frozen",
-          biteEvidence: "required",
         },
       },
     };
     expect(() => validateConfig(raw)).not.toThrow();
     const result = validateConfig(raw);
     expect(result.archive?.minimumAssurance?.testDerivation).toBe("frozen");
-    expect(result.archive?.minimumAssurance?.biteEvidence).toBe("required");
     expect(result.archive?.minimumAssurance?.specReview).toBeUndefined();
   });
 
@@ -113,21 +108,6 @@ describe("TC-008: well-formed な minimumAssurance config が検証を通過す�
     expect(result.archive?.minimumAssurance?.testDerivation).toBe("coupled");
   });
 
-  it("accepts minimumAssurance with biteEvidence: 'optional' (lower rank value)", () => {
-    const raw = {
-      ...baseConfig,
-      archive: {
-        minimumAssurance: {
-          protectedPaths: ["architecture/**"],
-          biteEvidence: "optional",
-        },
-      },
-    };
-    expect(() => validateConfig(raw)).not.toThrow();
-    const result = validateConfig(raw);
-    expect(result.archive?.minimumAssurance?.biteEvidence).toBe("optional");
-  });
-
   it("accepts minimumAssurance with specReview: 'omitted' (lower rank value)", () => {
     const raw = {
       ...baseConfig,
@@ -148,24 +128,6 @@ describe("TC-008: well-formed な minimumAssurance config が検証を通過す�
 // TC-009: 不正な level 値が config 検証で拒否される
 // ---------------------------------------------------------------------------
 describe("TC-009: 不正な level 値が config 検証で拒否される", () => {
-  it("rejects invalid biteEvidence value 'sometimes'", () => {
-    // Spec scenario: biteEvidence: "sometimes" is not a valid level
-    const raw = {
-      ...baseConfig,
-      archive: {
-        minimumAssurance: {
-          protectedPaths: ["architecture/**"],
-          biteEvidence: "sometimes",
-        },
-      },
-    };
-    const err = (() => {
-      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
-    })();
-    expect(err).not.toBeNull();
-    expect(err!.code).toBe("CONFIG_INVALID");
-  });
-
   it("rejects invalid testDerivation value 'locked'", () => {
     const raw = {
       ...baseConfig,
@@ -270,5 +232,78 @@ describe("TC-018: protectedPaths が配列でない場合に config 検証が拒
     })();
     expect(err).not.toBeNull();
     expect(err!.code).toBe("CONFIG_INVALID");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-038: archive.minimumAssurance.biteEvidence は CONFIG_INVALID エラーを発生させる
+// ---------------------------------------------------------------------------
+describe("TC-038: archive.minimumAssurance.biteEvidence は CONFIG_INVALID エラーを発生させる", () => {
+  it("rejects biteEvidence: 'required'", () => {
+    const raw = {
+      ...baseConfig,
+      archive: {
+        minimumAssurance: {
+          protectedPaths: ["architecture/**"],
+          biteEvidence: "required",
+        },
+      },
+    };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.minimumAssurance.biteEvidence");
+  });
+
+  it("rejects biteEvidence: 'optional'", () => {
+    const raw = {
+      ...baseConfig,
+      archive: {
+        minimumAssurance: {
+          protectedPaths: ["architecture/**"],
+          biteEvidence: "optional",
+        },
+      },
+    };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.minimumAssurance.biteEvidence");
+  });
+
+  it("rejects biteEvidence: null", () => {
+    const raw = {
+      ...baseConfig,
+      archive: {
+        minimumAssurance: {
+          protectedPaths: ["architecture/**"],
+          biteEvidence: null,
+        },
+      },
+    };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.minimumAssurance.biteEvidence");
+  });
+
+  it("a config with only testDerivation and specReview (no biteEvidence) validates successfully", () => {
+    const raw = {
+      ...baseConfig,
+      archive: {
+        minimumAssurance: {
+          protectedPaths: ["architecture/**"],
+          testDerivation: "frozen",
+          specReview: "required",
+        },
+      },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
   });
 });

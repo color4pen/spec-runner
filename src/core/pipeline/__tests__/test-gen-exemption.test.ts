@@ -81,12 +81,11 @@ describe("TC-004: chore SPEC_REVIEW approved → IMPLEMENTER (direct)", () => {
 // TC-005: chore は IMPLEMENTER success から VERIFICATION へ直行する
 // Source: spec.md > Scenario: chore は implementer 成功から verification へ直行
 // ---------------------------------------------------------------------------
-describe("TC-005: chore IMPLEMENTER success → VERIFICATION (bypasses bite-evidence)", () => {
-  it("TC-005: chore state resolves IMPLEMENTER/success to verification (not bite-evidence)", () => {
+describe("TC-005: chore IMPLEMENTER success → VERIFICATION (bite-evidence removed)", () => {
+  it("TC-005: chore state resolves IMPLEMENTER/success to verification", () => {
     const choreState = makeState("chore");
     const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", choreState);
     expect(next).toBe(STEP_NAMES.VERIFICATION);
-    expect(next).not.toBe(STEP_NAMES.BITE_EVIDENCE);
   });
 });
 
@@ -120,10 +119,11 @@ describe("TC-007: non-exempt type SPEC_REVIEW approved → IMPLEMENTER (absorb-t
     expect(isTestGenExempt(state)).toBe(false);
   });
 
-  it("TC-007: new-feature IMPLEMENTER/success resolves to bite-evidence (unchanged)", () => {
+  it("TC-007: new-feature IMPLEMENTER/success resolves to verification (bite-evidence removed)", () => {
+    // After remove-bite-evidence: all types (including non-exempt) route implementer → verification.
     const state = makeState("new-feature");
     const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
-    expect(next).toBe(STEP_NAMES.BITE_EVIDENCE);
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
   });
 });
 
@@ -188,24 +188,15 @@ describe("TC-012: STANDARD_TRANSITIONS structural invariants (absorb-test-materi
     expect(specFixerIdx).toBeLessThan(implementerIdx);
   });
 
-  it("TC-012: guarded IMPLEMENTER→VERIFICATION (exempt) row precedes unconditional IMPLEMENTER→BITE_EVIDENCE row", () => {
-    const exemptIdx = STANDARD_TRANSITIONS.findIndex(
-      (t) =>
-        t.step === STEP_NAMES.IMPLEMENTER &&
-        t.on === "success" &&
-        t.to === STEP_NAMES.VERIFICATION &&
-        t.when !== undefined,
+  it("TC-012: exactly one unconditional IMPLEMENTER→VERIFICATION row (bite-evidence removed)", () => {
+    // After remove-bite-evidence: single unguarded row for implementer success → verification.
+    // No guarded exempt row, no BITE_EVIDENCE row. (see TC-037 in absorb-test-materialize-transitions.test.ts)
+    const implementerSuccessRows = STANDARD_TRANSITIONS.filter(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
     );
-    const biteEvidenceIdx = STANDARD_TRANSITIONS.findIndex(
-      (t) =>
-        t.step === STEP_NAMES.IMPLEMENTER &&
-        t.on === "success" &&
-        t.to === STEP_NAMES.BITE_EVIDENCE &&
-        t.when === undefined,
-    );
-    expect(exemptIdx).toBeGreaterThan(-1);
-    expect(biteEvidenceIdx).toBeGreaterThan(-1);
-    expect(exemptIdx).toBeLessThan(biteEvidenceIdx);
+    expect(implementerSuccessRows).toHaveLength(1);
+    expect(implementerSuccessRows[0]?.to).toBe(STEP_NAMES.VERIFICATION);
+    expect(implementerSuccessRows[0]?.when).toBeUndefined();
   });
 });
 

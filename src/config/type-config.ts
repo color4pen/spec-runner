@@ -24,8 +24,8 @@ export interface TypeConfigEntry {
    */
   specRequired: boolean;
   /**
-   * Whether this request type requires test generation (test-case-gen / bite-evidence).
-   * false → test-gen-exempt: pipeline bypasses test-case-gen and bite-evidence.
+   * Whether this request type requires test generation (test-case-gen).
+   * false → test-gen-exempt: pipeline bypasses test-case-gen.
    * true → test-gen-required: pipeline runs the full test generation workflow.
    */
   testGenRequired: boolean;
@@ -132,11 +132,10 @@ export function isSpecRequired(type: string): boolean {
 }
 
 /**
- * Whether the given request type requires test generation
- * (test-case-gen / bite-evidence steps).
+ * Whether the given request type requires test generation (test-case-gen step).
  *
  * Returns false for test-gen-exempt types (e.g. "chore") — pipeline bypasses
- * the test generation workflow and routes directly to implementer and then verification.
+ * test-case-gen and routes directly to implementer and then verification.
  * Returns true for all other known types and unknown types (fail-closed).
  *
  * Unknown types default to true (test-gen-required) to prevent silently skipping

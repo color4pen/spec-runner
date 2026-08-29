@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
+import type { MinimumAssuranceConfig } from "../../../../src/config/schema.js";
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted by Vitest)
@@ -138,14 +139,12 @@ const fsMock = {
 
 /**
  * Minimum assurance config for protected path test.
- * Typed as `any` so that tests compile before MergeThenArchiveInput gains the
- * `minimumAssurance` field (T-06). After implementation the explicit type is used.
+ * biteEvidence dimension removed (remove-bite-evidence).
+ * Constraints: testDerivation floor "frozen" — absent testCaseGenOid → fail-closed.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MINIMUM_ASSURANCE_CONFIG: any = {
+const MINIMUM_ASSURANCE_CONFIG: MinimumAssuranceConfig = {
   protectedPaths: ["architecture/**"],
   testDerivation: "frozen",
-  biteEvidence: "required",
 };
 
 beforeEach(() => {
@@ -247,20 +246,22 @@ describe("TC-010: sub-floor profile が protected path を touch するとき me
 
 // ---------------------------------------------------------------------------
 // TC-011 (旧): standard profile が protected path を touch しても floor を満たし merge が進む
-// TC-002 (test-cases.md): profile 欠落（legacy）job が biteEvidence: required floor を素通りしない
+// TC-002 (test-cases.md): profile 欠落（legacy）job が testDerivation: frozen floor を素通りしない
 //
 // CHANGE (assurance-provenance-floor): 旧 TC-011 は exitCode: 0 を期待していたが、
-// 達成 provenance ベースの floor 判定では profile 欠落（= no test-materialize steps）の job は
-// achieved.biteEvidence が absent となり fail-closed（exitCode: 1）になる。
-// 期待値を exitCode: 1 に反転する（T2 — 宣言は authorize しない）。
+// 達成 provenance ベースの floor 判定では steps 欠落 job は
+// achieved.testDerivation が absent となり fail-closed（exitCode: 1）になる。
+// CHANGE (remove-bite-evidence): biteEvidence dimension 廃止。
+// floor は testDerivation: frozen のみ。test-case-gen commitOid 欠落 → fail-closed。
+// 期待値を exitCode: 1 に維持（T2 — 宣言は authorize しない）。
 // ---------------------------------------------------------------------------
 
-describe("TC-011 / TC-002: profile 欠落（legacy）job は宣言最強プロファイルで floor を素通りしない — fail-closed", () => {
-  it("TC-002: profile absent (no steps) + biteEvidence required floor + floor path matched → fail-closed (exitCode 1)", async () => {
+describe("TC-011 / TC-002: steps 欠落 job は宣言最強プロファイルで floor を素通りしない — fail-closed", () => {
+  it("TC-002: profile absent (no steps) + testDerivation: frozen floor + floor path matched → fail-closed (exitCode 1)", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     // No profile set AND no steps → getProfile returns STANDARD_PROFILE (declared strongest),
-    // but achieved provenance is absent (no test-materialize runs → baseOid null → biteEvidence absent).
-    // fail-closed: satisfiesFloor(absent, { biteEvidence: "required" }) === false.
+    // but achieved provenance is absent (no test-case-gen commitOid → testDerivation absent).
+    // fail-closed: satisfiesFloor(absent, { testDerivation: "frozen" }) === false.
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(makeJobState(42)),
     ]);
@@ -296,12 +297,12 @@ describe("TC-011 / TC-002: profile 欠落（legacy）job は宣言最強プロ�
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: MINIMUM_ASSURANCE_CONFIG,
-      // No assuranceRuntime provided: baseOid cannot be resolved (no steps) → biteEvidence absent.
+      // No assuranceRuntime provided: runtime.readFileAtCommit unavailable → testDerivation absent.
       // Floor is not satisfied → fail-closed.
     } as Parameters<typeof runMergeThenArchive>[0]);
 
     // TC-002: declaration (STANDARD_PROFILE) must NOT authorize merge.
-    // Achieved provenance is absent → exitCode 1.
+    // Achieved testDerivation is absent (no test-case-gen commitOid) → exitCode 1.
     expect(result.exitCode).toBe(1);
     expect(client.mergePullRequest).not.toHaveBeenCalled();
     expect(runArchiveCleanup).not.toHaveBeenCalled();

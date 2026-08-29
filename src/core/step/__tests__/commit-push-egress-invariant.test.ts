@@ -355,8 +355,7 @@ describe("TC-003: commitFinalState push success — persistBeforePush called bef
         { exitCode: 0 }, // add state.json
         { exitCode: 0 }, // add events.jsonl
         { exitCode: 0 }, // add usage.json
-        { exitCode: 0 }, // add bite-evidence-result.md
-        { exitCode: 0 }, // add pr-create-result.md (if present)
+        { exitCode: 0 }, // add pr-create-result.md
         { exitCode: 1 }, // diff --cached → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04)
@@ -415,7 +414,6 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
         { exitCode: 0 }, // add state.json
         { exitCode: 0 }, // add events.jsonl
         { exitCode: 0 }, // add usage.json
-        { exitCode: 0 }, // add bite-evidence-result.md
         { exitCode: 0 }, // add pr-create-result.md
         { exitCode: 1 }, // diff → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
@@ -704,7 +702,6 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
         { exitCode: 0 }, // add state.json
         { exitCode: 0 }, // add events.jsonl
         { exitCode: 0 }, // add usage.json
-        { exitCode: 0 }, // add bite-evidence-result.md
         { exitCode: 0 }, // add pr-create-result.md
         { exitCode: 1 }, // diff → staged
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
@@ -765,7 +762,6 @@ describe("TC-011 (should): commitFinalState push failure warning includes git st
           { exitCode: 0 }, // add state.json
           { exitCode: 0 }, // add events.jsonl
           { exitCode: 0 }, // add usage.json
-          { exitCode: 0 }, // add bite-evidence-result.md
           { exitCode: 0 }, // add pr-create-result.md
           { exitCode: 1 }, // diff → staged
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit

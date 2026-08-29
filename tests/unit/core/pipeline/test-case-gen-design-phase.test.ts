@@ -1219,9 +1219,11 @@ describe("TC-022: specFixerNeedsFixForward は削除済み（spec-review-loop-si
 // Pin: spec-review-loop-single-fixer — SPEC_REVIEW→TEST_CASE_GEN / SPEC_FIXER→TEST_CASE_GEN 2 行削除
 // ---------------------------------------------------------------------------
 
-describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 45 (spec-review-loop-single-fixer 後)", () => {
-  it("TC-026: STANDARD_TRANSITIONS.length === 45（test-case-gen routing 2 行削除）", () => {
-    expect(STANDARD_TRANSITIONS.length).toBe(45);
+describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 39 (remove-bite-evidence 後)", () => {
+  it("TC-026: STANDARD_TRANSITIONS.length === 39（bite-evidence gate rows 6 行削除）", () => {
+    // Previous: 45 rows (spec-review-loop-single-fixer).
+    // remove-bite-evidence: -6 rows (2 guarded implementer rows + 4 bite-evidence rows).
+    expect(STANDARD_TRANSITIONS.length).toBe(39);
   });
 });
 

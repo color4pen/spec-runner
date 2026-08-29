@@ -3,13 +3,17 @@
  * TC-002: 免除 type も spec-review 承認から implementer へ直行する
  * TC-003: 遷移表に test-materialize 行が存在しない
  * TC-004: spec-fixer の観測 auto-fix は implementer へ forward する
- * TC-012: 免除 type は test-case-gen と bite-evidence を通らない
+ * TC-012: 全 type が implementer/success から verification へ直行する（bite-evidence 廃止）
+ * TC-036: 遷移表に bite-evidence 行が存在しない（remove-bite-evidence 後）
+ * TC-037: implementer/success 遷移は単一の無条件行のみ（collapse 確認）
  *
  * Source: spec.md > Requirement: spec-phase 承認は全 type で implementer へ収束する
  *         spec.md > Requirement: test-gen 免除の制御対象は 2 箇所に縮退する
+ *         remove-bite-evidence spec: The implementer step shall route directly to verification
  */
 import { describe, it, expect } from "vitest";
 import { STANDARD_TRANSITIONS } from "../types.js";
+import { STANDARD_DESCRIPTOR } from "../registry.js";
 import { STEP_NAMES } from "../../step/step-names.js";
 import { isTestGenExempt } from "../test-gen-exemption.js";
 import type { JobState } from "../../../state/schema.js";
@@ -159,12 +163,12 @@ describe("TC-004: SPEC_FIXER observation auto-fix resolves to implementer", () =
 });
 
 // ---------------------------------------------------------------------------
-// TC-012: 免除 type は test-case-gen と bite-evidence を通らない
+// TC-012: 全 type が implementer/success から verification へ直行する（bite-evidence 廃止）
 // Source: spec.md > Requirement: test-gen 免除の制御対象は 2 箇所に縮退する
-//         > Scenario: 免除 type は test-case-gen と bite-evidence を通らない
+//         remove-bite-evidence spec: The implementer step shall route directly to verification
 // ---------------------------------------------------------------------------
 
-describe("TC-012: exempt type (chore) bypasses test-case-gen and bite-evidence", () => {
+describe("TC-012: 全 type が IMPLEMENTER/success から verification へ直行する（bite-evidence 廃止）", () => {
   it("TC-012: chore DESIGN/success resolves to spec-review (bypasses test-case-gen)", () => {
     const state = makeState("chore");
     const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.DESIGN, "success", state);
@@ -172,11 +176,10 @@ describe("TC-012: exempt type (chore) bypasses test-case-gen and bite-evidence",
     expect(next).not.toBe(STEP_NAMES.TEST_CASE_GEN);
   });
 
-  it("TC-012: chore IMPLEMENTER/success resolves to verification (bypasses bite-evidence)", () => {
+  it("TC-012: chore IMPLEMENTER/success resolves to verification directly (no bite-evidence)", () => {
     const state = makeState("chore");
     const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
     expect(next).toBe(STEP_NAMES.VERIFICATION);
-    expect(next).not.toBe(STEP_NAMES.BITE_EVIDENCE);
   });
 
   it("TC-012: non-exempt bug-fix DESIGN/success resolves to test-case-gen (unchanged)", () => {
@@ -185,9 +188,127 @@ describe("TC-012: exempt type (chore) bypasses test-case-gen and bite-evidence",
     expect(next).toBe(STEP_NAMES.TEST_CASE_GEN);
   });
 
-  it("TC-012: non-exempt bug-fix IMPLEMENTER/success resolves to bite-evidence (unchanged)", () => {
+  it("TC-012: non-exempt bug-fix IMPLEMENTER/success resolves to verification (bite-evidence removed)", () => {
+    // After remove-bite-evidence: all types, including non-exempt, go directly to verification.
     const state = makeState("bug-fix");
     const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
-    expect(next).toBe(STEP_NAMES.BITE_EVIDENCE);
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+
+  it("TC-012: new-feature IMPLEMENTER/success resolves to verification", () => {
+    const state = makeState("new-feature");
+    const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+
+  it("TC-012: spec-change IMPLEMENTER/success resolves to verification", () => {
+    const state = makeState("spec-change");
+    const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-036: 遷移表に bite-evidence 行が存在しない（remove-bite-evidence 後）
+// Source: remove-bite-evidence spec: bite-evidence shall not be a registered pipeline step
+// ---------------------------------------------------------------------------
+
+describe("TC-036: STANDARD_TRANSITIONS has no bite-evidence rows (remove-bite-evidence)", () => {
+  it("TC-036: no transition has step === 'bite-evidence'", () => {
+    const rows = STANDARD_TRANSITIONS.filter((t) => t.step === "bite-evidence");
+    expect(rows).toHaveLength(0);
+  });
+
+  it("TC-036: no transition has to === 'bite-evidence'", () => {
+    const rows = STANDARD_TRANSITIONS.filter((t) => t.to === "bite-evidence");
+    expect(rows).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: implementer/success 遷移は単一の無条件行のみ（collapse 確認）
+//
+// T-13 regression: after removing bite-evidence, exactly ONE unguarded row must exist
+// for implementer/success, routing directly to verification.
+// DESTRUCTIVE INVARIANT: if guarded rows were added (e.g., isTestGenExempt), this would fail.
+// ---------------------------------------------------------------------------
+
+describe("TC-037: IMPLEMENTER/success transition is a single unguarded row → verification", () => {
+  it("TC-037: exactly one implementer/success row in STANDARD_TRANSITIONS", () => {
+    const rows = STANDARD_TRANSITIONS.filter(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
+    );
+    expect(rows).toHaveLength(1);
+  });
+
+  it("TC-037: implementer/success row has no 'when' guard (unconditional)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
+    );
+    expect(row).toBeDefined();
+    expect(row!.when).toBeUndefined();
+  });
+
+  it("TC-037: implementer/success routes to verification for any state (new-feature)", () => {
+    const state = makeState("new-feature");
+    const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", state);
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+
+  it("TC-037: implementer/success routes to verification after prior verification failure", () => {
+    // After verification fails, it routes back to implementer (verification/failed → implementer).
+    // Then from implementer/success it must still go to verification (not bite-evidence).
+    // This verifies the transition collapse covers re-run scenarios.
+    const stateAfterVerificationFailed = makeState("new-feature", {
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "failed", findingsPath: null, error: null },
+            startedAt: "2024-01-01T00:02:00.000Z",
+            endedAt: "2024-01-01T00:02:30.000Z",
+          } as unknown as import("../../../state/schema.js").StepRun,
+        ],
+      },
+    });
+    const next = resolveNext(
+      STANDARD_TRANSITIONS, STEP_NAMES.IMPLEMENTER, "success", stateAfterVerificationFailed,
+    );
+    expect(next).toBe(STEP_NAMES.VERIFICATION);
+  });
+
+  it("TC-037: verification/failed routes back to implementer (re-run chain exists)", () => {
+    const state = makeState("new-feature");
+    const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.VERIFICATION, "failed", state);
+    expect(next).toBe(STEP_NAMES.IMPLEMENTER);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-038: STANDARD_DESCRIPTOR に bite-evidence が存在しない（remove-bite-evidence 後）
+//
+// T-13 regression: bite-evidence must be absent from STANDARD_DESCRIPTOR.steps and roles,
+// and verification must immediately follow implementer in the step registry.
+// ---------------------------------------------------------------------------
+
+describe("TC-038: bite-evidence は STANDARD_DESCRIPTOR の steps および roles に存在しない", () => {
+  it("TC-038: STANDARD_DESCRIPTOR.steps has no bite-evidence entry", () => {
+    const stepNames = STANDARD_DESCRIPTOR.steps.map(([name]) => name);
+    expect(stepNames).not.toContain("bite-evidence");
+  });
+
+  it("TC-038: STANDARD_DESCRIPTOR.roles has no bite-evidence entry", () => {
+    const roleKeys = Object.keys(STANDARD_DESCRIPTOR.roles);
+    expect(roleKeys).not.toContain("bite-evidence");
+  });
+
+  it("TC-038: verification immediately follows implementer in STANDARD_DESCRIPTOR.steps", () => {
+    const stepNames = STANDARD_DESCRIPTOR.steps.map(([name]) => name);
+    const implementerIdx = stepNames.indexOf(STEP_NAMES.IMPLEMENTER);
+    const verificationIdx = stepNames.indexOf(STEP_NAMES.VERIFICATION);
+    expect(implementerIdx).toBeGreaterThan(-1);
+    expect(verificationIdx).toBeGreaterThan(-1);
+    expect(verificationIdx).toBe(implementerIdx + 1);
   });
 });

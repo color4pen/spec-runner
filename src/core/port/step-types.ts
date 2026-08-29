@@ -61,20 +61,11 @@ export type StepDeps = StepContext;
  * receive an injected spawn function rather than falling back to a default.
  *
  * runtimeStrategy is optional — provided at runtime by PipelineDeps; may be absent in tests.
- * CLI steps that need runtime ports (e.g. BiteEvidenceStep) access it via this field.
  */
 export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
   /** Runtime strategy for artifact lifecycle and git operations. Optional in tests. */
   runtimeStrategy?: RuntimeStrategy | null;
-  /**
-   * Pre-computed set of step names and operator tokens authorized to write the canon
-   * test-cases.md path for this job. Injected by buildPipelineForJob.
-   *
-   * tamper-provenance-baseline: authorized writers for the provenance-based tamper gate.
-   * When absent or empty, BiteEvidenceStep treats tamper evidence as unavailable → inconclusive.
-   */
-  authorizedCanonWriters?: ReadonlySet<string>;
 }
 
 /**
@@ -89,11 +80,6 @@ export interface ParsedStepResult {
    * StepExecutor.finalizeStep() reflects this into state.pullRequest when present.
    */
   pullRequest?: { url: string; number: number; createdAt: string };
-  /**
-   * Bite-evidence records extracted by BiteEvidenceStep. Other steps leave this undefined.
-   * commitSuccess() reflects this into state.biteEvidence when present (T-08, R4).
-   */
-  biteEvidence?: import("../../state/schema.js").BiteEvidenceRecord[];
 }
 
 /**

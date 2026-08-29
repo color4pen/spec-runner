@@ -1,6 +1,5 @@
 /**
- * Pure provenance-judgment helpers for the apply-canon gate's partial-output detection (T-02 / D2)
- * and the bite-evidence tamper gate's authorized-writer derivation (tamper-provenance-baseline).
+ * Pure provenance-judgment helpers for the apply-canon gate's partial-output detection (T-02 / D2).
  *
  * Extracted to a separate module so that resume.ts can import these helpers independently
  * from apply-canon.ts. Tests that mock apply-canon.js do NOT affect these helpers.
@@ -9,13 +8,6 @@
  *   - isInterruptionBacked        — does state have machine-backed interruption evidence?
  *   - declaredCanonWritesForStep  — what canon paths did the interrupted step declare?
  *   - isInterruptedStepPartialCanon — are dirty canon paths fully explained by the interrupted step?
- *   - authorizedCanonWriterSteps  — which step names are authorized to write a canon path?
- *
- * [Note on circular-import constraint]
- * `pipeline/registry.ts` imports `bite-evidence/step.ts` (line 24), which imports `tamper.ts`.
- * Therefore tamper.ts and step.ts CANNOT import registry.ts (would create a cycle).
- * `authorizedCanonWriterSteps` is placed here (src/core/resume/) which is outside that import
- * chain, mirroring the same reasoning as `declaredCanonWritesForStep`.
  */
 
 import { protectedCanonPaths } from "../step/write-scope.js";
@@ -23,7 +15,6 @@ import { getPipelineDescriptor } from "../pipeline/registry.js";
 import { getPipelineId } from "../../state/pipeline-id.js";
 import type { JobState, ResumePoint } from "../../state/schema.js";
 import type { StepDeps } from "../step/types.js";
-import type { Step } from "../step/types.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -136,61 +127,3 @@ export function isInterruptedStepPartialCanon(input: {
   return dirtyCanonPaths.every((p) => declared.has(p));
 }
 
-// ---------------------------------------------------------------------------
-// authorizedCanonWriterSteps
-// ---------------------------------------------------------------------------
-
-/**
- * Derive the set of step names (and the operator-apply token) that are authorized
- * to write the given canon path.
- *
- * Scans the provided steps array (from a PipelineDescriptor) and collects any step
- * whose `writes()` declaration includes `canonPath`. Then adds "operator-apply" to
- * represent the `job resume --apply-canon` operator pathway.
- *
- * Returns an empty set (fail-closed) on any exception — the caller treats an empty
- * set as `evidenceAvailable=false` and routes to `inconclusive` (fail-open for gate).
- *
- * [Placement rationale]
- * This helper cannot live in `tamper.ts` or `step.ts` because those are reachable from
- * `pipeline/registry.ts` (registry → step.ts → tamper.ts), and calling `getPipelineDescriptor`
- * from that chain would create a circular import. This module (src/core/resume/) is outside
- * that chain and can safely import from registry.ts — the same pattern as `declaredCanonWritesForStep`.
- * However, to avoid the circular import in `step.ts`, this function accepts the `steps` array
- * as a parameter rather than calling `getPipelineDescriptor` internally.
- *
- * @param canonPath - Worktree-relative path to check (e.g. "specrunner/changes/my-slug/test-cases.md").
- * @param steps     - Pipeline descriptor steps array (readonly [string, Step][] pairs).
- * @param state     - Current job state (passed through to step.writes()).
- * @param deps      - Step dependencies (at minimum: slug, request.type).
- * @returns Set of authorized writer token strings.
- */
-export function authorizedCanonWriterSteps(
-  canonPath: string,
-  steps: ReadonlyArray<readonly [string, Step]>,
-  state: JobState,
-  deps: StepDeps,
-): Set<string> {
-  try {
-    const writers = new Set<string>();
-
-    for (const [stepName, step] of steps) {
-      try {
-        const writes = step.writes?.(state, deps) ?? [];
-        const paths = writes.map((ref) => ref.path);
-        if (paths.includes(canonPath)) {
-          writers.add(stepName);
-        }
-      } catch {
-        // Skip step on error (best-effort)
-      }
-    }
-
-    // Operator apply pathway is always authorized
-    writers.add("operator-apply");
-
-    return writers;
-  } catch {
-    return new Set<string>(); // fail-closed: empty set → evidenceAvailable=false
-  }
-}

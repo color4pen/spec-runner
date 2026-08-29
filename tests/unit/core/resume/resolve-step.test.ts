@@ -21,13 +21,18 @@ function makeResumePoint(step: ResumePoint["step"], iterationsExhausted = 0): Re
 // resumePoint present → verbatim return
 // ============================================================
 
-describe("resolveResumeStep - resumePoint.step returned verbatim", () => {
+describe("resolveResumeStep - resumePoint.step returned verbatim (with alias expansion)", () => {
   it("crash at implementer → implementer", () => {
     expect(resolveResumeStep(undefined, makeResumePoint("implementer"))).toBe("implementer");
   });
 
   it("crash at design → design", () => {
     expect(resolveResumeStep(undefined, makeResumePoint("design"))).toBe("design");
+  });
+
+  it("resumePoint.step = bite-evidence → verification (legacy alias, remove-bite-evidence)", () => {
+    // T-13: persisted resumePoint recorded at 'bite-evidence' resolves to verification.
+    expect(resolveResumeStep(undefined, makeResumePoint("bite-evidence" as never))).toBe("verification");
   });
 
   it("crash at verification → verification", () => {
@@ -79,6 +84,14 @@ describe("resolveResumeStep - --from with registered step name", () => {
 
   it("--from build-fixer → implementer (legacy alias)", () => {
     expect(resolveResumeStep("build-fixer", makeResumePoint("verification"))).toBe("implementer");
+  });
+
+  it("--from test-materialize → implementer (legacy alias)", () => {
+    expect(resolveResumeStep("test-materialize", makeResumePoint("verification"))).toBe("implementer");
+  });
+
+  it("--from bite-evidence → verification (legacy alias, remove-bite-evidence)", () => {
+    expect(resolveResumeStep("bite-evidence", makeResumePoint("implementer"))).toBe("verification");
   });
 
   it("--from implementer → implementer (resumePoint irrelevant)", () => {
@@ -178,6 +191,31 @@ describe("buildAllowedStepSet", () => {
     const set = buildAllowedStepSet([{ name: "scale-tolerance" }]);
     expect(set.has("design")).toBe(true);
     expect(set.has("verification")).toBe(true);
+  });
+});
+
+// ============================================================
+// T-13: Legacy resume alias bite-evidence → verification (all three paths)
+// ============================================================
+
+describe("T-13: bite-evidence legacy alias resolves to verification from all paths", () => {
+  it("path 1 (--from): --from bite-evidence → verification", () => {
+    expect(resolveResumeStep("bite-evidence", null)).toBe("verification");
+  });
+
+  it("path 2 (resumePoint.step): resumePoint recorded at bite-evidence → verification", () => {
+    expect(resolveResumeStep(undefined, makeResumePoint("bite-evidence" as never))).toBe("verification");
+  });
+
+  it("path 3 (stateStep): halted state.step === bite-evidence → verification via stateStep fallback", () => {
+    const allSteps = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
+    expect(resolveResumeStep(undefined, null, "bite-evidence", allSteps)).toBe("verification");
+  });
+
+  it("bite-evidence is not listed in CLI help text (not a valid --from target for users)", () => {
+    // The alias keeps working silently; it should not be advertised in usage text.
+    // This also asserts bite-evidence is not in CLI_STEP_NAMES.
+    expect(CLI_STEP_NAMES).not.toContain("bite-evidence");
   });
 });
 

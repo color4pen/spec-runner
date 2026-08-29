@@ -615,17 +615,15 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const findWithTo = (step: string, on: string, to: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
-    // Note: a guarded IMPLEMENTER→VERIFICATION row (test-gen-exempt bypass) precedes the unconditional bite-evidence row.
-    // Use findWithTo to specifically locate the bite-evidence wiring.
-    expect(findWithTo("implementer", "success", "bite-evidence")).toBeDefined();
+    // After remove-bite-evidence: single unconditional implementer → verification row.
+    expect(findWithTo("implementer", "success", "verification")).toBeDefined(); // unconditional (bite-evidence removed)
+    expect(findWithTo("implementer", "success", "bite-evidence")).toBeUndefined(); // no longer exists
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
     // verification passed has two rows: conditional (conformanceApproved → adr-gen) + fallback (→ code-review)
     expect(findWithTo("verification", "passed", "code-review")).toBeDefined(); // fallback (initial path)
     expect(findWithTo("verification", "passed", "adr-gen")).toBeDefined(); // conditional (re-verification path)
     expect(find("verification", "failed")).toMatchObject({ to: "implementer" }); // build-fixer abolished
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
-    // implementer has a second success row: when verificationFailedLast → recovery verification
-    expect(findWithTo("implementer", "success", "verification")).toBeDefined();
     // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → conformance
     expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
     expect(findWithTo("code-review", "approved", "conformance")).toBeDefined(); // fallback (no-fixable → conformance)

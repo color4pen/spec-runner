@@ -1,5 +1,5 @@
 /**
- * TC-001, TC-002, TC-003, TC-004, TC-013, TC-014, TC-015
+ * TC-001, TC-002, TC-003, TC-004, TC-013, TC-014, TC-015, TC-037
  *
  * CLI flag-parser accepts any string for --from (no static enum constraint).
  * Usage text accurately describes dynamic --from targets.
@@ -112,8 +112,8 @@ describe("TC-013: resume --help does not contain misleading composite-steps note
     expect(JOB_RESUME_USAGE).toContain("regression-gate");
   });
 
-  it("TC-013e: usage text retains bite-evidence internal step note", () => {
-    expect(JOB_RESUME_USAGE).toContain("bite-evidence");
+  it("TC-013e: usage text does not advertise bite-evidence as a resume target", () => {
+    expect(JOB_RESUME_USAGE).not.toContain("bite-evidence");
   });
 });
 
