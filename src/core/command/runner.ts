@@ -219,7 +219,7 @@ export abstract class CommandRunner {
       // Step 4: registerCleanup
       let handle: CleanupHandle;
       try {
-        deps = this.runtime.buildDeps(config, request, slug, workspace) as PipelineDeps;
+        deps = this.runtime.buildDeps(config, request, slug, workspace);
 
         // Step 3c: propagate resumePrompt from prepare() into deps (one-shot injection)
         if (prepared.resumePrompt) {
