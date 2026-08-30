@@ -8,6 +8,10 @@
  * ManagedRuntime, then run them through the derive helpers. This avoids
  * instantiating the real ManagedRuntime (which requires live HTTP clients)
  * while still proving that the wiring is correct.
+ *
+ * TC-028: ManagedRuntime.buildDeps injects all R2b capability fields
+ * Uses a real ManagedRuntime instance (with mock HTTP clients) to verify that
+ * the changed DA lines in buildDeps() are executed and produce correct output.
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -15,6 +19,9 @@ import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from
 import type { TerminalStateCapability, RoundGitEffectsCapability } from "../../pipeline/pipeline-capability.js";
 import { deriveStepArtifactLifecycleCapability, deriveStepIoValidationCapability } from "../../step/step-capability.js";
 import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../../pipeline/pipeline-capability.js";
+import { ManagedRuntime } from "../managed.js";
+import type { GitHubClient } from "../../port/github-client.js";
+import type { SessionClient } from "../../port/session-client.js";
 
 // ---------------------------------------------------------------------------
 // Managed-runtime no-op source objects (mirror ManagedRuntime semantics).
@@ -178,5 +185,101 @@ describe("T-14: ManagedRuntime capability contracts — RoundGitEffectsCapabilit
     const cap = deriveRoundGitEffectsCapability(source);
     await cap.commitRoundArtifacts!([], "/tmp", "main", "coordinator", "slug", {} as never, undefined);
     expect(spy).toHaveBeenCalledOnce();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-028: ManagedRuntime.buildDeps injects all R2b capability fields
+//
+// Uses a real ManagedRuntime instance (mock HTTP clients only — no network I/O)
+// to verify that the changed DA lines in buildDeps() execute and produce the
+// correct capability-shaped objects.
+// ---------------------------------------------------------------------------
+
+function makeMockManagedRuntime(): ManagedRuntime {
+  const mockGithubClient: GitHubClient = {
+    verifyBranch: vi.fn(),
+    verifyPath: vi.fn(),
+    getRawFile: vi.fn(),
+    verifyTokenScopes: vi.fn(),
+    getRefSha: vi.fn(),
+    listPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+    getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+    mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+    getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+    listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+    createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "" }),
+    searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+    listIssueComments: vi.fn().mockResolvedValue([]),
+    removeLabel: vi.fn().mockResolvedValue(undefined),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
+  } as unknown as GitHubClient;
+
+  const mockSessionClient: SessionClient = {
+    createSession: vi.fn(),
+    sendUserMessage: vi.fn(),
+    pollUntilComplete: vi.fn(),
+    streamEvents: vi.fn(),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  } as unknown as SessionClient;
+
+  return new ManagedRuntime(
+    "/repo",
+    mockSessionClient,
+    mockGithubClient,
+    { owner: "testowner", name: "testrepo" },
+    undefined,
+    "fake-token",
+  );
+}
+
+describe("TC-028: ManagedRuntime.buildDeps injects all R2b capability fields", () => {
+  it("buildDeps returns PipelineDeps with all four R2b capability fields present", () => {
+    const runtime = makeMockManagedRuntime();
+    const config = { version: 1 as const, agents: {} };
+    const request = { type: "new-feature" as const, title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
+
+    const deps = runtime.buildDeps(config, request, "test-slug", { cwd: "/repo" });
+
+    // Verify all four R2b capability fields are present and have correct shape.
+    expect(typeof deps.stepArtifact?.captureHeadSha).toBe("function");
+    expect(typeof deps.stepArtifact?.prepareStepArtifacts).toBe("function");
+    expect(typeof deps.stepArtifact?.finalizeStepArtifacts).toBe("function");
+    expect(typeof deps.stepIo?.validateStepInputs).toBe("function");
+    expect(typeof deps.stepIo?.validateStepOutputs).toBe("function");
+    expect(typeof deps.stepIo?.verifyFindingRefs).toBe("function");
+    expect(typeof deps.terminalState?.commitFinalState).toBe("function");
+    expect(typeof deps.roundGitEffects?.captureHeadSha).toBe("function");
+    expect(typeof deps.roundGitEffects?.listChangedFiles).toBe("function");
+    // changedFiles adapter
+    expect(typeof deps.changedFiles?.canDeriveChangedFiles).toBe("function");
+    expect(typeof deps.changedFiles?.listChangedFiles).toBe("function");
+    // commit inspection + revision content
+    expect(typeof deps.commitInspection?.listCommitChangedFiles).toBe("function");
+    expect(typeof deps.revisionContent?.readRevisionContent).toBe("function");
+  });
+
+  it("buildDeps no-op: captureHeadSha returns null (managed has no local worktree)", async () => {
+    const runtime = makeMockManagedRuntime();
+    const config = { version: 1 as const, agents: {} };
+    const request = { type: "new-feature" as const, title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
+
+    const deps = runtime.buildDeps(config, request, "test-slug", { cwd: "/repo" });
+    const sha = await deps.stepArtifact?.captureHeadSha("/repo");
+    expect(sha).toBeNull();
+  });
+
+  it("buildDeps no-op: changedFiles.canDeriveChangedFiles returns false (no local worktree)", () => {
+    const runtime = makeMockManagedRuntime();
+    const config = { version: 1 as const, agents: {} };
+    const request = { type: "new-feature" as const, title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
+
+    const deps = runtime.buildDeps(config, request, "test-slug", { cwd: "/repo" });
+    expect(deps.changedFiles?.canDeriveChangedFiles?.()).toBe(false);
   });
 });
