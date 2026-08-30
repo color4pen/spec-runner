@@ -767,7 +767,6 @@ function makeRolloverRuntimeStrategy(opts: {
     finalizeStepArtifacts: opts.finalizeStepArtifacts ?? vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     async bootstrapJob() { throw new Error("not implemented"); },
     async persistJobState() {},
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
@@ -927,7 +926,8 @@ describe("TC-007 (T-07): rollover + success → finalizeStepArtifacts が 1 回�
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      runtimeStrategy,
+      stepArtifact: runtimeStrategy as never,
+      stepIo: runtimeStrategy as never,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -1004,7 +1004,8 @@ describe("TC-009 (T-07): rollover budget 超過 → CONTEXT_WINDOW_EXHAUSTED hal
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      runtimeStrategy,
+      stepArtifact: runtimeStrategy as never,
+      stepIo: runtimeStrategy as never,
     };
 
     // executor.execute() must throw with CONTEXT_WINDOW_EXHAUSTED

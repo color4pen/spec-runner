@@ -18,7 +18,6 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
@@ -67,7 +66,7 @@ function makeConfig(): SpecRunnerConfig {
   return { version: 1, runtime: "local", agents: {} };
 }
 
-function makeMinimalDeps(runtimeStrategy: RuntimeStrategy): PipelineDeps {
+function makeMinimalDeps(runtimeStrategy: ReturnType<typeof makeMinimalRuntimeStrategy>): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -85,11 +84,12 @@ function makeMinimalDeps(runtimeStrategy: RuntimeStrategy): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
   };
 }
 
-function makeMinimalRuntimeStrategy(): RuntimeStrategy {
+function makeMinimalRuntimeStrategy() {
   return {
     async *query() {},
     createAgentRunner() {
@@ -104,11 +104,10 @@ function makeMinimalRuntimeStrategy(): RuntimeStrategy {
     async finalizeStepArtifacts() {},
     async validateStepInputs() {},
     async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }

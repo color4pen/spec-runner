@@ -229,7 +229,7 @@ function makeDeps(
     owner: "user",
     repo: "repo",
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-    runtimeStrategy,
+    roundGitEffects: runtimeStrategy as never,
     storeFactory: makeStoreFactory(tempDir),
     ...overrides,
   };

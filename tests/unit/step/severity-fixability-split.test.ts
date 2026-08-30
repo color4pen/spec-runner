@@ -199,7 +199,9 @@ function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): Pipe
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: runtimeStrategy as never,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
   } as PipelineDeps;
 }
 

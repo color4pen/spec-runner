@@ -376,7 +376,6 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         },
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
         digestArtifacts: undefined,
-        finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
       } as unknown as RuntimeStrategy;
@@ -475,7 +474,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        runtimeStrategy,
+        roundGitEffects: runtimeStrategy as never,
+        stepIo: runtimeStrategy as never,
         storeFactory,
         gitTransportSpawn: gitExecSpawnFn,
       };
@@ -533,7 +533,6 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
         digestArtifacts: undefined,
-        finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
       } as unknown as RuntimeStrategy;
@@ -616,7 +615,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        runtimeStrategy,
+        roundGitEffects: runtimeStrategy as never,
+        stepIo: runtimeStrategy as never,
         storeFactory,
       };
 

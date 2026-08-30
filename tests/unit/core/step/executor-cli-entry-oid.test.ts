@@ -84,14 +84,12 @@ function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy> = {}): RuntimeS
     async *query() {},
     createAgentRunner(): AgentRunner { return noopRunner; },
     async setupWorkspace() { return { cwd: tempDir }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     verifyFindingRefs: async (_refs: FindingRef[], _cwd: string, _branch: string | null) => [],
@@ -196,7 +194,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ runtimeStrategy }),
+      makeDeps({ stepArtifact: runtimeStrategy as never }),
     );
 
     const runs = resultState.steps?.["verification"];
@@ -234,7 +232,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ runtimeStrategy }),
+      makeDeps({ stepArtifact: runtimeStrategy as never }),
     );
 
     const runs = resultState.steps?.["verification"];
@@ -271,7 +269,7 @@ describe("TC-006: no runtimeStrategy → commitOid undefined (should)", () => {
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ runtimeStrategy: undefined }),
+      makeDeps({}),
     );
 
     const runs = resultState.steps?.["verification"];
@@ -303,7 +301,7 @@ describe("TC-006: no runtimeStrategy → commitOid undefined (should)", () => {
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ runtimeStrategy }),
+      makeDeps({ stepArtifact: runtimeStrategy as never }),
     );
 
     const runs = resultState.steps?.["verification"];

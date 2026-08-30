@@ -25,7 +25,6 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { ReviewerSnapshot } from "../src/core/reviewers/types.js";
-import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { vi as vitest } from "vitest";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -407,18 +406,17 @@ function buildRunner(
  * All contract/validation methods are no-ops so they do not interfere with the mock
  * agent runner's verdict flow.
  */
-function makeCommitOidStubStrategy(): RuntimeStrategy {
+function makeCommitOidStubStrategy() {
   return {
     captureHeadSha: async (): Promise<string | null> => "test-sha",
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-  } as unknown as RuntimeStrategy;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -838,7 +836,6 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
       verifyFindingRefs: vi.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vi.fn().mockResolvedValue([]),
-      commitFinalState: vi.fn().mockResolvedValue(undefined),
     };
 
     const result = await runPipeline(jobState, {
@@ -854,8 +851,8 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      runtimeStrategy: mockRuntimeStrategy as any,
+      stepArtifact: mockRuntimeStrategy as never,
+      stepIo: mockRuntimeStrategy as never,
     });
 
     // Non-existent file ref → verdict escalation → pipeline awaiting-resume
@@ -906,7 +903,8 @@ describe("TC-RG-01: regression-gate detects regression → code-fixer → approv
       // approved → codeChangedSinceLastVerification → re-verify). Without this, the guard
       // returns false (no commitOids) and the pipeline loops back to code-review, causing
       // regression-gate to run a 3rd time.
-      runtimeStrategy: makeCommitOidStubStrategy(),
+      stepArtifact: makeCommitOidStubStrategy() as never,
+      stepIo: makeCommitOidStubStrategy() as never,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1114,7 +1112,6 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       finalizeStepArtifacts: vitest.fn().mockResolvedValue(undefined),
       verifyFindingRefs: vitest.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vitest.fn().mockResolvedValue([]),
-      commitFinalState: vitest.fn().mockResolvedValue(undefined),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
       listChangedFiles: vitest.fn().mockResolvedValue({ kind: "success" as const, files: ["src/feature.ts"] }),
     };
@@ -1132,8 +1129,10 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      runtimeStrategy: mockRuntimeStrategy as any,
+      stepArtifact: mockRuntimeStrategy as never,
+      stepIo: mockRuntimeStrategy as never,
+      changedFiles: mockRuntimeStrategy as never,
+      roundGitEffects: mockRuntimeStrategy as never,
     };
 
     const bus = new EventBus();

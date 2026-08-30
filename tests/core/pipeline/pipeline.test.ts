@@ -19,6 +19,7 @@ import { toLegacyStepResult } from "../../../src/state/helpers.js";
 import type { Step } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { TerminalStateCapability } from "../../../src/core/pipeline/pipeline-capability.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -700,9 +701,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     };
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
     const result = await pipeline.run("design", state, deps);
@@ -710,9 +711,8 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(result.status).toBe("awaiting-resume");
     // The single-seam publisher (D5) must call commitFinalState exactly once
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
-    // commitFinalState is called with (deps, state) where state.status === "awaiting-resume"
-    const [calledDeps, calledState] = commitFinalStateSpy.mock.calls[0] as [typeof deps, JobState];
-    expect(calledDeps).toBe(deps);
+    // commitFinalState is called with (cwd, slug, state) where state.status === "awaiting-resume"
+    const [_calledCwd, _calledSlug, calledState] = commitFinalStateSpy.mock.calls[0] as [string, string, JobState];
     expect((calledState as JobState).status).toBe("awaiting-resume");
   });
 
@@ -735,9 +735,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     const specFixerResult: JobState = { ...designResult };
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({
       designResult,
@@ -767,9 +767,9 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     };
 
     // commitFinalState does nothing (e.g., git push silently failed internally)
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: vi.fn().mockResolvedValue(undefined),
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
     const result = await pipeline.run("design", state, deps);
@@ -786,9 +786,9 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     const deps = makeMinimalDeps();
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     // A successful design run → eventually awaiting-archive
     // buildMockPipeline handles the full standard pipeline with all step defaults
@@ -813,8 +813,8 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     // commitFinalState is called from in-loop publish (awaiting-archive), NOT from the seam
     // Total calls should be exactly 1 (in-loop publish)
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
-    // The call was made with state.status === "awaiting-archive"
-    const [, calledState] = commitFinalStateSpy.mock.calls[0] as [unknown, JobState];
+    // The call was made with state.status === "awaiting-archive" (cwd, slug, state)
+    const [,, calledState] = commitFinalStateSpy.mock.calls[0] as [unknown, unknown, JobState];
     expect((calledState as JobState).status).toBe("awaiting-archive");
   });
 });

@@ -116,7 +116,7 @@ afterEach(async () => {
  * gitSpawnFn (synchronous ChildProcess-based, from git-exec.ts). Mirrors
  * LocalRuntime semantics without requiring a real worktree.
  */
-function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
+function makeTestRuntimeStrategy(spawnFn: GitSpawnFn) {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner {
@@ -137,16 +137,15 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
     async finalizeStepArtifacts(
       step: AgentStep,
       state: JobState,
-      deps: PipelineDeps,
+      cwd: string,
+      slug: string,
       headBeforeStep: string | null,
       infra: CommitPushInfra,
     ): Promise<void> {
-      const cwd = deps.cwd ?? process.cwd();
-      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
-      await commitAndPush(step, state, deps, headBeforeStep, infra);
+      await cleanupOutputTemplates(cwd, slug, step.name, state);
+      await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> { /* no-op in tests */ },
     async bootstrapJob(): Promise<import("../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs(): Promise<import("../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
@@ -183,16 +182,12 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
  *   standard pipeline steps have no activation, and headBeforeStep=null (due to
  *   makeFailingGitSpawnFn) skips no-op detection entirely.
  */
-function makeCommitOidStubStrategy(): RuntimeStrategy {
+function makeCommitOidStubStrategy() {
   return {
     captureHeadSha: async (): Promise<string | null> => "test-sha",
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    // commitFinalState is called via deps.runtimeStrategy?.commitFinalState(...) when
-    // state.status === "awaiting-resume". TC-062 passes through awaiting-resume at
-    // code-fixer exhaustion. Must be stubbed since runtimeStrategy is defined.
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     // validateStepInputs: called for every step with reads() — must resolve to avoid
     // TypeError → makeInputMissingHalt → pipeline halt → "awaiting-resume".
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
@@ -203,7 +198,7 @@ function makeCommitOidStubStrategy(): RuntimeStrategy {
     // included to prevent TypeError if called unexpectedly.
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-  } as unknown as RuntimeStrategy;
+  };
 }
 
 /**
@@ -773,7 +768,8 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       // returns a fixed SHA for all step runs. This ensures conformance.commitOid ===
       // verification.commitOid = "test-sha", making conformanceApprovedForVerifiedRevision
       // return true after re-verification (code-fixer ran after initial verification).
-      runtimeStrategy: makeCommitOidStubStrategy(),
+      stepArtifact: makeCommitOidStubStrategy() as never,
+      stepIo: makeCommitOidStubStrategy() as never,
       // gitTransportSpawn returning exitCode 1 → gitExec returns null → headBeforeStep = null
       // → no-op detection skipped for code-fixer (avoids "needs-fix" verdict override).
       gitTransportSpawn: makeFailingGitSpawnFn(),
@@ -908,7 +904,8 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       storeFactory: makeStoreFactory(tempDir),
       // T-05 (approval-revision-binding): same as TC-060 — runtimeStrategy provides commitOid
       // so conformanceApprovedForVerifiedRevision returns true after re-verification.
-      runtimeStrategy: makeCommitOidStubStrategy(),
+      stepArtifact: makeCommitOidStubStrategy() as never,
+      stepIo: makeCommitOidStubStrategy() as never,
       gitTransportSpawn: makeFailingGitSpawnFn(),
     });
 
@@ -1527,7 +1524,8 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      runtimeStrategy: makeTestRuntimeStrategy(gitSpawnFn),
+      stepArtifact: makeTestRuntimeStrategy(gitSpawnFn) as never,
+      stepIo: makeTestRuntimeStrategy(gitSpawnFn) as never,
     });
 
     // Implementer must have completed (no halt)

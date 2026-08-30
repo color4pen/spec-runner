@@ -109,12 +109,12 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore() as never,
-    runtimeStrategy: {
+    roundGitEffects: {
       captureHeadSha: async () => "abc123",
       listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
-      finalizeStepArtifacts: async () => undefined,
-      validateStepInputs: async () => undefined,
-      validateStepOutputs: async () => ({ violations: [] }),
+      listWorktreeChanges: async () => ({ kind: "success" as const, paths: [] }),
+      commitRoundArtifacts: async () => undefined,
+      digestArtifacts: async () => [],
     } as never,
     ...overrides,
   };

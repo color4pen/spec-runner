@@ -228,7 +228,7 @@ export class StepExecutor {
     cwd: string,
     recordOpts: { startedAt?: string },
   ): Promise<StepHalt | null> {
-    if (!deps.runtimeStrategy || !step.reads) return null;
+    if (!deps.stepIo || !step.reads) return null;
     const reads = step.reads(state, deps);
     const required: RequiredInput[] = reads
       .filter((r) => r.required !== false)
@@ -236,7 +236,7 @@ export class StepExecutor {
     if (required.length === 0) return null;
 
     try {
-      await deps.runtimeStrategy.validateStepInputs(required, cwd, state.branch ?? null);
+      await deps.stepIo.validateStepInputs(required, cwd, state.branch ?? null);
       return null;
     } catch (thrownErr: unknown) {
       const err = thrownErr as Error & { code?: string; hint?: string };
@@ -275,11 +275,11 @@ export class StepExecutor {
       // Structural short-circuit: if the runtime explicitly declares it cannot derive
       // changed files, skip listChangedFiles entirely and activate fail-closed.
       const structurallyDerivable =
-        deps.runtimeStrategy?.canDeriveChangedFiles?.() !== false;
+        deps.changedFiles?.canDeriveChangedFiles?.() !== false;
       let changedFiles: string[] = [];
       let changedFilesDerivable = structurallyDerivable;
-      if (deps.runtimeStrategy && structurallyDerivable) {
-        const result = await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null);
+      if (deps.changedFiles && structurallyDerivable) {
+        const result = await deps.changedFiles.listChangedFiles(baseBranch, cwd, state.branch ?? null);
         if (result.kind === "success") {
           changedFiles = result.files;
         } else {
@@ -323,20 +323,20 @@ export class StepExecutor {
 
     // Capture main-checkout guard snapshot before agent executes (D2, D4).
     const guardBefore: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-      deps.runtimeStrategy?.snapshotMainCheckoutGuard
-        ? await deps.runtimeStrategy.snapshotMainCheckoutGuard(cwd, deps.config)
+      deps.stepArtifact?.snapshotMainCheckoutGuard
+        ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
         : null;
 
     // Capture HEAD SHA before agent executes (for no-op detection and finalize).
-    // Uses raw git spawn rather than runtimeStrategy.captureHeadSha so that only the
+    // Uses raw git spawn rather than stepArtifact.captureHeadSha so that only the
     // post-finalize captureHeadSha call (for commitOid, below) goes through the port.
     // TC-012: the ordering invariant is asserted in executor-oid-capture.test.ts.
-    const headBeforeStep: string | null = deps.runtimeStrategy
+    const headBeforeStep: string | null = deps.stepArtifact
       ? await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"])
       : null;
 
     // Place step output templates in the change folder before the agent runs.
-    await deps.runtimeStrategy?.prepareStepArtifacts(cwd, deps.slug, step.name, state);
+    await deps.stepArtifact?.prepareStepArtifacts(cwd, deps.slug, step.name, state);
 
     const startedAt = new Date().toISOString();
 
@@ -394,8 +394,8 @@ export class StepExecutor {
     // ---------------------------------------------------------------------------
     if (guardBefore !== null) {
       const guardAfter: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-        deps.runtimeStrategy?.snapshotMainCheckoutGuard
-          ? await deps.runtimeStrategy.snapshotMainCheckoutGuard(cwd, deps.config)
+        deps.stepArtifact?.snapshotMainCheckoutGuard
+          ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
           : null;
 
       if (guardAfter !== null) {
@@ -419,12 +419,12 @@ export class StepExecutor {
     // the correct backstop — it runs AFTER the mixed reset and evaluates the final publishable
     // state. Layer 1 (follow-up prompt) still fires via the adapter's OutputVerificationPolicy,
     // which reads step.outputContracts independently of this gate.
-    if (deps.runtimeStrategy) {
+    if (deps.stepIo) {
       const allContracts = buildAllOutputContracts(step, state, deps)
         .filter((c) => c.kind !== "unpushable-path");
 
       if (allContracts.length > 0) {
-        const checkResult = await deps.runtimeStrategy.validateStepOutputs(
+        const checkResult = await deps.stepIo.validateStepOutputs(
           allContracts, cwd, state.branch ?? null,
         );
         const { followUp, halt: haltViolations } = partitionByPolicy(checkResult);
@@ -463,8 +463,8 @@ export class StepExecutor {
       const myFinalize = this.commitMutex
         .catch(() => {}) // Absorb any previous chain error; each call handles its own
         .then(async () => {
-          if (!deps.runtimeStrategy) return;
-          await deps.runtimeStrategy.finalizeStepArtifacts(step, stateForFinalize, deps, headForFinalize, this.commitPushInfra)
+          if (!deps.stepArtifact) return;
+          await deps.stepArtifact.finalizeStepArtifacts(step, stateForFinalize, cwd, deps.slug, headForFinalize, this.commitPushInfra)
             .catch((err: unknown) => { finalizeError = err; });
         });
       this.commitMutex = myFinalize;
@@ -509,16 +509,16 @@ export class StepExecutor {
     // Capture HEAD OID after the per-node commit.
     // Only for sequential steps that own their own git commit (roundOwnsGitEffects === false).
     const commitOid: string | undefined =
-      !deps.roundOwnsGitEffects && deps.runtimeStrategy
-        ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+      !deps.roundOwnsGitEffects && deps.stepArtifact
+        ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
         : undefined;
 
     // T-03 (no-op detection): delegate to sibling no-op-detect.ts.
     // findingTargetPaths: derived from routed findings (machine-sourced, not agent self-reported).
     // step.noOpDetect === true guard ensures routing derivation only runs for code-fixer.
     const noOpVerdictOverride: Verdict | undefined =
-      deps.runtimeStrategy && headBeforeStep !== null
-        ? await detectNoOp(step, deps.runtimeStrategy, {
+      deps.changedFiles && headBeforeStep !== null
+        ? await detectNoOp(step, deps.changedFiles, {
             headBeforeStep,
             cwd,
             branch: state.branch ?? null,
@@ -607,10 +607,10 @@ export class StepExecutor {
     // T-01: Capture entry-HEAD commitOid BEFORE step.run().
     // step.run() may advance HEAD (e.g. propagateVerificationResult commits a result file).
     // We capture the pre-run HEAD so the StepRun records the evaluated revision.
-    // When runtimeStrategy is absent (e.g. managed runtime without git access), commitOid
+    // When stepArtifact is absent (e.g. managed runtime without git access), commitOid
     // remains undefined (no captureHeadSha available). null result → also undefined.
-    const entryHeadSha = deps.runtimeStrategy
-      ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+    const entryHeadSha = deps.stepArtifact
+      ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
       : undefined;
 
     // Run the CLI step.
@@ -637,8 +637,8 @@ export class StepExecutor {
     // CommitOrchestrator appends exitCommitOid to synthesizedCommits so that
     // commitFinalState's verifyEgressLedger does not flag it as an unknown commit
     // if the CLI step's own push failed and left the commit local-only.
-    const exitHeadSha = deps.runtimeStrategy
-      ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+    const exitHeadSha = deps.stepArtifact
+      ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
       : undefined;
     const exitCommitOid =
       exitHeadSha && entryHeadSha && exitHeadSha !== entryHeadSha

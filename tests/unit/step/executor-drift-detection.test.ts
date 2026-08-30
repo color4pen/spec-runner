@@ -94,7 +94,7 @@ function makeConfig(): SpecRunnerConfig {
 function makeStrategy(opts: {
   snapshotBefore: MainCheckoutGuardSnapshot | null;
   snapshotAfter: MainCheckoutGuardSnapshot | null;
-}): RuntimeStrategy {
+}) {
   let callCount = 0;
   return {
     async *query() {},
@@ -107,20 +107,20 @@ function makeStrategy(opts: {
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     async validateStepOutputs() { return { violations: [] }; },
     async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async snapshotMainCheckoutGuard(_cwd, _config): Promise<MainCheckoutGuardSnapshot | null> {
+    async snapshotMainCheckoutGuard(_cwd: string, _config: unknown): Promise<MainCheckoutGuardSnapshot | null> {
       return callCount++ === 0 ? opts.snapshotBefore : opts.snapshotAfter;
     },
   };
 }
 
-function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeDeps(runtimeStrategy?: any): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -157,7 +157,8 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
   };
 }
 

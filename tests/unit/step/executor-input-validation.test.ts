@@ -95,16 +95,14 @@ function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
       };
     },
     async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {
       throw errorToThrow;
     },
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
@@ -215,7 +213,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,
@@ -268,7 +266,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     let thrownErr: unknown;
     try {
@@ -329,7 +327,7 @@ describe("TC-022: CliStep — validateStepInputs failure halts before step.run()
       parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,

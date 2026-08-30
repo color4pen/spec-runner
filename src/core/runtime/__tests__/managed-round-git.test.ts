@@ -62,7 +62,7 @@ describe("ManagedRuntime.commitRoundArtifacts — no-op", () => {
         "change/x",
         "custom-reviewers",
         "x",
-        undefined,
+        undefined as never,
       ),
     ).resolves.toBeUndefined();
   });
@@ -70,7 +70,7 @@ describe("ManagedRuntime.commitRoundArtifacts — no-op", () => {
   it("resolves without error when stagePaths is empty", async () => {
     const runtime = makeManagedRuntime();
     await expect(
-      runtime.commitRoundArtifacts([], "/cwd", "branch", "coord", "slug", null),
+      runtime.commitRoundArtifacts([], "/cwd", "branch", "coord", "slug", null as never),
     ).resolves.toBeUndefined();
   });
 });

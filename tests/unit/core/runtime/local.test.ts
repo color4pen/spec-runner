@@ -1156,10 +1156,9 @@ describe("TC-LR-020: commitFinalState uses messageLabel derived from state.statu
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState("my-slug");
-    const deps = { slug: "my-slug", cwd: tempDir } as import("../../../../src/core/types.js").PipelineDeps;
     const state = { ...jobState, status: "awaiting-resume" as const, branch: "feat/my-slug-abc" };
 
-    await runtime.commitFinalState(deps, state);
+    await runtime.commitFinalState(tempDir, "my-slug", state);
 
     const commitCall = calls.find((c) => c.cmd === "git" && c.args[0] === "commit");
     expect(commitCall).toBeDefined();
@@ -1184,10 +1183,9 @@ describe("TC-LR-020: commitFinalState uses messageLabel derived from state.statu
     const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
 
     const jobState = await makeJobState("my-slug");
-    const deps = { slug: "my-slug", cwd: tempDir } as import("../../../../src/core/types.js").PipelineDeps;
     const state = { ...jobState, status: "awaiting-archive" as const, branch: "feat/my-slug-abc" };
 
-    await runtime.commitFinalState(deps, state);
+    await runtime.commitFinalState(tempDir, "my-slug", state);
 
     const commitCall = calls.find((c) => c.cmd === "git" && c.args[0] === "commit");
     expect(commitCall).toBeDefined();

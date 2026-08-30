@@ -42,6 +42,10 @@ import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/comm
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
+import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
+import { deriveStepArtifactLifecycleCapability, deriveStepIoValidationCapability } from "../step/step-capability.js";
+import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../pipeline/pipeline-capability.js";
+import type { RoundEgressParams } from "../pipeline/pipeline-capability.js";
 import type { ArtifactRef, CheckpointRestackRecord } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
@@ -145,6 +149,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   private workspace: WorkspaceContext | null = null;
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
   private currentSlug: string | null = null;
+  /**
+   * Reference to the last PipelineDeps object built by buildDeps().
+   *
+   * R2b: finalizeStepArtifacts no longer receives deps as a parameter. However,
+   * commitAndPush (called inside finalizeStepArtifacts) still needs deps.pushCapability
+   * which is set by runner.ts on the deps object AFTER buildDeps() returns. Storing a
+   * reference here lets finalizeStepArtifacts observe the post-mutation pushCapability
+   * via JavaScript reference semantics.
+   */
+  private _latestBuiltDeps: PipelineDeps | null = null;
 
   /**
    * Hub for in-flight query AbortControllers.
@@ -597,7 +611,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     slug: string,
     workspace: WorkspaceContext,
   ): PipelineDeps {
-    return {
+    const deps: PipelineDeps = {
       client: undefined,
       config,
       request,
@@ -614,9 +628,21 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         return new JobStateStore(id, this.cwd, { slug, stateRoot });
       },
       repoRoot: this.cwd,
-      runtimeStrategy: this,
       gitTransportSpawn: this.transportAuth.wrapGitExecSpawn(defaultSpawnFn),
+      // R2b capability fields
+      stepArtifact: deriveStepArtifactLifecycleCapability(this),
+      stepIo: deriveStepIoValidationCapability(this),
+      terminalState: deriveTerminalStateCapability(this),
+      roundGitEffects: deriveRoundGitEffectsCapability(this),
+      changedFiles: {
+        canDeriveChangedFiles: () => this.canDeriveChangedFiles(),
+        listChangedFiles: (baseBranch, cwd, branch) => this.listChangedFiles(baseBranch, cwd, branch),
+      },
+      commitInspection: deriveCommitInspectionCapability(this),
+      revisionContent: deriveRevisionContentCapability(this),
     };
+    this._latestBuiltDeps = deps;
+    return deps;
   }
 
   // ---------------------------------------------------------------------------
@@ -711,12 +737,12 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   async finalizeStepArtifacts(
     step: AgentStep,
     state: JobState,
-    deps: PipelineDeps,
+    cwd: string,
+    slug: string,
     headBeforeStep: string | null,
-    commitPushInfra: CommitPushInfra,
+    infra: CommitPushInfra,
   ): Promise<void> {
-    const cwd = deps.cwd ?? process.cwd();
-    await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+    await cleanupOutputTemplates(cwd, slug, step.name, state);
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
     // Persist-before-push invariant (egress-ledger-push-failure fix):
     // Extend infra with a persistBeforePush callback so the synthesis commit OID is
@@ -724,8 +750,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // the existing implementation in parallel-review-round and prevents a push failure
     // from leaving the ledger incomplete and blocking resume via EGRESS_UNKNOWN_COMMIT.
     const slugOpts = this.slugStoreOpts();
-    const infra: CommitPushInfra = {
-      ...commitPushInfra,
+    const finalInfra: CommitPushInfra = {
+      ...infra,
       persistBeforePush: slugOpts
         ? async (oid: string) => {
             await this.updateJobState(
@@ -736,7 +762,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
           }
         : undefined,
     };
-    await commitAndPush(step, state, deps, headBeforeStep, infra);
+    // Use _latestBuiltDeps to pass deps (including pushCapability set after buildDeps).
+    const deps = this._latestBuiltDeps;
+    if (!deps) throw new Error("LocalRuntime: _latestBuiltDeps not set; buildDeps must be called before finalizeStepArtifacts");
+    await commitAndPush(step, state, deps, headBeforeStep, finalInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
   }
 
@@ -749,10 +778,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
    * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
-  async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
-    const cwd = deps.cwd ?? process.cwd();
+  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<void> {
     const branch = state.branch ?? "";
-    const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
     // Persist-before-push invariant: pass a persistBeforePush callback so the
     // checkpoint/finalize commit OID is written to the synthesizedCommits ledger
@@ -925,15 +952,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     branch: string,
     coordinatorName: string,
     slug: string,
-    commitPushInfra: unknown,
-    egressParams?: unknown,
+    infra: CommitPushInfra,
+    egressParams?: RoundEgressParams,
   ): Promise<void> {
-    const infra = commitPushInfra as CommitPushInfra;
-    const egress = egressParams as
-      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null; excludeWorktreePatterns?: string[] }
-      | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null, egress?.excludeWorktreePatterns);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
   }
 
   /**

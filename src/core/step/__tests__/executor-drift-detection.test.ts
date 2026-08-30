@@ -150,7 +150,7 @@ function makeDeps(
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: runtimeStrategy as never,
+    stepArtifact: runtimeStrategy as never,
   } as PipelineDeps;
 }
 

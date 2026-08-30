@@ -37,6 +37,7 @@ import type { PipelineDeps } from "../src/core/types.js";
 import type { StepExecutor } from "../src/core/step/executor.js";
 import type { StepExecutionResult } from "../src/core/step/commit-orchestrator.js";
 import type { ArtifactRef } from "../src/state/artifact-types.js";
+import type { RoundGitEffectsCapability } from "../src/core/pipeline/pipeline-capability.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 
 // ---------------------------------------------------------------------------
@@ -152,7 +153,7 @@ function makeBaseState(
 
 function makeDeps(
   tempDir: string,
-  runtimeStrategy: PipelineDeps["runtimeStrategy"],
+  roundGitEffects: RoundGitEffectsCapability | undefined,
 ): PipelineDeps {
   return {
     cwd: tempDir,
@@ -172,7 +173,7 @@ function makeDeps(
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore(tempDir) as never,
-    runtimeStrategy,
+    roundGitEffects,
   };
 }
 
@@ -210,7 +211,7 @@ function makeRuntimeStrategy(opts: {
   headSha: string;
   changedFiles: string[];
   digestRefs: ArtifactRef[];
-}) {
+}): RoundGitEffectsCapability {
   return {
     captureHeadSha: vi.fn(async () => opts.headSha),
     listChangedFiles: vi.fn(async () => ({
@@ -218,9 +219,8 @@ function makeRuntimeStrategy(opts: {
       files: opts.changedFiles,
     })),
     digestArtifacts: vi.fn(async (): Promise<ArtifactRef[]> => opts.digestRefs),
-    finalizeStepArtifacts: vi.fn(async () => {}),
-    validateStepInputs: vi.fn(async () => {}),
-    validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+    listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+    commitRoundArtifacts: vi.fn(async () => {}),
   };
 }
 

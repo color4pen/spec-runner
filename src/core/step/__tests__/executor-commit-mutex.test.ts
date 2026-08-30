@@ -146,7 +146,7 @@ describe("StepExecutor — TC-035: commitMutex serializes finalizeStepArtifacts"
     const state = makeState();
     const deps = makeDeps({
       storeFactory,
-      runtimeStrategy: runtimeStrategy as never,
+      stepArtifact: runtimeStrategy as never,
     });
 
     // Launch both steps concurrently — this is the parallel fan-out pattern
@@ -202,7 +202,7 @@ describe("StepExecutor — TC-035: commitMutex serializes finalizeStepArtifacts"
     const state = makeState();
     const deps = makeDeps({
       storeFactory,
-      runtimeStrategy: runtimeStrategy as never,
+      stepArtifact: runtimeStrategy as never,
     });
 
     await executor.execute(makeStep("code-review"), state, deps);

@@ -35,7 +35,6 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { OutputCheckResult, OutputContract } from "../../../src/core/port/output-contract.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
@@ -118,28 +117,26 @@ const declaringCapability: PushCapability = {
  */
 function makeRuntimeStrategy(
   validateFn: () => Promise<OutputCheckResult>,
-): { strategy: RuntimeStrategy; finalizeSpy: ReturnType<typeof vi.fn> } {
+): { strategy: ReturnType<typeof _makeRuntimeStrategyObj>; finalizeSpy: ReturnType<typeof vi.fn> } {
   const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const strategy: RuntimeStrategy = {
-    async *query() {},
-    createAgentRunner(): AgentRunner { return makeSuccessRunner(); },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
+  const strategy = _makeRuntimeStrategyObj(validateFn, finalizeSpy);
+  return { strategy, finalizeSpy };
+}
+
+function _makeRuntimeStrategyObj(
+  validateFn: () => Promise<OutputCheckResult>,
+  finalizeSpy: ReturnType<typeof vi.fn>,
+) {
+  return {
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     finalizeStepArtifacts: finalizeSpy,
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async verifyFindingRefs() { return [] as never[]; },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     validateStepOutputs: validateFn,
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
   };
-  return { strategy, finalizeSpy };
 }
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
@@ -253,7 +250,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
 
     // Gate does NOT halt — it passes through to finalizeStepArtifacts (Layer 2).
     await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -284,7 +282,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -311,7 +310,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     const resultState = await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -351,7 +351,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -379,7 +379,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });

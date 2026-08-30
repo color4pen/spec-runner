@@ -38,7 +38,6 @@ import { buildFeatureBranchName } from "../../config/type-config.js";
 import { logVerbose } from "../../logger/stdout.js";
 import { STEP_NAMES } from "./step-names.js";
 import { recordFindingRecency } from "./finding-recency.js";
-import { deriveRevisionContentCapability } from "../port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // StepExecutionResult discriminated union
@@ -316,12 +315,12 @@ export class CommitOrchestrator {
     }
 
     // lineage (appendLineage — best-effort)
-    if (deps.runtimeStrategy && preWriteIo.length > 0 && deps.cwd) {
+    if (deps.stepArtifact && preWriteIo.length > 0 && deps.cwd) {
       try {
         const cwd = deps.cwd;
         const [outputRefs, inputRefs] = await Promise.all([
-          deps.runtimeStrategy.digestArtifacts(preWriteIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-          deps.runtimeStrategy.digestArtifacts(preReadIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          deps.stepArtifact.digestArtifacts(preWriteIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          deps.stepArtifact.digestArtifacts(preReadIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
         ]);
         const inputArtifactRefs = inputRefs.map((r, i) => {
           const ioRef = preReadIo[i];
@@ -342,7 +341,7 @@ export class CommitOrchestrator {
     }
 
     // finding-recency detection (spec-review only, iteration >= 2, best-effort)
-    if (step.name === STEP_NAMES.SPEC_REVIEW && deps.runtimeStrategy && deps.cwd) {
+    if (step.name === STEP_NAMES.SPEC_REVIEW && deps.revisionContent && deps.cwd) {
       const stepRuns = state.steps?.[step.name] ?? [];
       const iteration = stepRuns.length;
 
@@ -363,7 +362,7 @@ export class CommitOrchestrator {
             findings: agentFindings,
             cwd: deps.cwd,
             branch: state.branch ?? null,
-            runtimeStrategy: deriveRevisionContentCapability(deps.runtimeStrategy),
+            runtimeStrategy: deps.revisionContent,
           });
         } catch {
           // Best-effort: finding-recency failure must not affect step completion

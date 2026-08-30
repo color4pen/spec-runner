@@ -59,7 +59,6 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState, DecisionRecord } from "../../../../src/state/schema.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
@@ -95,7 +94,8 @@ function makeConfig(): SpecRunnerConfig {
   return { version: 1, runtime: "managed", agents: {} };
 }
 
-function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeDeps(strategy?: any): PipelineDeps {
   return {
     config: makeConfig(),
     slug: "my-feature",
@@ -113,7 +113,9 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    runtimeStrategy,
+    changedFiles: strategy as never,
+    stepArtifact: strategy as never,
+    stepIo: strategy as never,
   };
 }
 
@@ -172,30 +174,15 @@ function makeRunnerWithToolResult(toolResult: Record<string, unknown> | null): A
  * Make a RuntimeStrategy that returns the given changedFiles list.
  * verifyFindingRefs always returns [] (no non-existent refs).
  */
-function makeRuntimeStrategy(changedFiles: string[]): RuntimeStrategy {
+function makeRuntimeStrategy(changedFiles: string[]) {
   return {
-    async *query() {},
-    createAgentRunner() {
-      return {
-        async run() {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as never; },
-    registerCleanup() { return {} as never; },
-    async teardown() {},
-    async captureHeadSha() { return null; },
+    async captureHeadSha() { return null as string | null; },
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
     async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState() {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async validateStepOutputs() { return { violations: [] as never[] }; },
+    async verifyFindingRefs() { return [] as never[]; },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     async listChangedFiles() { return { kind: "success" as const, files: changedFiles }; },
   };
 }
@@ -865,31 +852,16 @@ describe("T-04: synthesizeScopeUnverifiableFinding — UNKNOWN finding determini
  * Make a RuntimeStrategy fake with canDeriveChangedFiles=false.
  * listChangedFiles is a spy so tests can verify it is never called.
  */
-function makeUnevaluableRuntimeStrategy(): RuntimeStrategy & { listChangedFiles: ReturnType<typeof vi.fn> } {
-  const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
+function makeUnevaluableRuntimeStrategy() {
+  const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] as never[] });
   return {
-    async *query() {},
-    createAgentRunner() {
-      return {
-        async run() {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as never; },
-    registerCleanup() { return {} as never; },
-    async teardown() {},
-    async captureHeadSha() { return null; },
+    async captureHeadSha() { return null as string | null; },
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
     async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState() {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async validateStepOutputs() { return { violations: [] as never[] }; },
+    async verifyFindingRefs() { return [] as never[]; },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     listChangedFiles: listFn,
     canDeriveChangedFiles: () => false,
   };
@@ -1130,7 +1102,7 @@ describe("T-07: canDeriveChangedFiles=true → #689 breach parity", () => {
    * Make a RuntimeStrategy with canDeriveChangedFiles=true (explicit).
    * Same shape as makeRuntimeStrategy but with explicit predicate.
    */
-  function makeEvaluableRuntimeStrategy(changedFiles: string[]): RuntimeStrategy {
+  function makeEvaluableRuntimeStrategy(changedFiles: string[]) {
     return {
       ...makeRuntimeStrategy(changedFiles),
       canDeriveChangedFiles: () => true,
@@ -1209,7 +1181,7 @@ describe("T-06-NEW: canDerive=true + listChangedFiles unavailable → UNKNOWN fi
    * Make a RuntimeStrategy with canDeriveChangedFiles=true but listChangedFiles returns unavailable.
    * Simulates a local runtime where git diff fails at call time (e.g. repo corruption).
    */
-  function makeUnavailableRuntimeStrategy(): RuntimeStrategy {
+  function makeUnavailableRuntimeStrategy() {
     return {
       async *query() {},
       createAgentRunner() {
@@ -1228,12 +1200,11 @@ describe("T-06-NEW: canDerive=true + listChangedFiles unavailable → UNKNOWN fi
       async finalizeStepArtifacts() {},
       async validateStepInputs() {},
       async validateStepOutputs() { return { violations: [] }; },
-      async commitFinalState() {},
       async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
       async persistJobState() {},
       async verifyFindingRefs() { return []; },
-      async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
-      async listChangedFiles() { return { kind: "unavailable", reason: "git diff exited with code 128" }; },
+      async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
+      async listChangedFiles() { return { kind: "unavailable" as const, reason: "git diff exited with code 128" }; },
       canDeriveChangedFiles: () => true, // structurally capable, but call fails
     };
   }

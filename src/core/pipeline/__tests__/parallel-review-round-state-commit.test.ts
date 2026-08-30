@@ -169,12 +169,12 @@ function makeDeps(store: ReturnType<typeof makeSpyStore>, overrides: Partial<Pip
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
-    runtimeStrategy: {
+    roundGitEffects: {
       captureHeadSha: async () => "sha123",
       listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
-      finalizeStepArtifacts: async () => undefined,
-      validateStepInputs: async () => undefined,
-      validateStepOutputs: async () => ({ violations: [] }),
+      listWorktreeChanges: async () => ({ kind: "success" as const, paths: [] }),
+      commitRoundArtifacts: async () => undefined,
+      digestArtifacts: async () => [],
     } as never,
     ...overrides,
   };
@@ -212,7 +212,7 @@ describe("ParallelReviewRound state commit — single persist per round (AC #1 /
     const executor = makeProduceFakeExecutor(new Map());
     const round = makeRound(executor);
 
-    await round.run(COORDINATOR, stateWithApproved, makeDeps(store, { runtimeStrategy: undefined }));
+    await round.run(COORDINATOR, stateWithApproved, makeDeps(store, { roundGitEffects: undefined }));
 
     expect(store.persist).toHaveBeenCalledTimes(1);
     // produceResult NOT called (fast path, no pending members)

@@ -133,7 +133,7 @@ function makeCapturingRunner(): {
   return { runner, getCapturedCtx: () => capturedCtx };
 }
 
-function makeBaseStrategy(): RuntimeStrategy {
+function makeBaseStrategy() {
   return {
     async *query() {},
     createAgentRunner: () => ({ async run(): Promise<AgentRunResult> { return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }; } }),
@@ -145,7 +145,6 @@ function makeBaseStrategy(): RuntimeStrategy {
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs() { return []; },
@@ -192,7 +191,8 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy, extra?: Partial<PipelineDep
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
     ...extra,
   };
 }

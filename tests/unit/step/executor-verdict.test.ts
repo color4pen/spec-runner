@@ -75,7 +75,7 @@ function makeJobState(jobId: string): JobState {
  */
 function makeRuntimeStrategy(
   verifyFindingRefsFn: (refs: FindingRef[], cwd: string, branch: string | null) => Promise<FindingRef[]>,
-): RuntimeStrategy {
+) {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner {
@@ -86,14 +86,13 @@ function makeRuntimeStrategy(
       };
     },
     async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     verifyFindingRefs: verifyFindingRefsFn,
@@ -180,7 +179,9 @@ function makeDeps(
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
     ...overrides,
   };
 }

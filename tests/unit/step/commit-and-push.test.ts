@@ -32,7 +32,6 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import { gitExec } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
@@ -92,21 +91,9 @@ function makeJobState(jobId: string, branch = "feat/test-slug"): JobState {
   };
 }
 
-/** Minimal RuntimeStrategy mock that uses the test's git spawnFn for artifact lifecycle. */
-function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
+/** Minimal step-artifact capability mock that uses the test's git spawnFn for artifact lifecycle. */
+function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
   return {
-    async *query() {},
-    createAgentRunner(): AgentRunner {
-      return {
-        async run(): Promise<AgentRunResult> {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
     async captureHeadSha(cwd: string): Promise<string | null> {
       return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
     },
@@ -114,23 +101,20 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
     async finalizeStepArtifacts(
       step: AgentStep,
       state: JobState,
-      deps: PipelineDeps,
+      cwd: string,
+      slug: string,
       headBeforeStep: string | null,
       infra: CommitPushInfra,
     ): Promise<void> {
-      const cwd = deps.cwd ?? process.cwd();
-      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
-      await commitAndPush(step, state, deps, headBeforeStep, infra);
+      await cleanupOutputTemplates(cwd, slug, step.name, state);
+      await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> { /* no-op in tests */ },
-    async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
+    async verifyFindingRefs() { return [] as never[]; },
     async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
     async validateStepOutputs(): Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult> {
       return { violations: [] };
     },
@@ -177,7 +161,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
-    runtimeStrategy: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) : undefined,
+    stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
+    stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };

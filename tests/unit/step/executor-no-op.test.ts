@@ -92,7 +92,7 @@ function makeConfig(): SpecRunnerConfig {
 function makeStrategy(opts: {
   headSha: string | null;
   changedSourceFiles: string[];
-}): RuntimeStrategy {
+}) {
   return {
     async *query() {},
     createAgentRunner() { return { async run(): Promise<AgentRunResult> { return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 }; } }; },
@@ -104,17 +104,17 @@ function makeStrategy(opts: {
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles(_base, _cwd, _branch) { return { kind: "success" as const, files: opts.changedSourceFiles }; },
+    async listChangedFiles(_base: string, _cwd: string, _branch: string | null) { return { kind: "success" as const, files: opts.changedSourceFiles }; },
   };
 }
 
-function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeDeps(runtimeStrategy?: any): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -151,7 +151,8 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
   };
 }
 

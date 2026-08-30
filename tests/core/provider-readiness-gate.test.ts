@@ -21,6 +21,7 @@ import { EventBus } from "../../src/core/event/event-bus.js";
 import { CommandRunner } from "../../src/core/command/runner.js";
 import type { PrepareResult } from "../../src/core/command/runner.js";
 import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
+import type { PipelineDeps } from "../../src/core/types.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../src/core/port/provider-readiness.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../src/core/runtime/managed.js";
@@ -91,7 +92,7 @@ function makeMinimalRuntime(opts?: {
       sideEffects.setupWorkspaceCalled = true;
       return { cwd: tempDir };
     },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async *query() {},
@@ -104,10 +105,8 @@ function makeMinimalRuntime(opts?: {
     },
     async captureHeadSha() { return null; },
     async prepareStepArtifacts() {},
-    async finalizeStepArtifacts() {},
     async validateStepInputs() {},
     async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
     async digestArtifacts() { return []; },
     async listChangedFiles() { return { kind: "unavailable" as const, reason: "fake" }; },
     async verifyFindingRefs() { return []; },

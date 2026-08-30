@@ -1,5 +1,5 @@
 /**
- * RuntimeStrategy: runtime-neutral abstraction for agent execution infrastructure.
+ * RuntimeStrategy: composition-root facade for agent execution infrastructure.
  *
  * Design D1: RuntimeStrategy interface
  * - LocalRuntime: worktree, ClaudeCodeRunner, signal handler
@@ -10,10 +10,17 @@
  * Moved from core/runtime/strategy.ts to core/port/runtime-strategy.ts to satisfy
  * the §3 DSM closure rule: domain → composition-root is ✗, domain → ports is ✓.
  *
- * Domain-typed parameters (PipelineDeps, AgentStep, CommitPushInfra) are declared as
- * `unknown` here to keep this ports file free of domain→ports back-edges. Callers in
- * domain layers use the concrete types; TypeScript's bivariant method checking allows
- * implementations in core/runtime/ to declare the concrete types.
+ * R2b: RuntimeStrategy is a composition-root facade, not a service locator for
+ * domain consumers. Mutation/lifecycle consumers depend on narrow capability
+ * interfaces (StepArtifactLifecycleCapability, StepIoValidationCapability,
+ * TerminalStateCapability, RoundGitEffectsCapability) injected via PipelineDeps.
+ * The former `unknown`-typed mutation methods (finalizeStepArtifacts, commitFinalState,
+ * commitRoundArtifacts) have been removed from this interface; their typed counterparts
+ * live on the capability interfaces in step-capability.ts / pipeline-capability.ts.
+ *
+ * buildDeps() now returns PipelineDeps (typed) — the former `unknown` return type
+ * (kept to break ports→domain import cycles) is no longer needed because types.ts
+ * no longer imports RuntimeStrategy.
  */
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -21,7 +28,6 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { OutputContract, OutputCheckResult } from "./output-contract.js";
-
 // ---------------------------------------------------------------------------
 // Supporting types
 // ---------------------------------------------------------------------------
@@ -310,11 +316,11 @@ export function deriveRevisionContentCapability(
  * - LocalRuntime  — local worktree, ClaudeCodeRunner, signal-handler cleanup
  * - ManagedRuntime — SessionClient, ManagedAgentRunner, no-op workspace/cleanup
  *
- * Note on domain-typed parameters: `buildDeps()` returns `unknown` and
- * `finalizeStepArtifacts()` accepts `unknown` for domain-type parameters (PipelineDeps,
- * AgentStep, CommitPushInfra). This keeps the port layer free of ports→domain imports.
- * Domain-layer callers cast `buildDeps()` results to `PipelineDeps`; implementations
- * in core/runtime/ use concrete types (TypeScript bivariant method checking allows this).
+ * Note on domain-typed parameters: `buildDeps()` now returns `PipelineDeps` directly.
+ * The former `unknown`-typed methods (finalizeStepArtifacts, commitFinalState,
+ * commitRoundArtifacts) have been moved to capability interfaces in step-capability.ts /
+ * pipeline-capability.ts. Implementations in core/runtime/ implement those interfaces
+ * directly, with concrete types.
  */
 export interface RuntimeStrategy {
   /**
@@ -374,8 +380,11 @@ export interface RuntimeStrategy {
 
   /**
    * Assemble PipelineDeps for the resolved workspace.
-   * Returns `unknown` at the port level; domain callers cast to `PipelineDeps`.
-   * Implementations in core/runtime/ declare the concrete PipelineDeps return type.
+   *
+   * Returns typed PipelineDeps (R2b). The former `unknown` return type is no longer
+   * needed because types.ts no longer imports RuntimeStrategy, breaking the import cycle.
+   * The returned PipelineDeps includes all capability fields (stepArtifact, stepIo,
+   * terminalState, roundGitEffects, changedFiles, commitInspection, revisionContent).
    */
   buildDeps(
     config: SpecRunnerConfig,
@@ -422,27 +431,6 @@ export interface RuntimeStrategy {
   ): Promise<void>;
 
   /**
-   * Clean up B-group reference templates and commit+push after a successful agent run.
-   * - local: cleanupOutputTemplates() → commitAndPush()
-   * - managed: no-op
-   *
-   * Parameters `step`, `deps`, and `commitPushInfra` are typed as `unknown` at the port
-   * level to avoid ports→domain imports. Implementations in core/runtime/ use concrete
-   * types (AgentStep, PipelineDeps, CommitPushInfra). TypeScript bivariant method
-   * checking allows this.
-   *
-   * commitAndPush errors are re-thrown (not caught here); the executor's .catch()
-   * block records the error in state and rethrows with attached state.
-   */
-  finalizeStepArtifacts(
-    step: unknown,
-    state: JobState,
-    deps: unknown,
-    headBeforeStep: string | null,
-    commitPushInfra: unknown,
-  ): Promise<void>;
-
-  /**
    * Validate that all required step inputs exist before executing a step.
    * Called by StepExecutor before runner.run() / step.run() to enforce I/O contracts.
    *
@@ -486,26 +474,6 @@ export interface RuntimeStrategy {
     branch: string | null,
     excludeWorktreePatterns?: string[],
   ): Promise<OutputCheckResult>;
-
-  // ---------------------------------------------------------------------------
-  // Pipeline terminal phase (D5 seam)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Commit and push the final pipeline state (running → awaiting-archive) to the feature branch.
-   *
-   * Called by pipeline.ts immediately after the running → awaiting-archive transition is persisted.
-   *
-   * - local:   git add -A → commit "finalize: <slug>" → push origin <branch> (1 retry, best-effort)
-   * - managed: no-op (cloud agent manages branch state independently)
-   *
-   * Parameters are typed as `unknown` at the port level to keep this file free of
-   * ports→domain imports. LocalRuntime declares concrete types (PipelineDeps, JobState).
-   * TypeScript bivariant method checking allows this.
-   *
-   * Must NOT throw — push failures are warned on stderr and the run continues.
-   */
-  commitFinalState(deps: unknown, state: unknown): Promise<void>;
 
   /**
    * Verify that finding references (file + optional line) actually exist.
@@ -590,44 +558,6 @@ export interface RuntimeStrategy {
    */
   listWorktreeChanges?(cwd: string): Promise<WorktreeInspectionResult>;
 
-  /**
-   * Stage only the declared paths and commit+push (scoped staging for coordinator rounds).
-   *
-   * Called by ParallelReviewRound after partitionRoundChanges when there are declared
-   * outputs to stage (toStage non-empty and no offending paths).
-   *
-   * Contract:
-   * - stagePaths empty → no-op.
-   * - Uses `git add -A -- <stagePaths...>` (pathspec-limited; never `git add -A`).
-   * - Commits only if there are staged changes; no-op otherwise.
-   * - Push is one retry on failure (same as finalizeStepArtifacts).
-   *
-   * Parameters are typed as `unknown` at the port level to keep this file free of
-   * ports→domain imports. LocalRuntime declares concrete types (CommitPushInfra).
-   *
-   * - local:   delegates to commitScopedPaths in commit-push.ts.
-   * - managed: no-op (no local worktree; known Non-Goal for managed runtime).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
-   *
-   * @param stagePaths     - Declared outputs to stage (from partitionRoundChanges.toStage).
-   * @param cwd            - Working directory (the worktree).
-   * @param branch         - Branch to push to.
-   * @param coordinatorName - Name of the coordinator step (used in commit message + event).
-   * @param slug           - Job slug (used in commit message).
-   * @param commitPushInfra - Infrastructure for commit/push (typed unknown at port level).
-   */
-  commitRoundArtifacts?(
-    stagePaths: string[],
-    cwd: string,
-    branch: string,
-    coordinatorName: string,
-    slug: string,
-    commitPushInfra: unknown,
-    /** D4 egress backstop params (typed unknown at port level). LocalRuntime casts to concrete type. */
-    egressParams?: unknown,
-  ): Promise<void>;
 
   /**
    * Seam meta-information: whether this runtime can structurally derive changed files.
@@ -850,15 +780,6 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   reloadJobState(jobId: string, slug: string, workspace: WorkspaceContext): Promise<JobState>;
   snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
   listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
-  commitRoundArtifacts(
-    stagePaths: string[],
-    cwd: string,
-    branch: string,
-    coordinatorName: string,
-    slug: string,
-    commitPushInfra: unknown,
-    egressParams?: unknown,
-  ): Promise<void>;
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
   readRevisionContent(

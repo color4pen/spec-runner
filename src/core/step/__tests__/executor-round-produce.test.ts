@@ -152,7 +152,7 @@ describe("StepExecutor.produceResult — store mutation APIs never called (AC #1
       makeAgentStep("reviewer-alpha"),
       makeState(),
       makeDeps(store, {
-        runtimeStrategy: runtimeStrategy as never,
+        stepArtifact: runtimeStrategy as never,
         roundOwnsGitEffects: true,
       }),
     );
@@ -192,7 +192,7 @@ describe("StepExecutor.produceResult — store mutation APIs never called (AC #1
       step,
       makeState(),
       makeDeps(store, {
-        runtimeStrategy: runtimeStrategy as never,
+        stepArtifact: runtimeStrategy as never,
         roundOwnsGitEffects: true,
       }),
     );
@@ -227,7 +227,7 @@ describe("StepExecutor.produceResult — guard halt returned as { kind: 'halt' }
     const result = await executor.produceResult(
       makeAgentStep("reviewer-alpha"),
       makeState(),
-      makeDeps(store, { runtimeStrategy: runtimeStrategy as never, roundOwnsGitEffects: true }),
+      makeDeps(store, { stepArtifact: runtimeStrategy as never, roundOwnsGitEffects: true }),
     );
 
     expect(result.kind).toBe("halt");
@@ -258,7 +258,7 @@ describe("StepExecutor.produceResult — outer throw normalized to halt (AC #3)"
     const result = await executor.produceResult(
       makeAgentStep("reviewer-alpha"),
       makeState(),
-      makeDeps(store, { runtimeStrategy: runtimeStrategy as never, roundOwnsGitEffects: true }),
+      makeDeps(store, { stepArtifact: runtimeStrategy as never, roundOwnsGitEffects: true }),
     );
 
     // Promise resolved (not rejected) and returned a halt result
@@ -284,7 +284,7 @@ describe("StepExecutor.produceResult — outer throw normalized to halt (AC #3)"
     await executor.produceResult(
       makeAgentStep("reviewer-alpha"),
       makeState(),
-      makeDeps(store, { runtimeStrategy: runtimeStrategy as never, roundOwnsGitEffects: true }),
+      makeDeps(store, { stepArtifact: runtimeStrategy as never, roundOwnsGitEffects: true }),
     );
 
     expect(errors).toContain("reviewer-alpha");
@@ -310,7 +310,7 @@ describe("StepExecutor.produceResult — outer throw normalized to halt (AC #3)"
       makeAgentStep("reviewer-alpha"),
       makeState(),
       makeDeps(store, {
-        runtimeStrategy: runtimeStrategy as never,
+        stepArtifact: runtimeStrategy as never,
         roundOwnsGitEffects: true,
       }),
     );
@@ -337,7 +337,7 @@ describe("StepExecutor.execute (sequential) — unchanged after produceResult ad
     await executor.execute(
       makeAgentStep("implementer"),
       makeState(),
-      makeDeps(store, { runtimeStrategy: runtimeStrategy as never }),
+      makeDeps(store, { stepArtifact: runtimeStrategy as never }),
     );
 
     // Sequential path: store.persist is called once (CommitOrchestrator.commitSuccess)

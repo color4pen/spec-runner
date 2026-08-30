@@ -146,6 +146,7 @@ function makeRuntimeStrategy(opts: {
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+    digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null as null }))),
     listWorktreeChanges: vi.fn(async (_cwd: string) => inspectionResult),
     commitRoundArtifacts: vi.fn(
       async (
@@ -195,7 +196,7 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore() as never,
-    runtimeStrategy: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }
@@ -215,7 +216,7 @@ describe("ParallelReviewRound git effects — declared-only changes → scoped c
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // Should NOT halt
@@ -243,7 +244,7 @@ describe("ParallelReviewRound git effects — declared-only changes → scoped c
     const round = makeRound(executor, steps);
 
     await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
@@ -270,7 +271,7 @@ describe("ParallelReviewRound git effects — undeclared changes → round halt"
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -288,7 +289,7 @@ describe("ParallelReviewRound git effects — undeclared changes → round halt"
     const round = makeRound(executor, steps);
 
     await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(runtimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
@@ -306,7 +307,7 @@ describe("ParallelReviewRound git effects — undeclared changes → round halt"
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.state.error).not.toBeNull();
@@ -326,7 +327,7 @@ describe("ParallelReviewRound git effects — undeclared changes → round halt"
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     const coordinatorRuns = result.state.steps?.[COORDINATOR] ?? [];
@@ -353,7 +354,7 @@ describe("ParallelReviewRound git effects — pipeline-managed paths excluded fr
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // Should NOT halt (pipeline-managed paths are exempt)
@@ -384,7 +385,7 @@ describe("ParallelReviewRound git effects — no changes → no commit", () => {
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("approved");
@@ -407,7 +408,7 @@ describe("ParallelReviewRound git effects — members receive roundOwnsGitEffect
     const round = makeRound(executor, steps);
 
     await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(getCapturedRoundOwnsGitEffects(MEMBER_A)).toBe(true);
@@ -439,7 +440,7 @@ describe("ParallelReviewRound git effects — fake without listWorktreeChanges s
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: minimalRuntimeStrategy as never,
+      roundGitEffects: minimalRuntimeStrategy as never,
     }));
 
     // Round should complete as approved (git ops skipped, no halt)
@@ -464,7 +465,7 @@ describe("ParallelReviewRound git effects — inspection unavailable → fail-cl
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -482,7 +483,7 @@ describe("ParallelReviewRound git effects — inspection unavailable → fail-cl
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.state.error).not.toBeNull();
@@ -502,7 +503,7 @@ describe("ParallelReviewRound git effects — inspection unavailable → fail-cl
     const round = makeRound(executor, steps);
 
     await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(runtimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
@@ -520,7 +521,7 @@ describe("ParallelReviewRound git effects — inspection unavailable → fail-cl
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     const coordinatorRuns = result.state.steps?.[COORDINATOR] ?? [];
@@ -557,7 +558,7 @@ describe("ParallelReviewRound git effects — inspection escalation keeps member
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // Members approved in-round, but the worktree could not be inspected → not approved.
@@ -578,7 +579,7 @@ describe("ParallelReviewRound git effects — inspection escalation keeps member
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -596,7 +597,7 @@ describe("ParallelReviewRound git effects — inspection escalation keeps member
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("approved");
@@ -665,7 +666,7 @@ describe("ParallelReviewRound git effects — push failure after commit → OID 
 
     // Must resolve (not throw) — push failure is converted to escalation in state
     await expect(
-      round.run(COORDINATOR, makeState(), makeDeps({ runtimeStrategy: runtimeStrategy as never })),
+      round.run(COORDINATOR, makeState(), makeDeps({ roundGitEffects: runtimeStrategy as never })),
     ).resolves.toBeDefined();
   });
 
@@ -679,7 +680,7 @@ describe("ParallelReviewRound git effects — push failure after commit → OID 
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -696,7 +697,7 @@ describe("ParallelReviewRound git effects — push failure after commit → OID 
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // synthesizedCommits must contain the OID captured after the failed push
@@ -752,7 +753,7 @@ describe("ParallelReviewRound git effects — pre-commit backstop rejection → 
     const round = makeRound(executor, steps);
 
     await expect(
-      round.run(COORDINATOR, makeState(), makeDeps({ runtimeStrategy: runtimeStrategy as never })),
+      round.run(COORDINATOR, makeState(), makeDeps({ roundGitEffects: runtimeStrategy as never })),
     ).resolves.toBeDefined();
   });
 
@@ -766,7 +767,7 @@ describe("ParallelReviewRound git effects — pre-commit backstop rejection → 
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -783,7 +784,7 @@ describe("ParallelReviewRound git effects — pre-commit backstop rejection → 
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // synthesizedCommits must NOT contain the pre-existing HEAD — no commit was created.
@@ -854,7 +855,7 @@ describe("ParallelReviewRound git effects — pre-observation null + backstop re
     const round = makeRound(executor, steps);
 
     await expect(
-      round.run(COORDINATOR, makeState(), makeDeps({ runtimeStrategy: runtimeStrategy as never })),
+      round.run(COORDINATOR, makeState(), makeDeps({ roundGitEffects: runtimeStrategy as never })),
     ).resolves.toBeDefined();
   });
 
@@ -868,7 +869,7 @@ describe("ParallelReviewRound git effects — pre-observation null + backstop re
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -889,7 +890,7 @@ describe("ParallelReviewRound git effects — pre-observation null + backstop re
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // The existing HEAD OID must NOT appear in synthesizedCommits regardless of
@@ -907,7 +908,7 @@ describe("ParallelReviewRound git effects — pre-observation null + backstop re
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     const coordinatorRun = result.state.steps?.[COORDINATOR]?.at(-1);
@@ -966,7 +967,7 @@ describe("ParallelReviewRound git effects — both HEAD observations non-null, d
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     // The new commit OID must be in synthesizedCommits (commit was created locally)
@@ -985,7 +986,7 @@ describe("ParallelReviewRound git effects — both HEAD observations non-null, d
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
     }));
 
     expect(result.outcome).toBe("escalation");
@@ -1021,7 +1022,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
 
     // WHEN: round.run with config that excludes the path
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
     }));
 
@@ -1043,7 +1044,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     const round = makeRound(executor, steps);
 
     await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: [EXCLUDE_PATTERN] } } as never,
     }));
 
@@ -1069,7 +1070,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
 
     // WHEN: round.run with NO exclusion config
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       // config has no stagingExcludePatterns
     }));
 
@@ -1106,7 +1107,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     // (specrunner/changes/** would match spec.md — but spec.md must NOT be excluded
     //  from the offending-path check)
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
     }));
 
@@ -1146,7 +1147,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
 
     // WHEN: round.run with stagingExcludePatterns that matches the review-feedback path
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
     }));
 
@@ -1173,7 +1174,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
     const round = makeRound(executor, steps);
 
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
     }));
 
@@ -1209,7 +1210,7 @@ describe("ParallelReviewRound git effects — stagingExcludePatterns prevents RO
 
     // WHEN: round.run with stagingExcludePatterns matching the declared result file
     const result = await round.run(COORDINATOR, makeState(), makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      roundGitEffects: runtimeStrategy as never,
       config: { pipeline: { stagingExcludePatterns: ["specrunner/changes/**"] } } as never,
     }));
 

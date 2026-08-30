@@ -7,7 +7,7 @@ import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
 import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
 import type { OutputContract } from "./output-contract.js";
-import type { RuntimeStrategy } from "./runtime-strategy.js";
+import type { CommitInspectionCapability } from "./runtime-strategy.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -64,8 +64,6 @@ export type StepDeps = StepContext;
  */
 export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
-  /** Runtime strategy for artifact lifecycle and git operations. Optional in tests. */
-  runtimeStrategy?: RuntimeStrategy | null;
 }
 
 /**
@@ -243,9 +241,9 @@ export interface AgentStep {
   /**
    * Prepare additional dynamic context fields before buildMessage is called.
    * Called by core's buildStepContext (step-context-builder.ts) — has access to
-   * runtimeStrategy because it runs in the core layer, not the adapter layer.
+   * commitInspection capability because it runs in the core layer, not the adapter layer.
    * This is the key difference from enrichContext, which is called by the adapter and
-   * has no access to RuntimeStrategy.
+   * has no access to CommitInspectionCapability.
    *
    * Returns a Partial<DynamicContext> whose fields are spread-merged onto the existing
    * dynamicContext before building the AgentRunContext. null means no enrichment.
@@ -256,7 +254,7 @@ export interface AgentStep {
   prepareRoundContext?(
     state: JobState,
     cwd: string,
-    runtimeStrategy: RuntimeStrategy | undefined,
+    commitInspection: CommitInspectionCapability | undefined,
   ): Promise<Partial<DynamicContext> | null>;
 
   /**

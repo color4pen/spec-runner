@@ -5,8 +5,8 @@
  * pattern: new logic lives in a sibling file, executor delegates.
  *
  * Wiring:
- *   1. Guard: permissionScope absent / step not checkpoint / no runtimeStrategy → [].
- *   2. Fetch changed files via runtimeStrategy seam (B-5: no direct I/O here).
+ *   1. Guard: permissionScope absent / step not checkpoint / no changedFiles → [].
+ *   2. Fetch changed files via changedFiles seam (B-5: no direct I/O here).
  *   3. Derive breach via pure function in scope.ts.
  *   4. Synthesize decision-needed findings via pure function in scope.ts.
  *
@@ -25,7 +25,7 @@ import { deriveScopeBreach, synthesizeScopeFindings, synthesizeScopeUnverifiable
  * Returns [] when:
  * - permissionScope is absent (no scope declared → existing behavior)
  * - step name does not match the declared checkpoint
- * - runtimeStrategy is unavailable (no seam → cannot fetch changed files)
+ * - changedFiles capability is unavailable (no seam → cannot fetch changed files)
  * - no forbidden surface is breached
  *
  * Returns one decision-needed Finding (origin:"scope") when a breach is detected.
@@ -40,24 +40,24 @@ export async function computeExtraScopeFindings(
     slug: string;
     request: { baseBranch?: string };
     cwd?: string;
-    runtimeStrategy?: ChangedFilesCapability;
+    changedFiles?: ChangedFilesCapability;
   },
 ): Promise<Finding[]> {
   if (!permissionScope) return [];
   if (stepName !== permissionScope.checkpoint) return [];
-  if (!deps.runtimeStrategy) return [];
+  if (!deps.changedFiles) return [];
 
   // Fail-closed: if the runtime explicitly declares it cannot derive changed files,
   // skip listChangedFiles (which would silently return [] = fail-open) and synthesize
   // an UNKNOWN decision-needed finding instead.
   // predicate absent or true → fall through to existing listChangedFiles path (#689 behavior).
-  if (deps.runtimeStrategy.canDeriveChangedFiles?.() === false) {
+  if (deps.changedFiles.canDeriveChangedFiles?.() === false) {
     return synthesizeScopeUnverifiableFinding({ slug: deps.slug });
   }
 
   const baseBranch = deps.request.baseBranch ?? "main";
   const cwd = deps.cwd ?? process.cwd();
-  const result = await deps.runtimeStrategy.listChangedFiles(
+  const result = await deps.changedFiles.listChangedFiles(
     baseBranch, cwd, state.branch ?? null,
   );
 

@@ -4,8 +4,10 @@ import type { AgentRunner } from "./port/agent-runner.js";
 import type { SpawnFn } from "../util/spawn.js";
 import type { SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
 import type { JobStateStore } from "../store/job-state-store.js";
-import type { RuntimeStrategy } from "./port/runtime-strategy.js";
 import type { ResumeContextSnapshot } from "./resume/resume-context.js";
+import type { ChangedFilesCapability, CommitInspectionCapability, RevisionContentCapability } from "./port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "./step/step-capability.js";
+import type { TerminalStateCapability, RoundGitEffectsCapability } from "./pipeline/pipeline-capability.js";
 
 export type { StepContext } from "./port/step-context.js";
 import type { StepContext } from "./port/step-context.js";
@@ -24,6 +26,9 @@ export type StoreFactory = (jobId: string) => JobStateStore;
  *
  * Extends StepContext so that PipelineDeps can be passed anywhere StepContext is expected.
  * Design D1 (stepcontext-type-separation): PipelineDeps extends StepContext.
+ *
+ * R2b: runtimeStrategy is removed. Consumers use narrow capability fields instead.
+ * Capability absence is expressed by the field being undefined (not optional methods).
  */
 export interface PipelineDeps extends StepContext {
   /**
@@ -84,11 +89,50 @@ export interface PipelineDeps extends StepContext {
    */
   gitTransportSpawn?: GitExecSpawnFn;
   /**
-   * Runtime strategy for step artifact lifecycle delegation (B-8 seam).
-   * Injected by RuntimeStrategy.buildDeps() so executor stays runtime-agnostic.
-   * Optional for backward compatibility with existing tests that don't inject it.
+   * Step artifact lifecycle capability (R2b).
+   * Injected by buildDeps(). Handles captureHeadSha, prepareStepArtifacts,
+   * finalizeStepArtifacts, snapshotMainCheckoutGuard, digestArtifacts.
+   * Optional: undefined when runtime does not support artifact lifecycle (e.g. test stubs).
    */
-  runtimeStrategy?: RuntimeStrategy;
+  stepArtifact?: StepArtifactLifecycleCapability;
+  /**
+   * Step I/O validation capability (R2b).
+   * Injected by buildDeps(). Handles validateStepInputs, validateStepOutputs,
+   * verifyFindingRefs.
+   * Optional: undefined when runtime does not support I/O validation.
+   */
+  stepIo?: StepIoValidationCapability;
+  /**
+   * Terminal state capability (R2b).
+   * Injected by buildDeps(). Handles commitFinalState for pipeline/command terminal transitions.
+   * Optional: undefined when the runtime does not support terminal state commit (e.g. test stubs).
+   */
+  terminalState?: TerminalStateCapability;
+  /**
+   * Round-owned git effects capability (R2b).
+   * Injected by buildDeps(). Handles coordinator fan-out git operations:
+   * captureHeadSha, listWorktreeChanges, commitRoundArtifacts, digestArtifacts, listChangedFiles.
+   * Optional: undefined when runtime does not support round git effects.
+   */
+  roundGitEffects?: RoundGitEffectsCapability;
+  /**
+   * Changed-files derivation capability (R2a).
+   * Injected by buildDeps(). Handles listChangedFiles and canDeriveChangedFiles.
+   * Optional: undefined when runtime does not support changed-file derivation.
+   */
+  changedFiles?: ChangedFilesCapability;
+  /**
+   * Commit inspection capability (R2a).
+   * Injected by buildDeps(). Handles listCommitChangedFiles.
+   * Optional: undefined when runtime cannot inspect commits (e.g. managed runtime).
+   */
+  commitInspection?: CommitInspectionCapability;
+  /**
+   * Revision content capability (R2a).
+   * Injected by buildDeps(). Handles readRevisionContent.
+   * Optional: undefined when runtime cannot read revision content (e.g. managed runtime).
+   */
+  revisionContent?: RevisionContentCapability;
   /**
    * When true, this execution input is owned by a coordinator round.
    * The executor skips finalizeStepArtifacts (git stage/commit/push) entirely;

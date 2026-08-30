@@ -25,6 +25,7 @@ import { JobStateStore, buildInitialJobState } from "../../store/job-state-store
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, consumeDraft, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
+import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
@@ -33,6 +34,9 @@ import { assertSlugUnoccupied } from "../occupancy/guard.js";
 import { isProcessAlive } from "../resume/safety.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import { deriveStepArtifactLifecycleCapability, deriveStepIoValidationCapability } from "../step/step-capability.js";
+import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../pipeline/pipeline-capability.js";
+import type { RoundEgressParams } from "../pipeline/pipeline-capability.js";
 
 import { isTerminal } from "../../state/lifecycle.js";
 import type { JobStatus } from "../../state/schema.js";
@@ -329,7 +333,17 @@ export class ManagedRuntime implements RealRuntimeStrategy {
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
       storeFactory: (id: string) => this.managedLocalStore(id, slug),
-      runtimeStrategy: this,
+      // R2b capability fields
+      stepArtifact: deriveStepArtifactLifecycleCapability(this),
+      stepIo: deriveStepIoValidationCapability(this),
+      terminalState: deriveTerminalStateCapability(this),
+      roundGitEffects: deriveRoundGitEffectsCapability(this),
+      changedFiles: {
+        canDeriveChangedFiles: () => this.canDeriveChangedFiles(),
+        listChangedFiles: (baseBranch, cwd, branch) => this.listChangedFiles(baseBranch, cwd, branch),
+      },
+      commitInspection: deriveCommitInspectionCapability(this),
+      revisionContent: deriveRevisionContentCapability(this),
     };
   }
 
@@ -361,9 +375,10 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   async finalizeStepArtifacts(
     _step: AgentStep,
     _state: JobState,
-    _deps: PipelineDeps,
+    _cwd: string,
+    _slug: string,
     _headBeforeStep: string | null,
-    _commitPushInfra: CommitPushInfra,
+    _infra: CommitPushInfra,
   ): Promise<void> {
     // no-op: managed runtime does not commit/push from the CLI
   }
@@ -371,7 +386,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   /**
    * D5: no-op for managed runtime — cloud agent manages branch state independently.
    */
-  async commitFinalState(_deps: unknown, _state: unknown): Promise<void> {
+  async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {
     // no-op
   }
 
@@ -642,7 +657,8 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     _branch: string,
     _coordinatorName: string,
     _slug: string,
-    _commitPushInfra: unknown,
+    _infra: CommitPushInfra,
+    _egressParams?: RoundEgressParams,
   ): Promise<void> {
     // no-op: no local worktree
   }

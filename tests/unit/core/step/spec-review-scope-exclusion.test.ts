@@ -193,11 +193,10 @@ function makeDeps(): PipelineDeps {
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    // runtimeStrategy: provide a minimal fake that satisfies the gate check
-    runtimeStrategy: {
-      digestArtifacts: vi.fn().mockResolvedValue([]),
-      readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
-    } as unknown as PipelineDeps["runtimeStrategy"],
+    // stepArtifact: digestArtifacts
+    stepArtifact: { digestArtifacts: vi.fn().mockResolvedValue([]) } as never,
+    // revisionContent: readRevisionContent
+    revisionContent: { readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }) } as never,
   } as unknown as PipelineDeps;
 }
 

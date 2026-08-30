@@ -211,9 +211,7 @@ function makePipelineDeps(
     async teardown() {},
     async captureHeadSha() { return null; },
     async prepareStepArtifacts() {},
-    async finalizeStepArtifacts() {},
     async validateStepInputs() {},
-    async commitFinalState() {},
     async bootstrapJob() { throw new Error("not implemented"); },
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
@@ -237,7 +235,8 @@ function makePipelineDeps(
       adr: false,
     },
     slug: "test-slug",
-    runtimeStrategy: mockStrategy,
+    stepArtifact: mockStrategy as never,
+    stepIo: mockStrategy as never,
     ...overrides,
   } as unknown as PipelineDeps;
 }
@@ -390,12 +389,12 @@ describe("TC-033 & TC-034: maxAttempts and per-attempt filtering in outputVerifi
   it("TC-011: when violations resolve, outputVerification.detect returns empty violations", async () => {
     const state = makeState();
     // Simulate: after follow-up, validateStepOutputs returns no violations
-    const strategy = makePipelineDeps({ pushCapability: declaringCapability }).runtimeStrategy!;
+    const strategy = makePipelineDeps({ pushCapability: declaringCapability }).stepIo! as unknown as import("../../../src/core/port/runtime-strategy.js").RuntimeStrategy;
     vi.spyOn(strategy, "validateStepOutputs").mockResolvedValue({ violations: [] });
 
     const deps = makePipelineDeps({
       pushCapability: declaringCapability,
-      runtimeStrategy: strategy,
+      stepIo: strategy as never,
     });
 
     const ctx = await buildStepContext(

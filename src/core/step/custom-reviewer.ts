@@ -25,8 +25,7 @@ import { nextIteration } from "./io-iteration.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import { deriveCommitInspectionCapability } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import {
   deriveCustomReviewerPriorRound,
   deriveOperatorAdjudicationContext,
@@ -144,7 +143,7 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
     async prepareRoundContext(
       state: JobState,
       cwd: string,
-      runtimeStrategy: RuntimeStrategy | undefined,
+      commitInspection: CommitInspectionCapability | undefined,
     ): Promise<Partial<DynamicContext> | null> {
       const iteration = nextIteration(state, snapshot.name);
 
@@ -154,7 +153,7 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
         reviewerName: snapshot.name,
         iteration,
         cwd,
-        runtimeStrategy: deriveCommitInspectionCapability(runtimeStrategy),
+        runtimeStrategy: commitInspection,
       });
 
       // Derive operator adjudication context (null if both ledgers are empty)

@@ -17,7 +17,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
-import type { RuntimeStrategy, ChangedFilesResult } from "../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesResult } from "../../../src/core/port/runtime-strategy.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
@@ -71,7 +71,8 @@ function makeConfig(): SpecRunnerConfig {
 }
 
 function makeMinimalDeps(
-  runtimeStrategy: RuntimeStrategy,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  runtimeStrategy: any,
 ): PipelineDeps {
   return {
     config: makeConfig(),
@@ -90,7 +91,9 @@ function makeMinimalDeps(
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
   };
 }
 
@@ -115,10 +118,10 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 function makeRuntimeStrategy(
   listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<ChangedFilesResult>,
   canDeriveChangedFilesImpl?: () => boolean,
-): RuntimeStrategy {
-  const base: RuntimeStrategy = {
+) {
+  const base = {
     async *query() {},
-    createAgentRunner() { return { async run() { return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }; } }; },
+    createAgentRunner() { return { async run() { return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }; } }; },
     async setupWorkspace() { return { cwd: "" }; },
     buildDeps() { return {} as never; },
     registerCleanup() { return {} as never; },
@@ -128,11 +131,10 @@ function makeRuntimeStrategy(
     async finalizeStepArtifacts() {},
     async validateStepInputs() {},
     async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     listChangedFiles,
   };
   if (canDeriveChangedFilesImpl !== undefined) {

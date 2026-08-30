@@ -125,10 +125,10 @@ function makeApprovedState(activationPaths: string[] | undefined): JobState {
   };
 }
 
-/** Build PipelineDeps with a controlled runtimeStrategy. */
+/** Build PipelineDeps with a controlled roundGitEffects. */
 function makeDeps(
   store: ReturnType<typeof makeStore>,
-  runtimeStrategy: PipelineDeps["runtimeStrategy"],
+  roundGitEffects: unknown,
 ): PipelineDeps {
   return {
     cwd: "/tmp/test",
@@ -148,7 +148,7 @@ function makeDeps(
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
-    runtimeStrategy,
+    roundGitEffects: roundGitEffects as never,
   };
 }
 

@@ -36,6 +36,7 @@ import type { Step } from "../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { FindingRef } from "../../port/runtime-strategy.js";
+import type { StepIoValidationCapability } from "../step-capability.js";
 import type { GitHubClient } from "../../port/github-client.js";
 import type { SessionClient } from "../../port/session-client.js";
 import type { OriginInfo } from "../../../git/remote.js";
@@ -206,7 +207,7 @@ describe("TC-003: valid missing-file declaration preserves needs-fix routing (#9
 
       const deps = makeBaseDeps({
         cwd: "/fake-cwd",
-        runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+        stepIo: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as StepIoValidationCapability,
       });
       const step = makeStep("regression-gate", true);
       const state = makeState("regression-gate");
@@ -248,7 +249,7 @@ describe("TC-004: false declaration — fileMissing:true but file exists → esc
 
       const deps = makeBaseDeps({
         cwd: "/fake-cwd",
-        runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+        stepIo: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as StepIoValidationCapability,
       });
       const step = makeStep("code-review", false);
       const state = makeState("code-review");
@@ -292,7 +293,7 @@ describe("TC-005: non-declared finding + absent file → escalation, no escalati
 
       const deps = makeBaseDeps({
         cwd: "/fake-cwd",
-        runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+        stepIo: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as StepIoValidationCapability,
       });
       const step = makeStep("code-review", false);
       const state = makeState("code-review");
@@ -380,7 +381,7 @@ describe("TC-006: local / managed runtime symmetry for missing-file declaration"
   }
 
   async function runCompletionWith(
-    runtimeStrategy: PipelineDeps["runtimeStrategy"],
+    runtime: StepIoValidationCapability,
     cwd: string,
     fileMissingOnFinding: boolean,
     fileExists: boolean, // for documentation only; seam controls reality
@@ -405,7 +406,7 @@ describe("TC-006: local / managed runtime symmetry for missing-file declaration"
     return deriveStepCompletion(
       step,
       state,
-      makeBaseDeps({ cwd, runtimeStrategy }),
+      makeBaseDeps({ cwd, stepIo: runtime as unknown as StepIoValidationCapability }),
       { toolResult },
       undefined,
     );
@@ -482,7 +483,7 @@ describe("TC-007: fileMissing:true + line → line is NOT passed to verifyFindin
 
     const deps = makeBaseDeps({
       cwd: "/fake-cwd",
-      runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+      stepIo: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as StepIoValidationCapability,
     });
     const step = makeStep("regression-gate", true);
     const state = makeState("regression-gate");
@@ -725,7 +726,7 @@ describe("TC-006b: branch=null + missingDecl → fail-closed (escalation)", () =
 
       const deps = makeBaseDeps({
         cwd: "/fake-cwd",
-        runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+        stepIo: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as StepIoValidationCapability,
       });
       const step = makeStep("regression-gate", true);
       const state: ReturnType<typeof makeState> = { ...makeState("regression-gate"), branch: null };

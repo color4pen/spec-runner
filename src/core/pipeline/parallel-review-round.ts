@@ -110,8 +110,8 @@ export class ParallelReviewRound {
     // undefined = digestArtifacts not available (managed runtime / legacy caller) → no canon check.
     // null = digestArtifacts returned all-null hashes (files missing) → fail-closed.
     let currentCanonHash: string | null | undefined = undefined;
-    if (deps.runtimeStrategy?.digestArtifacts) {
-      const canonRefs = await deps.runtimeStrategy.digestArtifacts(
+    if (deps.roundGitEffects?.digestArtifacts) {
+      const canonRefs = await deps.roundGitEffects.digestArtifacts(
         canonicalDocPaths(deps.slug).map((p) => ({ path: p })),
         cwd,
         state.branch ?? null,
@@ -130,10 +130,10 @@ export class ParallelReviewRound {
     // no timestamp fallback. null → revision check disabled in selectPendingMembers (managed
     // fail-safe). currentHeadSha retains the timestamp fallback for invalidatedByCommit only.
     let baselineCommit: string | null = null;
-    if (deps.runtimeStrategy) {
+    if (deps.roundGitEffects) {
       // baselineCommit: nullable raw SHA — used for revision binding (T-04).
       // currentHeadSha: with timestamp fallback — used for invalidatedByCommit field only.
-      baselineCommit = await deps.runtimeStrategy.captureHeadSha(cwd);
+      baselineCommit = await deps.roundGitEffects.captureHeadSha(cwd);
       const currentHeadSha = baselineCommit ?? new Date().toISOString();
 
       // Per-member invalidation: each approved member has its own approvedAtCommit
@@ -142,7 +142,7 @@ export class ParallelReviewRound {
         const s = updatedStatuses[i]!;
         if (s.status !== "approved" || !s.approvedAtCommit) continue;
 
-        const result = await deps.runtimeStrategy.listChangedFiles(
+        const result = await deps.roundGitEffects.listChangedFiles(
           s.approvedAtCommit,
           cwd,
           state.branch ?? null,
@@ -269,8 +269,8 @@ export class ParallelReviewRound {
       //   quarantine the diff, reset HEAD to baselineCommit, halt the round.
       // inspectionEscalated: declared here so HEAD guard and git-effects check share it.
       let inspectionEscalated = false;
-      if (deps.runtimeStrategy) {
-        const headAfterFanOut = await deps.runtimeStrategy.captureHeadSha(cwd);
+      if (deps.roundGitEffects) {
+        const headAfterFanOut = await deps.roundGitEffects.captureHeadSha(cwd);
         if (headAfterFanOut !== null && baselineCommit !== null && headAfterFanOut !== baselineCommit) {
           aggregateVerdictResult = "escalation";
           inspectionEscalated = true;
@@ -310,8 +310,8 @@ export class ParallelReviewRound {
       // Capture HEAD SHA after all members have run (for approvedAtCommit).
       // Under roundOwnsGitEffects, members do not commit, so HEAD should not have
       // advanced — but we capture it here for consistency with the non-round path.
-      const headSha = deps.runtimeStrategy
-        ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? now
+      const headSha = deps.roundGitEffects
+        ? (await deps.roundGitEffects.captureHeadSha(cwd)) ?? now
         : now;
 
       const memberVerdicts = new Map<string, string>();
@@ -367,7 +367,7 @@ export class ParallelReviewRound {
       // inspectionEscalated: declared at step 5b (HEAD guard) so HEAD guard and this
       // git-effects check share the same flag. Already true if HEAD guard fired.
       // roundCommitOid is declared above (outer scope) for use in commitRound call.
-      if (deps.runtimeStrategy?.listWorktreeChanges) {
+      if (deps.roundGitEffects?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
         const infra: CommitPushInfra = {
@@ -376,7 +376,7 @@ export class ParallelReviewRound {
           events: this.events,
         };
 
-        const inspection = await deps.runtimeStrategy.listWorktreeChanges(cwd);
+        const inspection = await deps.roundGitEffects.listWorktreeChanges(cwd);
 
         if (inspection.kind === "unavailable") {
           // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
@@ -456,12 +456,12 @@ export class ParallelReviewRound {
             // commitRoundArtifacts threw before creating a local commit (e.g., UNPUSHABLE_PATH_BLOCKED
             // fires before git add/commit). Recording pre-existing HEAD as a synthesized commit
             // would corrupt the egress ledger. Only record the OID when HEAD actually advanced.
-            const headBeforeCommit = deps.runtimeStrategy
-              ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
+            const headBeforeCommit = deps.roundGitEffects
+              ? ((await deps.roundGitEffects.captureHeadSha(cwd)) ?? null)
               : null;
             let commitArtifactError: unknown = null;
             try {
-              await deps.runtimeStrategy.commitRoundArtifacts?.(
+              await deps.roundGitEffects.commitRoundArtifacts?.(
                 toStage,
                 cwd,
                 branch,
@@ -491,8 +491,8 @@ export class ParallelReviewRound {
             // headAfterCommit !== headBeforeCommit would be vacuously true (someOID !== null),
             // incorrectly treating an unchanged existing HEAD as a newly created commit and
             // corrupting the egress authorization ledger with a pre-existing OID.
-            const headAfterCommit = deps.runtimeStrategy
-              ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
+            const headAfterCommit = deps.roundGitEffects
+              ? ((await deps.roundGitEffects.captureHeadSha(cwd)) ?? null)
               : null;
             const headAdvanced =
               headBeforeCommit !== null &&
