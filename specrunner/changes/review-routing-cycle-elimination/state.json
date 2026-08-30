@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T02:29:23.043Z",
+  "updatedAt": "2026-08-30T02:32:54.663Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
@@ -71,7 +71,9 @@
     "61dc41a8765afed548512113f561cbfb71b4f68f",
     "2517a319561b66a9eb666d04dc92d6649f221bbb",
     "f01af29ba9b883998d20211830d76ba63d719444",
-    "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27"
+    "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27",
+    "b1753623ff6adbbe9a59f4a561938cf28698f041",
+    "33b7c33faf2630dbdd0b5f918f7f72502c155c29"
   ],
   "touchedFiles": {
     "request-review": [
@@ -156,10 +158,45 @@
       "src/core/pipeline/__tests__/reviewer-chain.test.ts",
       "src/core/step/__tests__/fixer-push-capability.test.ts",
       "tests/unit/pipeline/transition-when.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/review-routing.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "b1753623ff6adbbe9a59f4a561938cf28698f041",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/review-routing-cycle-elimination/design.md:sha256:524448e48875b6777227c323c92eb04efa308cb564a16f7857b8df8a5c5ab681|specrunner/changes/review-routing-cycle-elimination/request.md:sha256:81ee4aa6f89fbf12fdb5790f0f1efa0c3c627c1c0dd5d5878482dfe518eb98e1|specrunner/changes/review-routing-cycle-elimination/spec.md:sha256:232dc72b688bd1aa26d91f04143c3541899f539fb91688a06e3625551e468897|specrunner/changes/review-routing-cycle-elimination/tasks.md:sha256:22cd01c27e007fc4dcf31176b11dfaecd869a1f0cab6e66a1f69de184f3a0e6e|specrunner/changes/review-routing-cycle-elimination/test-cases.md:sha256:5fb557723681a97dc55300a9d2d58beb8ef47684bc92791e8532d5e1edd9c68b"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -168,7 +205,11 @@
       "spec-fixer": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }

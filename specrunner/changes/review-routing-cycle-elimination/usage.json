@@ -218,6 +218,51 @@
         "peakActiveContextTokens": 124473,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-30T02:31:36.375Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 22176,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 16,
+          "outputTokens": 6997,
+          "cacheReadInputTokens": 533503,
+          "cacheCreationInputTokens": 101166
+        }
+      },
+      "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
+      "stepName": "code-fixer",
+      "numTurns": 11,
+      "durationMs": 95588,
+      "durationApiMs": 94116,
+      "totalCostUsd": 0.42572765,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 59233,
+        "compactionCount": 0
+      }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-30T02:32:53.365Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 471751,
+          "outputTokens": 2693,
+          "cacheReadInputTokens": 395520,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
