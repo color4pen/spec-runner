@@ -99,7 +99,6 @@ function makeDeps(store: ReturnType<typeof makeStore>): PipelineDeps {
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: undefined,
   } as PipelineDeps;
 }
 

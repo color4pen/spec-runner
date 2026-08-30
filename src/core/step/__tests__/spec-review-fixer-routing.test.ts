@@ -626,7 +626,6 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      runtimeStrategy: undefined,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);
@@ -710,7 +709,6 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      runtimeStrategy: undefined,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);

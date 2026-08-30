@@ -92,7 +92,6 @@ function makeDeps(
     repo: "repo",
     spawn: vi.fn() as never,
     storeFactory: () => store as never,
-    runtimeStrategy: undefined,
     resumePrompt: undefined,
     resumeContext: undefined,
     ...overrides,
