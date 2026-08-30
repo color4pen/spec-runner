@@ -293,3 +293,10 @@
 {"type":"transition","ts":"2026-08-30T23:18:11.113Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-08-30T23:18:11.115Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-08-30T23:18:11.116Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-30T23:22:38.163Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"dbc3b411-a2a7-4093-85ee-9fe5bf39f23b","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/runtime-mutation-lifecycle-capability-split/regression-gate-result-006.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":22,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-30T23:18:11.152Z","endedAt":"2026-08-30T23:22:36.666Z","commitOid":"703a34e6dcb40a0659b82e89bc79ad13eebca9f1"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-30T23:22:36.666Z","outputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split/regression-gate-result-006.md","hash":"sha256:9ed9db2b2664535892024f17a061b52a1b342252babf5133b67bb87d3a7751bf"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-30T23:22:38.167Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-30T23:22:38.168Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-30T23:22:38.169Z","step":"conformance","status":"started","message":"conformance iteration 2 started"}
+{"type":"transition","ts":"2026-08-30T23:22:38.170Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
