@@ -216,6 +216,20 @@
         "peakActiveContextTokens": 45144,
         "compactionCount": 0
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-30T09:08:07.816Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 431871,
+          "outputTokens": 2885,
+          "cacheReadInputTokens": 327680,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
   "createdAt": "2026-08-30T04:53:17.618Z",
-  "updatedAt": "2026-08-30T05:42:07.580Z",
+  "updatedAt": "2026-08-30T09:08:09.337Z",
   "request": {
     "title": "RuntimeStrategy の read-only consumer を consumer-owned capability へ分割する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "refactor/runtime-read-capability-split-7f342c82",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,8 @@
     "b88c0da8e9261d55b572e5a64e5a6da690cf51b1",
     "0f75abfa1b855625aaef4f0f03b707191338647a",
     "030d052fff7c1cc2bf6e215811c0249e89c33a00",
-    "bb7759d89e04ed8cb303efd9a93990da74597e06"
+    "bb7759d89e04ed8cb303efd9a93990da74597e06",
+    "7187288f7f07f84a4167b3c759f3b622a526fbf5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -172,8 +173,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "be9d227ddb3b932259c6f6c7c538948e515a667d",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -183,7 +184,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/runtime-read-capability-split/design.md:sha256:5bae82d1b6ea0b4f1db3a559a7c7c4484eaf5662ea844f3802d9287ece07e03b|specrunner/changes/runtime-read-capability-split/request.md:sha256:69ed247e0016c7d892f95a18622bddceada18fe93f9f85702b3373e4db1db4a0|specrunner/changes/runtime-read-capability-split/spec.md:sha256:f26b0512f20d1d6103f25e0a4b304e83ce5ea35a82cec8373ce8ac891df55512|specrunner/changes/runtime-read-capability-split/tasks.md:sha256:6b86cf8dc087a9597217d427ee9f20aaf5b51bda578f4c5197f2a712236c934e|specrunner/changes/runtime-read-capability-split/test-cases.md:sha256:50bb178f92053a9f5490ef57daee29ee0d4a354b095cbbf1c25d5a0eb0c67853"
     },
     {
       "name": "scale-tolerance",
@@ -198,13 +200,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -214,9 +213,9 @@
       "verification": 1,
       "code-review": 1,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
