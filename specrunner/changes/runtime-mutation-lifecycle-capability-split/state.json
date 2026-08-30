@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T17:54:00.833Z",
+  "updatedAt": "2026-08-30T17:58:35.079Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -96,7 +96,8 @@
     "20de82c56c76f1990660445093ba67505da1709d",
     "381536eddb3c913ddf906d0ffd48dda51a946570",
     "53db3f02dbc91223f7891417b82d1681797fd218",
-    "e47a840ea80a06b2140acf474bddf92aca3b7395"
+    "e47a840ea80a06b2140acf474bddf92aca3b7395",
+    "d1d459c13900b1e4831cc55447ed5399e6ac8b28"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -155,8 +156,10 @@
       "src/core/command/runner.ts",
       "src/core/pipeline/pipeline-capability.ts",
       "src/core/runtime/local.ts",
+      "tests/unit/step/executor-lifecycle-ordering.test.ts",
+      "architecture/components.md",
       "src/core/pipeline/pipeline.ts",
-      "tests/unit/step/executor-lifecycle-ordering.test.ts"
+      "src/core/types.ts"
     ],
     "conformance": [
       "src/core/step/step-capability.ts",
@@ -223,7 +226,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 147,
+    "historyCount": 151,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -237,7 +240,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 3,
+      "regression-gate": 4,
       "conformance": 2
     }
   }
