@@ -1114,6 +1114,9 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       digestArtifacts: vitest.fn().mockResolvedValue([]),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
       listChangedFiles: vitest.fn().mockResolvedValue({ kind: "success" as const, files: ["src/feature.ts"] }),
+      // listWorktreeChanges: no uncommitted changes after invalidation (coordinator git effects)
+      listWorktreeChanges: vitest.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+      commitRoundArtifacts: vitest.fn().mockResolvedValue(undefined),
     };
 
     const deps = {

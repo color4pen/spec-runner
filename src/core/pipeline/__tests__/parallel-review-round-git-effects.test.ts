@@ -655,6 +655,7 @@ describe("ParallelReviewRound git effects — push failure after commit → OID 
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null as null }))),
       listWorktreeChanges: vi.fn(async (_cwd: string) => ({
         kind: "success" as const,
         paths: [DECLARED_A],
@@ -739,6 +740,7 @@ describe("ParallelReviewRound git effects — pre-commit backstop rejection → 
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null as null }))),
       listWorktreeChanges: vi.fn(async (_cwd: string) => ({
         kind: "success" as const,
         paths: [DECLARED_A],
@@ -841,6 +843,7 @@ describe("ParallelReviewRound git effects — pre-observation null + backstop re
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null as null }))),
       listWorktreeChanges: vi.fn(async (_cwd: string) => ({
         kind: "success" as const,
         paths: [DECLARED_A],
@@ -956,6 +959,7 @@ describe("ParallelReviewRound git effects — both HEAD observations non-null, d
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null as null }))),
       listWorktreeChanges: vi.fn(async (_cwd: string) => ({
         kind: "success" as const,
         paths: [DECLARED_A],

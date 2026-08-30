@@ -185,7 +185,7 @@ function makeRuntimeStrategyMock(opts: {
       vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
     listChangedFiles:
       opts.listChangedFiles ?? vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    digestArtifacts: opts.digestArtifacts ?? undefined,
+    digestArtifacts: opts.digestArtifacts ?? vi.fn().mockResolvedValue([]),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any as RuntimeStrategy;
 }

@@ -519,11 +519,12 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
     return { spawnFn, calls };
   }
 
-  function makeInfra(spawnFn: SpawnFn): CommitPushInfra {
+  function makeInfra(spawnFn: SpawnFn, pushCapability?: PushCapability | null): CommitPushInfra {
     return {
       spawnFn,
       sleepFn: async () => {},
       events: new EventBus(),
+      pushCapability,
     };
   }
 
@@ -568,7 +569,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   it("TC-037: throws UNPUSHABLE_PATH_BLOCKED when workflow file is in publishable set", async () => {
     // The worktree has .github/workflows/ci.yml modified
     const { spawnFn } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       ...{
@@ -594,7 +595,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-015: Push never attempted
   it("TC-015: no push git command when workflow file is in publishable set", async () => {
     const { spawnFn, calls } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-015", createdAt: "", updatedAt: "",
@@ -619,7 +620,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-015: commit never attempted either
   it("TC-015: no commit git command when workflow file is in publishable set", async () => {
     const { spawnFn, calls } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-015b", createdAt: "", updatedAt: "",
@@ -644,7 +645,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-016: Rejection reason names path and constraint
   it("TC-016: error message contains the matched path and environment constraint", async () => {
     const { spawnFn } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-016", createdAt: "", updatedAt: "",
@@ -672,7 +673,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   it("TC-018: non-matching path allows commit/push to proceed (no backstop throw)", async () => {
     // Worktree has only src/foo.ts — does not match .github/workflows/**
     const { spawnFn } = makeGitSpawn("M  src/foo.ts\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-018-l2", createdAt: "", updatedAt: "",
@@ -824,6 +825,7 @@ describe("F1 round-trip: unpushablePathBlockedError → UnpushablePathBlockedErr
       spawnFn,
       sleepFn: async () => {},
       events: new EventBus(),
+      pushCapability: declaringCapability,
     };
     const step = {
       kind: "agent" as const,
@@ -848,7 +850,6 @@ describe("F1 round-trip: unpushablePathBlockedError → UnpushablePathBlockedErr
       slug: "test-slug",
       cwd: tempDir,
       spawn: noopSpawn,
-      pushCapability: declaringCapability,
     } as unknown as import("../../../src/core/types.js").PipelineDeps;
 
     let thrownErr: unknown;
