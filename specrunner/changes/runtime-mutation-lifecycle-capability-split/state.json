@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T16:47:26.555Z",
+  "updatedAt": "2026-08-30T16:55:04.969Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -84,7 +84,8 @@
     "d889bd02253dab3bdb0553defed339f3b1f584fd",
     "2bad425a308769d7c6ffce281f9ab3938f84e3e5",
     "1203d42e210bcb9b6b5fbf58fbadad58d9692657",
-    "4180026e7fda99322247d21bdb70fd0ea7e3688c"
+    "4180026e7fda99322247d21bdb70fd0ea7e3688c",
+    "4d922fdf29d02536e4cc462064f620cd2256ee35"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -120,22 +121,20 @@
       "tests/unit/step/unpushable-path-escalation.test.ts"
     ],
     "code-review": [
-      "src/core/port/runtime-strategy.ts",
       "src/core/step/step-capability.ts",
       "src/core/pipeline/pipeline-capability.ts",
       "src/core/types.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/step/executor.ts",
-      "src/core/pipeline/parallel-review-round.ts",
       "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/parallel-review-round.ts",
       "src/core/runtime/local.ts",
+      "src/core/command/runner.ts",
       "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
-      "tests/unit/step/executor-lifecycle-ordering.test.ts",
       "src/core/runtime/managed.ts",
-      "src/core/pipeline/__tests__/iteration-display.test.ts",
-      "architecture/components.md",
-      "src/core/port/step-types.ts",
-      "src/core/command/runner.ts"
+      "tests/unit/step/executor-lifecycle-ordering.test.ts",
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
+      "architecture/components.md"
     ],
     "code-fixer": [
       "src/core/pipeline/__tests__/iteration-display.test.ts",
@@ -218,7 +217,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 92,
+    "historyCount": 96,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -227,7 +226,7 @@
       "spec-fixer": 1,
       "implementer": 3,
       "verification": 4,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,

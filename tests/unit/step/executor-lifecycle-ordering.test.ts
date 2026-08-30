@@ -18,6 +18,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { AgentStep } from "../../../src/core/port/step-types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -249,18 +250,29 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-T15-05: buildDeps result type — compile-time proof (no cast needed)
+// TC-T15-05: buildDeps result type — compile-time proof via the port interface
 //
-// This test is a type-level proof that the caller of buildDeps does not need
-// `as PipelineDeps`. We demonstrate this by assigning the fake deps (which
-// already has the PipelineDeps shape) without any cast.
+// This test proves that RuntimeStrategy.buildDeps() is declared as returning
+// PipelineDeps (not `unknown`). The proof: we call buildDeps() on an object
+// typed as RuntimeStrategy and assign the result directly to PipelineDeps.
+// If the port declared `unknown`, TypeScript would reject the assignment at
+// compile time without an `as PipelineDeps` cast.
+//
+// We do NOT test makeBaseDeps() directly — that trivially compiles regardless
+// of the port declaration because it is a locally-constructed PipelineDeps object.
 // ---------------------------------------------------------------------------
 
-describe("T-15: buildDeps return type (compile-time)", () => {
-  it("TC-T15-05: a PipelineDeps-shaped object assigns without cast (type-level proof)", () => {
-    // If buildDeps returned `unknown`, this assignment would require an `as PipelineDeps` cast.
-    // Since PipelineDeps is a concrete type, the assignment compiles without casting.
-    const deps: PipelineDeps = makeBaseDeps();
+describe("T-15: buildDeps return type (compile-time proof via port interface)", () => {
+  it("TC-T15-05: RuntimeStrategy.buildDeps() result assigns to PipelineDeps without cast", () => {
+    // Create a minimal RuntimeStrategy-typed fake that returns a known slug.
+    const fake: Pick<RuntimeStrategy, "buildDeps"> = {
+      buildDeps: () => makeBaseDeps(),
+    };
+
+    // Call through the port interface. If buildDeps returned `unknown`, the line below
+    // would be a compile error: Type 'unknown' is not assignable to type 'PipelineDeps'.
+    const deps: PipelineDeps = fake.buildDeps({} as never, {} as never, "", {} as never);
+
     expect(deps.slug).toBe("test-slug");
   });
 });

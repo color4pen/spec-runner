@@ -18,8 +18,9 @@
  * commitRoundArtifacts) have been removed from this interface; their typed counterparts
  * live on the capability interfaces in step-capability.ts / pipeline-capability.ts.
  *
- * buildDeps() returns `unknown` to avoid a ports→domain import cycle per DSM §3.
- * Callers in domain (CommandRunner) assert the result as PipelineDeps.
+ * buildDeps() returns PipelineDeps. Although PipelineDeps lives in domain/types.ts,
+ * the import is type-only (`import type`) so it is erased at runtime — TypeScript
+ * resolves the circular type reference safely (TS 3.8+, no runtime cycle).
  */
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -27,6 +28,10 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { OutputContract, OutputCheckResult } from "./output-contract.js";
+// Type-only import from domain/types.ts. Although types.ts imports from this file
+// (for ChangedFilesCapability etc.), TypeScript handles circular `import type`
+// references safely — they are erased at runtime and do not create a module cycle.
+import type { PipelineDeps } from "../types.js";
 // ---------------------------------------------------------------------------
 // Supporting types
 // ---------------------------------------------------------------------------
@@ -315,9 +320,8 @@ export function deriveRevisionContentCapability(
  * - LocalRuntime  — local worktree, ClaudeCodeRunner, signal-handler cleanup
  * - ManagedRuntime — SessionClient, ManagedAgentRunner, no-op workspace/cleanup
  *
- * Note on domain-typed parameters: `buildDeps()` returns `unknown` per DSM §3 (ports
- * layer cannot import domain/types.ts). Callers in domain assert the result as PipelineDeps.
- * The former `unknown`-typed methods (finalizeStepArtifacts, commitFinalState,
+ * buildDeps() returns PipelineDeps (type-only import from domain/types.ts — no runtime
+ * cycle). The former `unknown`-typed methods (finalizeStepArtifacts, commitFinalState,
  * commitRoundArtifacts) have been moved to capability interfaces in step-capability.ts /
  * pipeline-capability.ts. Implementations in core/runtime/ implement those interfaces
  * directly, with concrete types.
@@ -381,17 +385,15 @@ export interface RuntimeStrategy {
   /**
    * Assemble PipelineDeps for the resolved workspace.
    *
-   * Returns unknown to avoid a ports→domain import cycle (ports layer cannot import
-   * PipelineDeps from domain/types.ts per DSM §3). Callers in domain (CommandRunner)
-   * assert the result as PipelineDeps, which is safe because all concrete implementations
-   * (LocalRuntime, ManagedRuntime) return a fully typed PipelineDeps object.
+   * Returns PipelineDeps. The import is type-only so no runtime module cycle exists
+   * even though types.ts already imports capability types from this file.
    */
   buildDeps(
     config: SpecRunnerConfig,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
-  ): unknown;
+  ): PipelineDeps;
 
   /**
    * Register cleanup handlers (signal, failure).
