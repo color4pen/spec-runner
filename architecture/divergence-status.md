@@ -4,11 +4,12 @@
 > 構造の定規は `model.md`（層 / closure / B-x 不変条件）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-08-28 時点）
+## 現状（2026-08-30 時点）
 
-- **B-1〜B-18 ＋ §3 DSM closure に対する実 divergence = ゼロ**（`tests/unit/architecture/` 全 126 test green、2026-08-28 実測）。
-- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×9** ／ **B-12×6** ／ **CWD×40** ＝ 計 58 entry（2026-08-28 実数確認）。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
+- **B-1〜B-18 ＋ §3 DSM closure ＋ value-import SCC に対する実 divergence = ゼロ**（`tests/unit/architecture/` 全 149 test green、2026-08-30 実測）。
+- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×9** ／ **B-12×6** ／ **CWD×39** ＝ 計 57 entry（2026-08-30 実数確認）。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
 - **既知の未解消 divergence（コード側）: なし**。
+- **前回断面（2026-08-28）以降に取り込まれた弧**: exclusion-aware unpushable-path（#1096 — unpushable-path 判定と scoped residual check に `stagingExcludePatterns` を反映。既存 `src/git/` / step 層内の変更）→ bite-evidence 削除（#1098 — STANDARD pipeline から bite-evidence step を削除し implementer 成功後は verification へ直行。`core/step/bite-evidence/` と専用 runtime primitives 3 種（`listChangedFilesBetweenCommits` / `runTestsAtCommit` / `runTestsOnSynthesizedTree`）を削除。state の `biteEvidence` は legacy-read-only として保持）→ review routing の value-import cycle 解消（#1099 — reviewer / fixer / regression-gate の判断純関数を中立 pure module `src/core/review-routing.ts` へ集約し、`src/` の runtime value-import SCC を 0 件化。歯として `value-import-scc.test.ts`（TypeScript AST・type-only 除外・production module 非ロード）と `transition-parity.test.ts`（STANDARD / FAST / custom reviewer の transition 構造固定）を追加、architecture tests は 126 → 149）。いずれも既存層内の変化で、新しい層・cross-layer edge は生んでいない。
 - **前回断面（2026-08-20）以降に取り込まれた弧**: agent-context-observability（#1070 — `CommandInvocation` に context 観測面を追加）→ fresh-session rollover（#1076 — `DomainEvent` に `step:rollover` を追加）→ cross-boundary-invariants の Codex provider 実行（#1077）→ push capability preflight（#1078 — 既存 `src/git/` に shared-kernel module `push-capability.ts` を追加）。構造面の変化は kernel の型/イベント列挙と既存層内の module 追加に限られ、新しい層・cross-layer edge は生んでいない。B-6 allowlist には known-safe call-site として `B6-codex-auth-json-read`（#1077）と `B6-runner-push-capability-detect`（#1078）の 2 entry が追加された（B-6×7 → ×9）。
 - **定義 doc の追随（2026-08-28・リリース前正本同期）**: 2026-08-24 断面以降に着地した 3 弧 — 単相 archive（#1083 `single-phase-archive`）→ reopen/resume の分離（#1088 `split-reopen-from-resume`）→ fixer への unpushable-path 2 層適用（#1086 `fixer-unpushable-path-coverage`）— を正本に反映。`model.md` B-17 の遷移表記を `awaiting-archive → awaiting-resume` に修正、`dynamic-model.md` の reopen を「状態巻き戻しのみ（pipeline 実行・再開位置選択は `job resume --from` の責務）」に更新、`components.md` の archive 節を Archive subsystem（record / plain 編成 / cleanup / merge 後完了の所有境界を分解）として merge 前に完結する単相 archive へ更新、同 StepExecutor に「`unpushable-path` は commit 前ゲート対象外（adapter follow-up + commit/push 時 backstop が担当）」を明記。構造 ADR `2026-08-28-single-phase-pre-merge-archive` を追加（ADR-20260612 / ADR-20260603 の「merge 済みが archive の前提」部分を amend。両 ADR の他の決定は有効のまま）。いずれもコード側の構造変化は既存層内に閉じ、新しい層・cross-layer edge は生んでいない。
 - **定義 doc の追随（2026-08-20）**: issue 起点 lifecycle（`core/issue-target/` — start / resume face）と checkpoint 検証の二層分離（generic integrity / use-case policy）を `components.md` に、reattachment の locator（candidate 発見）／ checkpoint identity（確定）の 2 相分離を `dynamic-model.md` に反映。構造 ADR `2026-08-20-issue-not-job-authority` を追加（issue body = request source ／ Development link = locator ／ branch-borne checkpoint = identity・state authority の役割固定）。
@@ -55,12 +56,12 @@
 ### ratchet 変動（#945 以降）
 
 - **追加**: `B6-runner-foreground-notice`（前景実行 notice の env 参照、`src/core/command/runner.ts`）— detach 内蔵化の弧で追加。`CWD-from-issue-reporoot-di-default`（`src/cli/from-issue.ts` の repoRoot DI 既定）— `job start --from-issue` の弧で追加。
-- **削除**: `CWD-finish-resolve-target-di-default` — 対象ファイル `src/core/finish/resolve-target.ts` が死コード削除で消滅。
+- **削除**: `CWD-finish-resolve-target-di-default` — 対象ファイル `src/core/finish/resolve-target.ts` が死コード削除で消滅。`CWD-bite-evidence-step-di-default` — 対象ファイル `src/core/step/bite-evidence/step.ts` が bite-evidence 削除（#1098）で消滅（CWD×40 → ×39）。
 - **構造変化（divergence を生んでいない）**: barrel / 死コード削除（`core/port/index.ts`・`core/step/index.ts`・`core/event/index.ts`・`core/doctor/index.ts`・`store/index.ts`・`state/store.ts`・`state/reconcile.ts`、`core/tools/`・`core/validation/` ディレクトリ消滅）／ glob matcher 3 実装の `util/glob-match.ts` 統一／ 新 core サブディレクトリ `lifecycle/`・`liveness/`・`gate/`・`inbox/`（いずれも domain 層として DSM 被覆内）。
 
 ## enforcement / 配線の status
 
-- **歯（決定的レビュー B-1〜B-18 + closure）**: 実装済み（`core-invariants.test.ts` src 全体 ＋ `request-entrance-llm-boundary.test.ts` ＋ `module-boundary.test.ts` ＋ `write-scope-invariants.test.ts` ＋ `invariant-catalog-parity.test.ts`）。
+- **歯（決定的レビュー B-1〜B-18 + closure + value-import SCC）**: 実装済み（`core-invariants.test.ts` src 全体 ＋ `request-entrance-llm-boundary.test.ts` ＋ `module-boundary.test.ts` ＋ `write-scope-invariants.test.ts` ＋ `invariant-catalog-parity.test.ts` ＋ `value-import-scc.test.ts`）。
 - **writer 注入**（`architecture/` を design/implementer の prompt へ）: 未着手（step prompt の実在注入 seam は `adapter/shared/` — `conformance.md` 消費点1）。
 - **reviewer 注入**（review criteria に B-1〜B-18 を追加）: 未着手。
 - **`tests/` 二重構造（`tests/core/` と `tests/unit/`）整理**: 未着手。

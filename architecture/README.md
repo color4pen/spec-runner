@@ -27,7 +27,7 @@ trust root は、ループが構造的に届かない場所に固定して初め
 | 役割 | 置き場 | 著者 | trust |
 |---|---|---|---|
 | **定義（SoT）** | `architecture/{model,components,domain-model,dynamic-model,conformance}.md` | 人間 | out-of-loop（CODEOWNERS）|
-| **歯（enforcement）** | `tests/unit/architecture/`（`core-invariants` / `module-boundary`）| code（定義から derive）| in-loop だが CODEOWNERS-gated |
+| **歯（enforcement）** | `tests/unit/architecture/`（`core-invariants` / `module-boundary` / `value-import-scc`）| code（定義から derive）| in-loop だが CODEOWNERS-gated |
 | **決定記録** | `architecture/adr/`（構造 ADR）| 人間 | out-of-loop（CODEOWNERS）・append-only |
 | **計測（reconcile）** | enforcement の**生成出力**（手書きしない）| 生成物 | — |
 

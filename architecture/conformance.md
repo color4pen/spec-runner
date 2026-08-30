@@ -52,7 +52,7 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか（ガード対象: awaiting-archive → awaiting-resume） | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
 | **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client / issue-fidelity-comparator）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index` — 削除済み。再導入検知）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
 
-- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）。
+- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）／ `value-import-scc.test.ts`（src 全体の value-import SCC 0 件・`review-routing.ts` の一方向依存。type-only import/export は除外）。
 - closure: model.md §3 の許可行列にない edge を全て divergence にする（`allowed` whitelist 方式＝DSM 検査）。
 - 現状の divergence・実装状態は `divergence-status.md`（状況断面）を参照。
 
