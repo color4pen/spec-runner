@@ -242,9 +242,14 @@ export interface ChangedFilesCapability {
  * Read-only leaf consumers (prior-round-context, post-fix-context,
  * custom-reviewer-round-context) depend on this narrow capability instead of
  * the full RuntimeStrategy facade.
+ *
+ * The method is required: `{}` does not satisfy this capability. Absence of the
+ * capability is expressed at the injection site as `CommitInspectionCapability | undefined`
+ * (derive from a facade via deriveCommitInspectionCapability). Per-call inability
+ * remains expressed by the `unavailable` variant of ChangedFilesResult.
  */
 export interface CommitInspectionCapability {
-  listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
 }
 
 /**
@@ -252,14 +257,46 @@ export interface CommitInspectionCapability {
  *
  * Read-only leaf consumers (finding-recency) depend on this narrow capability
  * instead of the full RuntimeStrategy facade.
+ *
+ * The method is required: `{}` does not satisfy this capability. Absence of the
+ * capability is expressed at the injection site as `RevisionContentCapability | undefined`
+ * (derive from a facade via deriveRevisionContentCapability).
  */
 export interface RevisionContentCapability {
-  readRevisionContent?(
+  readRevisionContent(
     file: string,
     priorOid: string,
     cwd: string,
     branch: string | null,
   ): Promise<RevisionContentPair>;
+}
+
+/**
+ * Derive a CommitInspectionCapability from a RuntimeStrategy facade.
+ *
+ * The facade declares listCommitChangedFiles as optional; the capability requires it.
+ * Returns undefined when the facade (or the method) is absent — consumers treat
+ * undefined as "capability not available" and degrade exactly as before.
+ */
+export function deriveCommitInspectionCapability(
+  runtime: Pick<RuntimeStrategy, "listCommitChangedFiles"> | undefined,
+): CommitInspectionCapability | undefined {
+  if (!runtime?.listCommitChangedFiles) return undefined;
+  return { listCommitChangedFiles: runtime.listCommitChangedFiles.bind(runtime) };
+}
+
+/**
+ * Derive a RevisionContentCapability from a RuntimeStrategy facade.
+ *
+ * The facade declares readRevisionContent as optional; the capability requires it.
+ * Returns undefined when the facade (or the method) is absent — consumers treat
+ * undefined as "capability not available" and degrade exactly as before.
+ */
+export function deriveRevisionContentCapability(
+  runtime: Pick<RuntimeStrategy, "readRevisionContent"> | undefined,
+): RevisionContentCapability | undefined {
+  if (!runtime?.readRevisionContent) return undefined;
+  return { readRevisionContent: runtime.readRevisionContent.bind(runtime) };
 }
 
 // ---------------------------------------------------------------------------

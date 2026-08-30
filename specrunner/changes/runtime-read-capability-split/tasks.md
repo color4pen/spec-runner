@@ -263,3 +263,18 @@
 - build / typecheck / lint / test がすべて green
 - 対象 consumer の `RuntimeStrategy` 全体依存数が単調減少している
 - 対象 test fake の forced cast が 0 になっている
+
+---
+
+## T-13: PR #1102 レビュー対応（operator-apply）— capability メソッドの required 化
+
+- [x] 指摘の検証: `CommitInspectionCapability` / `RevisionContentCapability` / `AssuranceProvenanceRuntime` は唯一のメソッドが optional で `{}` が structural に満たし、TC-016/017/018/028 の compile-time 代入が空証明になっていることを確認した。Local / Managed の両 runtime は3メソッドすべてを具象実装（managed は `unavailable` を値で返す）しており、required 化が代入を壊さないことも確認した
+- [x] 3 interface のメソッドを required 化し、能力不在は注入値（`Capability | undefined`）で表現するよう統一（`finding-recency` の param / `RecordFindingRecencyInput`、`achieved-assurance` の内部 guard を含む）。guard は `!runtime?.method` → `!runtime` に単純化
+- [x] facade（optional のまま）→ capability の導出純関数 `deriveCommitInspectionCapability` / `deriveRevisionContentCapability` を port に追加し、caller 4箇所（spec-review / adr-gen / custom-reviewer / commit-orchestrator)を helper 経由に変更。cast は一切追加していない
+- [x] contract test に `@ts-expect-error` 付き negative check（`{}` が4 capability を満たせないことの pin）と導出 helper の runtime テストを追加。consumer test の空オブジェクト構築を `undefined`（不在経路）または実 stub（実在経路）に置換
+
+**Acceptance Criteria**:
+- `{}` が capability を満たさない（negative contract test が typecheck で担保）
+- Local / Managed の代入 contract test が実効性を持つ（メソッド欠落で typecheck が fail する）
+- degrade / fail-closed semantics が既存テスト無変更で green（capability / consumer / archive / architecture 802 tests、full suite は既知の TC-064 環境依存失敗を除き 12,573 passed）
+- `bunx tsc --noEmit` / `bunx eslint`（変更ファイル）が green

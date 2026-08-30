@@ -26,7 +26,7 @@ import { STEP_NAMES } from "../../kernel/step-names.js";
  * specReview blob binding.
  */
 export interface AssuranceProvenanceRuntime {
-  readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+  readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
 }
 
 /**
@@ -128,7 +128,7 @@ export async function deriveAchievedAssurance(
           );
         } else if (!finalHeadOid) {
           diagnostics.push("specReview: finalHeadOid undefined — fail-closed");
-        } else if (!runtime || typeof runtime.readFileAtCommit !== "function") {
+        } else if (!runtime) {
           diagnostics.push(
             "specReview: runtime.readFileAtCommit unavailable — fail-closed",
           );
@@ -191,7 +191,7 @@ export async function deriveAchievedAssurance(
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  if (!runtime || typeof runtime.readFileAtCommit !== "function") {
+  if (!runtime) {
     diagnostics.push(
       "testDerivation: runtime.readFileAtCommit unavailable — fail-closed",
     );

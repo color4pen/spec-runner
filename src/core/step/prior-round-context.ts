@@ -115,7 +115,7 @@ export function buildPriorRoundContextBlock(ctx: PriorRoundContext): string {
  * Returns null (injection skipped) in any of these cases:
  * - iteration < 2 (no prior round)
  * - prior spec-fixer OID not recorded in state
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" }
  *
  * On success, returns { findings, changedFiles } where:
@@ -139,8 +139,8 @@ export async function derivePriorRoundContext(params: {
   const priorOid = resolvePriorFixerOid(state);
   if (!priorOid) return null;
 
-  // Guard: runtimeStrategy must provide listCommitChangedFiles
-  if (!runtimeStrategy?.listCommitChangedFiles) return null;
+  // Guard: commit-inspection capability must be injected
+  if (!runtimeStrategy) return null;
 
   // Derive changed files from commit diff (machine-derived, never self-reported)
   const result = await runtimeStrategy.listCommitChangedFiles(priorOid, cwd);

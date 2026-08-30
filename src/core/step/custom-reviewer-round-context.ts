@@ -222,7 +222,7 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
  * - iteration < 2 (no prior round)
  * - state.steps[reviewerName] is absent or empty (no prior run recorded)
  * - prior reviewer StepRun has no toolResult (getLatestJudgeFindings returns null)
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" } for any commit
  * - listCommitChangedFiles throws for any commit (all-or-nothing)
  *
@@ -262,8 +262,8 @@ export async function deriveCustomReviewerPriorRound(params: {
     const rawFindings = getLatestJudgeFindings(state, reviewerName);
     if (rawFindings === null) return null;
 
-    // Guard: runtimeStrategy must provide listCommitChangedFiles
-    if (!runtimeStrategy?.listCommitChangedFiles) return null;
+    // Guard: commit-inspection capability must be injected
+    if (!runtimeStrategy) return null;
 
     // Resolve code-fixer rounds after prior reviewer endedAt
     const allFixerRounds = resolveCodeFixerRounds(state);

@@ -155,14 +155,12 @@ describe("TC-006: computeFindingRecency accepts RevisionContentCapability narrow
     expect(results[0]?.recency).toBe("late");
   });
 
-  it("can be called with an empty RevisionContentCapability (no readRevisionContent) → indeterminate", async () => {
-    const narrow: RevisionContentCapability = {};
-
+  it("can be called with undefined capability (absence path) → indeterminate", async () => {
     const findings = [
       { severity: "high" as const, resolution: "fixable" as const, file: "src/foo.ts", line: 1, title: "Finding", rationale: "because" },
     ];
 
-    const results = await computeFindingRecency(findings, "abc123", "/cwd", "main", narrow);
+    const results = await computeFindingRecency(findings, "abc123", "/cwd", "main", undefined);
     expect(results[0]?.recency).toBe("indeterminate");
   });
 });
@@ -175,7 +173,9 @@ describe("TC-006: computeFindingRecency accepts RevisionContentCapability narrow
 
 describe("TC-009: derivePriorRoundContext accepts CommitInspectionCapability narrow type", () => {
   it("can be called with CommitInspectionCapability | undefined (no RuntimeStrategy needed)", async () => {
-    const narrow: CommitInspectionCapability = {};
+    const narrow: CommitInspectionCapability = {
+      listCommitChangedFiles: () => Promise.resolve({ kind: "unavailable" as const, reason: "test" }),
+    };
 
     const state = makeMinimalJobState();
 
@@ -204,10 +204,10 @@ describe("TC-009: derivePriorRoundContext accepts CommitInspectionCapability nar
   });
 });
 
-describe("TC-010: derivePriorRoundContext — listCommitChangedFiles absent at iteration≥2 → null", () => {
-  it("iteration=2, priorOid resolvable, but listCommitChangedFiles absent → null", async () => {
-    // CommitInspectionCapability with no listCommitChangedFiles method
-    const narrow: CommitInspectionCapability = {};
+describe("TC-010: derivePriorRoundContext — capability absent at iteration≥2 → null", () => {
+  it("iteration=2, priorOid resolvable, but capability is undefined → null", async () => {
+    // Capability absence is expressed as undefined (methods are required on the interface)
+    const narrow: CommitInspectionCapability | undefined = undefined;
 
     const state = {
       ...makeMinimalJobState(),
@@ -225,7 +225,7 @@ describe("TC-010: derivePriorRoundContext — listCommitChangedFiles absent at i
       },
     };
 
-    // priorOid = "fixer-oid-001" (resolvable), but listCommitChangedFiles is absent
+    // priorOid = "fixer-oid-001" (resolvable), but the capability is absent
     const result = await derivePriorRoundContext({
       state: state as never,
       iteration: 2,
@@ -333,7 +333,9 @@ describe("TC-027: derivePostFixContext accepts CommitInspectionCapability narrow
 
 describe("TC-011: deriveCustomReviewerPriorRound accepts CommitInspectionCapability (no as-cast)", () => {
   it("can be called with CommitInspectionCapability | undefined (no RuntimeStrategy cast needed)", async () => {
-    const narrow: CommitInspectionCapability = {};
+    const narrow: CommitInspectionCapability = {
+      listCommitChangedFiles: () => Promise.resolve({ kind: "unavailable" as const, reason: "test" }),
+    };
     const state = makeMinimalJobState();
 
     // iteration < 2 → null

@@ -67,11 +67,11 @@ function makeFakeRuntime(opts: {
 }
 
 /**
- * Build a fake RevisionContentCapability WITHOUT readRevisionContent.
+ * Absent revision-content capability: methods are required on the interface,
+ * so absence is expressed as undefined at the injection site.
  */
-function makeFakeRuntimeNoReadRevision(): RevisionContentCapability {
-  // readRevisionContent intentionally omitted
-  return {};
+function makeFakeRuntimeNoReadRevision(): RevisionContentCapability | undefined {
+  return undefined;
 }
 
 /**

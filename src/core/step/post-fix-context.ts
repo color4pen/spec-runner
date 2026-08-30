@@ -208,7 +208,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
  *
  * Returns null (injection skipped) in any of these cases:
  * - No code-fixer runs with a commitOid exist in state (fixer-less run)
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles throws or returns { kind: "unavailable" } for any round
  *   (all-or-nothing degradation — partial injection risks misleading the agent)
  *
@@ -231,8 +231,8 @@ export async function derivePostFixContext(params: {
   const fixerRounds = resolveCodeFixerRounds(state);
   if (fixerRounds.length === 0) return null;
 
-  // Guard: runtimeStrategy must provide listCommitChangedFiles
-  if (!runtimeStrategy?.listCommitChangedFiles) return null;
+  // Guard: commit-inspection capability must be injected
+  if (!runtimeStrategy) return null;
 
   // Derive changed files for each round — all-or-nothing (any failure → null)
   try {
