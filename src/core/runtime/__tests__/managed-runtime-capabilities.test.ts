@@ -55,7 +55,7 @@ function makeManagedStepIoSource() {
 function makeManagedTerminalStateSource() {
   return {
     // no-op: cloud agent manages branch state independently (D5)
-    async commitFinalState(_cwd: string, _slug: string): Promise<void> {},
+    async commitFinalState(_cwd: string | undefined, _slug: string): Promise<void> {},
   };
 }
 

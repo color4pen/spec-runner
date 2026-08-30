@@ -386,7 +386,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   /**
    * D5: no-op for managed runtime — cloud agent manages branch state independently.
    */
-  async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {
+  async commitFinalState(_cwd: string | undefined, _slug: string, _state: JobState): Promise<void> {
     // no-op
   }
 

@@ -319,7 +319,7 @@ export abstract class CommandRunner {
 
         // Commit final state to remote (best-effort — managed runtime only).
         try {
-          await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
+          await deps.terminalState?.commitFinalState(deps.cwd, deps.slug, haltState);
         } catch {
           // Best-effort: do not let remote sync failure block local halt reporting.
         }

@@ -56,11 +56,13 @@ export interface TerminalStateCapability {
   /**
    * Commit and push the final pipeline state to the feature branch.
    *
-   * @param cwd   - Working directory (worktree root).
+   * @param cwd   - Working directory (worktree root). When undefined, the runtime
+   *                falls back to its own cwd (e.g. LocalRuntime.cwd). This allows
+   *                callers to pass deps.cwd directly without a process.cwd() fallback.
    * @param slug  - Job slug (used in commit message).
    * @param state - Terminal job state (status determines message label).
    */
-  commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  commitFinalState(cwd: string | undefined, slug: string, state: JobState): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -149,7 +151,7 @@ export interface RoundGitEffectsCapability {
  * Shape required of a runtime to derive TerminalStateCapability.
  */
 interface TerminalStateSource {
-  commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  commitFinalState(cwd: string | undefined, slug: string, state: JobState): Promise<void>;
 }
 
 /**

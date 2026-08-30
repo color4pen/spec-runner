@@ -787,7 +787,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
    * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
-  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<void> {
+  async commitFinalState(cwd: string | undefined, slug: string, state: JobState): Promise<void> {
+    const effectiveCwd = cwd ?? this.cwd;
     const branch = state.branch ?? "";
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
     // Persist-before-push invariant: pass a persistBeforePush callback so the
@@ -822,7 +823,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         : undefined;
 
     await commitFinalState({
-      cwd,
+      cwd: effectiveCwd,
       branch,
       slug,
       spawnFn: this.wrappedSpawnFn,

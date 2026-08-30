@@ -39,7 +39,7 @@ function makeStepIoSource() {
 
 function makeTerminalStateSource() {
   return {
-    async commitFinalState(_cwd: string, _slug: string): Promise<void> {},
+    async commitFinalState(_cwd: string | undefined, _slug: string): Promise<void> {},
   };
 }
 
