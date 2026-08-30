@@ -15,6 +15,10 @@
 **Priority**: must
 **Source**: spec.md > Requirement: review-routing は pipeline / step factory への value import を持たない > Scenario: review-routing のモジュールグラフにおける value import 先の制約
 
+**GIVEN** `src/core/review-routing.ts` が作成されており、`value-import-scc.test.ts` に review-routing.ts の import 先を正規表現で直接検査するアサーションが実装されている
+**WHEN** `src/core/review-routing.ts` のテキストから value import 文（`import type` を除く）を抽出する
+**THEN** 抽出された value import 先が `step/step-names`、`step/judge-verdict`、`decision/decision-ledger` のみであり、`pipeline/reviewer-chain`、`pipeline/findings-ledger`、`pipeline/types`、`step/fixer-helpers`、`step/regression-gate` への value import が 0 件であることが直接アサートされる（SCC 検出に依存しない）
+
 ---
 
 ### TC-002: review-routing から pipeline/types への import は type-only
@@ -22,6 +26,10 @@
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: review-routing は pipeline / step factory への value import を持たない > Scenario: review-routing から pipeline/types への import は type-only
+
+**GIVEN** `src/core/review-routing.ts` が `pipeline/types` を参照する必要がある（`Transition` 型など）
+**WHEN** `value-import-scc.test.ts` の review-routing.ts import 制約アサーションが `pipeline/` への value import を正規表現でスキャンする
+**THEN** `pipeline/types` への import が `import type { ... }` であるため value edge として検出されず、アサーションが通過する。すなわち `pipeline/types` への value import（`import { ... } from "../pipeline/types.js"`）が 0 件であることが確認される
 
 ---
 

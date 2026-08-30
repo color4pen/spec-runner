@@ -105,6 +105,7 @@
 - [ ] liveness guard: スキャン対象ファイルが 1 件以上検出されることをアサートする
 - [ ] regression guard: 合成 2 ノード SCC（A→B, B→A）が検出されることをアサートする
 - [ ] regression guard: `import type` 形式の edge が value edge としてカウントされないことをアサートする
+- [ ] review-routing.ts import 制約の直接検査: `src/core/review-routing.ts` のテキストから value import 先を正規表現で抽出し、`pipeline/` モジュールおよび `step/fixer-helpers`・`step/regression-gate` への value import が 0 件であることをアサートする（TC-001/002 を SCC 検出に依存せずカバー。許容される value import 先: `step/step-names`、`step/judge-verdict`、`decision/decision-ledger`）
 
 **Acceptance Criteria**:
 - `src/` の value-import SCC が 0 件（T-01〜T-05 完了後）
@@ -112,6 +113,7 @@
 - inline type modifier `import { type X, Y }` において X は除外、Y は value edge
 - 合成 2 ノード SCC（A→B, B→A）が検出される
 - production module のロード（`import()`、`require()`）を使用しない
+- `src/core/review-routing.ts` の value import 先が `step/step-names`・`step/judge-verdict`・`decision/decision-ledger` のみであることが正規表現で直接アサートされる（TC-001/002 をカバー）
 - `bun run test tests/unit/architecture/value-import-scc.test.ts` が green
 
 ---
