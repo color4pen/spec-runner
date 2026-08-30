@@ -10,7 +10,7 @@
  *   - 導出できない場合（OID 欠落・diff unavailable）は null を返して黙って degrade
  */
 import type { JobState } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { STEP_NAMES } from "./step-names.js";
 import { getLatestJudgeFindings } from "./fixer-helpers.js";
 
@@ -128,7 +128,7 @@ export async function derivePriorRoundContext(params: {
   state: JobState;
   iteration: number;
   cwd: string;
-  runtimeStrategy: RuntimeStrategy | undefined;
+  runtimeStrategy: CommitInspectionCapability | undefined;
 }): Promise<PriorRoundContext | null> {
   const { state, iteration, cwd, runtimeStrategy } = params;
 

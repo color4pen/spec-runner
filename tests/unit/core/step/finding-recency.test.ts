@@ -32,7 +32,7 @@ import type {
   FindingRecencyStore,
 } from "../../../../src/core/step/finding-recency.js";
 import type { Finding } from "../../../../src/kernel/report-result.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
+import type { RevisionContentCapability } from "../../../../src/core/port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,59 +54,24 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
 }
 
 /**
- * Build a fake RuntimeStrategy with readRevisionContent returning the given pair.
+ * Build a fake RevisionContentCapability with readRevisionContent returning the given pair.
  * Only supplies the methods needed for finding-recency tests.
  */
 function makeFakeRuntime(opts: {
   current: string | null;
   prior: string | null;
-} = { current: null, prior: null }): RuntimeStrategy {
+} = { current: null, prior: null }): RevisionContentCapability {
   return {
     readRevisionContent: vi.fn().mockResolvedValue(opts),
-    bootstrapJob: vi.fn(),
-    persistJobState: vi.fn(),
-    query: vi.fn(),
-    createAgentRunner: vi.fn(),
-    setupWorkspace: vi.fn(),
-    buildDeps: vi.fn(),
-    registerCleanup: vi.fn(),
-    teardown: vi.fn(),
-    captureHeadSha: vi.fn(),
-    prepareStepArtifacts: vi.fn(),
-    finalizeStepArtifacts: vi.fn(),
-    validateStepInputs: vi.fn(),
-    validateStepOutputs: vi.fn(),
-    commitFinalState: vi.fn(),
-    verifyFindingRefs: vi.fn(),
-    digestArtifacts: vi.fn(),
-    listChangedFiles: vi.fn(),
-  } as unknown as RuntimeStrategy;
+  };
 }
 
 /**
- * Build a fake RuntimeStrategy WITHOUT readRevisionContent.
+ * Build a fake RevisionContentCapability WITHOUT readRevisionContent.
  */
-function makeFakeRuntimeNoReadRevision(): RuntimeStrategy {
-  return {
-    bootstrapJob: vi.fn(),
-    persistJobState: vi.fn(),
-    query: vi.fn(),
-    createAgentRunner: vi.fn(),
-    setupWorkspace: vi.fn(),
-    buildDeps: vi.fn(),
-    registerCleanup: vi.fn(),
-    teardown: vi.fn(),
-    captureHeadSha: vi.fn(),
-    prepareStepArtifacts: vi.fn(),
-    finalizeStepArtifacts: vi.fn(),
-    validateStepInputs: vi.fn(),
-    validateStepOutputs: vi.fn(),
-    commitFinalState: vi.fn(),
-    verifyFindingRefs: vi.fn(),
-    digestArtifacts: vi.fn(),
-    listChangedFiles: vi.fn(),
-    // readRevisionContent intentionally omitted
-  } as unknown as RuntimeStrategy;
+function makeFakeRuntimeNoReadRevision(): RevisionContentCapability {
+  // readRevisionContent intentionally omitted
+  return {};
 }
 
 /**

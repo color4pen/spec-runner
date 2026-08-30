@@ -12,7 +12,7 @@
  *   - 縮退は all-or-nothing — 1 round でも失敗すれば全体 null（部分注入による誤認を防ぐ）
  */
 import type { JobState } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { STEP_NAMES } from "./step-names.js";
 
 // ---------------------------------------------------------------------------
@@ -223,7 +223,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
 export async function derivePostFixContext(params: {
   state: JobState;
   cwd: string;
-  runtimeStrategy: RuntimeStrategy | undefined;
+  runtimeStrategy: CommitInspectionCapability | undefined;
 }): Promise<PostFixContext | null> {
   const { state, cwd, runtimeStrategy } = params;
 

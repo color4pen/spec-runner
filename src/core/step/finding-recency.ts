@@ -14,7 +14,7 @@
  */
 
 import type { Finding, FindingSeverity } from "../../kernel/report-result.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { RevisionContentCapability } from "../port/runtime-strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ export async function computeFindingRecency(
   priorOid: string | null,
   cwd: string,
   branch: string | null,
-  runtimeStrategy: RuntimeStrategy,
+  runtimeStrategy: RevisionContentCapability,
 ): Promise<FindingRecencyResult[]> {
   // Cache of per-file revision content to avoid redundant reads
   const contentCache = new Map<string, { current: string | null; prior: string | null }>();
@@ -223,7 +223,7 @@ export interface RecordFindingRecencyParams {
   findings: Finding[];
   cwd: string;
   branch: string | null;
-  runtimeStrategy: RuntimeStrategy;
+  runtimeStrategy: RevisionContentCapability;
 }
 
 /**

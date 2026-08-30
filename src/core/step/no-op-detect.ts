@@ -9,7 +9,7 @@
  */
 import type { AgentStep } from "./types.js";
 import type { Verdict } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../port/runtime-strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 /** Worktree-relative path prefixes that are pipeline artifacts, not source changes. */
@@ -33,7 +33,7 @@ const ARTIFACT_PREFIXES = ["specrunner/changes/", ".specrunner/"] as const;
  */
 export async function detectNoOp(
   step: AgentStep,
-  runtimeStrategy: RuntimeStrategy,
+  runtimeStrategy: ChangedFilesCapability,
   params: {
     headBeforeStep: string;
     cwd: string;

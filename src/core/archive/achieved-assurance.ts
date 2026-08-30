@@ -14,18 +14,20 @@
 
 import { createHash } from "node:crypto";
 import type { JobState, ProfileAssurance } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitFileResult } from "../port/runtime-strategy.js";
 import type { AssuranceFloor } from "../../state/profile.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
 
 /**
  * Narrow runtime interface required by the archive floor gate.
- * A subset of RuntimeStrategy — only the methods needed for provenance derivation.
+ * Consumer-owned capability — only the methods needed for provenance derivation.
  *
  * readFileAtCommit is required for scenario revision-binding verification and
  * specReview blob binding.
  */
-export type AssuranceProvenanceRuntime = Pick<RuntimeStrategy, "readFileAtCommit">;
+export interface AssuranceProvenanceRuntime {
+  readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+}
 
 /**
  * Input for deriveAchievedAssurance.

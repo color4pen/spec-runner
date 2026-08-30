@@ -218,6 +218,51 @@ export interface WorkspaceContext {
 export type CleanupHandle = { readonly __brand: unique symbol } & Record<string, unknown>;
 
 // ---------------------------------------------------------------------------
+// Consumer-owned capability interfaces
+// ---------------------------------------------------------------------------
+
+/**
+ * Capability interface for consumers that need to derive changed files.
+ *
+ * Read-only leaf consumers (scope-check, no-op-detect, runtime-capability-gate)
+ * depend on this narrow capability instead of the full RuntimeStrategy facade.
+ */
+export interface ChangedFilesCapability {
+  canDeriveChangedFiles?(): boolean;
+  listChangedFiles(
+    baseBranch: string,
+    cwd: string,
+    branch: string | null,
+  ): Promise<ChangedFilesResult>;
+}
+
+/**
+ * Capability interface for consumers that need to inspect commit-level changes.
+ *
+ * Read-only leaf consumers (prior-round-context, post-fix-context,
+ * custom-reviewer-round-context) depend on this narrow capability instead of
+ * the full RuntimeStrategy facade.
+ */
+export interface CommitInspectionCapability {
+  listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
+}
+
+/**
+ * Capability interface for consumers that need to read revision content.
+ *
+ * Read-only leaf consumers (finding-recency) depend on this narrow capability
+ * instead of the full RuntimeStrategy facade.
+ */
+export interface RevisionContentCapability {
+  readRevisionContent?(
+    file: string,
+    priorOid: string,
+    cwd: string,
+    branch: string | null,
+  ): Promise<RevisionContentPair>;
+}
+
+// ---------------------------------------------------------------------------
 // RuntimeStrategy interface
 // ---------------------------------------------------------------------------
 

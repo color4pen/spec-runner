@@ -12,7 +12,7 @@
  * - Import edges: core/pipeline → core/port (existing allowed edge).
  */
 import type { PipelineDescriptor } from "./types.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // UnsupportedRuntimeCapabilityError
@@ -68,7 +68,7 @@ export class UnsupportedRuntimeCapabilityError extends Error {
  */
 export function assertRuntimeSupportsScope(
   descriptor: PipelineDescriptor,
-  runtime: Pick<RuntimeStrategy, "canDeriveChangedFiles">,
+  runtime: Pick<ChangedFilesCapability, "canDeriveChangedFiles">,
 ): void {
   if (descriptor.permissionScope === undefined) {
     // No scope declared — no capability requirement — pass.
