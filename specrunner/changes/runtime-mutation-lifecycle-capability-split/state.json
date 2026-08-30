@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T18:04:02.677Z",
+  "updatedAt": "2026-08-30T22:44:19.162Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
-  "error": {
-    "code": "CONFORMANCE_RETRIES_EXHAUSTED",
-    "message": "conformance did not approve after 2 iterations",
-    "hint": "Review conformance-result-002.md and fix the implementation manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -183,12 +179,7 @@
       "tests/custom-reviewers-e2e.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-exhausted"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -200,6 +191,11 @@
       "text": "code-review の decision-needed finding（LocalRuntime._latestBuiltDeps side-channel）への決定: 選択肢 (a) を採用してください。CommitPushInfra を拡張して pushCapability を明示的に運び、_latestBuiltDeps インスタンスフィールド経由の暗黙依存を廃止すること。これは issue #1103 の「契約を型で表現する」意図に整合する。fixable findings 1〜3（port の buildDeps: unknown 署名の更新、runner.ts の as PipelineDeps cast 除去、RoundGitEffectsCapability の optional メソッド 3 件の required 化）も指摘どおり修正すること。",
       "step": "code-review",
       "recordedAt": "2026-08-30T15:27:51.107Z"
+    },
+    {
+      "text": "iteration budget 枯渇による halt からの再開。直前の regression-gate は findings ゼロで approve 済み。残る指摘は low の cosmetic 1 件のみ: tests/unit/step/executor-lifecycle-ordering.test.ts の TC-T15-05 に旧挙動（buildDeps が unknown を返す）を記述した stale コメントと冗長な as PipelineDeps cast が残っている。この cleanup を行った上で、conformance 以降を完走させること。",
+      "step": "conformance",
+      "recordedAt": "2026-08-30T22:44:18.842Z"
     }
   ],
   "reviewerStatuses": [
@@ -233,7 +229,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 158,
+    "historyCount": 161,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
