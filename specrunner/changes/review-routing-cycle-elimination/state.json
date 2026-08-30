@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T02:34:38.932Z",
+  "updatedAt": "2026-08-30T02:44:34.467Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,9 @@
     "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27",
     "b1753623ff6adbbe9a59f4a561938cf28698f041",
     "33b7c33faf2630dbdd0b5f918f7f72502c155c29",
-    "3a52cf7057ed50bfe93e046aa33ddc1b4054158f"
+    "3a52cf7057ed50bfe93e046aa33ddc1b4054158f",
+    "a7422dc13153923f1aebfbc3eea364d1e15e5acf",
+    "9485136b09bd375e4063e62b324d2ec3927fab9b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -169,6 +171,15 @@
       "tests/unit/architecture/value-import-scc.test.ts",
       "src/core/pipeline/__tests__/reviewer-chain.test.ts",
       "src/core/pipeline/findings-ledger.ts"
+    ],
+    "conformance": [
+      "src/core/review-routing.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -201,8 +212,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1099",
+    "number": 1099,
+    "createdAt": "2026-08-30T02:44:33.281Z"
+  },
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -210,13 +226,16 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
