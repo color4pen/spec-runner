@@ -35,7 +35,7 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 |---|---|---|
 | **B-1** domain ↛ adapters | `src/core`（runtime 除く）が `src/adapter` を import しない | grep / dependency-cruiser `forbidden` |
 | **B-2** SDK 封じ込め | `@anthropic-ai/*` `@openai/*` が adapters の外（core/ports/comp-root）に現れない | import 検査 |
-| **B-3** 上向き禁止 | shared-kernel / leaf / persistence が domain を import しない（循環検出含む）| dependency-cruiser circular + `forbidden` |
+| **B-3** 上向き禁止 | shared-kernel / leaf / persistence が domain を import しない（循環検出含む）| DSM / import 検査（`core-invariants`）＋ TypeScript AST による value-import SCC 検査（`value-import-scc`）|
 | **B-4** leaf | `util/` が他 src を import しない | import 検査 |
 | **B-5** 判定系 pure | verdict / transition / spec-rules が `node:fs`/`child_process` を import しない | import 検査 |
 | **B-6** credential 封じ込め | spawn / SDK query の env が `stripSecrets(process.env)` 経由か（raw `process.env` を子プロセス env に渡していない）| import / 呼び出し検査（`spawnCommand` ・SDK query の env 引数）|
