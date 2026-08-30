@@ -137,7 +137,7 @@ describe("deriveAchievedAssurance — testDerivation derivation", () => {
   });
 
   it("runtime only needs readFileAtCommit (narrowed AssuranceProvenanceRuntime)", async () => {
-    // The AssuranceProvenanceRuntime is narrowed to Pick<RuntimeStrategy, "readFileAtCommit">.
+    // AssuranceProvenanceRuntime is a consumer-owned capability interface with only readFileAtCommit.
     // This test verifies that no other runtime method is called.
     const state = makeState({
       steps: {

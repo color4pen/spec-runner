@@ -46,6 +46,8 @@ function makeMinimalJobState() {
 
 // ---------------------------------------------------------------------------
 // TC-004: detectNoOp accepts ChangedFilesCapability
+// TC-005: listChangedFiles unavailable → changedFiles empty → no-op detected
+// TC-020: listChangedFiles unavailable path is exercised by a unit test
 // ---------------------------------------------------------------------------
 
 describe("TC-004: detectNoOp accepts ChangedFilesCapability narrow type", () => {
@@ -74,6 +76,60 @@ describe("TC-004: detectNoOp accepts ChangedFilesCapability narrow type", () => 
 
     // listChangedFiles returns [] → no source files → no-op detected
     expect(result).toBe("needs-fix");
+  });
+});
+
+describe("TC-005 / TC-020: detectNoOp — listChangedFiles unavailable → 変更ファイルは空として扱われる", () => {
+  it("listChangedFiles returns { kind: 'unavailable' } → changedFiles treated as empty → no-op detected", async () => {
+    const narrow: ChangedFilesCapability = {
+      listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable", reason: "managed runtime" }),
+    };
+
+    const step = {
+      kind: "agent" as const,
+      name: "implementer",
+      noOpDetect: true,
+      agent: {} as never,
+      buildMessage: () => "",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    // unavailable → changedFiles = [] → sourceFiles = [] → no-op detected
+    const result = await detectNoOp(step, narrow, {
+      headBeforeStep: "abc123",
+      cwd: "/cwd",
+      branch: "main",
+      completionReason: "success",
+    });
+
+    expect(result).toBe("needs-fix");
+  });
+
+  it("listChangedFiles returns { kind: 'success', files: ['src/a.ts'] } → source file present → no no-op", async () => {
+    const narrow: ChangedFilesCapability = {
+      listChangedFiles: vi.fn().mockResolvedValue({ kind: "success", files: ["src/a.ts"] }),
+    };
+
+    const step = {
+      kind: "agent" as const,
+      name: "implementer",
+      noOpDetect: true,
+      agent: {} as never,
+      buildMessage: () => "",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "approved" as const, findingsPath: null }),
+    };
+
+    const result = await detectNoOp(step, narrow, {
+      headBeforeStep: "abc123",
+      cwd: "/cwd",
+      branch: "main",
+      completionReason: "success",
+    });
+
+    // source file present → not a no-op
+    expect(result).toBeUndefined();
   });
 });
 
@@ -113,6 +169,8 @@ describe("TC-006: computeFindingRecency accepts RevisionContentCapability narrow
 
 // ---------------------------------------------------------------------------
 // TC-009: derivePriorRoundContext accepts CommitInspectionCapability
+// TC-010: listCommitChangedFiles absent (iteration≥2, priorOid resolvable) → null
+// TC-021: listCommitChangedFiles unavailable (iteration≥2, priorOid resolvable) → null
 // ---------------------------------------------------------------------------
 
 describe("TC-009: derivePriorRoundContext accepts CommitInspectionCapability narrow type", () => {
@@ -143,6 +201,106 @@ describe("TC-009: derivePriorRoundContext accepts CommitInspectionCapability nar
     });
 
     expect(result).toBeNull();
+  });
+});
+
+describe("TC-010: derivePriorRoundContext — listCommitChangedFiles absent at iteration≥2 → null", () => {
+  it("iteration=2, priorOid resolvable, but listCommitChangedFiles absent → null", async () => {
+    // CommitInspectionCapability with no listCommitChangedFiles method
+    const narrow: CommitInspectionCapability = {};
+
+    const state = {
+      ...makeMinimalJobState(),
+      steps: {
+        "spec-fixer": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:01:00.000Z",
+            commitOid: "fixer-oid-001",
+          },
+        ],
+      },
+    };
+
+    // priorOid = "fixer-oid-001" (resolvable), but listCommitChangedFiles is absent
+    const result = await derivePriorRoundContext({
+      state: state as never,
+      iteration: 2,
+      cwd: "/cwd",
+      runtimeStrategy: narrow,
+    });
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("TC-021: derivePriorRoundContext — listCommitChangedFiles unavailable at iteration≥2 → null", () => {
+  it("iteration=2, priorOid resolvable, listCommitChangedFiles returns { kind: 'unavailable' } → null", async () => {
+    const narrow: CommitInspectionCapability = {
+      listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable", reason: "managed runtime" }),
+    };
+
+    const state = {
+      ...makeMinimalJobState(),
+      steps: {
+        "spec-fixer": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:01:00.000Z",
+            commitOid: "fixer-oid-001",
+          },
+        ],
+      },
+    };
+
+    // priorOid = "fixer-oid-001" resolvable, listCommitChangedFiles returns unavailable → degrade to null
+    const result = await derivePriorRoundContext({
+      state: state as never,
+      iteration: 2,
+      cwd: "/cwd",
+      runtimeStrategy: narrow,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it("iteration=2, priorOid resolvable, listCommitChangedFiles returns success → returns context (not null)", async () => {
+    const narrow: CommitInspectionCapability = {
+      listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "success", files: ["src/a.ts"] }),
+    };
+
+    const state = {
+      ...makeMinimalJobState(),
+      steps: {
+        "spec-fixer": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T00:00:00.000Z",
+            endedAt: "2026-01-01T00:01:00.000Z",
+            commitOid: "fixer-oid-001",
+          },
+        ],
+      },
+    };
+
+    const result = await derivePriorRoundContext({
+      state: state as never,
+      iteration: 2,
+      cwd: "/cwd",
+      runtimeStrategy: narrow,
+    });
+
+    // success → context returned with changedFiles
+    expect(result).not.toBeNull();
+    expect(result?.changedFiles).toEqual(["src/a.ts"]);
   });
 });
 

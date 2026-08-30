@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
   "createdAt": "2026-08-30T04:53:17.618Z",
-  "updatedAt": "2026-08-30T05:33:09.566Z",
+  "updatedAt": "2026-08-30T05:40:03.770Z",
   "request": {
     "title": "RuntimeStrategy の read-only consumer を consumer-owned capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-read-capability-split-7f342c82",
   "error": null,
@@ -69,7 +69,8 @@
     "22f721c2f5564d5cfa2e682998113b68617d44c0",
     "02468e367e1bbb39cdb0901a52cd4c3c15482284",
     "b88c0da8e9261d55b572e5a64e5a6da690cf51b1",
-    "0f75abfa1b855625aaef4f0f03b707191338647a"
+    "0f75abfa1b855625aaef4f0f03b707191338647a",
+    "030d052fff7c1cc2bf6e215811c0249e89c33a00"
   ],
   "touchedFiles": {
     "request-review": [
@@ -138,17 +139,38 @@
       "tests/unit/core/runtime/capability-contracts.test.ts",
       "tests/unit/core/step/capability-consumers.test.ts",
       "src/core/step/step-completion.ts"
+    ],
+    "code-review": [
+      "src/core/port/runtime-strategy.ts",
+      "src/core/step/finding-recency.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/pipeline/scope-check.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/step/scope-check.ts",
+      "tests/unit/core/runtime/capability-contracts.test.ts",
+      "tests/unit/core/step/capability-consumers.test.ts",
+      "tests/unit/core/step/finding-recency.test.ts",
+      "architecture/components.md",
+      "src/core/step/step-completion.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/types.ts",
+      "tests/unit/step/executor-no-op.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
