@@ -11,7 +11,7 @@ import { createHash } from "crypto";
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
-import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
+import { getLatestJudgeFindings } from "../review-routing.js";
 import {
   selectUnroutableCanonFindings,
   judgeEffectiveFixer,

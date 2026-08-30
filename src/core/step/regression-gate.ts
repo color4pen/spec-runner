@@ -25,16 +25,13 @@ import { resolveReviewerResultPath, changeFolderPath } from "../../util/paths.js
 import { nextIteration } from "./io-iteration.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { computeRegressionLedger, computeLedgerRef } from "../pipeline/findings-ledger.js";
-import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
+import { deriveImplReviewerChain, REGRESSION_GATE_STEP_NAME } from "../review-routing.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 
-/**
- * Canonical step name for the regression-gate.
- * NOT added to STEP_NAMES / AGENT_STEP_NAMES / CLI_STEP_NAMES (D8: dynamic injection only).
- */
-export const REGRESSION_GATE_STEP_NAME = "regression-gate";
+// Re-export for backward compatibility (callers that import from this module).
+export { REGRESSION_GATE_STEP_NAME } from "../review-routing.js";
 
 /**
  * Maximum number of fix iterations for the regression-gate loop.
