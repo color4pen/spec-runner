@@ -7,7 +7,7 @@
  *   2. finalizeStepArtifacts is NOT called when deps.roundOwnsGitEffects === true.
  *   3. terminalState?.commitFinalState receives the correct cwd and slug in the
  *      gate-halt path (runner.ts).
- *   4. buildDeps() returns `unknown` at the port boundary (DSM §3); callers cast with `as PipelineDeps`.
+ *   4. buildDeps() returns PipelineDeps directly (DSM §3 via allowlist); no `as PipelineDeps` cast needed.
  *
  * Tests 1–2 target the StepExecutor; test 3 targets CommandRunner's gate-halt path;
  * test 4 is a compile-time proof (no runtime assertion needed).
@@ -205,6 +205,78 @@ describe("T-15: Step finalize lifecycle ordering", () => {
     // roundOwnsGitEffects=true → coordinator owns git; executor must NOT finalize.
     expect(finalizeSpy).not.toHaveBeenCalled();
   });
+
+  // -------------------------------------------------------------------------
+  // TC-T15-06: prepareStepArtifacts ordering before agent run (TC-008 must)
+  //
+  // TC-008 (must-priority AC): a spy confirms that prepareStepArtifacts is
+  // invoked BEFORE the agent session starts (runner.run()).
+  //
+  // executor.ts ordering (runAgentStep):
+  //   1. await deps.stepArtifact?.prepareStepArtifacts(...)   ← line ~339
+  //   2. await this.runner.run(ctx)                           ← line ~356
+  //
+  // The two spies share a call-order counter so the test can assert that
+  // prepareStepArtifacts completed (counter=1) before runner.run (counter=2).
+  // -------------------------------------------------------------------------
+  it("TC-T15-06: prepareStepArtifacts is called before runner.run() (TC-008 ordering)", async () => {
+    const state = await makeJobState();
+    const events = new EventBus();
+
+    // Shared call-order counter
+    const callOrder: string[] = [];
+
+    const prepareArtifactsSpy = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+      callOrder.push("prepareStepArtifacts");
+    });
+
+    const runnerWithOrder = {
+      run: vi.fn().mockImplementation(async () => {
+        callOrder.push("runner.run");
+        return {
+          completionReason: "success" as const,
+          resultContent: null,
+          toolResult: { ok: true },
+          followUpAttempts: 0,
+        } as AgentRunResult;
+      }),
+    };
+
+    const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+
+    const stepArtifact = {
+      async captureHeadSha(): Promise<string | null> { return null; },
+      prepareStepArtifacts: prepareArtifactsSpy,
+      finalizeStepArtifacts: finalizeSpy,
+      async digestArtifacts(refs: { path: string }[]) {
+        return refs.map((r) => ({ path: r.path, hash: null as null }));
+      },
+    };
+
+    const stepIo = {
+      async validateStepInputs(): Promise<void> {},
+      async validateStepOutputs() { return { violations: [] as never[] }; },
+      async verifyFindingRefs(refs: { file: string }[]) { return refs; },
+    };
+
+    const deps = makeBaseDeps({
+      cwd: tempDir,
+      slug: "test-slug",
+      stepArtifact: stepArtifact as never,
+      stepIo: stepIo as never,
+    });
+
+    const executor = new StepExecutor(events, runnerWithOrder, makeStoreFactory(tempDir));
+    await executor.execute(makeMinimalStep(), state, deps);
+
+    // Both spies must have been called exactly once.
+    expect(prepareArtifactsSpy).toHaveBeenCalledOnce();
+    expect(runnerWithOrder.run).toHaveBeenCalledOnce();
+
+    // Key ordering invariant (TC-008): prepareStepArtifacts BEFORE runner.run().
+    expect(callOrder[0]).toBe("prepareStepArtifacts");
+    expect(callOrder[1]).toBe("runner.run");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -252,27 +324,30 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
 // ---------------------------------------------------------------------------
 // TC-T15-05: buildDeps result type — DSM §3 compliance via port interface
 //
-// DSM §3 (ports-closure invariant): the `ports` layer (src/core/port/) may only
-// import from shared-kernel and leaf.  PipelineDeps lives in src/core/types.ts
-// which is classified as `domain`.  Therefore RuntimeStrategy.buildDeps() MUST
-// declare its return type as `unknown` at the port boundary — importing
-// PipelineDeps into the port file would be a DSM §3 violation (enforced by
-// tests/unit/architecture/core-invariants.test.ts).
+// This PR (D3/T-05/T-12) changed buildDeps() to return PipelineDeps directly,
+// with a single DSM allowlist entry in runtime-strategy.ts documenting the
+// type-only cross-layer import (TC-021, TC-022: must-priority ACs).
 //
-// The caller (domain code: runner.ts) casts the result with `as PipelineDeps`.
-// This test proves that pattern compiles and works correctly.
+// The `import type { PipelineDeps }` in the port file is erased at compile time
+// and creates no runtime module dependency — TypeScript 3.8+ handles circular
+// `import type` safely.  runner.ts no longer needs the `as PipelineDeps` cast
+// (AC TC-022: 'return type is PipelineDeps (not unknown)').
+//
+// This test verifies that the port interface compiles and returns a correctly
+// typed PipelineDeps value without any cast in the caller.
 // ---------------------------------------------------------------------------
 
 describe("T-15: buildDeps return type (DSM §3 compliance via port interface)", () => {
-  it("TC-T15-05: RuntimeStrategy.buildDeps() returns unknown at port boundary; caller casts to PipelineDeps (DSM §3)", () => {
+  it("TC-T15-05: RuntimeStrategy.buildDeps() returns PipelineDeps directly; no cast needed in domain code (DSM §3 via allowlist)", () => {
     // Create a minimal RuntimeStrategy-typed fake that returns a known slug.
     const fake: Pick<RuntimeStrategy, "buildDeps"> = {
       buildDeps: () => makeBaseDeps(),
     };
 
-    // Call through the port interface. buildDeps() returns `unknown` (DSM §3: ports
-    // cannot import PipelineDeps from domain).  Caller must cast, exactly as runner.ts does.
-    const deps = fake.buildDeps({} as never, {} as never, "", {} as never) as PipelineDeps;
+    // Call through the port interface. buildDeps() now returns PipelineDeps
+    // directly (DSM §3 via allowlist entry). No `as PipelineDeps` cast is
+    // needed — this mirrors the updated runner.ts (AC TC-022).
+    const deps = fake.buildDeps({} as never, {} as never, "", {} as never);
 
     expect(deps.slug).toBe("test-slug");
   });

@@ -59,8 +59,6 @@ export type StepDeps = StepContext;
  *
  * Design D2 (require-spawn-injection): compile-time guarantee that CLI steps
  * receive an injected spawn function rather than falling back to a default.
- *
- * runtimeStrategy is optional — provided at runtime by PipelineDeps; may be absent in tests.
  */
 export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
@@ -307,7 +305,7 @@ export interface AgentStep {
    * When true, executor detects no-op completions: if no source files changed
    * since headBeforeStep (excluding pipeline artifacts), verdict is overridden
    * from "approved"/"success" to "needs-fix".
-   * Only effective when runtimeStrategy is available and headBeforeStep is non-null.
+   * Only effective when deps.changedFiles is available and headBeforeStep is non-null.
    *
    * Use case: code-fixer must produce source changes; completing without changes
    * indicates the fixer did nothing useful (fail-closed).
