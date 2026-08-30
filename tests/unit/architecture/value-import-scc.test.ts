@@ -5,7 +5,9 @@
  * strongly-connected components (SCCs) with size > 1.
  *
  * Detection strategy:
- * - Static file analysis only (regex-based). No production module loading.
+ * - Static file analysis only via the TypeScript compiler's syntax parser
+ *   (`ts.createSourceFile` — parse only, no type checking, no production
+ *   module loading).
  * - `import type { ... }` and `export type { ... }` are NOT counted as value edges.
  * - Inline type modifiers (`import { type X, Y }`) exclude type-annotated specifiers.
  * - Tarjan's algorithm (O(V+E)) implemented inline — no external libraries.
@@ -18,6 +20,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as url from "node:url";
+import * as ts from "typescript";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../../..");
@@ -55,13 +58,21 @@ function collectSourceFiles(dir: string): string[] {
 /**
  * Extract value import paths from TypeScript source text.
  *
+ * Parses the source with the TypeScript compiler's syntax parser
+ * (`ts.createSourceFile` — parse only, no type checking, no module loading)
+ * and walks top-level import/export declarations. Statement boundaries are
+ * therefore exact: a preceding non-`from` declaration can never bleed into
+ * the classification of the next statement.
+ *
  * Rules:
  * - `import type { ... } from "..."` → excluded (type-only)
  * - `export type { ... } from "..."` → excluded (type-only)
+ * - `export type * from "..."` → excluded (type-only)
  * - `import { type X, Y } from "..."` → Y is value edge (type X excluded)
  * - `export { type X, Y } from "..."` → Y is value edge (type X excluded)
  * - `import X from "..."` → value edge
  * - `import * as X from "..."` → value edge
+ * - `export * from "..."` / `export * as ns from "..."` → value edge
  * - `import "..."` → side-effect import, counted as value edge (to be conservative)
  *
  * Returns an array of import specifier strings (the module path, e.g. "./foo.js").
@@ -70,58 +81,65 @@ function collectSourceFiles(dir: string): string[] {
  */
 function extractValueImportPaths(source: string): string[] {
   const paths: string[] = [];
+  const sourceFile = ts.createSourceFile(
+    "module.ts",
+    source,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ false,
+    ts.ScriptKind.TS,
+  );
 
-  // Match all import/export ... from "..." or '...' forms
-  // We use multiple passes for clarity.
+  const relativeSpecifier = (moduleSpecifier: ts.Expression): string | null => {
+    if (!ts.isStringLiteral(moduleSpecifier)) return null;
+    const specifier = moduleSpecifier.text;
+    if (!specifier.startsWith("./") && !specifier.startsWith("../")) return null;
+    return specifier;
+  };
 
-  // Split by newlines and process line by line for multi-line imports
-  // Actually, let's use a regex that matches complete import/export statements.
-  // Handle multi-line by removing newlines first (a simplification that works for
-  // well-formatted TypeScript).
-  const stripped = source
-    // Remove single-line comments
-    .replace(/\/\/[^\n]*/g, "")
-    // Remove block comments
-    .replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const statement of sourceFile.statements) {
+    if (ts.isImportDeclaration(statement)) {
+      const specifier = relativeSpecifier(statement.moduleSpecifier);
+      if (specifier === null) continue;
 
-  // Match import/export statements (including multi-line braced forms)
-  // Pattern: (import|export) ... from "specifier"
-  const importPattern =
-    /\b(import|export)\s*([\s\S]*?)\s*from\s*["']([^"']+)["']/g;
+      const clause = statement.importClause;
+      if (!clause) {
+        // Side-effect import: `import "./mod.js"` — conservative value edge.
+        paths.push(specifier);
+        continue;
+      }
+      if (clause.isTypeOnly) continue; // `import type ...`
+      if (clause.name) {
+        // Default import binding is a value edge.
+        paths.push(specifier);
+        continue;
+      }
+      const bindings = clause.namedBindings;
+      if (!bindings || ts.isNamespaceImport(bindings)) {
+        // `import * as X` (namespace) is a value edge.
+        paths.push(specifier);
+        continue;
+      }
+      // Named imports: value edge iff at least one specifier lacks `type`.
+      if (bindings.elements.some((el) => !el.isTypeOnly)) {
+        paths.push(specifier);
+      }
+    } else if (ts.isExportDeclaration(statement)) {
+      if (!statement.moduleSpecifier) continue; // local `export { X }` — no edge
+      const specifier = relativeSpecifier(statement.moduleSpecifier);
+      if (specifier === null) continue;
 
-  let match: RegExpExecArray | null;
-  while ((match = importPattern.exec(stripped)) !== null) {
-    const body = match[2]!;    // everything between import/export and from
-    const specifier = match[3]!; // the module path
-
-    // Only process relative imports
-    if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
-
-    // Check for type-only: `import type` or `export type`
-    // The body starts with "type " for type-only imports
-    if (/^\s*type\s+/.test(body)) continue;
-
-    // Also check for `import type {` — body might be "type { X }"
-    // (handled by the check above)
-
-    // For `import { type X, Y }` or `export { type X, Y }`:
-    // Extract only non-type specifiers from braced form
-    const bracedMatch = body.match(/^\s*\{([^}]*)\}\s*$/);
-    if (bracedMatch) {
-      const specifiers = bracedMatch[1]!.split(",").map((s) => s.trim()).filter(Boolean);
-      const hasValueSpecifier = specifiers.some((s) => !s.startsWith("type "));
-      if (!hasValueSpecifier) continue; // all specifiers are type-only
+      if (statement.isTypeOnly) continue; // `export type { ... } from` / `export type * from`
+      const clause = statement.exportClause;
+      if (!clause || ts.isNamespaceExport(clause)) {
+        // `export * from` / `export * as ns from` re-exports values.
+        paths.push(specifier);
+        continue;
+      }
+      // Named re-exports: value edge iff at least one specifier lacks `type`.
+      if (clause.elements.some((el) => !el.isTypeOnly)) {
+        paths.push(specifier);
+      }
     }
-
-    paths.push(specifier);
-  }
-
-  // Also match side-effect imports: `import "specifier"` (no binding)
-  const sideEffectPattern = /\bimport\s+["']([^"']+)["']/g;
-  while ((match = sideEffectPattern.exec(stripped)) !== null) {
-    const specifier = match[1]!;
-    if (!specifier.startsWith("./") && !specifier.startsWith("../")) continue;
-    paths.push(specifier);
   }
 
   return paths;
@@ -299,6 +317,71 @@ describe("value-import-scc: inline type modifier partial exclusion (TC-007)", ()
     const source = `import { type OnlyType } from "./mod.js";`;
     const paths = extractValueImportPaths(source);
     expect(paths).not.toContain("./mod.js");
+  });
+});
+
+describe("value-import-scc: statement boundaries — type-only re-export after a non-from statement", () => {
+  it("export interface followed by export type { ... } from '...' does NOT produce a value edge", () => {
+    const source = [
+      `export interface Marker {}`,
+      `export type { RuntimeCredentials } from "../port/runtime-prereqs.js";`,
+    ].join("\n");
+    const paths = extractValueImportPaths(source);
+    expect(paths).toHaveLength(0);
+  });
+
+  it("export function followed by export type { ... } from '...' does NOT produce a value edge", () => {
+    const source = [
+      `export function helper(): number {`,
+      `  return 1;`,
+      `}`,
+      `export type { RuntimeCredentials } from "../port/runtime-prereqs.js";`,
+    ].join("\n");
+    const paths = extractValueImportPaths(source);
+    expect(paths).toHaveLength(0);
+  });
+
+  it("import type followed by export type from the same module does NOT produce a value edge", () => {
+    // Mirrors the agent-runner.ts re-export pattern that the regex-based
+    // detector misclassified: a non-from statement above must not bleed into
+    // the classification of the type-only re-export below.
+    const source = [
+      `export interface AgentRunContext {`,
+      `  writeScope?: string;`,
+      `}`,
+      ``,
+      `import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";`,
+      `export type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";`,
+    ].join("\n");
+    const paths = extractValueImportPaths(source);
+    expect(paths).toHaveLength(0);
+  });
+
+  it("a genuine value import in the same file is still detected alongside type-only re-exports", () => {
+    const source = [
+      `import { realValue } from "./value-mod.js";`,
+      `export interface Marker {}`,
+      `export type { Foo } from "./type-mod.js";`,
+    ].join("\n");
+    const paths = extractValueImportPaths(source);
+    expect(paths).toEqual(["./value-mod.js"]);
+  });
+});
+
+describe("value-import-scc: star re-exports", () => {
+  it("export * from '...' IS a value edge", () => {
+    const source = `export * from "./mod.js";`;
+    expect(extractValueImportPaths(source)).toEqual(["./mod.js"]);
+  });
+
+  it("export type * from '...' is NOT a value edge", () => {
+    const source = `export type * from "./mod.js";`;
+    expect(extractValueImportPaths(source)).toHaveLength(0);
+  });
+
+  it("side-effect import '...' IS a value edge", () => {
+    const source = `import "./side-effect.js";`;
+    expect(extractValueImportPaths(source)).toEqual(["./side-effect.js"]);
   });
 });
 

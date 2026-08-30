@@ -165,3 +165,16 @@
 - build / typecheck / lint / test がすべて green
 - `src/` 全体の value-import SCC が 0 件
 - scope 外の production behavior 変更が 0 件
+
+---
+
+## T-09: PR #1099 レビュー対応（operator-apply）
+
+- [x] 指摘の検証: regex ベースの `extractValueImportPaths` が文境界を越えてマッチし、非 `from` 文（`export interface` / `export function` 等)の直後にある type-only re-export を value edge に誤計上することを再現確認した（`src/core/port/agent-runner.ts` → `kernel/completion-report-diagnostic`、`src/core/runtime/prereqs.ts` → `port/runtime-prereqs` の2本）
+- [x] `extractValueImportPaths` を `ts.createSourceFile`（syntax parse のみ、type check なし、production module ロードなし）による AST 走査へ置き換え、`ImportDeclaration` / `ExportDeclaration` の `isTypeOnly`（clause / specifier 両レベル）で判定するようにした
+- [x] regression test を追加: 非 `from` export 直後の type-only re-export（interface / function / import type+export type ペアの3形状）、同居する真の value import の保持、`export * from`（value）/ `export type * from`（type-only）/ side-effect import（value）
+
+**Acceptance Criteria**:
+- 上記2本の type-only edge が detector 上も value edge として計上されない（真の value import は保持）
+- `bunx vitest run tests/unit/architecture/` が green（149 tests）
+- `bunx tsc --noEmit` / `bunx eslint` が green
