@@ -616,5 +616,19 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-from-issue-reporoot-di-default",
     comment: "di-default: --from-issue handler resolves repoRoot from ctx injection; process.cwd() is the fallback when no context is provided.",
   },
+  {
+    file: "src/core/command/runner.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-runner-terminal-state-di-default",
+    comment: "di-default: commitFinalState cwd param defaults to process.cwd(); callers inject the worktree path through deps.cwd in production (R2b capability split).",
+  },
+  {
+    file: "src/core/pipeline/pipeline.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-pipeline-terminal-state-di-default",
+    comment: "di-default: commitFinalState cwd param defaults to process.cwd(); callers inject the worktree path through deps.cwd in production (R2b capability split).",
+  },
 
 ];
