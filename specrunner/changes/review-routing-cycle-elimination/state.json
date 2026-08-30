@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T02:16:40.009Z",
+  "updatedAt": "2026-08-30T02:29:23.043Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
@@ -70,7 +70,8 @@
     "6bb04d5f311e124ba489da9ab23f1ce0fe0b7ce8",
     "61dc41a8765afed548512113f561cbfb71b4f68f",
     "2517a319561b66a9eb666d04dc92d6649f221bbb",
-    "f01af29ba9b883998d20211830d76ba63d719444"
+    "f01af29ba9b883998d20211830d76ba63d719444",
+    "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27"
   ],
   "touchedFiles": {
     "request-review": [
@@ -143,10 +144,22 @@
       "tests/unit/architecture/value-import-scc.test.ts",
       "tests/unit/pipeline/transition-when.test.ts",
       "tests/unit/pipeline/transition-parity.test.ts"
+    ],
+    "code-review": [
+      "src/core/review-routing.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/__tests__/fixer-push-capability.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 32,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -154,7 +167,8 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }

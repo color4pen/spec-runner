@@ -350,6 +350,49 @@ describe("conformanceFixInProgress", () => {
     });
     expect(conformanceFixInProgress(state)).toBe(false);
   });
+
+  // TC-013: getConformanceFixContext recency null case
+  it("TC-013: returns false when predecessor (code-review) endedAt >= conformance endedAt", () => {
+    // conformance has needs-fix:code-fixer verdict with findings, but code-review ran
+    // AFTER conformance → predecessor.endedAt >= conformance.endedAt → getConformanceFixContext returns null
+    const state: JobState = {
+      ...makeState(),
+      steps: {
+        [STEP_NAMES.CONFORMANCE]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:05:00Z",
+            endedAt: "2026-01-01T00:05:30Z",
+            outcome: {
+              verdict: "needs-fix:code-fixer",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "high", resolution: "fixable", file: "src/foo.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+        [STEP_NAMES.CODE_REVIEW]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:05:30Z",
+            endedAt: "2026-01-01T00:06:00Z", // code-review ended AFTER conformance
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [] },
+            },
+          },
+        ],
+      } as unknown as JobState["steps"],
+    };
+    expect(conformanceFixInProgress(state)).toBe(false);
+  });
 });
 
 describe("regressionGateActive", () => {

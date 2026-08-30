@@ -212,8 +212,7 @@ export function dedupeFindings(findings: Finding[]): Finding[] {
  * prevents the two call-sites from drifting.
  *
  * **Signature note**: reviewerChain is supplied by the caller, NOT derived internally.
- * This avoids an import cycle: findings-ledger.ts → reviewer-chain.ts →
- * regression-gate.ts → findings-ledger.ts.
+ * This keeps the function pure and avoids coupling to review-routing.ts internal state.
  *
  * @param reviewerChain - Ordered reviewer step names (from deriveImplReviewerChain).
  * @param state         - Current job state.
@@ -262,9 +261,9 @@ export function computeLedgerRef(finding: Finding): string {
  * carried ledgerRef to its origin step(s) without depending on the LLM-regenerated
  * title or rationale.
  *
- * **Import cycle note**: reviewerChain is supplied by the caller (NOT derived
- * internally) to avoid the findings-ledger → reviewer-chain → regression-gate →
- * findings-ledger cycle (same reason as computeRegressionLedger).
+ * **Signature note**: reviewerChain is supplied by the caller (NOT derived
+ * internally). This keeps the function pure and avoids coupling to review-routing.ts
+ * internal state (same reason as computeRegressionLedger).
  *
  * @param reviewerChain - Ordered impl reviewer step names (from deriveImplReviewerChain).
  * @param state         - Current job state.
