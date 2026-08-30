@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
   "createdAt": "2026-08-30T04:53:17.618Z",
-  "updatedAt": "2026-08-30T04:53:20.019Z",
+  "updatedAt": "2026-08-30T04:58:36.030Z",
   "request": {
     "title": "RuntimeStrategy の read-only consumer を consumer-owned capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "refactor/runtime-read-capability-split-7f342c82",
   "error": null,
@@ -63,10 +63,31 @@
   "issueNumber": 1101,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "62259c040097ab0025fd81fad8f62ce3b44ea45e"
+    "62259c040097ab0025fd81fad8f62ce3b44ea45e",
+    "de82ee1e9770214235036639edafb9a5424ef015"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/runtime/runtime-strategy.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/pipeline/scope.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/finding-recency.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "architecture/components.md",
+      "src/core/step/executor.ts",
+      "src/core/step/scope-check.ts",
+      "src/core/types.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
