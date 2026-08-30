@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.0...specrunner-v0.5.1) (2026-08-30)
+
+
+### Features
+
+* archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する ([#1087](https://github.com/color4pen/spec-runner/issues/1087)) ([5e18623](https://github.com/color4pen/spec-runner/commit/5e186236c3802a4e1290fa42d0c60338a450b24f))
+* Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する ([#1084](https://github.com/color4pen/spec-runner/issues/1084)) ([a41a966](https://github.com/color4pen/spec-runner/commit/a41a9660648bbba527ade4e070cfee3da5c4fcb4))
+* test-materialize 廃止後に保証モデルが成立していない bite-evidence を削除する ([#1098](https://github.com/color4pen/spec-runner/issues/1098)) ([96f4db6](https://github.com/color4pen/spec-runner/commit/96f4db6a49d3936c99a9f62bcbaa531a096db2e4))
+
+
+### Bug Fixes
+
+* job reopen が pipeline 実行まで内包し resume の入力・安全機構を迂回する — lifecycle 操作と実行を分離する ([#1088](https://github.com/color4pen/spec-runner/issues/1088)) ([cbc26c7](https://github.com/color4pen/spec-runner/commit/cbc26c77461ef013bc0e866226c41c9038948548))
+* push capability の unpushable-path contract / notice が implementer のみで、fixer step が backstop halt に直行する ([#1090](https://github.com/color4pen/spec-runner/issues/1090)) ([9a5ef29](https://github.com/color4pen/spec-runner/commit/9a5ef298d55654927d4564592c9db8866f42abcc))
+* unpushable-path 判定と scoped residual check が stagingExcludePatterns を見ず、「絶対に commit されない path」をブロック・破壊する ([#1096](https://github.com/color4pen/spec-runner/issues/1096)) ([2214acd](https://github.com/color4pen/spec-runner/commit/2214acd6ebe3bbe6e3f44f3560c06fd4e5df0cc0))
+
 ## [0.5.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.12...specrunner-v0.5.0) (2026-08-24)
 
 
