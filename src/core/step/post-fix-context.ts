@@ -12,7 +12,7 @@
  *   - 縮退は all-or-nothing — 1 round でも失敗すれば全体 null（部分注入による誤認を防ぐ）
  */
 import type { JobState } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { STEP_NAMES } from "./step-names.js";
 
 // ---------------------------------------------------------------------------
@@ -208,7 +208,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
  *
  * Returns null (injection skipped) in any of these cases:
  * - No code-fixer runs with a commitOid exist in state (fixer-less run)
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles throws or returns { kind: "unavailable" } for any round
  *   (all-or-nothing degradation — partial injection risks misleading the agent)
  *
@@ -223,7 +223,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
 export async function derivePostFixContext(params: {
   state: JobState;
   cwd: string;
-  runtimeStrategy: RuntimeStrategy | undefined;
+  runtimeStrategy: CommitInspectionCapability | undefined;
 }): Promise<PostFixContext | null> {
   const { state, cwd, runtimeStrategy } = params;
 
@@ -231,8 +231,8 @@ export async function derivePostFixContext(params: {
   const fixerRounds = resolveCodeFixerRounds(state);
   if (fixerRounds.length === 0) return null;
 
-  // Guard: runtimeStrategy must provide listCommitChangedFiles
-  if (!runtimeStrategy?.listCommitChangedFiles) return null;
+  // Guard: commit-inspection capability must be injected
+  if (!runtimeStrategy) return null;
 
   // Derive changed files for each round — all-or-nothing (any failure → null)
   try {

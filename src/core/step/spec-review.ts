@@ -4,6 +4,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import { deriveCommitInspectionCapability } from "../port/runtime-strategy.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { getSpecReviewMode, isTestGenRequired } from "../../config/type-config.js";
 import { specReviewResultPath, changeFolderPath, requestMdPath } from "../../util/paths.js";
@@ -104,7 +105,12 @@ export const SpecReviewStep: AgentStep = {
     runtimeStrategy: RuntimeStrategy | undefined,
   ): Promise<Partial<DynamicContext> | null> {
     const iteration = nextIteration(state, STEP_NAMES.SPEC_REVIEW);
-    const result = await derivePriorRoundContext({ state, iteration, cwd, runtimeStrategy });
+    const result = await derivePriorRoundContext({
+      state,
+      iteration,
+      cwd,
+      runtimeStrategy: deriveCommitInspectionCapability(runtimeStrategy),
+    });
     if (!result) return null;
     return { priorRoundContext: result };
   },

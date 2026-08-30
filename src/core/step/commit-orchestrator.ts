@@ -38,6 +38,7 @@ import { buildFeatureBranchName } from "../../config/type-config.js";
 import { logVerbose } from "../../logger/stdout.js";
 import { STEP_NAMES } from "./step-names.js";
 import { recordFindingRecency } from "./finding-recency.js";
+import { deriveRevisionContentCapability } from "../port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // StepExecutionResult discriminated union
@@ -362,7 +363,7 @@ export class CommitOrchestrator {
             findings: agentFindings,
             cwd: deps.cwd,
             branch: state.branch ?? null,
-            runtimeStrategy: deps.runtimeStrategy,
+            runtimeStrategy: deriveRevisionContentCapability(deps.runtimeStrategy),
           });
         } catch {
           // Best-effort: finding-recency failure must not affect step completion

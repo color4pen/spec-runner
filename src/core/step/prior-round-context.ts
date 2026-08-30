@@ -10,7 +10,7 @@
  *   - 導出できない場合（OID 欠落・diff unavailable）は null を返して黙って degrade
  */
 import type { JobState } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { STEP_NAMES } from "./step-names.js";
 import { getLatestJudgeFindings } from "./fixer-helpers.js";
 
@@ -115,7 +115,7 @@ export function buildPriorRoundContextBlock(ctx: PriorRoundContext): string {
  * Returns null (injection skipped) in any of these cases:
  * - iteration < 2 (no prior round)
  * - prior spec-fixer OID not recorded in state
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" }
  *
  * On success, returns { findings, changedFiles } where:
@@ -128,7 +128,7 @@ export async function derivePriorRoundContext(params: {
   state: JobState;
   iteration: number;
   cwd: string;
-  runtimeStrategy: RuntimeStrategy | undefined;
+  runtimeStrategy: CommitInspectionCapability | undefined;
 }): Promise<PriorRoundContext | null> {
   const { state, iteration, cwd, runtimeStrategy } = params;
 
@@ -139,8 +139,8 @@ export async function derivePriorRoundContext(params: {
   const priorOid = resolvePriorFixerOid(state);
   if (!priorOid) return null;
 
-  // Guard: runtimeStrategy must provide listCommitChangedFiles
-  if (!runtimeStrategy?.listCommitChangedFiles) return null;
+  // Guard: commit-inspection capability must be injected
+  if (!runtimeStrategy) return null;
 
   // Derive changed files from commit diff (machine-derived, never self-reported)
   const result = await runtimeStrategy.listCommitChangedFiles(priorOid, cwd);

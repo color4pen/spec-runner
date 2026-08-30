@@ -16,7 +16,7 @@
 import type { Finding } from "../../kernel/report-result.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { JobState } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { ChangedFilesCapability } from "../port/runtime-strategy.js";
 import { deriveScopeBreach, synthesizeScopeFindings, synthesizeScopeUnverifiableFinding } from "../pipeline/scope.js";
 
 /**
@@ -36,7 +36,12 @@ export async function computeExtraScopeFindings(
   stepName: string,
   permissionScope: PermissionScope | undefined,
   state: JobState,
-  deps: PipelineDeps,
+  deps: {
+    slug: string;
+    request: { baseBranch?: string };
+    cwd?: string;
+    runtimeStrategy?: ChangedFilesCapability;
+  },
 ): Promise<Finding[]> {
   if (!permissionScope) return [];
   if (stepName !== permissionScope.checkpoint) return [];

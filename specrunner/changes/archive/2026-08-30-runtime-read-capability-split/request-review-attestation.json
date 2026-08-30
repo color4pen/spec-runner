@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:69ed247e0016c7d892f95a18622bddceada18fe93f9f85702b3373e4db1db4a0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/port/runtime-strategy.ts exists (not src/core/runtime/runtime-strategy.ts as stated in 実測)",
+    "src/core/port/runtime-strategy.ts:793 lines",
+    "RuntimeStrategy interface has 28 methods (bootstrapJob through lastCommitTouchingPath)",
+    "src/core/port/runtime-strategy.ts: 20 occurrences of 'unknown' token (request claims 21)",
+    "as unknown as RuntimeStrategy: 6 occurrences in test files (tests/pipeline-sole-committer-e2e.test.ts:382, tests/pipeline-sole-committer-e2e.test.ts:539, tests/custom-reviewers-e2e.test.ts:421, tests/pipeline-integration.test.ts:206, tests/unit/core/step/finding-recency.test.ts:83, tests/unit/core/step/finding-recency.test.ts:109)",
+    "production RuntimeStrategy imports: 19 files",
+    "src/core/archive/achieved-assurance.ts:28: AssuranceProvenanceRuntime = Pick<RuntimeStrategy, 'readFileAtCommit'>",
+    "src/core/pipeline/runtime-capability-gate.ts:71: Pick<RuntimeStrategy, 'canDeriveChangedFiles'>",
+    "src/core/step/no-op-detect.ts:36: runtimeStrategy: RuntimeStrategy (full interface)",
+    "src/core/step/prior-round-context.ts:132: runtimeStrategy: RuntimeStrategy | undefined (full interface)",
+    "src/core/step/post-fix-context.ts:226: runtimeStrategy: RuntimeStrategy | undefined (full interface)",
+    "src/core/step/finding-recency.ts:127,222: runtimeStrategy: RuntimeStrategy (full interface)",
+    "src/core/step/custom-reviewer-round-context.ts:244: runtimeStrategy: unknown (cast as RuntimeStrategy | undefined)",
+    "architecture/components.md:171: stale 'commit 時テスト実行' reference confirmed",
+    "RealRuntimeStrategy intersection type defined at src/core/port/runtime-strategy.ts:764-793"
+  ],
+  "sourceRevision": "a377b8328afdd530d2422331b20e6b713c2cf7f3"
+}

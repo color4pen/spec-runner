@@ -14,7 +14,7 @@
  */
 
 import type { Finding, FindingSeverity } from "../../kernel/report-result.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { RevisionContentCapability } from "../port/runtime-strategy.js";
 import { stderrWrite } from "../../logger/stdout.js";
 
 // ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ export function classifyFindingRecency(
  *
  * Fail-to-indeterminate contract:
  *   - `priorOid === null` → all indeterminate (no prior revision to compare).
- *   - `runtimeStrategy.readRevisionContent` absent → all indeterminate.
+ *   - `runtimeStrategy` undefined (capability not derivable) → all indeterminate.
  *   - `finding.line === undefined` → indeterminate for that finding.
  *   - `readRevisionContent` throws → `{ current: null, prior: null }` (indeterminate).
  *   - `current` content line at `finding.line` out of range → targetLineContent = null (indeterminate).
@@ -122,14 +122,14 @@ export function classifyFindingRecency(
  * @param priorOid       - CommitOid of the prior spec-review round, or null.
  * @param cwd            - Working directory for the runtime.
  * @param branch         - Current branch name, or null.
- * @param runtimeStrategy - RuntimeStrategy instance.
+ * @param runtimeStrategy - Revision-content capability, or undefined when not derivable.
  */
 export async function computeFindingRecency(
   findings: Finding[],
   priorOid: string | null,
   cwd: string,
   branch: string | null,
-  runtimeStrategy: RuntimeStrategy,
+  runtimeStrategy: RevisionContentCapability | undefined,
 ): Promise<FindingRecencyResult[]> {
   // Cache of per-file revision content to avoid redundant reads
   const contentCache = new Map<string, { current: string | null; prior: string | null }>();
@@ -137,8 +137,8 @@ export async function computeFindingRecency(
   const results: FindingRecencyResult[] = [];
 
   for (const finding of findings) {
-    // Guard: readRevisionContent not available → indeterminate
-    if (typeof runtimeStrategy.readRevisionContent !== "function") {
+    // Guard: revision-content capability not injected → indeterminate
+    if (!runtimeStrategy) {
       results.push({
         file: finding.file,
         line: finding.line,
@@ -177,7 +177,7 @@ export async function computeFindingRecency(
     let pair = contentCache.get(finding.file);
     if (!pair) {
       try {
-        pair = await runtimeStrategy.readRevisionContent!(finding.file, priorOid, cwd, branch);
+        pair = await runtimeStrategy.readRevisionContent(finding.file, priorOid, cwd, branch);
       } catch {
         pair = { current: null, prior: null };
       }
@@ -223,7 +223,7 @@ export interface RecordFindingRecencyParams {
   findings: Finding[];
   cwd: string;
   branch: string | null;
-  runtimeStrategy: RuntimeStrategy;
+  runtimeStrategy: RevisionContentCapability | undefined;
 }
 
 /**

@@ -13,7 +13,7 @@
  *   - operator 裁定 block は両 ledger 共に空のとき null（block なし）
  */
 import type { JobState } from "../../state/schema.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { getLatestJudgeFindings } from "./fixer-helpers.js";
 import { resolveCodeFixerRounds } from "./post-fix-context.js";
 
@@ -222,7 +222,7 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
  * - iteration < 2 (no prior round)
  * - state.steps[reviewerName] is absent or empty (no prior run recorded)
  * - prior reviewer StepRun has no toolResult (getLatestJudgeFindings returns null)
- * - runtimeStrategy is absent or has no listCommitChangedFiles (managed runtime)
+ * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" } for any commit
  * - listCommitChangedFiles throws for any commit (all-or-nothing)
  *
@@ -241,7 +241,7 @@ export async function deriveCustomReviewerPriorRound(params: {
   reviewerName: string;
   iteration: number;
   cwd: string;
-  runtimeStrategy: unknown;
+  runtimeStrategy: CommitInspectionCapability | undefined;
 }): Promise<CustomReviewerPriorRound | null> {
   const { state, reviewerName, iteration, cwd, runtimeStrategy } = params;
 
@@ -262,9 +262,8 @@ export async function deriveCustomReviewerPriorRound(params: {
     const rawFindings = getLatestJudgeFindings(state, reviewerName);
     if (rawFindings === null) return null;
 
-    // Guard: runtimeStrategy must provide listCommitChangedFiles
-    const strategy = runtimeStrategy as RuntimeStrategy | undefined;
-    if (!strategy?.listCommitChangedFiles) return null;
+    // Guard: commit-inspection capability must be injected
+    if (!runtimeStrategy) return null;
 
     // Resolve code-fixer rounds after prior reviewer endedAt
     const allFixerRounds = resolveCodeFixerRounds(state);
@@ -274,7 +273,7 @@ export async function deriveCustomReviewerPriorRound(params: {
     // Build union of changed files from all relevant fixer commits (all-or-nothing)
     const changedFilesSet = new Set<string>();
     for (const round of relevantRounds) {
-      const result = await strategy.listCommitChangedFiles(round.commitOid, cwd);
+      const result = await runtimeStrategy.listCommitChangedFiles(round.commitOid, cwd);
       if (result.kind !== "success") return null; // all-or-nothing
       for (const f of result.files) {
         changedFilesSet.add(f);
