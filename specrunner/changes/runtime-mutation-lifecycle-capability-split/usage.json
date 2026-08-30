@@ -538,6 +538,47 @@
         "contextTokensBeforeCompaction": 167656,
         "contextTokensAfterCompaction": 8803
       }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-30T17:00:16.317Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 1643,
+          "outputTokens": 15820,
+          "cacheReadInputTokens": 4433597,
+          "cacheCreationInputTokens": 55609
+        }
+      },
+      "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
+      "stepName": "code-fixer",
+      "numTurns": 30,
+      "durationMs": 301742,
+      "durationApiMs": 300963,
+      "totalCostUsd": 1.7862675,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 164545,
+        "compactionCount": 1,
+        "contextTokensBeforeCompaction": 169129,
+        "contextTokensAfterCompaction": 11724
+      }
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-30T17:02:01.550Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 561872,
+          "outputTokens": 3834,
+          "cacheReadInputTokens": 486912,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
