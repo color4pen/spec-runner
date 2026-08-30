@@ -205,3 +205,13 @@
 {"type":"transition","ts":"2026-08-30T17:45:06.872Z","step":"code-review","status":"warning","message":"code-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-30T17:45:06.872Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-08-30T17:45:06.875Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-08-30T17:54:00.816Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"71ecea85-85d0-4057-a732-1926e2611ddd","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":1,"outputRepair":0}},"startedAt":"2026-08-30T17:45:06.912Z","endedAt":"2026-08-30T17:53:59.576Z","commitOid":"e47a840ea80a06b2140acf474bddf92aca3b7395"}
+{"type":"lineage","step":"code-fixer","ts":"2026-08-30T17:53:59.576Z","outputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split","hash":null}],"inputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split/review-feedback-005.md","hash":"sha256:0ea0285efcfd27b6f4e0c6c49b3d1387438b91c6758af630db294adf3c65acba"}]}
+{"type":"transition","ts":"2026-08-30T17:54:00.821Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"transition","ts":"2026-08-30T17:54:00.822Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"step-attempt","step":"custom-reviewers","sessionId":null,"outcome":{"verdict":"approved","findingsPath":null,"error":null},"startedAt":"2026-08-30T17:54:00.828Z","endedAt":"2026-08-30T17:54:00.828Z"}
+{"type":"transition","ts":"2026-08-30T17:54:00.830Z","step":"custom-reviewers","status":"ok","message":"custom-reviewers iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-30T17:54:00.830Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
+{"type":"transition","ts":"2026-08-30T17:54:00.831Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-08-30T17:54:00.833Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
