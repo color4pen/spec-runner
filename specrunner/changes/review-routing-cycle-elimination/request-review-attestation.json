@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:81ee4aa6f89fbf12fdb5790f0f1efa0c3c627c1c0dd5d5878482dfe518eb98e1",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/reviewer-chain.ts:19 - import { getConformanceFixContext } from \"../step/fixer-helpers.js\" (value import, cycle edge 1)",
+    "src/core/pipeline/reviewer-chain.ts:18 - import { REGRESSION_GATE_STEP_NAME } from \"../step/regression-gate.js\" (value import)",
+    "src/core/step/fixer-helpers.ts:14 - import { deriveImplFixerChain, resolveActiveReviewer } from \"../pipeline/reviewer-chain.js\" (value import, cycle edge 2)",
+    "src/core/step/regression-gate.ts:27 - import { computeRegressionLedger, computeLedgerRef } from \"../pipeline/findings-ledger.js\" (value import)",
+    "src/core/step/regression-gate.ts:28 - import { deriveImplReviewerChain } from \"../pipeline/reviewer-chain.js\" (value import)",
+    "src/core/pipeline/findings-ledger.ts:14 - import { getLatestJudgeFindings } from \"../step/fixer-helpers.js\" (value import, cycle edge in longer SCC)",
+    "src/core/pipeline/findings-ledger.ts:213-218 - comment confirms known cycle avoidance: reviewerChain passed as parameter to avoid findings-ledger→reviewer-chain→regression-gate→findings-ledger cycle",
+    "src/core/pipeline/findings-ledger.ts:264-268 - same pattern in buildProvenanceIndex",
+    "tests/unit/architecture/core-invariants.test.ts - B-1 through B-18 and DSM closure tests verified; none detect intra-domain (pipeline↔step) SCCs",
+    "src/core/pipeline/types.ts:267 - STANDARD_TRANSITIONS uses ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW])",
+    "src/core/pipeline/types.ts:318 - FAST_TRANSITIONS uses ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW])",
+    "git:96f4db6a - base commit matches PR #1098 merge as stated in request"
+  ],
+  "sourceRevision": "96f4db6a49d3936c99a9f62bcbaa531a096db2e4"
+}
