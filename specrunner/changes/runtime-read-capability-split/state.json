@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
   "createdAt": "2026-08-30T04:53:17.618Z",
-  "updatedAt": "2026-08-30T09:09:07.004Z",
+  "updatedAt": "2026-08-30T09:17:06.240Z",
   "request": {
     "title": "RuntimeStrategy の read-only consumer を consumer-owned capability へ分割する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/runtime-read-capability-split-7f342c82",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "030d052fff7c1cc2bf6e215811c0249e89c33a00",
     "bb7759d89e04ed8cb303efd9a93990da74597e06",
     "7187288f7f07f84a4167b3c759f3b622a526fbf5",
-    "618e3ced398d59079ee13a574fb854d06535fcb4"
+    "618e3ced398d59079ee13a574fb854d06535fcb4",
+    "ef1d890563ed05328dce7b20324ac59be5793d27",
+    "45140cd1647d5b74933b52e0fb9567e42f3cb947"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,6 +175,22 @@
     "regression-gate": [
       "tests/unit/core/step/capability-consumers.test.ts",
       "src/core/archive/__tests__/achieved-assurance.test.ts"
+    ],
+    "conformance": [
+      "src/core/port/runtime-strategy.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/finding-recency.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/pipeline/scope-check.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "tests/unit/core/runtime/capability-contracts.test.ts",
+      "src/core/step/scope-check.ts",
+      "tests/unit/core/step/capability-consumers.test.ts",
+      "tests/unit/core/step/finding-recency.test.ts",
+      "architecture/components.md",
+      "src/core/step/post-fix-context.ts"
     ]
   },
   "reviewerStatuses": [
@@ -207,21 +225,29 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1102",
+    "number": 1102,
+    "createdAt": "2026-08-30T09:17:05.057Z"
+  },
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
