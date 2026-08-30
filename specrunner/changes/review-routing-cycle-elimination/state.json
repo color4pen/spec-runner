@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T01:20:06.242Z",
+  "updatedAt": "2026-08-30T01:34:42.142Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
@@ -64,7 +64,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "e87227f5d98c76934f348dd070028b8b1c7da640",
-    "0acb1c57ea2e82e3d9e916e4526fee4706a390de"
+    "0acb1c57ea2e82e3d9e916e4526fee4706a390de",
+    "d28d5bb95dd34ba371d042476c57f194d2e5957b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,12 +82,28 @@
       "src/core/pipeline/compose-reviewers.ts",
       "src/core/pipeline/__tests__/reviewer-chain.test.ts",
       "src/core/pipeline/__tests__/findings-ledger.test.ts"
+    ],
+    "design": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-names.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
