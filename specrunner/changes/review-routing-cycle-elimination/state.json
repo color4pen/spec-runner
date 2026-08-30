@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T01:48:51.845Z",
+  "updatedAt": "2026-08-30T02:16:40.009Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
@@ -68,7 +68,9 @@
     "d28d5bb95dd34ba371d042476c57f194d2e5957b",
     "56e4b753ae3889d470f35b16d761b5e9f8928831",
     "6bb04d5f311e124ba489da9ab23f1ce0fe0b7ce8",
-    "61dc41a8765afed548512113f561cbfb71b4f68f"
+    "61dc41a8765afed548512113f561cbfb71b4f68f",
+    "2517a319561b66a9eb666d04dc92d6649f221bbb",
+    "f01af29ba9b883998d20211830d76ba63d719444"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,16 +125,36 @@
       "tests/unit/pipeline/transition-when.test.ts",
       "src/core/pipeline/compose-reviewers.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/step/step-names.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/reviewers/types.ts",
+      "src/core/review-routing.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 28,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
