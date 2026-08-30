@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T16:17:20.527Z",
+  "updatedAt": "2026-08-30T16:19:24.072Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -79,7 +79,8 @@
     "260061f200f371ad4e64dcb5166ea513355254bc",
     "7e62285c3689695b54890d1f86f23e545fa1d099",
     "5ee7b6e699a5f7e2e434ac65fca3f068280ff1a2",
-    "91087a71511a0953c0889b890ddac41d1b563202"
+    "91087a71511a0953c0889b890ddac41d1b563202",
+    "e20ed1e970be08ece1790cb21e9f3062a8d8f1ca"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -134,6 +135,13 @@
       "src/core/step/__tests__/post-fix-context.test.ts",
       "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
       "src/core/step/__tests__/prior-round-context.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/runner.ts",
+      "src/core/pipeline/pipeline-capability.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/commit-push.ts"
     ]
   },
   "resumePoint": null,
@@ -181,7 +189,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 74,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -194,7 +202,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
