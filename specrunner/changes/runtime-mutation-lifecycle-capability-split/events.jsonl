@@ -72,3 +72,9 @@
 {"type":"transition","ts":"2026-08-30T15:31:27.967Z","step":"code-review","status":"warning","message":"code-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-30T15:31:27.967Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-08-30T15:31:27.969Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-08-30T16:08:17.234Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"71ecea85-85d0-4057-a732-1926e2611ddd","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":1,"outputRepair":0}},"startedAt":"2026-08-30T15:31:28.008Z","endedAt":"2026-08-30T16:08:15.983Z","commitOid":"260061f200f371ad4e64dcb5166ea513355254bc"}
+{"type":"lineage","step":"code-fixer","ts":"2026-08-30T16:08:15.983Z","outputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split","hash":null}],"inputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split/review-feedback-002.md","hash":"sha256:e8abfdd18484418c816659a2fa815900f8916bd40383993c3fbe96e905c25662"}]}
+{"type":"transition","ts":"2026-08-30T16:08:17.238Z","step":"step-transition","status":"ok","message":"code-fixer → code-review"}
+{"type":"transition","ts":"2026-08-30T16:08:17.239Z","step":"code-review","status":"started","message":"code-review iteration 2 started"}
+{"type":"transition","ts":"2026-08-30T16:08:17.240Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
