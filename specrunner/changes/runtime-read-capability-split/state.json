@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7f342c82-e4ee-47f6-8ab8-2dce5b3a97c6",
   "createdAt": "2026-08-30T04:53:17.618Z",
-  "updatedAt": "2026-08-30T05:08:15.754Z",
+  "updatedAt": "2026-08-30T05:11:49.858Z",
   "request": {
     "title": "RuntimeStrategy の read-only consumer を consumer-owned capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "refactor/runtime-read-capability-split-7f342c82",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "62259c040097ab0025fd81fad8f62ce3b44ea45e",
     "de82ee1e9770214235036639edafb9a5424ef015",
-    "23ce52a8c1e935dca59e2d779a0eb9a6c5748fdd"
+    "23ce52a8c1e935dca59e2d779a0eb9a6c5748fdd",
+    "22f721c2f5564d5cfa2e682998113b68617d44c0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -97,13 +98,15 @@
       "architecture/components.md",
       "src/core/types.ts",
       "tests/unit/core/step/finding-recency.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
