@@ -1,0 +1,24 @@
+{
+  "requestHash": "sha256:1918af8175d34f257c6de33e47d9ab159a4a7b643b79efce38a198587b4e9310",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/port/runtime-strategy.ts: 875 lines (wc -l returns 875)",
+    "RuntimeStrategy interface: 28 methods (bootstrapJob, persistJobState, query, createAgentRunner, setupWorkspace, buildDeps, registerCleanup, teardown, captureHeadSha, prepareStepArtifacts, finalizeStepArtifacts, validateStepInputs, validateStepOutputs, commitFinalState, verifyFindingRefs, digestArtifacts, listChangedFiles, listWorktreeChanges?, commitRoundArtifacts?, canDeriveChangedFiles?, assertNoDuplicateLiveJob?, assertProviderReadiness?, reloadJobState?, listCommitChangedFiles?, readFileAtCommit?, snapshotMainCheckoutGuard?, readRevisionContent?, lastCommitTouchingPath?)",
+    "same file unknown token count: 21 (20 lines, line 508 has two unknown tokens: deps: unknown, state: unknown)",
+    "as unknown as RuntimeStrategy: 4 occurrences, all in test files (tests/pipeline-integration.test.ts:206, tests/custom-reviewers-e2e.test.ts:421, tests/pipeline-sole-committer-e2e.test.ts:382, tests/pipeline-sole-committer-e2e.test.ts:539)",
+    "buildDeps signature returns unknown at port level (line 385), LocalRuntime.buildDeps returns concrete PipelineDeps via bivariant override",
+    "finalizeStepArtifacts(step: unknown, state: JobState, deps: unknown, headBeforeStep: string|null, commitPushInfra: unknown) at port level (lines 437-443)",
+    "commitFinalState(deps: unknown, state: unknown): Promise<void> at port level (line 508)",
+    "commitRoundArtifacts(..., commitPushInfra: unknown, egressParams?: unknown) at port level (lines 621-630)",
+    "as PipelineDeps cast in runner.ts line 222: deps = this.runtime.buildDeps(...) as PipelineDeps",
+    "as CommitPushInfra cast in local.ts line 931: const infra = commitPushInfra as CommitPushInfra",
+    "egressParams restore cast in local.ts line 932: const egress = egressParams as ...",
+    "PipelineDeps.runtimeStrategy?: RuntimeStrategy in src/core/types.ts line 91",
+    "LocalRuntime.buildDeps injects runtimeStrategy: this (self as full facade) at line 617 of local.ts",
+    "deps.runtimeStrategy?.commitFinalState(deps, state) called at pipeline.ts lines 399 and 623",
+    "ChangedFilesCapability, CommitInspectionCapability, RevisionContentCapability already defined in runtime-strategy.ts (R2a complete)",
+    "deriveCommitInspectionCapability and deriveRevisionContentCapability helper functions present in runtime-strategy.ts",
+    "architecture/components.md exists and documents RuntimeStrategy as composition root facade"
+  ],
+  "sourceRevision": "660d48fb20d448f690cf991e09b4aac930bc2de4"
+}
