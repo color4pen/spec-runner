@@ -12,94 +12,32 @@
 import type { JobState } from "../../state/schema.js";
 import type { Transition } from "./types.js";
 import { STEP_NAMES } from "../step/step-names.js";
-import type { ReviewerSnapshot } from "../reviewers/types.js";
 import type { CodeReviewReportResult } from "../port/report-result.js";
+import type { Finding } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
-import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
-import { getConformanceFixContext } from "../step/fixer-helpers.js";
 import { filterUndecidedFindings } from "../decision/decision-ledger.js";
+import {
+  REGRESSION_GATE_STEP_NAME,
+  resolveActiveReviewer,
+  nextAfterReviewer,
+  getLatestJudgeFindings,
+  conformanceFixInProgress,
+  regressionGateActive,
+  codeReviewLoopActive,
+} from "../review-routing.js";
 
-/**
- * Derive the full reviewer chain for the impl phase from job state.
- * Returns ["code-review", ...customReviewerNames] in declaration order.
- *
- * @param stateOrSnapshots - Either a JobState (uses state.reviewers) or a ReviewerSnapshot[].
- */
-export function deriveImplReviewerChain(
-  stateOrSnapshots: JobState | ReviewerSnapshot[],
-): string[] {
-  const snapshots = Array.isArray(stateOrSnapshots)
-    ? stateOrSnapshots
-    : (stateOrSnapshots as JobState).reviewers ?? [];
-  return [STEP_NAMES.CODE_REVIEW, ...snapshots.map((s) => s.name)];
-}
-
-/**
- * Derive the full fixer chain for code-fixer (reviewer chain + regression-gate when applicable).
- *
- * Returns ["code-review"] when no custom reviewers are present (zero-reviewer case).
- * Returns ["code-review", ...customNames, "regression-gate"] when custom reviewers are present.
- *
- * code-fixer uses this chain to resolve the active reviewer (where to read findings from),
- * which includes the regression-gate when it is part of the pipeline.
- *
- * @param state - Current job state.
- */
-export function deriveImplFixerChain(state: JobState): string[] {
-  const chain = deriveImplReviewerChain(state);
-  const hasReviewers = (state.reviewers?.length ?? 0) > 0;
-  if (hasReviewers) {
-    return [...chain, REGRESSION_GATE_STEP_NAME];
-  }
-  return chain;
-}
-
-/**
- * Resolve the currently active reviewer from job state.
- *
- * The active reviewer is the one with the most recent execution (latest startedAt).
- * Since reviewers run in declaration order and a reviewer can only run after all
- * preceding reviewers have approved, the "last to run" IS the active reviewer.
- *
- * Tie-breaking: when two reviewers share the same startedAt, the later one in the
- * chain wins (>= preserves the last write in declaration order).
- *
- * Fallback: if no reviewer in the chain has run, returns the first reviewer.
- *
- * @param state - Current job state.
- * @param chain - Reviewer chain from deriveImplReviewerChain.
- */
-export function resolveActiveReviewer(state: JobState, chain: string[]): string {
-  let latestTime = "";
-  let activeReviewer = chain[0] ?? STEP_NAMES.CODE_REVIEW;
-
-  for (const reviewer of chain) {
-    const runs = state.steps?.[reviewer] ?? [];
-    if (runs.length === 0) continue;
-    const lastRun = runs[runs.length - 1];
-    if (lastRun && lastRun.startedAt >= latestTime) {
-      latestTime = lastRun.startedAt;
-      activeReviewer = reviewer;
-    }
-  }
-
-  return activeReviewer;
-}
-
-/**
- * Return the next step after the given reviewer in the chain.
- * Returns STEP_NAMES.CONFORMANCE if the reviewer is the last in the chain.
- *
- * @param reviewer - Current reviewer step name.
- * @param chain    - Full reviewer chain.
- */
-export function nextAfterReviewer(reviewer: string, chain: string[]): string {
-  const idx = chain.indexOf(reviewer);
-  if (idx === -1 || idx === chain.length - 1) {
-    return STEP_NAMES.CONFORMANCE;
-  }
-  return chain[idx + 1]!;
-}
+// ---------------------------------------------------------------------------
+// Re-exports for backward compatibility
+// ---------------------------------------------------------------------------
+export {
+  deriveImplReviewerChain,
+  deriveImplFixerChain,
+  resolveActiveReviewer,
+  nextAfterReviewer,
+  conformanceFixInProgress,
+  regressionGateActive,
+  codeReviewLoopActive,
+} from "../review-routing.js";
 
 /**
  * Get the last verdict for a reviewer step from job state.
@@ -112,14 +50,10 @@ function lastVerdictOf(state: JobState, reviewer: string): string | null {
 
 /**
  * Get the last findings for a reviewer step from job state.
+ * Delegates to getLatestJudgeFindings; returns [] when null.
  */
-function lastFindingsOf(state: JobState, reviewer: string): import("../../kernel/report-result.js").Finding[] {
-  const runs = state.steps?.[reviewer] ?? [];
-  if (runs.length === 0) return [];
-  const lastRun = runs[runs.length - 1];
-  if (!lastRun) return [];
-  const toolResult = lastRun.outcome.toolResult as CodeReviewReportResult | null | undefined;
-  return toolResult?.findings ?? [];
+function lastFindingsOf(state: JobState, reviewer: string): Finding[] {
+  return getLatestJudgeFindings(state, reviewer) ?? [];
 }
 
 /**
@@ -239,65 +173,6 @@ export function buildReviewerChainTransitions(chain: string[]): Transition[] {
   });
 
   return transitions;
-}
-
-// ---------------------------------------------------------------------------
-// Predicates for composed-path code-fixer routing (D7)
-// ---------------------------------------------------------------------------
-
-/**
- * True when conformance has triggered this code-fixer entry.
- *
- * Design D7 (reviewer-parallel-execution): code-fixer in the composed path routes
- * back via priority-ordered predicates instead of resolveActiveReviewer.
- * Priority 1: conformance fix in progress → return to conformance.
- *
- * Delegates to getConformanceFixContext — same recency-based detection used in
- * buildMessage(). No new seam introduced.
- */
-export function conformanceFixInProgress(state: JobState): boolean {
-  return getConformanceFixContext(state, STEP_NAMES.CODE_FIXER) !== null;
-}
-
-/**
- * True when the regression-gate is the active fixer source.
- *
- * Design D7 (reviewer-parallel-execution): priority 2 after conformance.
- * regression-gate triggered this fixer entry when:
- * - the regression-gate's latest verdict is "needs-fix".
- *
- * Note: after D2 (excludeKnownUnfixedRegressions removal), deriveRegressionGateVerdict
- * converts any fixable finding to needs-fix regardless of severity. The approved+fixable
- * branch is structurally unreachable and has been removed.
- */
-export function regressionGateActive(state: JobState): boolean {
-  const runs = state.steps?.[REGRESSION_GATE_STEP_NAME] ?? [];
-  if (runs.length === 0) return false;
-  const last = runs[runs.length - 1];
-  if (!last) return false;
-  return last.outcome.verdict === "needs-fix";
-}
-
-/**
- * True when code-review (the standard built-in reviewer) is still in its convergence loop.
- *
- * Design D7 (reviewer-parallel-execution): priority 3 after regression-gate.
- * code-review loop is active when:
- * - the coordinator (parallelReview) has NOT started yet (no runs on coordinator), AND
- * - code-review's latest verdict is "needs-fix" (i.e. the fixer was sent by code-review)
- *
- * @param state           - Current job state.
- * @param coordinatorName - Name of the coordinator step (e.g. "custom-reviewers").
- */
-export function codeReviewLoopActive(state: JobState, coordinatorName: string): boolean {
-  // If coordinator has run at least once, we are past the code-review loop
-  const coordinatorRuns = state.steps?.[coordinatorName] ?? [];
-  if (coordinatorRuns.length > 0) return false;
-
-  const codeReviewRuns = state.steps?.[STEP_NAMES.CODE_REVIEW] ?? [];
-  if (codeReviewRuns.length === 0) return false;
-  const lastCodeReview = codeReviewRuns[codeReviewRuns.length - 1];
-  return lastCodeReview?.outcome.verdict === "needs-fix";
 }
 
 // ---------------------------------------------------------------------------

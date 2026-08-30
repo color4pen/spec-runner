@@ -11,9 +11,13 @@
 import { STEP_NAMES } from "./step-names.js";
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
-import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import type { OutputContract } from "../port/output-contract.js";
 import type { StepDeps } from "./types.js";
+
+// ---------------------------------------------------------------------------
+// Re-exports for backward compatibility
+// ---------------------------------------------------------------------------
+export { getLatestJudgeFindings, getConformanceFixContext } from "../review-routing.js";
 
 /** fixer ステップ名の集合（build-fixer は廃止済み — verification 失敗は implementer 再入で直す） */
 export const FIXER_STEP_NAMES: ReadonlySet<string> = new Set([
@@ -43,113 +47,6 @@ export function isFixerContinuation(
   stepName: string,
 ): boolean {
   return getPreviousSessionId(state, stepName) !== null;
-}
-
-/**
- * Get the findings from the most recent judge run for the given step.
- * Returns the findings array from the last StepRun's toolResult, or null if:
- * - The step has no runs
- * - The last run has no toolResult (legacy state)
- * - The last run's toolResult has no findings
- */
-export function getLatestJudgeFindings(
-  state: JobState,
-  judgeStepName: string,
-): Finding[] | null {
-  const runs = state.steps?.[judgeStepName];
-  if (!runs || runs.length === 0) return null;
-  const lastRun = runs[runs.length - 1];
-  if (!lastRun) return null;
-  const toolResult = lastRun.outcome.toolResult;
-  if (!toolResult) return null;
-  const findings = (toolResult as { findings?: Finding[] }).findings;
-  if (!findings) return null;
-  return findings;
-}
-
-/**
- * Resolve the predecessor step name for conformance recency checking.
- *
- * When conformance routes to a fixer, the fixer's "predecessor" (last step that ran
- * in the normal flow before conformance) differs per fixer:
- *   - code-fixer: the active reviewer (code-review or custom reviewer)
- *   - spec-fixer: spec-review
- *   - implementer: implementer itself (its previous run)
- */
-function conformancePredecessorStep(state: JobState, stepName: string): string {
-  if (stepName === STEP_NAMES.CODE_FIXER) {
-    return resolveActiveReviewer(state, deriveImplFixerChain(state));
-  }
-  if (stepName === STEP_NAMES.SPEC_FIXER) {
-    return STEP_NAMES.SPEC_REVIEW;
-  }
-  // implementer: predecessor is itself (its most recent prior run)
-  return STEP_NAMES.IMPLEMENTER;
-}
-
-/**
- * Get conformance findings for injection into a fixer step context.
- *
- * Returns the findings from the latest conformance run if:
- * 1. Conformance has run and has a `needs-fix:<target>` verdict matching stepName
- * 2. The conformance run is more recent than the predecessor step's last run
- *    (ensures we only inject when conformance triggered this fixer entry)
- * 3. The conformance run has findings in toolResult
- *
- * Returns null in all other cases (no conformance run, stale conformance, wrong target,
- * predecessor ran after conformance indicating a normal non-conformance entry).
- *
- * Pure function — no I/O.
- */
-export function getConformanceFixContext(state: JobState, stepName: string): Finding[] | null {
-  // Step 1: get latest conformance run
-  const conformanceRuns = state.steps?.[STEP_NAMES.CONFORMANCE];
-  if (!conformanceRuns || conformanceRuns.length === 0) return null;
-  const latestConformance = conformanceRuns[conformanceRuns.length - 1];
-  if (!latestConformance) return null;
-
-  // Step 2: check verdict is needs-fix:<target> for this stepName
-  const verdict = latestConformance.outcome.verdict;
-  if (typeof verdict !== "string") return null;
-  const needsFixPrefix = "needs-fix:";
-  if (!verdict.startsWith(needsFixPrefix)) return null;
-  const target = verdict.slice(needsFixPrefix.length);
-  if (target !== stepName) return null;
-
-  // Step 3: recency — conformance must be newer than the predecessor's last run.
-  //
-  // LOAD-BEARING: the inclusive `>=` is intentional. In production the pipeline
-  // executes steps sequentially, so conformance.endedAt is always strictly greater
-  // than predecessor.endedAt. The `>=` correctly handles that case AND also
-  // returns null for the degenerate equal-timestamp state.
-  //
-  // INVARIANT for callers that depend on this function as a conformance-entry guard
-  // (e.g. specFixerForwardsToTestGen in spec-observation.ts): test fixtures that
-  // represent a conformance-triggered entry MUST use distinct, ordered timestamps
-  // (predecessor.endedAt < conformance.endedAt) AND must provide toolResult.findings
-  // (step 4) for the function to return non-null. Fixtures with equal timestamps will
-  // produce a false null (not-a-conformance-entry) result via this step.
-  const predecessorName = conformancePredecessorStep(state, stepName);
-  const predecessorRuns = state.steps?.[predecessorName];
-  if (predecessorRuns && predecessorRuns.length > 0) {
-    const latestPredecessor = predecessorRuns[predecessorRuns.length - 1];
-    if (latestPredecessor && latestPredecessor.endedAt >= latestConformance.endedAt) {
-      // Predecessor ran after (or at the same time as) conformance → not a conformance-triggered entry
-      return null;
-    }
-  }
-
-  // Step 4: return findings from toolResult.
-  //
-  // NOTE: callers that use the non-null return value solely as a boolean guard
-  // (e.g. specFixerForwardsToTestGen) depend on this step returning non-null.
-  // Test fixtures must therefore populate toolResult.findings on the conformance
-  // StepRun to correctly simulate a conformance-triggered entry.
-  const toolResult = latestConformance.outcome.toolResult;
-  if (!toolResult) return null;
-  const findings = (toolResult as { findings?: Finding[] }).findings;
-  if (!findings) return null;
-  return findings;
 }
 
 /**

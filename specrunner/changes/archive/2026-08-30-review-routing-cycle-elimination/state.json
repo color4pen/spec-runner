@@ -1,0 +1,241 @@
+{
+  "version": 2,
+  "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
+  "createdAt": "2026-08-30T01:15:47.734Z",
+  "updatedAt": "2026-08-30T02:44:34.467Z",
+  "request": {
+    "title": "review routing の value-import cycle を解消する",
+    "type": "refactoring",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 812,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "e87227f5d98c76934f348dd070028b8b1c7da640",
+    "0acb1c57ea2e82e3d9e916e4526fee4706a390de",
+    "d28d5bb95dd34ba371d042476c57f194d2e5957b",
+    "56e4b753ae3889d470f35b16d761b5e9f8928831",
+    "6bb04d5f311e124ba489da9ab23f1ce0fe0b7ce8",
+    "61dc41a8765afed548512113f561cbfb71b4f68f",
+    "2517a319561b66a9eb666d04dc92d6649f221bbb",
+    "f01af29ba9b883998d20211830d76ba63d719444",
+    "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27",
+    "b1753623ff6adbbe9a59f4a561938cf28698f041",
+    "33b7c33faf2630dbdd0b5f918f7f72502c155c29",
+    "3a52cf7057ed50bfe93e046aa33ddc1b4054158f",
+    "a7422dc13153923f1aebfbc3eea364d1e15e5acf",
+    "9485136b09bd375e4063e62b324d2ec3927fab9b"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-names.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts"
+    ],
+    "design": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-names.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts"
+    ],
+    "test-case-gen": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts"
+    ],
+    "spec-review": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "src/core/pipeline/compose-reviewers.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/step/step-names.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/reviewers/types.ts",
+      "src/core/review-routing.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts"
+    ],
+    "code-review": [
+      "src/core/review-routing.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/__tests__/fixer-push-capability.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/review-routing.ts"
+    ],
+    "regression-gate": [
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/findings-ledger.ts"
+    ],
+    "conformance": [
+      "src/core/review-routing.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/unit/pipeline/transition-parity.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "b1753623ff6adbbe9a59f4a561938cf28698f041",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/review-routing-cycle-elimination/design.md:sha256:524448e48875b6777227c323c92eb04efa308cb564a16f7857b8df8a5c5ab681|specrunner/changes/review-routing-cycle-elimination/request.md:sha256:81ee4aa6f89fbf12fdb5790f0f1efa0c3c627c1c0dd5d5878482dfe518eb98e1|specrunner/changes/review-routing-cycle-elimination/spec.md:sha256:232dc72b688bd1aa26d91f04143c3541899f539fb91688a06e3625551e468897|specrunner/changes/review-routing-cycle-elimination/tasks.md:sha256:22cd01c27e007fc4dcf31176b11dfaecd869a1f0cab6e66a1f69de184f3a0e6e|specrunner/changes/review-routing-cycle-elimination/test-cases.md:sha256:5fb557723681a97dc55300a9d2d58beb8ef47684bc92791e8532d5e1edd9c68b"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1099",
+    "number": 1099,
+    "createdAt": "2026-08-30T02:44:33.281Z"
+  },
+  "_journal": {
+    "historyCount": 62,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 1,
+      "verification": 2,
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
