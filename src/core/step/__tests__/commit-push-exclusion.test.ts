@@ -82,11 +82,12 @@ function statusEntry(xy: string, path: string): string {
 // Helpers: infra, state, deps
 // ---------------------------------------------------------------------------
 
-function makeInfra(spawnFn: SpawnFn): CommitPushInfra {
+function makeInfra(spawnFn: SpawnFn, pushCapability?: PushCapability | null): CommitPushInfra {
   return {
     spawnFn,
     sleepFn: vi.fn(async () => {}),
     events: new EventBus(),
+    ...(pushCapability !== undefined ? { pushCapability } : {}),
   };
 }
 
@@ -114,7 +115,7 @@ function makeState(stepName = "implementer"): JobState {
   };
 }
 
-function makeDeps(pipelineConfig: Record<string, unknown> = {}, pushCapability?: PushCapability | null): PipelineDeps {
+function makeDeps(pipelineConfig: Record<string, unknown> = {}): PipelineDeps {
   return {
     cwd: CWD,
     slug: SLUG,
@@ -138,7 +139,6 @@ function makeDeps(pipelineConfig: Record<string, unknown> = {}, pushCapability?:
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => ({} as never),
-    pushCapability: pushCapability ?? null,
   } as unknown as PipelineDeps;
 }
 
@@ -198,14 +198,14 @@ describe("TC-001: excluded worktree path does not cause UNPUSHABLE_PATH_BLOCKED 
         { exitCode: 0 },                            // diff --cached --quiet (nothing staged)
       ]);
 
-      // WHEN
+      // WHEN: pushCapability is passed via infra (R2b: moved from deps to CommitPushInfra)
       await expect(
         commitAndPush(
           makeGuardedStep(),
           makeState(),
-          makeDeps({ stagingExcludePatterns: [".github/workflows/**"] }, WORKFLOWS_CAPABILITY),
+          makeDeps({ stagingExcludePatterns: [".github/workflows/**"] }),
           null,
-          makeInfra(fn),
+          makeInfra(fn, WORKFLOWS_CAPABILITY),
         ),
       ).resolves.toBeUndefined();
 
@@ -287,14 +287,15 @@ describe("TC-004: unpushed-commit path matching exclusion pattern still triggers
         { exitCode: 0, stdout: ".github/workflows/x.yml\n" },         // Layer 2: diff-tree (commit content)
       ]);
 
-      // WHEN: stagingExcludePatterns is set, but the file is in a commit (not just worktree)
+      // WHEN: pushCapability is passed via infra; stagingExcludePatterns from config
+      // R2b: pushCapability is threaded via CommitPushInfra, not deps
       await expect(
         commitAndPush(
           makeGuardedStep(),
           makeState(),
-          makeDeps({ stagingExcludePatterns: [".github/workflows/**"] }, WORKFLOWS_CAPABILITY),
+          makeDeps({ stagingExcludePatterns: [".github/workflows/**"] }),
           null,
-          makeInfra(fn),
+          makeInfra(fn, WORKFLOWS_CAPABILITY),
         ),
       ).rejects.toMatchObject({ code: "UNPUSHABLE_PATH_BLOCKED" });
     },

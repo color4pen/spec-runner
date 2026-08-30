@@ -107,10 +107,10 @@ export class ParallelReviewRound {
     // Compute once per round: hash of canonical docs (request.md / spec.md / design.md /
     // tasks.md / test-cases.md) under specrunner/changes/<slug>/. Used by selectPendingMembers
     // and applyRoundResults to detect changes to design documents between rounds.
-    // undefined = digestArtifacts not available (managed runtime / legacy caller) → no canon check.
-    // null = digestArtifacts returned all-null hashes (files missing) → fail-closed.
+    // undefined = roundGitEffects absent (managed runtime or no local worktree) → no canon check.
+    // null = digestArtifacts returned all-null hashes (files missing / managed no-op) → fail-closed.
     let currentCanonHash: string | null | undefined = undefined;
-    if (deps.roundGitEffects?.digestArtifacts) {
+    if (deps.roundGitEffects) {
       const canonRefs = await deps.roundGitEffects.digestArtifacts(
         canonicalDocPaths(deps.slug).map((p) => ({ path: p })),
         cwd,
@@ -367,7 +367,7 @@ export class ParallelReviewRound {
       // inspectionEscalated: declared at step 5b (HEAD guard) so HEAD guard and this
       // git-effects check share the same flag. Already true if HEAD guard fired.
       // roundCommitOid is declared above (outer scope) for use in commitRound call.
-      if (deps.roundGitEffects?.listWorktreeChanges) {
+      if (deps.roundGitEffects) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
         const infra: CommitPushInfra = {
@@ -461,7 +461,7 @@ export class ParallelReviewRound {
               : null;
             let commitArtifactError: unknown = null;
             try {
-              await deps.roundGitEffects.commitRoundArtifacts?.(
+              await deps.roundGitEffects.commitRoundArtifacts(
                 toStage,
                 cwd,
                 branch,

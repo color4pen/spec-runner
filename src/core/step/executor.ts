@@ -464,7 +464,7 @@ export class StepExecutor {
         .catch(() => {}) // Absorb any previous chain error; each call handles its own
         .then(async () => {
           if (!deps.stepArtifact) return;
-          await deps.stepArtifact.finalizeStepArtifacts(step, stateForFinalize, cwd, deps.slug, headForFinalize, this.commitPushInfra)
+          await deps.stepArtifact.finalizeStepArtifacts(step, stateForFinalize, cwd, deps.slug, headForFinalize, { ...this.commitPushInfra, pushCapability: deps.pushCapability })
             .catch((err: unknown) => { finalizeError = err; });
         });
       this.commitMutex = myFinalize;

@@ -67,6 +67,10 @@ function makeManagedRoundGitEffectsSource() {
       return { kind: "success" as const, paths: [] };
     },
     async commitRoundArtifacts(): Promise<void> {},
+    // digestArtifacts: managed no-op returns all-null hashes (no local filesystem)
+    async digestArtifacts(refs: { path: string }[]): Promise<{ path: string; hash: null }[]> {
+      return refs.map((r) => ({ path: r.path, hash: null as null }));
+    },
     async listChangedFiles(): Promise<{ kind: "success"; files: string[] }> {
       return { kind: "success" as const, files: [] };
     },
@@ -161,21 +165,22 @@ describe("T-14: ManagedRuntime capability contracts — TerminalStateCapability"
 // ---------------------------------------------------------------------------
 
 describe("T-14: ManagedRuntime capability contracts — RoundGitEffectsCapability", () => {
-  it("TC-T14-M09: deriveRoundGitEffectsCapability wires managed source with optional methods", () => {
+  it("TC-T14-M09: deriveRoundGitEffectsCapability wires managed source — all methods required", () => {
     const source = makeManagedRoundGitEffectsSource();
     const cap: RoundGitEffectsCapability = deriveRoundGitEffectsCapability(source);
 
     expect(typeof cap.captureHeadSha).toBe("function");
     expect(typeof cap.listChangedFiles).toBe("function");
-    // Optional methods provided by this source → present in result.
+    // D6: all methods required — capability absence expressed by roundGitEffects=undefined.
     expect(typeof cap.listWorktreeChanges).toBe("function");
     expect(typeof cap.commitRoundArtifacts).toBe("function");
+    expect(typeof cap.digestArtifacts).toBe("function");
   });
 
   it("TC-T14-M10: listWorktreeChanges returns { kind:'success', paths:[] } (managed no-op)", async () => {
     const source = makeManagedRoundGitEffectsSource();
     const cap = deriveRoundGitEffectsCapability(source);
-    const result = await cap.listWorktreeChanges!("/tmp");
+    const result = await cap.listWorktreeChanges("/tmp");
     expect(result).toEqual({ kind: "success", paths: [] });
   });
 
@@ -183,7 +188,7 @@ describe("T-14: ManagedRuntime capability contracts — RoundGitEffectsCapabilit
     const source = makeManagedRoundGitEffectsSource();
     const spy = vi.spyOn(source, "commitRoundArtifacts");
     const cap = deriveRoundGitEffectsCapability(source);
-    await cap.commitRoundArtifacts!([], "/tmp", "main", "coordinator", "slug", {} as never, undefined);
+    await cap.commitRoundArtifacts([], "/tmp", "main", "coordinator", "slug", {} as never, undefined);
     expect(spy).toHaveBeenCalledOnce();
   });
 });

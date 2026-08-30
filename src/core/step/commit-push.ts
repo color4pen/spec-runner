@@ -3,7 +3,7 @@ import { join as pathJoin } from "node:path";
 import { localSidecarDir } from "../../util/paths.js";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepDeps } from "../port/step-types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { gitExec, gitExecResult, runSubprocess, type SpawnFn } from "../../util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
@@ -83,6 +83,16 @@ export interface CommitPushInfra {
    * access.
    */
   statFn?: StagedPathSizeProbe;
+  /**
+   * Push capability declaration threaded from the executor call site.
+   * When non-null, the Layer 2 backstop in commitAndPush checks whether any
+   * staged paths would be blocked by the push environment constraints.
+   * Null/undefined = undeclared (no push constraints, backstop skipped).
+   *
+   * R2b: moved from PipelineDeps (which is set post-buildDeps by runner.ts)
+   * into CommitPushInfra so finalizeStepArtifacts does not depend on _latestBuiltDeps.
+   */
+  pushCapability?: PushCapability | null;
 }
 
 /**
@@ -484,7 +494,7 @@ async function runInlineEgressCheck(
 export async function commitAndPush(
   step: AgentStep,
   state: JobState,
-  deps: PipelineDeps,
+  deps: StepDeps,
   headBeforeStep: string | null,
   infra: CommitPushInfra,
 ): Promise<void> {
@@ -516,7 +526,10 @@ export async function commitAndPush(
   // and before any staging. When push capability declares patterns, compute the
   // publishable path set and reject if any path matches a declared pattern.
   // Guard: skip entirely when pushCapability is absent or has no patterns.
-  if (deps.pushCapability && deps.pushCapability.patterns.length > 0) {
+  // R2b: pushCapability is read from infra (threaded from executor call site via
+  // CommitPushInfra.pushCapability) instead of from deps, eliminating the
+  // _latestBuiltDeps side-channel in LocalRuntime.
+  if (infra.pushCapability && infra.pushCapability.patterns.length > 0) {
     // Adapt the git-exec.ts SpawnFn (ChildProcess) to the spawn.ts async SpawnFn
     // expected by collectPublishablePaths.
     const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
@@ -525,12 +538,12 @@ export async function commitAndPush(
     // because of stagingExcludePatterns must not trigger UNPUSHABLE_PATH_BLOCKED.
     const layer2ExcludePatterns = resolveStagingExcludePatterns(deps.config);
     const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd, layer2ExcludePatterns);
-    const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability);
+    const matchedPaths = matchUnpushablePaths(publishablePaths, infra.pushCapability);
     if (matchedPaths.length > 0) {
       throw unpushablePathBlockedError(
         matchedPaths,
-        deps.pushCapability.patterns,
-        deps.pushCapability.source,
+        infra.pushCapability.patterns,
+        infra.pushCapability.source,
       );
     }
   }

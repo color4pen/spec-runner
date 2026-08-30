@@ -150,15 +150,14 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
   private currentSlug: string | null = null;
   /**
-   * Reference to the last PipelineDeps object built by buildDeps().
+   * Stable fields from the last buildDeps() call, used by finalizeStepArtifacts.
    *
-   * R2b: finalizeStepArtifacts no longer receives deps as a parameter. However,
-   * commitAndPush (called inside finalizeStepArtifacts) still needs deps.pushCapability
-   * which is set by runner.ts on the deps object AFTER buildDeps() returns. Storing a
-   * reference here lets finalizeStepArtifacts observe the post-mutation pushCapability
-   * via JavaScript reference semantics.
+   * R2b: _latestBuiltDeps is replaced by these two stable fields. pushCapability is
+   * now threaded via CommitPushInfra from the StepExecutor call site, eliminating the
+   * invisible ordering precondition on the full PipelineDeps reference.
    */
-  private _latestBuiltDeps: PipelineDeps | null = null;
+  private _currentConfig: SpecRunnerConfig | null = null;
+  private _currentRequest: ParsedRequest | null = null;
 
   /**
    * Hub for in-flight query AbortControllers.
@@ -641,7 +640,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       commitInspection: deriveCommitInspectionCapability(this),
       revisionContent: deriveRevisionContentCapability(this),
     };
-    this._latestBuiltDeps = deps;
+    this._currentConfig = config;
+    this._currentRequest = request;
     return deps;
   }
 
@@ -762,10 +762,19 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
           }
         : undefined,
     };
-    // Use _latestBuiltDeps to pass deps (including pushCapability set after buildDeps).
-    const deps = this._latestBuiltDeps;
-    if (!deps) throw new Error("LocalRuntime: _latestBuiltDeps not set; buildDeps must be called before finalizeStepArtifacts");
-    await commitAndPush(step, state, deps, headBeforeStep, finalInfra);
+    // Build a minimal StepDeps from stable instance fields set in buildDeps().
+    // pushCapability is threaded via finalInfra (from the executor call site) —
+    // no ordering dependency on a full PipelineDeps reference is needed.
+    if (!this._currentConfig || !this._currentRequest) {
+      throw new Error("LocalRuntime: buildDeps must be called before finalizeStepArtifacts");
+    }
+    const stableCtx = {
+      config: this._currentConfig,
+      slug,
+      cwd,
+      request: this._currentRequest,
+    };
+    await commitAndPush(step, state, stableCtx, headBeforeStep, finalInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
   }
 

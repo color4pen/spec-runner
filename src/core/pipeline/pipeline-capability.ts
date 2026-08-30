@@ -87,13 +87,17 @@ export interface RoundGitEffectsCapability {
   /**
    * List files with uncommitted changes in the worktree.
    * Never throws — returns a WorktreeInspectionResult discriminated union.
-   * Optional — when absent, the worktree inspection + commit phase is skipped.
+   * Required — D6: all capability methods are required. Capability absence is expressed
+   * by PipelineDeps.roundGitEffects being undefined. LocalRuntime: real implementation.
+   * ManagedRuntime: returns { kind: "success", paths: [] } (no-op, no local worktree).
    */
-  listWorktreeChanges?(cwd: string): Promise<WorktreeInspectionResult>;
+  listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
 
   /**
    * Stage only declared paths and commit+push (scoped staging for coordinator rounds).
-   * Optional — only called when listWorktreeChanges is present and inspection succeeds.
+   * Required — D6: all capability methods are required. Capability absence is expressed
+   * by PipelineDeps.roundGitEffects being undefined. LocalRuntime: real implementation.
+   * ManagedRuntime: no-op (no local worktree, parallel custom reviewer is Non-Goal).
    *
    * @param stagePaths      - Declared outputs to stage.
    * @param cwd             - Working directory (worktree root).
@@ -103,7 +107,7 @@ export interface RoundGitEffectsCapability {
    * @param infra           - Typed commit/push infrastructure.
    * @param egressParams    - Optional egress ledger params (typed DTO, no unknown).
    */
-  commitRoundArtifacts?(
+  commitRoundArtifacts(
     stagePaths: string[],
     cwd: string,
     branch: string,
@@ -116,9 +120,11 @@ export interface RoundGitEffectsCapability {
   /**
    * Compute content hashes for artifact paths.
    * Used by the coordinator for canonical doc hash computation.
-   * Optional — when absent (managed runtime / legacy caller), canon binding is skipped.
+   * Required — D6: all capability methods are required. Capability absence is expressed
+   * by PipelineDeps.roundGitEffects being undefined. LocalRuntime: real implementation.
+   * ManagedRuntime: returns all-null hashes (no local filesystem for agent outputs).
    */
-  digestArtifacts?(
+  digestArtifacts(
     refs: { path: string }[],
     cwd: string,
     branch: string | null,
@@ -159,12 +165,15 @@ export function deriveTerminalStateCapability(
 
 /**
  * Shape required of a runtime to derive RoundGitEffectsCapability.
+ *
+ * All methods are required — D6: capability absence is expressed by the runtime returning
+ * undefined for roundGitEffects, not by omitting methods from the source shape.
  */
 interface RoundGitEffectsSource {
   captureHeadSha(cwd: string): Promise<string | null>;
-  listWorktreeChanges?(cwd: string): Promise<WorktreeInspectionResult>;
-  commitRoundArtifacts?(stagePaths: string[], cwd: string, branch: string, coordinatorName: string, slug: string, infra: CommitPushInfra, egressParams?: RoundEgressParams): Promise<void>;
-  digestArtifacts?(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>;
+  listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
+  commitRoundArtifacts(stagePaths: string[], cwd: string, branch: string, coordinatorName: string, slug: string, infra: CommitPushInfra, egressParams?: RoundEgressParams): Promise<void>;
+  digestArtifacts(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>;
   listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<ChangedFilesResult>;
 }
 
@@ -176,16 +185,10 @@ export function deriveRoundGitEffectsCapability(
 ): RoundGitEffectsCapability {
   return {
     captureHeadSha: (cwd) => runtime.captureHeadSha(cwd),
-    ...(runtime.listWorktreeChanges
-      ? { listWorktreeChanges: (cwd: string) => runtime.listWorktreeChanges!(cwd) }
-      : {}),
-    ...(runtime.commitRoundArtifacts
-      ? { commitRoundArtifacts: (stagePaths: string[], cwd: string, branch: string, coordinatorName: string, slug: string, infra: CommitPushInfra, egressParams?: RoundEgressParams) =>
-          runtime.commitRoundArtifacts!(stagePaths, cwd, branch, coordinatorName, slug, infra, egressParams) }
-      : {}),
-    ...(runtime.digestArtifacts
-      ? { digestArtifacts: (refs: { path: string }[], cwd: string, branch: string | null) => runtime.digestArtifacts!(refs, cwd, branch) }
-      : {}),
+    listWorktreeChanges: (cwd) => runtime.listWorktreeChanges(cwd),
+    commitRoundArtifacts: (stagePaths, cwd, branch, coordinatorName, slug, infra, egressParams) =>
+      runtime.commitRoundArtifacts(stagePaths, cwd, branch, coordinatorName, slug, infra, egressParams),
+    digestArtifacts: (refs, cwd, branch) => runtime.digestArtifacts(refs, cwd, branch),
     listChangedFiles: (baseBranch, cwd, branch) => runtime.listChangedFiles(baseBranch, cwd, branch),
   };
 }

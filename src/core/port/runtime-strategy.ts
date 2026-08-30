@@ -28,6 +28,7 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { OutputContract, OutputCheckResult } from "./output-contract.js";
+import type { PipelineDeps } from "../types.js";
 // ---------------------------------------------------------------------------
 // Supporting types
 // ---------------------------------------------------------------------------
@@ -391,7 +392,7 @@ export interface RuntimeStrategy {
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
-  ): unknown;
+  ): PipelineDeps;
 
   /**
    * Register cleanup handlers (signal, failure).

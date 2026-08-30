@@ -46,6 +46,14 @@ function makeTerminalStateSource() {
 function makeRoundGitEffectsSource() {
   return {
     async captureHeadSha(_cwd: string): Promise<string | null> { return null; },
+    // D6: all methods required — LocalRuntime provides real implementations.
+    async listWorktreeChanges(_cwd: string): Promise<{ kind: "success"; paths: string[] }> {
+      return { kind: "success" as const, paths: [] };
+    },
+    async commitRoundArtifacts(): Promise<void> {},
+    async digestArtifacts(refs: { path: string }[]): Promise<{ path: string; hash: null }[]> {
+      return refs.map((r) => ({ path: r.path, hash: null as null }));
+    },
     async listChangedFiles(): Promise<{ kind: "success"; files: string[] }> {
       return { kind: "success" as const, files: [] };
     },
@@ -143,11 +151,10 @@ describe("T-14: LocalRuntime capability contracts — RoundGitEffectsCapability"
 
     expect(typeof cap.captureHeadSha).toBe("function");
     expect(typeof cap.listChangedFiles).toBe("function");
-    // Optional methods (listWorktreeChanges, commitRoundArtifacts, digestArtifacts)
-    // are absent from this minimal source — verify they are correctly absent.
-    expect(cap.listWorktreeChanges).toBeUndefined();
-    expect(cap.commitRoundArtifacts).toBeUndefined();
-    expect(cap.digestArtifacts).toBeUndefined();
+    // D6: all methods are required — capability absence expressed by roundGitEffects=undefined.
+    expect(typeof cap.listWorktreeChanges).toBe("function");
+    expect(typeof cap.commitRoundArtifacts).toBe("function");
+    expect(typeof cap.digestArtifacts).toBe("function");
   });
 
   it("TC-T14-09: captureHeadSha delegates to source", async () => {

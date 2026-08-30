@@ -8,7 +8,7 @@
  *   3. Halts the round (escalation + ROUND_NONDECLARED_CHANGE) when changed ⊄ declared
  *      (after excluding pipeline-managed paths), WITHOUT calling commitRoundArtifacts.
  *   4. Excludes pipeline-managed paths (state.json etc.) from staging even if they changed.
- *   5. Existing test fakes without listWorktreeChanges continue to work (skip git ops).
+ *   5. listWorktreeChanges returning empty paths → commitRoundArtifacts not called (no-op path).
  *
  * All scenarios use fake members and fake runtimeStrategy to drive ParallelReviewRound.run
  * without any git, filesystem, or network I/O.
@@ -417,19 +417,28 @@ describe("ParallelReviewRound git effects — members receive roundOwnsGitEffect
 });
 
 // ---------------------------------------------------------------------------
-// Scenario 6: test fake without listWorktreeChanges → skip git ops (regression)
+// Scenario 6: listWorktreeChanges returns no paths → commitRoundArtifacts not called
+//
+// D6: all capability methods are required. Capability absence is expressed by
+// roundGitEffects being undefined. When roundGitEffects is present but
+// listWorktreeChanges returns no changed paths, commitRoundArtifacts is not called
+// (nothing to stage). Round completes normally.
 // ---------------------------------------------------------------------------
 
-describe("ParallelReviewRound git effects — fake without listWorktreeChanges still works", () => {
-  it("round completes without error when runtimeStrategy has no listWorktreeChanges", async () => {
-    // Simulate the existing test pattern where the fake has no listWorktreeChanges
+describe("ParallelReviewRound git effects — listWorktreeChanges returns empty → commit skipped", () => {
+  it("round completes without error when listWorktreeChanges returns no changed paths", async () => {
+    // D6: all capability methods required; roundGitEffects=undefined expresses absence.
+    // Here we provide a full capability where listWorktreeChanges returns no paths.
     const minimalRuntimeStrategy = {
       captureHeadSha: vi.fn(async () => "abc123"),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
+      // listWorktreeChanges returns no changes → commitRoundArtifacts not called
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
+      digestArtifacts: vi.fn(async () => []),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
-      // No listWorktreeChanges — omitted intentionally
     };
 
     const steps = new Map<string, Step>([
@@ -443,8 +452,9 @@ describe("ParallelReviewRound git effects — fake without listWorktreeChanges s
       roundGitEffects: minimalRuntimeStrategy as never,
     }));
 
-    // Round should complete as approved (git ops skipped, no halt)
+    // Round should complete as approved (no changed paths → commit skipped, no halt)
     expect(result.outcome).toBe("approved");
+    expect(minimalRuntimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
   });
 });
 

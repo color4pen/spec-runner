@@ -215,6 +215,8 @@ function makeCanonRuntimeStrategy(opts: {
   return {
     captureHeadSha: vi.fn(async () => baselineSha),
     listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
+    listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+    commitRoundArtifacts: vi.fn(async () => {}),
     digestArtifacts: vi.fn(async (): Promise<ArtifactRef[]> => digestRefs),
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),
