@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T15:04:06.013Z",
+  "updatedAt": "2026-08-30T15:27:51.370Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
   "pipelineId": "standard",
@@ -120,21 +120,22 @@
       "src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "request-review の decision-needed への回答: 選択肢1を採用する。adr-gen.ts / custom-reviewer.ts / spec-review.ts の3ファイルは本 Request のスコープに含め、パラメータ型を CommitInspectionCapability | undefined へ narrow して full facade 依存を除去する。issue #1103 本文は更新済み（Requirement 1 に「R2a 残タスク（read-only narrowing の完了）」を追加、Acceptance Criteria に対応チェック項目を追加）。job 内の request.md を更新後の issue 本文へ同期した上で続行すること。",
       "step": "request-review",
       "recordedAt": "2026-08-30T12:16:01.731Z"
+    },
+    {
+      "text": "code-review の decision-needed finding（LocalRuntime._latestBuiltDeps side-channel）への決定: 選択肢 (a) を採用してください。CommitPushInfra を拡張して pushCapability を明示的に運び、_latestBuiltDeps インスタンスフィールド経由の暗黙依存を廃止すること。これは issue #1103 の「契約を型で表現する」意図に整合する。fixable findings 1〜3（port の buildDeps: unknown 署名の更新、runner.ts の as PipelineDeps cast 除去、RoundGitEffectsCapability の optional メソッド 3 件の required 化）も指摘どおり修正すること。",
+      "step": "code-review",
+      "recordedAt": "2026-08-30T15:27:51.107Z"
     }
   ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
