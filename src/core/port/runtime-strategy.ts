@@ -18,9 +18,9 @@
  * commitRoundArtifacts) have been removed from this interface; their typed counterparts
  * live on the capability interfaces in step-capability.ts / pipeline-capability.ts.
  *
- * buildDeps() returns PipelineDeps. Although PipelineDeps lives in domain/types.ts,
- * the import is type-only (`import type`) so it is erased at runtime — TypeScript
- * resolves the circular type reference safely (TS 3.8+, no runtime cycle).
+ * buildDeps() returns `unknown` at the port layer to avoid a ports→domain import
+ * (DSM §3 closure: ports may only import from shared-kernel and leaf). Callers in
+ * domain code cast the result to PipelineDeps with `as PipelineDeps`.
  */
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
@@ -28,10 +28,6 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { OutputContract, OutputCheckResult } from "./output-contract.js";
-// Type-only import from domain/types.ts. Although types.ts imports from this file
-// (for ChangedFilesCapability etc.), TypeScript handles circular `import type`
-// references safely — they are erased at runtime and do not create a module cycle.
-import type { PipelineDeps } from "../types.js";
 // ---------------------------------------------------------------------------
 // Supporting types
 // ---------------------------------------------------------------------------
@@ -320,11 +316,11 @@ export function deriveRevisionContentCapability(
  * - LocalRuntime  — local worktree, ClaudeCodeRunner, signal-handler cleanup
  * - ManagedRuntime — SessionClient, ManagedAgentRunner, no-op workspace/cleanup
  *
- * buildDeps() returns PipelineDeps (type-only import from domain/types.ts — no runtime
- * cycle). The former `unknown`-typed methods (finalizeStepArtifacts, commitFinalState,
- * commitRoundArtifacts) have been moved to capability interfaces in step-capability.ts /
- * pipeline-capability.ts. Implementations in core/runtime/ implement those interfaces
- * directly, with concrete types.
+ * buildDeps() returns `unknown` at the port boundary (DSM §3 closure: ports may only
+ * depend on shared-kernel and leaf — not on domain/types.ts). Callers in domain code
+ * cast the result to PipelineDeps. The former `unknown`-typed methods
+ * (finalizeStepArtifacts, commitFinalState, commitRoundArtifacts) have been moved to
+ * capability interfaces in step-capability.ts / pipeline-capability.ts.
  */
 export interface RuntimeStrategy {
   /**
@@ -385,15 +381,16 @@ export interface RuntimeStrategy {
   /**
    * Assemble PipelineDeps for the resolved workspace.
    *
-   * Returns PipelineDeps. The import is type-only so no runtime module cycle exists
-   * even though types.ts already imports capability types from this file.
+   * Returns `unknown` at the port boundary to avoid a ports→domain import
+   * (DSM §3: ports may only depend on shared-kernel and leaf). Callers in
+   * domain code (e.g. runner.ts) cast the result to PipelineDeps.
    */
   buildDeps(
     config: SpecRunnerConfig,
     request: ParsedRequest,
     slug: string,
     workspace: WorkspaceContext,
-  ): PipelineDeps;
+  ): unknown;
 
   /**
    * Register cleanup handlers (signal, failure).

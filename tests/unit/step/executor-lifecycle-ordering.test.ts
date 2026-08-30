@@ -7,7 +7,7 @@
  *   2. finalizeStepArtifacts is NOT called when deps.roundOwnsGitEffects === true.
  *   3. terminalState?.commitFinalState receives the correct cwd and slug in the
  *      gate-halt path (runner.ts).
- *   4. buildDeps result is typed as PipelineDeps — no cast is needed in the caller.
+ *   4. buildDeps() returns `unknown` at the port boundary (DSM §3); callers cast with `as PipelineDeps`.
  *
  * Tests 1–2 target the StepExecutor; test 3 targets CommandRunner's gate-halt path;
  * test 4 is a compile-time proof (no runtime assertion needed).
@@ -250,28 +250,29 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-T15-05: buildDeps result type — compile-time proof via the port interface
+// TC-T15-05: buildDeps result type — DSM §3 compliance via port interface
 //
-// This test proves that RuntimeStrategy.buildDeps() is declared as returning
-// PipelineDeps (not `unknown`). The proof: we call buildDeps() on an object
-// typed as RuntimeStrategy and assign the result directly to PipelineDeps.
-// If the port declared `unknown`, TypeScript would reject the assignment at
-// compile time without an `as PipelineDeps` cast.
+// DSM §3 (ports-closure invariant): the `ports` layer (src/core/port/) may only
+// import from shared-kernel and leaf.  PipelineDeps lives in src/core/types.ts
+// which is classified as `domain`.  Therefore RuntimeStrategy.buildDeps() MUST
+// declare its return type as `unknown` at the port boundary — importing
+// PipelineDeps into the port file would be a DSM §3 violation (enforced by
+// tests/unit/architecture/core-invariants.test.ts).
 //
-// We do NOT test makeBaseDeps() directly — that trivially compiles regardless
-// of the port declaration because it is a locally-constructed PipelineDeps object.
+// The caller (domain code: runner.ts) casts the result with `as PipelineDeps`.
+// This test proves that pattern compiles and works correctly.
 // ---------------------------------------------------------------------------
 
-describe("T-15: buildDeps return type (compile-time proof via port interface)", () => {
-  it("TC-T15-05: RuntimeStrategy.buildDeps() result assigns to PipelineDeps without cast", () => {
+describe("T-15: buildDeps return type (DSM §3 compliance via port interface)", () => {
+  it("TC-T15-05: RuntimeStrategy.buildDeps() returns unknown at port boundary; caller casts to PipelineDeps (DSM §3)", () => {
     // Create a minimal RuntimeStrategy-typed fake that returns a known slug.
     const fake: Pick<RuntimeStrategy, "buildDeps"> = {
       buildDeps: () => makeBaseDeps(),
     };
 
-    // Call through the port interface. If buildDeps returned `unknown`, the line below
-    // would be a compile error: Type 'unknown' is not assignable to type 'PipelineDeps'.
-    const deps: PipelineDeps = fake.buildDeps({} as never, {} as never, "", {} as never);
+    // Call through the port interface. buildDeps() returns `unknown` (DSM §3: ports
+    // cannot import PipelineDeps from domain).  Caller must cast, exactly as runner.ts does.
+    const deps = fake.buildDeps({} as never, {} as never, "", {} as never) as PipelineDeps;
 
     expect(deps.slug).toBe("test-slug");
   });
