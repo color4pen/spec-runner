@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0e2f5889-20c9-4088-995f-30b7c16b2e92",
   "createdAt": "2026-08-30T01:15:47.734Z",
-  "updatedAt": "2026-08-30T02:32:54.663Z",
+  "updatedAt": "2026-08-30T02:34:38.932Z",
   "request": {
     "title": "review routing の value-import cycle を解消する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/review-routing-cycle-elimination-0e2f5889",
   "error": null,
@@ -73,7 +73,8 @@
     "f01af29ba9b883998d20211830d76ba63d719444",
     "8b1d7433fc35d8ebe6f27fbd478f4f4ebb389c27",
     "b1753623ff6adbbe9a59f4a561938cf28698f041",
-    "33b7c33faf2630dbdd0b5f918f7f72502c155c29"
+    "33b7c33faf2630dbdd0b5f918f7f72502c155c29",
+    "3a52cf7057ed50bfe93e046aa33ddc1b4054158f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -163,6 +164,11 @@
       "src/core/pipeline/findings-ledger.ts",
       "src/core/pipeline/__tests__/reviewer-chain.test.ts",
       "src/core/review-routing.ts"
+    ],
+    "regression-gate": [
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/pipeline/findings-ledger.ts"
     ]
   },
   "reviewerStatuses": [
@@ -196,7 +202,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +215,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
