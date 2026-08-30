@@ -136,11 +136,11 @@
     - `changedFiles: deriveChangedFilesCapability(this)` (existing R2a helper pattern)
     - `commitInspection: deriveCommitInspectionCapability(this)` (existing R2a helper)
     - `revisionContent: deriveRevisionContentCapability(this)` (existing R2a helper)
-- [ ] Add `derive*Capability` helper functions (or inline objects) for each new capability:
-  - `deriveStepArtifactLifecycleCapability(runtime)`: binds `captureHeadSha`, `prepareStepArtifacts`, `finalizeStepArtifacts`, `snapshotMainCheckoutGuard`, `digestArtifacts`
-  - `deriveStepIoValidationCapability(runtime)`: binds `validateStepInputs`, `validateStepOutputs`, `verifyFindingRefs`
-  - `deriveTerminalStateCapability(runtime)`: binds `commitFinalState`
-  - `deriveRoundGitEffectsCapability(runtime)`: binds `captureHeadSha`, `listWorktreeChanges`, `commitRoundArtifacts`, `digestArtifacts`, `listChangedFiles`
+- [ ] Add `derive*Capability` helper functions for each new capability. Per D5, helpers MUST be defined alongside the capability interface in the same consumer-domain file — NOT in `local.ts`. Import the helpers into `local.ts`:
+  - `deriveStepArtifactLifecycleCapability(runtime)` → defined in `step-capability.ts`; binds `captureHeadSha`, `prepareStepArtifacts`, `finalizeStepArtifacts`, `snapshotMainCheckoutGuard`, `digestArtifacts`
+  - `deriveStepIoValidationCapability(runtime)` → defined in `step-capability.ts`; binds `validateStepInputs`, `validateStepOutputs`, `verifyFindingRefs`
+  - `deriveTerminalStateCapability(runtime)` → defined in `pipeline-capability.ts`; binds `commitFinalState`
+  - `deriveRoundGitEffectsCapability(runtime)` → defined in `pipeline-capability.ts`; binds `captureHeadSha`, `listWorktreeChanges`, `commitRoundArtifacts`, `digestArtifacts`, `listChangedFiles`
 - [ ] Verify that `commitAndPush` signature in `commit-push.ts` can be called from the updated `finalizeStepArtifacts`. If `commitAndPush` requires a full `PipelineDeps`, either: (a) extract `cwd`, `slug`, `config`, `pushCapability` and assemble a minimal object, or (b) refactor `commitAndPush` to accept a narrow params interface. Prefer option (a) to minimize scope; document if option (b) is required.
 - [ ] Run `bun run typecheck` — fix any resulting type errors in local.ts
 
@@ -201,7 +201,7 @@
 
 ## T-09: Update step-completion.ts, no-op-detect.ts, and commit-orchestrator.ts
 
-- [ ] **step-completion.ts**: Replace `deps.runtimeStrategy.verifyFindingRefs(...)` (lines 256, 274) with `deps.stepIo?.verifyFindingRefs?.(...) ?? []` — use the `stepIo` capability field. Update the guard condition from `if (deps.runtimeStrategy)` to `if (deps.stepIo)`.
+- [ ] **step-completion.ts**: Replace `deps.runtimeStrategy.verifyFindingRefs(...)` (lines 256, 274) with `deps.stepIo?.verifyFindingRefs(...) ?? []` — use the `stepIo` capability field. Update the guard condition from `if (deps.runtimeStrategy)` to `if (deps.stepIo)`. Note: only a single `?.` is needed because `verifyFindingRefs` is a required method on `StepIoValidationCapability` (no second `?.` on the method itself).
 - [ ] **commit-orchestrator.ts**: Replace `deps.runtimeStrategy.digestArtifacts(...)` (lines 323–324) with `deps.stepArtifact?.digestArtifacts(...)`. Update the guard condition accordingly.
 - [ ] **commit-orchestrator.ts**: Replace `deriveRevisionContentCapability(deps.runtimeStrategy)` (line 366) with `deps.revisionContent` (directly from the injected capability field).
 - [ ] **adr-gen.ts** (line 183): Replace `runtimeStrategy: RuntimeStrategy | undefined` parameter type with `commitInspection: CommitInspectionCapability | undefined`. Update the body to use `commitInspection` directly instead of calling `deriveCommitInspectionCapability(runtimeStrategy)`.

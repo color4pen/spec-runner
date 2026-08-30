@@ -107,6 +107,8 @@
 
 All methods in a capability interface SHALL be required (no `?` modifier). The ability to inject no capability SHALL be expressed by assigning `undefined` to the capability field in `PipelineDeps`, not by making the methods optional.
 
+**Exception**: `StepArtifactLifecycleCapability.snapshotMainCheckoutGuard` SHALL be the sole optional method (`?` modifier is permitted). This exception exists because the method's fail-open semantics require a `null` return value (not capability absence) when the check cannot be performed — omitting the method entirely is a valid expression of "this runtime does not support snapshot guard" without needing to inject a separate undefined field.
+
 #### Scenario: Compile-time enforcement of complete capability fake
 
 **Given** a test fake that implements `StepArtifactLifecycleCapability`
