@@ -9,6 +9,7 @@
 import { describe, it, expect } from "vitest";
 import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../step/step-capability.js";
 import type { TerminalStateCapability, RoundGitEffectsCapability } from "../../pipeline/pipeline-capability.js";
+import type { JobState } from "../../../state/schema.js";
 import { deriveStepArtifactLifecycleCapability, deriveStepIoValidationCapability } from "../../step/step-capability.js";
 import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../../pipeline/pipeline-capability.js";
 
@@ -39,7 +40,7 @@ function makeStepIoSource() {
 
 function makeTerminalStateSource() {
   return {
-    async commitFinalState(_cwd: string | undefined, _slug: string): Promise<void> {},
+    async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {},
   };
 }
 

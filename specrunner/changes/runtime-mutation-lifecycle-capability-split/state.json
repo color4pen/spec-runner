@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T01:47:50.014Z",
+  "updatedAt": "2026-08-31T01:52:22.656Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -119,7 +119,8 @@
     "3a477a1ba8902c7319effcc4986ef3eb94a9886c",
     "5eea04529e9c6ad82e02c7ebf952cd38cb5c24f2",
     "383da615206c9220354ebb6445aabc85c16a748c",
-    "97d5e2e91ed1a9b18208934f57d794b4b4da6f49"
+    "97d5e2e91ed1a9b18208934f57d794b4b4da6f49",
+    "2b66018442607be8b7f6d515859a8f7b82220ba5"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -151,23 +152,9 @@
       "tests/core/pipeline/pipeline.test.ts"
     ],
     "code-review": [
-      "src/core/step/step-capability.ts",
-      "src/core/pipeline/pipeline-capability.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/types.ts",
-      "src/core/step/executor.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/command/runner.ts",
-      "src/core/runtime/local.ts",
-      "tests/unit/step/executor-lifecycle-ordering.test.ts",
       "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
-      "architecture/components.md",
-      "src/core/step/commit-orchestrator.ts",
-      "src/core/port/step-types.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/step/adr-gen.ts",
-      "src/core/runtime/managed.ts"
+      "src/core/pipeline/pipeline-capability.ts",
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts"
     ],
     "code-fixer": [
       "src/core/pipeline/pipeline-capability.ts",
@@ -256,7 +243,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 251,
+    "historyCount": 255,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -265,7 +252,7 @@
       "spec-fixer": 1,
       "implementer": 8,
       "verification": 12,
-      "code-review": 7,
+      "code-review": 8,
       "code-fixer": 8,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
