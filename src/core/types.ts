@@ -180,25 +180,120 @@ export interface PipelineDepsBuilder {
 
 // ---------------------------------------------------------------------------
 // T-19: Consumer-owned composite deps — structural subsets of PipelineDeps
+//
+// Design D7: each composite is a Pick<PipelineDeps, ...> that lists exactly
+// the fields the consumer reads. PipelineDeps is structurally assignable to
+// each composite (superset relationship — no cast needed at call sites).
+// Using Pick (not Omit) means consumers cannot accidentally reach capabilities
+// outside their declared contract: adding a field requires an explicit, reviewable
+// act (adding it to the Pick list). The "consumer-owned" name reflects that each
+// composite is governed by the consumer module, not derived from the producer.
 // ---------------------------------------------------------------------------
 
 /**
- * Deps required by StepExecutor (execute / produceResult).
- * Omits terminalState, roundGitEffects (pipeline-level), client and runner (composition-root).
+ * Deps required by StepExecutor (execute / produceResult) and its collaborators
+ * (buildStepContext, step-completion.ts, commit-orchestrator.ts).
+ *
+ * Does NOT include terminalState (Pipeline-level), roundGitEffects (round-level),
+ * client (composition-root session handle), or runner (composition-root agent runner).
  * PipelineDeps is structurally assignable to StepExecutionDeps (TC-049).
  */
-export type StepExecutionDeps = Omit<PipelineDeps, "terminalState" | "roundGitEffects" | "client" | "runner">;
+export type StepExecutionDeps = Pick<PipelineDeps,
+  // StepContext fields consumed by step methods and buildStepContext
+  | "config"
+  | "slug"
+  | "cwd"
+  | "request"
+  | "dynamicContext"
+  | "githubToken"
+  | "githubClient"
+  | "owner"
+  | "repo"
+  | "pushCapability"
+  // Core execution infrastructure
+  | "spawn"
+  | "storeFactory"
+  // Capability fields injected by buildDeps (R2b)
+  | "stepArtifact"
+  | "stepIo"
+  // Optional capabilities (R2a — read-only, may be undefined)
+  | "changedFiles"
+  | "commitInspection"
+  | "revisionContent"
+  // Execution-flow flags and optional infrastructure
+  | "roundOwnsGitEffects"
+  | "gitTransportSpawn"
+  | "sleepFn"
+  | "resumePrompt"
+  | "resumeContext"
+  | "repoRoot"
+>;
 
 /**
  * Deps required by ParallelReviewRound.run.
- * Extends StepExecutionDeps with the required roundGitEffects capability.
+ * Extends StepExecutionDeps with roundGitEffects (coordinator-owned git effects).
  * PipelineDeps is structurally assignable to ParallelReviewRoundDeps (TC-049).
  */
-export type ParallelReviewRoundDeps = Omit<PipelineDeps, "terminalState" | "client" | "runner">;
+export type ParallelReviewRoundDeps = Pick<PipelineDeps,
+  // All StepExecutionDeps fields
+  | "config"
+  | "slug"
+  | "cwd"
+  | "request"
+  | "dynamicContext"
+  | "githubToken"
+  | "githubClient"
+  | "owner"
+  | "repo"
+  | "pushCapability"
+  | "spawn"
+  | "storeFactory"
+  | "stepArtifact"
+  | "stepIo"
+  | "changedFiles"
+  | "commitInspection"
+  | "revisionContent"
+  | "roundOwnsGitEffects"
+  | "gitTransportSpawn"
+  | "sleepFn"
+  | "resumePrompt"
+  | "resumeContext"
+  | "repoRoot"
+  // Round-level git effects (coordinator-owned, not exposed to StepExecutor)
+  | "roundGitEffects"
+>;
 
 /**
  * Deps required by Pipeline.run / runInternal.
- * Extends ParallelReviewRoundDeps with the required terminalState capability.
+ * Extends ParallelReviewRoundDeps with terminalState (pipeline terminal-commit).
  * PipelineDeps is structurally assignable to PipelineOrchestrationDeps (TC-049).
  */
-export type PipelineOrchestrationDeps = Omit<PipelineDeps, "client" | "runner">;
+export type PipelineOrchestrationDeps = Pick<PipelineDeps,
+  // All ParallelReviewRoundDeps fields
+  | "config"
+  | "slug"
+  | "cwd"
+  | "request"
+  | "dynamicContext"
+  | "githubToken"
+  | "githubClient"
+  | "owner"
+  | "repo"
+  | "pushCapability"
+  | "spawn"
+  | "storeFactory"
+  | "stepArtifact"
+  | "stepIo"
+  | "changedFiles"
+  | "commitInspection"
+  | "revisionContent"
+  | "roundOwnsGitEffects"
+  | "gitTransportSpawn"
+  | "sleepFn"
+  | "resumePrompt"
+  | "resumeContext"
+  | "repoRoot"
+  | "roundGitEffects"
+  // Pipeline-level terminal state (not exposed to StepExecutor or ParallelReviewRound)
+  | "terminalState"
+>;

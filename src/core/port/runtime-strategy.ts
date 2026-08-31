@@ -316,12 +316,13 @@ export function deriveRevisionContentCapability(
  * - LocalRuntime  — local worktree, ClaudeCodeRunner, signal-handler cleanup
  * - ManagedRuntime — SessionClient, ManagedAgentRunner, no-op workspace/cleanup
  *
- * buildDeps() returns PipelineDeps (typed). The `import type { PipelineDeps }` is
- * type-only (erased at compile time; no runtime module dependency). Callers in
- * domain code (e.g. runner.ts) receive a correctly typed result — no `as PipelineDeps`
- * cast needed. The former `unknown`-typed methods (finalizeStepArtifacts,
- * commitFinalState, commitRoundArtifacts) have been moved to capability interfaces
- * in step-capability.ts / pipeline-capability.ts.
+ * T-18: buildDeps() was moved to the domain-owned PipelineDepsBuilder interface
+ * (src/core/types.ts). RuntimeStrategy has no import from the domain layer; it
+ * imports only from ports and shared-kernel, satisfying the §3 DSM closure rule
+ * (ports → shared-kernel / leaf ✓; ports → domain ✗). The former domain-payload
+ * `unknown`-typed methods (finalizeStepArtifacts, commitFinalState,
+ * commitRoundArtifacts) were removed from this interface and replaced by typed
+ * capability interfaces in step-capability.ts / pipeline-capability.ts (D4).
  */
 export interface RuntimeStrategy {
   /**
