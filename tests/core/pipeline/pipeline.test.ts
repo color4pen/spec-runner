@@ -692,6 +692,7 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
   it("calls runtimeStrategy.commitFinalState exactly once when pipeline exits with awaiting-resume", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass to call commitFinalState
 
     // A failed design result with a non-fatal error triggers awaiting-resume via escalation
     const designResult: JobState = {
@@ -719,6 +720,7 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
   it("calls commitFinalState once for exhaustion-triggered awaiting-resume", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass to call commitFinalState
 
     const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
     // All spec-review calls return needs-fix → loop exhausts → awaiting-resume
@@ -753,10 +755,10 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("omitted deps.cwd → commitFinalState receives process.cwd() as cwd argument", async () => {
-    // Spec scenario: call sites must supply deps.cwd ?? process.cwd().
-    // When deps.cwd is undefined (omitted from makeMinimalDeps), the pipeline must
-    // pass process.cwd() as the first argument to commitFinalState.
+  it("omitted deps.cwd → commitFinalState is NOT called (no process.cwd() fallback in src/)", async () => {
+    // Spec scenario: call sites use `if (deps.cwd)` guard — no process.cwd() fallback allowed in
+    // production code (TC-010 / TC-016: CWD allowlist cannot grow without explicit governance approval).
+    // When deps.cwd is undefined (omitted from makeMinimalDeps), commitFinalState must NOT be called.
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
     // Confirm cwd is not set (undefined) on the minimal deps fixture
@@ -777,10 +779,8 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     const result = await pipeline.run("design", state, deps);
 
     expect(result.status).toBe("awaiting-resume");
-    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
-    // When deps.cwd is undefined, the call site must fall back to process.cwd()
-    const [calledCwd] = commitFinalStateSpy.mock.calls[0] as [string, string, JobState];
-    expect(calledCwd).toBe(process.cwd());
+    // When deps.cwd is undefined, the if (deps.cwd) guard prevents any commitFinalState call
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(0);
   });
 });
 
@@ -814,6 +814,7 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     // because state.status !== "awaiting-resume"
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass for in-loop publish
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
     deps.terminalState = {

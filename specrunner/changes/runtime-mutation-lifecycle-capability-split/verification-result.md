@@ -1,6 +1,6 @@
-# Verification Result — runtime-mutation-lifecycle-capability-split — iter 1
+# Verification Result — runtime-mutation-lifecycle-capability-split — iter 3
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
@@ -8,8 +8,8 @@
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.4s | 0 |
 | 2 | typecheck | passed | 9.9s | 0 |
-| 3 | test | failed | 67.0s | 1 |
-| 4 | lint | skipped | — | — |
+| 3 | test | passed | 65.7s | 0 |
+| 4 | lint | passed | — | 0 |
 | 5 | changed-line-coverage | skipped | — | — |
 | 6 | lockfile-sync | skipped | — | — |
 
