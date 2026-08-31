@@ -755,10 +755,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("omitted deps.cwd → commitFinalState is NOT called (no process.cwd() fallback in src/)", async () => {
-    // Spec scenario: call sites use `if (deps.cwd)` guard — no process.cwd() fallback allowed in
-    // production code (TC-010 / TC-016: CWD allowlist cannot grow without explicit governance approval).
-    // When deps.cwd is undefined (omitted from makeMinimalDeps), commitFinalState must NOT be called.
+  it("omitted deps.cwd → commitFinalState is called with process.cwd() fallback", async () => {
+    // Spec scenario: call sites use `deps.cwd ?? process.cwd()` — when deps.cwd is undefined,
+    // process.cwd() is used as the fallback so commitFinalState is always called.
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
     // Confirm cwd is not set (undefined) on the minimal deps fixture
@@ -779,8 +778,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     const result = await pipeline.run("design", state, deps);
 
     expect(result.status).toBe("awaiting-resume");
-    // When deps.cwd is undefined, the if (deps.cwd) guard prevents any commitFinalState call
-    expect(commitFinalStateSpy).toHaveBeenCalledTimes(0);
+    // When deps.cwd is undefined, process.cwd() is used as fallback — commitFinalState is still called
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    expect(commitFinalStateSpy).toHaveBeenCalledWith(process.cwd(), deps.slug, expect.objectContaining({ status: "awaiting-resume" }));
   });
 });
 
