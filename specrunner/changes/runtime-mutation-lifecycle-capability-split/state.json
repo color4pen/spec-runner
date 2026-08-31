@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-30T23:29:32.189Z",
+  "updatedAt": "2026-08-31T00:16:57.307Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
   "pipelineId": "standard",
@@ -186,11 +186,7 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -207,6 +203,11 @@
       "text": "iteration budget 枯渇による halt からの再開。直前の regression-gate は findings ゼロで approve 済み。残る指摘は low の cosmetic 1 件のみ: tests/unit/step/executor-lifecycle-ordering.test.ts の TC-T15-05 に旧挙動（buildDeps が unknown を返す）を記述した stale コメントと冗長な as PipelineDeps cast が残っている。この cleanup を行った上で、conformance 以降を完走させること。",
       "step": "conformance",
       "recordedAt": "2026-08-30T22:44:18.842Z"
+    },
+    {
+      "text": "conformance の decision-needed finding（TerminalStateCapability.commitFinalState の cwd 型不一致）への決定: 選択肢 (2)「実装を cwd: string に変更」を採用してください。spec の規範どおり TerminalStateCapability.commitFinalState(cwd: string, slug: string, state: JobState) とし、3 call site（pipeline.ts の 2 箇所と runner.ts の 1 箇所）を deps.cwd ?? process.cwd() に更新すること。これにより cross-boundary-invariants が指摘した「omitted cwd の fallback 先が LocalRuntime.cwd になっていて StepContext の契約（process.cwd() への fallback）と食い違う」問題（local.ts:791）も同時に解消する。omitted-cwd の terminal publication テストも追加すること。修正後は残りのステップを完走させること。",
+      "step": "conformance",
+      "recordedAt": "2026-08-31T00:16:56.906Z"
     }
   ],
   "reviewerStatuses": [
@@ -240,7 +241,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 208,
+    "historyCount": 211,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
