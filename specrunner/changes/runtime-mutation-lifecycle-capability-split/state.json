@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T05:02:02.068Z",
+  "updatedAt": "2026-08-31T07:03:37.689Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-mutation-lifecycle-capability-split/test-cases.md, title: \"TC-038 states 4 pre-existing as unknown as RuntimeStrategy occurrences remain but only 2 exist\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -234,11 +230,7 @@
       "architecture/components.md"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-mutation-lifecycle-capability-split/test-cases.md, title: \"TC-038 states 4 pre-existing as unknown as RuntimeStrategy occurrences remain but only 2 exist\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -270,6 +262,11 @@
       "text": "Operator decision: budget-recovery resume. The previous run ended with pipeline:iteration:exhausted on conformance AFTER all outstanding findings were fixed: the deps.cwd ?? process.cwd() fallback is now applied at both pipeline.ts terminal paths and the runner.ts halt path (regression-gate approved with zero findings, ledger items 8a31005a / eda3048d / 5b1f4daf resolved), the as-never casts in parallel-review-round-git-effects.test.ts and the architecture/components.md collaborator lists were fixed by code-fixer, and verification passed. There are no known unfixed findings. Do NOT make new implementation changes unless a reviewer surfaces a concrete new finding. Complete the remaining steps (conformance and any subsequent review gates) and proceed through PR creation.",
       "step": "conformance",
       "recordedAt": "2026-08-31T04:45:15.259Z"
+    },
+    {
+      "text": "Operator decision: both escalated findings have been fixed by an operator-apply commit pushed directly to the job branch (commit a874498e): (1) test-cases.md TC-038 now states 2 pre-existing casts in tests/pipeline-sole-committer-e2e.test.ts (protected canon path — fixed by operator since no fixer may write it), and (2) architecture/components.md lines 60/66 now reference StepIoValidationCapability (deps.stepIo) instead of RuntimeStrategy.validateStepInputs/Outputs. Do NOT attempt to re-fix these files and do NOT make any new implementation changes unless a reviewer surfaces a concrete new finding. Re-run the review gates on the current branch head and proceed through PR creation.",
+      "step": "code-review",
+      "recordedAt": "2026-08-31T07:03:37.311Z"
     }
   ],
   "reviewerStatuses": [
@@ -303,7 +300,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 395,
+    "historyCount": 398,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
