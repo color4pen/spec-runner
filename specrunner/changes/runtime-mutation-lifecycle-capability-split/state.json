@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T03:45:46.885Z",
+  "updatedAt": "2026-08-31T03:51:56.220Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -144,7 +144,8 @@
     "1cbeac4d6e12c9e740bbd8488f7206a28e9f655a",
     "9013974ed9726d58041fa291f3cccaa8c4b3a7c7",
     "f21aeed807758fcf46b2d2fc8cbf3b18466c201e",
-    "591362d181b0ddd2abadaa652c837119cbec0a64"
+    "591362d181b0ddd2abadaa652c837119cbec0a64",
+    "199a458f8ea0379aaa5a79984ac5551e258b42c6"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -203,9 +204,10 @@
       "src/core/pipeline/pipeline-capability.ts",
       "src/core/runtime/local.ts",
       "tests/unit/step/executor-lifecycle-ordering.test.ts",
-      "src/core/port/step-types.ts",
-      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
       "src/core/pipeline/pipeline.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts",
+      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
       "architecture/components.md"
     ],
     "conformance": [
@@ -286,7 +288,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 360,
+    "historyCount": 364,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -300,7 +302,7 @@
       "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
       "custom-reviewers": 7,
-      "regression-gate": 10,
+      "regression-gate": 11,
       "conformance": 8
     }
   }

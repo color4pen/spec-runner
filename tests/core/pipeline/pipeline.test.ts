@@ -755,10 +755,10 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("omitted deps.cwd → commitFinalState is NOT called (guard prevents call without cwd)", async () => {
-    // Spec scenario: call sites use `if (deps.terminalState && deps.cwd)` guard —
-    // when deps.cwd is undefined, commitFinalState is skipped to avoid process.cwd() dependency.
-    // In production, buildDeps always sets cwd, so this guard only skips in test-only stub scenarios.
+  it("omitted deps.cwd → commitFinalState is called with process.cwd() fallback", async () => {
+    // Spec scenario: call sites use `deps.cwd ?? process.cwd()` —
+    // when deps.cwd is undefined, commitFinalState is still called with the process.cwd() fallback.
+    // In production, buildDeps always sets cwd; the fallback covers test-only stubs.
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
     // Confirm cwd is not set (undefined) on the minimal deps fixture
@@ -766,7 +766,7 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
 
     const designResult: JobState = {
       ...state,
-      status: "failed",
+      status: "awaiting-resume",
       error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not found", hint: "" },
     };
 
@@ -779,8 +779,13 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     const result = await pipeline.run("design", state, deps);
 
     expect(result.status).toBe("awaiting-resume");
-    // When deps.cwd is undefined, the guard prevents calling commitFinalState
-    expect(commitFinalStateSpy).not.toHaveBeenCalled();
+    // When deps.cwd is undefined, commitFinalState is still called with process.cwd() fallback
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    expect(commitFinalStateSpy).toHaveBeenCalledWith(
+      process.cwd(),
+      deps.slug,
+      expect.objectContaining({ status: "awaiting-resume" }),
+    );
   });
 });
 
