@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T03:35:43.944Z",
+  "updatedAt": "2026-08-31T03:45:46.885Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -142,7 +142,9 @@
     "71d246940091243c121b96af58ef1841d9c0924f",
     "e384b90ae067fa1efd498785691b20972964ac06",
     "1cbeac4d6e12c9e740bbd8488f7206a28e9f655a",
-    "9013974ed9726d58041fa291f3cccaa8c4b3a7c7"
+    "9013974ed9726d58041fa291f3cccaa8c4b3a7c7",
+    "f21aeed807758fcf46b2d2fc8cbf3b18466c201e",
+    "591362d181b0ddd2abadaa652c837119cbec0a64"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -191,10 +193,9 @@
       "src/core/runtime/managed.ts"
     ],
     "code-fixer": [
-      "src/core/pipeline/pipeline.ts",
-      "src/core/command/runner.ts",
-      "tests/core/pipeline/pipeline.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts",
+      "architecture/components.md",
+      "src/core/pipeline/pipeline-capability.ts"
     ],
     "regression-gate": [
       "src/core/port/runtime-strategy.ts",
@@ -258,7 +259,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "eacb7b33d9717bae8894bae759981c6530ad9d61",
+      "approvedAtCommit": "f21aeed807758fcf46b2d2fc8cbf3b18466c201e",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -285,7 +286,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 351,
+    "historyCount": 360,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -295,10 +296,10 @@
       "implementer": 11,
       "verification": 17,
       "code-review": 10,
-      "code-fixer": 12,
-      "cross-boundary-invariants": 5,
+      "code-fixer": 13,
+      "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
-      "custom-reviewers": 6,
+      "custom-reviewers": 7,
       "regression-gate": 10,
       "conformance": 8
     }
