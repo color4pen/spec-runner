@@ -438,33 +438,45 @@ Operator review on PR #1105: the measured before/after values required by issue 
 
 ### Before/After Metrics Table
 
-| Metric | Aggregation Condition | Before (`main@660d48fb`) | After (branch) |
-|--------|----------------------|--------------------------|----------------|
-| `runtime-strategy.ts` line count | `wc -l src/core/port/runtime-strategy.ts` | 875 | 782 (−93) |
-| `runtime-strategy.ts` `unknown` token count | `grep -c unknown` | 20 | 4 (−16) |
-| `RuntimeStrategy` method count (base interface) | Lines matching `^\s+[a-zA-Z].*\(` excluding comments | 48 | 43 (−5: removed buildDeps, finalizeStepArtifacts, commitFinalState, commitRoundArtifacts, buildDeps-related) |
-| `buildDeps` on `RuntimeStrategy` interface | Declaration lines in port | 1 | 0 |
-| DSM allowlist entries for `runtime-strategy.ts` | Entries in `arch-allowlist.ts` | 1 (`T-05-T-12-buildDeps-PipelineDeps-return-type`) | 0 |
-| `PipelineDeps.runtimeStrategy` field | Occurrences in `src/core/types.ts` | 1 | 0 |
-| `PipelineDepsBuilder` interface | Declared in `src/core/types.ts` | absent | present |
-| `StepExecutionDeps` | Declared in `src/core/step/step-deps.ts` (T-21) | absent | explicit `interface` extending `StepContext` |
-| `ParallelReviewRoundDeps` | Declared in `src/core/pipeline/parallel-review-round.ts` (T-21) | absent | explicit `interface` extending `StepExecutionDeps` |
-| `PipelineOrchestrationDeps` | Declared in `src/core/pipeline/pipeline.ts` (T-21) | absent | explicit `interface` extending `ParallelReviewRoundDeps` |
+Before = `main@660d48fb` (`git show 660d48fb:<path>` / `git grep <pat> 660d48fb -- 'src/**'`), After = branch HEAD. "production src" = `src/**` excluding `__tests__/` and `*.test.ts`.
+
+| Metric | Aggregation Condition | Before | After |
+|--------|----------------------|--------|-------|
+| `runtime-strategy.ts` line count | `wc -l src/core/port/runtime-strategy.ts` | 875 | 783 (−92) |
+| `unknown` in `runtime-strategy.ts` | matching lines: `grep -c unknown` / tokens: `grep -o unknown \| wc -l` | 20 lines / 21 tokens | 4 lines / 4 tokens |
+| `RuntimeStrategy` base interface method count | method-signature lines (`^  <name>(` incl. `?`/generics) inside `export interface RuntimeStrategy { ... }` | 28 | 24 (−4: buildDeps, finalizeStepArtifacts, commitFinalState, commitRoundArtifacts) |
+| `buildDeps` on `RuntimeStrategy` interface | declaration lines in the port interface | 1 | 0 (moved to domain-owned `PipelineDepsBuilder`, `src/core/types.ts`) |
+| DSM allowlist entries for `runtime-strategy.ts` | entries in `tests/unit/architecture/arch-allowlist.ts` | 1 (`T-05-T-12-buildDeps-PipelineDeps-return-type`) | 0 |
+| `PipelineDeps.runtimeStrategy` field | occurrences in `src/core/types.ts` | 1 | 0 |
+| `deps.runtimeStrategy` references in production src | `git grep -n "deps\.runtimeStrategy" -- 'src/**'` (excl. tests) — lines / files | 56 / 8 | 0 / 0 |
+| mutation/lifecycle full-interface consumers | production files matching `runtimeStrategy(\?\|!)?\.(finalizeStepArtifacts\|commitFinalState\|commitRoundArtifacts)` | 4 (runner.ts, pipeline.ts, parallel-review-round.ts, executor.ts) | 0 |
+| domain-payload `unknown` in the 4 target signatures | `unknown` occurrences in the `buildDeps` / `finalizeStepArtifacts` / `commitFinalState` / `commitRoundArtifacts` declarations of `interface RuntimeStrategy` (base; +2 in the `RealRuntimeStrategy` override = 10) | 8 | 0 (methods removed from port; typed counterparts on capability interfaces / `PipelineDepsBuilder`) |
+| `as PipelineDeps` cast expressions in production src | `git grep -nE '\) as PipelineDeps' -- 'src/**'` (excl. tests) | 1 (runner.ts:222) | 0 |
+| `as CommitPushInfra` in production src | `git grep -n "as CommitPushInfra" -- 'src/**'` (excl. tests) | 1 (local.ts) | 0 |
+| egress params restore cast in production src | `git grep -n "egressParams as" -- 'src/**'` (excl. tests) | 1 (local.ts:932) | 0 |
+| `PipelineDepsBuilder` interface | declared in `src/core/types.ts` | absent | present |
+| `StepExecutionDeps` | declared in `src/core/step/step-deps.ts` (T-21) | absent | explicit `interface` extending `StepContext` |
+| `ParallelReviewRoundDeps` | declared in `src/core/pipeline/parallel-review-round.ts` (T-21) | absent | explicit `interface` extending `StepExecutionDeps` |
+| `PipelineOrchestrationDeps` | declared in `src/core/pipeline/pipeline.ts` (T-21) | absent | explicit `interface` extending `ParallelReviewRoundDeps` |
 | `Pick`/`Omit` derivations from `PipelineDeps` in `src/` | `grep -rE '(Pick|Omit)\s*<\s*PipelineDeps' src/` | 0 | 0 (enforced by TC-050 test) |
-| `StepExecutor.execute` entry type | Public method signature | `deps: PipelineDeps` | `deps: StepExecutionDeps` |
-| `ParallelReviewRound.run` entry type | Public method signature | `deps: PipelineDeps` | `deps: ParallelReviewRoundDeps` |
-| `Pipeline.run` entry type | Public method signature | `deps: PipelineDeps` | `deps: PipelineOrchestrationDeps` |
-| `CommandRunner` runtime type | Constructor parameter | `runtime: RuntimeStrategy` | `runtime: RuntimeStrategy & PipelineDepsBuilder` |
+| `StepExecutor.execute` entry type | public method signature | `deps: PipelineDeps` | `deps: StepExecutionDeps` |
+| `ParallelReviewRound.run` entry type | public method signature | `deps: PipelineDeps` | `deps: ParallelReviewRoundDeps` |
+| `Pipeline.run` entry type | public method signature | `deps: PipelineDeps` | `deps: PipelineOrchestrationDeps` |
+| `CommandRunner` runtime type | constructor parameter | `runtime: RuntimeStrategy` | `runtime: RuntimeStrategy & PipelineDepsBuilder` |
 
 ### Capability Consumer Table
 
-| Capability | Production consumers | Test fakes |
-|------------|---------------------|------------|
-| `StepArtifactLifecycleCapability` (`stepArtifact`) | `StepExecutor` (executor.ts) | `noopStepArtifact`, strategy stubs in 10+ test files |
-| `StepIoValidationCapability` (`stepIo`) | `StepExecutor` (executor.ts, step-completion.ts) | `noopStepIo`, strategy stubs |
-| `TerminalStateCapability` (`terminalState`) | `Pipeline.runInternal` | `noopTerminalState` |
-| `RoundGitEffectsCapability` (`roundGitEffects`) | `ParallelReviewRound` | `noopRoundGitEffects`, strategy stubs |
-| `ChangedFilesCapability` (`changedFiles`) | `StepExecutor` (scope escalation) | Strategy stubs |
+Fake counts: number of `*.test.ts` files (under `tests/` and `src/`) containing the field key `<field>:` (`grep -rlE '(^|[^a-zA-Z])<field>:\s' tests/ src --include='*.test.ts' | wc -l`); noop counts: files importing/using the named no-op from `src/core/step/noop-capabilities.ts` (`grep -rl <name> tests/ src --include='*.ts'`, definition file excluded).
+
+| Capability (field) | Production consumers | Test files constructing the field | Files using the no-op |
+|--------------------|---------------------|-----------------------------------|-----------------------|
+| `StepArtifactLifecycleCapability` (`stepArtifact`) | `StepExecutor` (executor.ts, commit-orchestrator.ts) | 85 | `noopStepArtifact`: 70 |
+| `StepIoValidationCapability` (`stepIo`) | `StepExecutor` (executor.ts, step-completion.ts) | 81 | `noopStepIo`: 70 |
+| `TerminalStateCapability` (`terminalState`) | `Pipeline.runInternal`, `CommandRunner` gate-halt | 82 | `noopTerminalState`: 82 |
+| `RoundGitEffectsCapability` (`roundGitEffects`) | `ParallelReviewRound` | 79 | `noopRoundGitEffects`: 75 |
+| `ChangedFilesCapability` (`changedFiles`) | `StepExecutor` (scope escalation) | 25 | — (R2a: absence = `undefined`) |
+| `CommitInspectionCapability` (`commitInspection`) | adr-gen / custom-reviewer / spec-review contexts | 5 | — (R2a) |
+| `RevisionContentCapability` (`revisionContent`) | commit-orchestrator digest paths | 2 | — (R2a) |
 
 **Acceptance Criteria**:
 - PR #1105's body contains the complete before/after metrics table with aggregation conditions
