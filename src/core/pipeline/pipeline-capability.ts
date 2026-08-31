@@ -56,8 +56,8 @@ export interface TerminalStateCapability {
   /**
    * Commit and push the final pipeline state to the feature branch.
    *
-   * @param cwd   - Working directory (worktree root). Call sites must supply
-   *                `deps.cwd ?? process.cwd()` — the interface requires a resolved string.
+   * @param cwd   - Working directory (worktree root). Always provided in production via buildDeps;
+   *                call sites guard with `if (deps.terminalState && deps.cwd)` before calling.
    * @param slug  - Job slug (used in commit message).
    * @param state - Terminal job state (status determines message label).
    */

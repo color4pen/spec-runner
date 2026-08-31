@@ -478,20 +478,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
   },
   {
-    file: "src/core/pipeline/pipeline.ts",
-    pattern: "deps.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-pipeline-terminal-state-di-default",
-    comment: "di-default: commitFinalState call sites use deps.cwd ?? process.cwd() per TerminalStateCapability contract.",
-  },
-  {
-    file: "src/core/command/runner.ts",
-    pattern: "deps.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-runner-terminal-state-di-default",
-    comment: "di-default: commitFinalState call site uses deps.cwd ?? process.cwd() per TerminalStateCapability contract.",
-  },
-  {
     file: "src/core/runtime/local.ts",
     pattern: "deps.cwd ?? process.cwd()",
     invariant: "CWD",
