@@ -38,7 +38,7 @@ import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
-import type { PipelineDeps } from "../types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
@@ -87,7 +87,7 @@ export interface PrepareResult {
  */
 export abstract class CommandRunner {
   constructor(
-    protected readonly runtime: RuntimeStrategy,
+    protected readonly runtime: RuntimeStrategy & PipelineDepsBuilder,
     protected readonly events: EventBus,
     /**
      * Optional factory for the entrance fidelity gate's IssueFidelityComparator.

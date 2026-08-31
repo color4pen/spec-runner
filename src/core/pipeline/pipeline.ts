@@ -4,7 +4,7 @@ import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import { appendHistoryEntry } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
-import type { PipelineDeps } from "../types.js";
+import type { PipelineOrchestrationDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
@@ -136,7 +136,7 @@ export class Pipeline {
   async run(
     startStep: string,
     jobState: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
   ): Promise<JobState> {
     logPipelineDiag("pipeline:run:entry", `jobId=${jobState.jobId}, startStep=${startStep}`);
     this.events.emit("pipeline:start", { state: jobState });
@@ -199,7 +199,7 @@ export class Pipeline {
   private async runInternal(
     startStep: string,
     jobState: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
   ): Promise<JobState> {
     let state = jobState;
     let currentStep = startStep;
@@ -209,7 +209,7 @@ export class Pipeline {
     // (which may carry resumePrompt / resumeContext). Subsequent units receive a clone
     // with both resume fields stripped. This replaces the per-executor in-place clearing
     // that was previously in executor.ts.
-    const depsWithoutResume: PipelineDeps = { ...deps, resumePrompt: undefined, resumeContext: undefined };
+    const depsWithoutResume: PipelineOrchestrationDeps = { ...deps, resumePrompt: undefined, resumeContext: undefined };
     let firstUnitExecuted = false;
 
     while (true) {
@@ -645,7 +645,7 @@ export class Pipeline {
    */
   private async tryExhaust(
     state: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
     opts: {
       iteration: number;
       stepName: string;
@@ -733,7 +733,7 @@ export class Pipeline {
    */
   private async handleExhausted(
     state: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
     exhaustedLoopName: string = this.loopName,
     exhaustionPhase?: "review-after-final-fix" | "review-exhausted",
   ): Promise<JobState> {

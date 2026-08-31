@@ -21,7 +21,7 @@ import { EventBus } from "../../src/core/event/event-bus.js";
 import { CommandRunner } from "../../src/core/command/runner.js";
 import type { PrepareResult } from "../../src/core/command/runner.js";
 import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
-import type { PipelineDeps } from "../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../src/core/types.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../src/core/port/provider-readiness.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../src/core/runtime/managed.js";
@@ -79,13 +79,13 @@ function makeMinimalRuntime(opts?: {
   providerReadinessProbe?: ProviderReadinessProbe;
   omitReadinessMethod?: boolean;
 }): {
-  runtime: RuntimeStrategy & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> };
+  runtime: RuntimeStrategy & PipelineDepsBuilder & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> };
   sideEffects: { setupWorkspaceCalled: boolean; prepareCalled: boolean };
 } {
   const sideEffects = { setupWorkspaceCalled: false, prepareCalled: false };
   const probe = opts?.providerReadinessProbe;
 
-  const runtime: RuntimeStrategy & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> } = {
+  const runtime: RuntimeStrategy & PipelineDepsBuilder & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> } = {
     async bootstrapJob() { throw new Error("not implemented in fake"); },
     async persistJobState() { sideEffects.setupWorkspaceCalled = true; },
     async setupWorkspace() {
@@ -139,7 +139,7 @@ class MinimalCommandRunner extends CommandRunner {
   private readonly onPrepare: () => Promise<PrepareResult>;
 
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     events: EventBus,
     onPrepare: () => Promise<PrepareResult>,
   ) {

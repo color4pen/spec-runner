@@ -17,7 +17,7 @@ import * as path from "node:path";
 import type { Step, AgentStep, IoRef } from "./types.js";
 import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
-import type { PipelineDeps, StoreFactory } from "../types.js";
+import type { StepExecutionDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
@@ -255,7 +255,7 @@ export class CommitOrchestrator {
     state: JobState,
     step: Step,
     result: StepExecutionResult & { kind: "success" },
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     preWriteIo: IoRef[],
     preReadIo: IoRef[],
   ): Promise<void> {
@@ -420,7 +420,7 @@ export class CommitOrchestrator {
   async commitSuccess(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     result: StepExecutionResult & { kind: "success" },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -545,7 +545,7 @@ export class CommitOrchestrator {
    *   recordFailedStepResult → (failed: store.fail | awaiting-resume: transitionJob + appendInterruption)
    *   → history (if halt.history set) → store.persist → attachStateAndRethrow
    */
-  async commitHalt(step: Step, state: JobState, halt: StepHalt, deps?: PipelineDeps): Promise<never> {
+  async commitHalt(step: Step, state: JobState, halt: StepHalt, deps?: StepExecutionDeps): Promise<never> {
     const store = this.getStore(state.jobId);
 
     let s = recordFailedStepResult(state, step.name, halt.error, halt.recordOpts ?? {});
@@ -670,7 +670,7 @@ export class CommitOrchestrator {
   async commitRound(params: {
     coordinatorName: string;
     base: JobState;
-    deps: PipelineDeps;
+    deps: StepExecutionDeps;
     members: ReadonlyArray<{ step: Step; startedAt: string; result: StepExecutionResult }>;
     reviewerStatuses: ReviewerStatus[];
     coordinatorRun: StepRun;
@@ -818,7 +818,7 @@ export class CommitOrchestrator {
   async apply(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     result: StepExecutionResult,
   ): Promise<JobState> {
     if (result.kind === "success") {

@@ -48,6 +48,7 @@ import { getJobSlug } from "../../../../src/state/job-slug.js";
 import { Pipeline } from "../../../../src/core/pipeline/pipeline.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { Step } from "../../../../src/core/step/types.js";
+import { noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // Namespace imports for new exports on existing modules (RED if not yet implemented)
 import * as canonWriteScopeNS from "../../../../src/core/step/canon-write-scope.js";
@@ -804,6 +805,7 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
         appendLineage: async () => undefined,
       })) as never,
       runner: {} as never,
+      terminalState: noopTerminalState,
     } as never;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, initialState, deps);

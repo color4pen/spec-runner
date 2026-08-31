@@ -15,7 +15,7 @@
 import { stderrWrite } from "../../logger/stdout.js";
 import type { Step } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepExecutionDeps } from "../types.js";
 import type { BaseReportResult } from "../port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../port/report-result.js";
 import type { Finding, Evidence } from "../../kernel/report-result.js";
@@ -118,7 +118,7 @@ export interface StepCompletion {
 export async function deriveStepCompletion(
   step: Step,
   state: JobState,
-  deps: PipelineDeps,
+  deps: StepExecutionDeps,
   agentResult: StepCompletionInput | undefined,
   permissionScope: PermissionScope | undefined,
 ): Promise<StepCompletion> {

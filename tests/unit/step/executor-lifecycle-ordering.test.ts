@@ -7,7 +7,7 @@
  *   2. finalizeStepArtifacts is NOT called when deps.roundOwnsGitEffects === true.
  *   3. terminalState?.commitFinalState receives the correct cwd and slug in the
  *      gate-halt path (runner.ts).
- *   4. buildDeps() returns PipelineDeps directly (DSM §3 via allowlist); no `as PipelineDeps` cast needed.
+ *   4. buildDeps() returns PipelineDeps directly via PipelineDepsBuilder (T-18); no `as PipelineDeps` cast needed.
  *
  * Tests 1–2 target the StepExecutor; test 3 targets CommandRunner's gate-halt path;
  * test 4 is a compile-time proof (no runtime assertion needed).
@@ -17,8 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import type { PipelineDeps } from "../../../src/core/types.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/port/step-types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -330,31 +329,29 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-T15-05: buildDeps result type — DSM §3 compliance via port interface
+// TC-T15-05: buildDeps result type — T-18 domain-owned PipelineDepsBuilder
 //
-// This PR (D3/T-05/T-12) changed buildDeps() to return PipelineDeps directly,
-// with a single DSM allowlist entry in runtime-strategy.ts documenting the
-// type-only cross-layer import (TC-021, TC-022: must-priority ACs).
+// T-18 moved buildDeps() off RuntimeStrategy (ports layer) to the domain-owned
+// PipelineDepsBuilder interface in types.ts, eliminating the ports→domain
+// import that was required for the PipelineDeps return type.
 //
-// The `import type { PipelineDeps }` in the port file is erased at compile time
-// and creates no runtime module dependency — TypeScript 3.8+ handles circular
-// `import type` safely.  runner.ts no longer needs the `as PipelineDeps` cast
-// (AC TC-022: 'return type is PipelineDeps (not unknown)').
+// runtime-strategy.ts now has NO import from ../types.js and NO buildDeps
+// declaration. Composition-root types (CommandRunner, factory.ts) use the
+// intersection RuntimeStrategy & PipelineDepsBuilder.
 //
-// This test verifies that the port interface compiles and returns a correctly
-// typed PipelineDeps value without any cast in the caller.
+// This test verifies that PipelineDepsBuilder.buildDeps() compiles and returns
+// a correctly typed PipelineDeps value without any cast in the caller.
 // ---------------------------------------------------------------------------
 
-describe("T-15: buildDeps return type (DSM §3 compliance via port interface)", () => {
-  it("TC-T15-05: RuntimeStrategy.buildDeps() returns PipelineDeps directly; no cast needed in domain code (DSM §3 via allowlist)", () => {
-    // Create a minimal RuntimeStrategy-typed fake that returns a known slug.
-    const fake: Pick<RuntimeStrategy, "buildDeps"> = {
+describe("T-18: buildDeps return type (domain-owned PipelineDepsBuilder)", () => {
+  it("TC-T15-05: PipelineDepsBuilder.buildDeps() returns PipelineDeps directly; no cast needed in domain code (T-18)", () => {
+    // Create a minimal PipelineDepsBuilder-typed fake that returns a known slug.
+    const fake: Pick<PipelineDepsBuilder, "buildDeps"> = {
       buildDeps: () => makeBaseDeps(),
     };
 
-    // Call through the port interface. buildDeps() now returns PipelineDeps
-    // directly (DSM §3 via allowlist entry). No `as PipelineDeps` cast is
-    // needed — this mirrors the updated runner.ts (AC TC-022).
+    // Call through the domain interface. buildDeps() returns PipelineDeps
+    // directly — no `as PipelineDeps` cast needed (T-18).
     const deps = fake.buildDeps({} as never, {} as never, "", {} as never);
 
     expect(deps.slug).toBe("test-slug");

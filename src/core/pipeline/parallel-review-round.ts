@@ -9,7 +9,7 @@
 import type { Step } from "../step/types.js";
 import type { ParallelReviewConfig } from "./types.js";
 import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { ParallelReviewRoundDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { quarantineRoundHeadAdvanceEvidence } from "../step/commit-push.js";
@@ -88,7 +88,7 @@ export class ParallelReviewRound {
   async run(
     coordinatorName: string,
     state: JobState,
-    deps: PipelineDeps,
+    deps: ParallelReviewRoundDeps,
   ): Promise<{ outcome: "approved" | "needs-fix" | "escalation"; state: JobState }> {
     const parallelReview = this.parallelReview;
     const memberNames = [...parallelReview.members];
@@ -114,7 +114,7 @@ export class ParallelReviewRound {
       cwd,
       state.branch ?? null,
     );
-    let currentCanonHash: string | null | undefined = computeCanonHash(canonRefs);
+    const currentCanonHash: string | null | undefined = computeCanonHash(canonRefs);
 
     // --- 2. Compute invalidations (approved members whose paths were touched by fixer) ---
     // Design D6: for each approved member, call listChangedFiles(approvedAtCommit, cwd, branch)
@@ -229,7 +229,7 @@ export class ParallelReviewRound {
       // D3 (round-owned-git-effects): roundOwnsGitEffects=true skips finalizeStepArtifacts
       // (git stage/commit/push) in the executor. Coordinator owns all git effects via
       // commitRoundArtifacts after the fan-out.
-      const roundDeps: PipelineDeps = { ...deps, roundOwnsGitEffects: true };
+      const roundDeps: ParallelReviewRoundDeps = { ...deps, roundOwnsGitEffects: true };
 
       // Compute declared output union from pending members BEFORE fan-out
       // (base state is used so all members see the same pre-round state).

@@ -20,7 +20,7 @@ import type { RuntimeStrategy, MainCheckoutGuardSnapshot } from "../../../src/co
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
-import { noopRoundGitEffects, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -158,7 +158,7 @@ function makeDeps(runtimeStrategy?: any): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: runtimeStrategy as never,
+    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
     changedFiles: runtimeStrategy as never,
     stepIo: noopStepIo,
     terminalState: noopTerminalState,

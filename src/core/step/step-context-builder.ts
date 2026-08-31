@@ -17,7 +17,7 @@
 import * as path from "node:path";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepExecutionDeps } from "../types.js";
 import type { AgentRunContext } from "../port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { OutputContract, OutputVerificationPolicy } from "../port/output-contract.js";
@@ -70,7 +70,7 @@ export interface BuildStepContextFs {
 export async function buildStepContext(
   step: AgentStep,
   state: JobState,
-  deps: PipelineDeps,
+  deps: StepExecutionDeps,
   cwd: string,
   emitFn: (event: DomainEvent, payload: Record<string, unknown>) => void,
   fsAdapter: BuildStepContextFs,

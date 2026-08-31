@@ -4,6 +4,7 @@ import { StepExecutor } from "../executor.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState, StepRun } from "../../../state/schema.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState, noopRoundGitEffects } from "../noop-capabilities.js";
 
 function makeStepRun(overrides: Partial<StepRun> = {}): StepRun {
   return {
@@ -76,6 +77,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     spawn: vi.fn() as never,
     storeFactory: () => store as never,
     runner: {} as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     resumePrompt: undefined,
     resumeContext: {
       resumePoint: {

@@ -9,6 +9,7 @@ import type { PreflightResult } from "../preflight.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
@@ -64,7 +65,7 @@ const CANONICAL_PATTERN_LEGACY = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
  */
 export class PipelineRunCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     events: EventBus,
     private readonly absolutePath: string,
     private readonly preflightResult: PreflightResult,

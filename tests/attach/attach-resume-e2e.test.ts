@@ -32,6 +32,7 @@ import type { AgentRunner } from "../../src/core/port/agent-runner.js";
 import type { PipelineDeps } from "../../src/core/types.js";
 import type { JobState } from "../../src/state/schema.js";
 import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../src/core/types.js";
 import type { TerminalStateCapability } from "../../src/core/pipeline/pipeline-capability.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import type { ParsedRequest } from "../../src/parser/request-md.js";
@@ -150,7 +151,7 @@ function makeMachineATerminalState(machineADir: string, slug: string): TerminalS
   };
 }
 
-function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrategy {
+function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrategy & PipelineDepsBuilder {
   void slug;
   return {
     async *query() {},

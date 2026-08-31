@@ -2,7 +2,7 @@ import * as path from "node:path";
 import { readdir as fsReaddir, readFile as fsReadFile } from "node:fs/promises";
 import type { Step, AgentStep, CliStep, CliStepRunOutcome } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
-import type { PipelineDeps, StoreFactory } from "../types.js";
+import type { StepExecutionDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { DomainEvent } from "../event/types.js";
 import type { AgentRunner } from "../port/agent-runner.js";
@@ -128,7 +128,7 @@ export class StepExecutor {
   async produceResult(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
   ): Promise<StepExecutionResult> {
     this.events.emit("step:start", { step: step.name, state });
 
@@ -174,7 +174,7 @@ export class StepExecutor {
   async execute(
     step: Step,
     jobState: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
   ): Promise<JobState> {
     this.events.emit("step:start", { step: step.name, state: jobState });
     logVerbose("step", "step started", { step: step.name, jobId: jobState.jobId });
@@ -202,7 +202,7 @@ export class StepExecutor {
   private async produce(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
   ): Promise<StepExecutionResult> {
     if (step.kind === "cli") {
       logPipelineDiag("executor:step:dispatch", `step=${step.name}, kind=${step.kind}`);
@@ -224,7 +224,7 @@ export class StepExecutor {
   private async validateRequiredInputs(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     cwd: string,
     recordOpts: { startedAt?: string },
   ): Promise<StepHalt | null> {
@@ -253,7 +253,7 @@ export class StepExecutor {
   private async runAgentStep(
     step: AgentStep,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
   ): Promise<StepExecutionResult> {
     const cwd = deps.cwd ?? process.cwd();
 
@@ -588,7 +588,7 @@ export class StepExecutor {
   private async runCliStep(
     step: CliStep,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
   ): Promise<StepExecutionResult> {
     const cwd = deps.cwd ?? process.cwd();
     const startedAt = new Date().toISOString();

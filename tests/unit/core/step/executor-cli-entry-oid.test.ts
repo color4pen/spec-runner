@@ -21,7 +21,7 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { CliStep } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy, FindingRef } from "../../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
@@ -80,7 +80,7 @@ function makeJobState(jobId: string): JobState {
   };
 }
 
-function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy> = {}): RuntimeStrategy {
+function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy & PipelineDepsBuilder> = {}): RuntimeStrategy & PipelineDepsBuilder {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner { return noopRunner; },

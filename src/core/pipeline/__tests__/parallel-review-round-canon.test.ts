@@ -41,7 +41,7 @@ import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
 import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
 import type { ArtifactRef } from "../../../state/artifact-types.js";
-import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -158,7 +158,7 @@ function makeDeps(
     stepArtifact: noopStepArtifact,
     stepIo: noopStepIo,
     terminalState: noopTerminalState,
-    roundGitEffects: roundGitEffects as never,
+    roundGitEffects: (roundGitEffects ?? noopRoundGitEffects) as never,
   };
 }
 

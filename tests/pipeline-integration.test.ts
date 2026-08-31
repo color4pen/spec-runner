@@ -135,6 +135,7 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn) {
       return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
     },
     async prepareStepArtifacts(): Promise<void> { /* no-op */ },
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async finalizeStepArtifacts(
       step: AgentStep,
       state: JobState,
@@ -189,6 +190,7 @@ function makeCommitOidStubStrategy() {
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
     // validateStepInputs: called for every step with reads() — must resolve to avoid
     // TypeError → makeInputMissingHalt → pipeline halt → "awaiting-resume".
     validateStepInputs: vi.fn().mockResolvedValue(undefined),

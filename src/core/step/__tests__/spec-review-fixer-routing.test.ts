@@ -171,7 +171,10 @@ function makeMinimalDeps(): PipelineDeps {
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: (() => ({})) as unknown as PipelineDeps["storeFactory"],
     runner: {} as unknown as PipelineDeps["runner"],
-    // runtimeStrategy absent → scope check, finding-ref verification skip
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as unknown as PipelineDeps;
 }
 

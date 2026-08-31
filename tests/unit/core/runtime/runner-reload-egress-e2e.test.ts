@@ -65,6 +65,7 @@ import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-s
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { verifyEgressLedger } from "../../../../src/core/step/commit-push.js";
@@ -290,7 +291,7 @@ describe("TC-013 / TC-001: E2E — bootstrap → reload → in-memory synthesize
  */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());
@@ -381,9 +382,9 @@ describe("TC-014 / TC-013b: Runner 経路の封鎖 — pipeline に渡る state 
         digestArtifacts: vi.fn().mockResolvedValue([]),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      } as RuntimeStrategy;
+      } as RuntimeStrategy & PipelineDepsBuilder;
 
-      const command = new TestCommand(runtime as RuntimeStrategy, buildPrepareResultForTC014());
+      const command = new TestCommand(runtime as RuntimeStrategy & PipelineDepsBuilder, buildPrepareResultForTC014());
 
       // Capture the state passed to pipeline.run()
       let capturedJobState: JobState | undefined;

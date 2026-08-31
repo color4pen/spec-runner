@@ -369,6 +369,7 @@ describe("TC-T05-ref: spec-review with high finding referencing non-existent fil
       async captureHeadSha() { return null; },
       async prepareStepArtifacts() {},
       async finalizeStepArtifacts() {},
+      async snapshotMainCheckoutGuard() { return null; },
       async validateStepInputs() {},
       async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> { return { violations: [] }; },
       async persistJobState() {},

@@ -18,22 +18,16 @@
  * commitRoundArtifacts) have been removed from this interface; their typed counterparts
  * live on the capability interfaces in step-capability.ts / pipeline-capability.ts.
  *
- * buildDeps() returns PipelineDeps. The `import type { PipelineDeps }` from
- * domain/types.ts is type-only (erased at compile time) and creates no runtime
- * module dependency; TypeScript 3.8+ handles circular `import type` safely.
- * A single DSM allowlist entry documents this exception (T-05/T-12).
+ * T-18: buildDeps() has been moved to the domain-owned PipelineDepsBuilder interface
+ * (src/core/types.ts). This removes the ports→domain import that was required for
+ * the PipelineDeps return type. Composition-root types (CommandRunner, factory.ts)
+ * use the intersection RuntimeStrategy & PipelineDepsBuilder.
  */
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
-import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { OutputContract, OutputCheckResult } from "./output-contract.js";
-// Type-only import from domain/types.ts. Although types.ts imports from this file
-// (for ChangedFilesCapability etc.), TypeScript handles circular `import type`
-// references safely — they are erased at runtime and do not create a module cycle.
-// DSM allowlist entry: src/core/port/runtime-strategy.ts (invariant "DSM", T-05/T-12).
-import type { PipelineDeps } from "../types.js";
 // ---------------------------------------------------------------------------
 // Supporting types
 // ---------------------------------------------------------------------------
@@ -384,20 +378,6 @@ export interface RuntimeStrategy {
     jobId: string,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext>;
-
-  /**
-   * Assemble PipelineDeps for the resolved workspace.
-   *
-   * Returns PipelineDeps. The import is type-only so no runtime module cycle
-   * exists (TypeScript 3.8+ erases `import type` at output). Callers in domain
-   * code (e.g. runner.ts) receive a correctly typed result without any cast.
-   */
-  buildDeps(
-    config: SpecRunnerConfig,
-    request: ParsedRequest,
-    slug: string,
-    workspace: WorkspaceContext,
-  ): PipelineDeps;
 
   /**
    * Register cleanup handlers (signal, failure).

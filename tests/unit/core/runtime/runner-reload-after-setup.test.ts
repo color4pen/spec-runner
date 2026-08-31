@@ -62,6 +62,7 @@ import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-s
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { appendSynthesizedCommit } from "../../../../src/state/schema.js";
@@ -185,13 +186,13 @@ function buildRuntimeWithRejectingReload(reloadError = new Error("store unreadab
     // TC-011: reloadJobState rejects — fail-closed path
     reloadJobState: vi.fn().mockRejectedValue(reloadError),
   };
-  return runtime as RuntimeStrategy;
+  return runtime as RuntimeStrategy & PipelineDepsBuilder;
 }
 
 /** Minimal CommandRunner subclass for testing. */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());

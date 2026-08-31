@@ -37,7 +37,7 @@ import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
 import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -172,8 +172,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
-    stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
-    stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
+    stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepArtifact,
+    stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...overrides,

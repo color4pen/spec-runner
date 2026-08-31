@@ -24,7 +24,7 @@ import { buildStepContext } from "../../../src/core/step/step-context-builder.js
 import type { PushCapability } from "../../../src/git/push-capability.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
-import type { PipelineDeps } from "../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
 import type { OutputViolation } from "../../../src/core/port/output-contract.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { WORKFLOWS_PATTERN } from "../../../src/git/push-capability.js";
@@ -200,7 +200,7 @@ describe("TC-030: buildOutputFollowUpPrompt for unpushable-path violations", () 
 function makePipelineDeps(
   overrides: Partial<PipelineDeps> = {},
 ): PipelineDeps {
-  const mockStrategy: RuntimeStrategy = {
+  const mockStrategy: RuntimeStrategy & PipelineDepsBuilder = {
     async *query() {},
     createAgentRunner() {
       return { async run() { return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }; } };

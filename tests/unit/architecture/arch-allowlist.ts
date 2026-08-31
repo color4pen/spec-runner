@@ -283,35 +283,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Pinned by changed-lines.test.ts.",
   },
 
-  // ── DSM: §3 全層 closure whitelist 違反 ────────────────────────────────────
-  //
-  // DSM (architecture/model.md §3): 許可された edge 以外の import は divergence。
-  // arch-closure-src-wide (#495) でスキャン確定した 21 件を grandfather していたが、
-  // burn-down 完了:
-  //   - dsm-runtime-strategy-demote (#496): domain → comp-root 5件（RuntimeStrategy/prereqs を ports へ降格）
-  //   - dsm-domain-type-demote (#497): adapters/ports → domain 16件（共有型を kernel/port/logger へ降格）
-  //
-  // T-05/T-12 (runtime-mutation-lifecycle-capability-split): ports→domain `import type`
-  //   runtime-strategy.ts が PipelineDeps を `import type` で参照。
-  //   `import type` は TypeScript 3.8+ でコンパイル時に消去され、runtime module dependency を
-  //   生じない。DSM は runtime coupling を対象とするため、この type-only import は
-  //   アーキテクチャ的に中立（実違反ではない）。buildDeps() の戻り型を PipelineDeps に
-  //   変更し、runner.ts の `as PipelineDeps` キャストを除去するために必要（T-05, T-12）。
-  {
-    file: "src/core/port/runtime-strategy.ts",
-    pattern: 'from "../types.js"',
-    invariant: "DSM",
-    tracking: "T-05-T-12-buildDeps-PipelineDeps-return-type",
-    comment:
-      "ports→domain import type only: PipelineDeps from core/types.ts. " +
-      "`import type` is erased at compile time (TS 3.8+) — no runtime module dependency. " +
-      "Required to declare buildDeps(): PipelineDeps in the RuntimeStrategy interface, " +
-      "removing the `as PipelineDeps` cast in runner.ts (T-05, T-12). " +
-      "types.ts already imports R2a capability types from this file (domain→ports, allowed); " +
-      "the reverse `import type` is safe: TypeScript resolves circular type-only imports without " +
-      "creating a runtime cycle.",
-  },
-
   // ── CWD: process.cwd() allowlist ratchet over src/ ───────────────────────
   //
   // Seeded at repo-root-entry-resolution (T-05).

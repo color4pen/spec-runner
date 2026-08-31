@@ -413,6 +413,7 @@ function makeCommitOidStubStrategy() {
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
@@ -867,6 +868,7 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       captureHeadSha: vi.fn().mockResolvedValue(null),
       prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
       finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+      snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
       verifyFindingRefs: vi.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vi.fn().mockResolvedValue([]),
     };
@@ -1159,6 +1161,7 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       captureHeadSha: vitest.fn().mockResolvedValue("sha-current"),
       prepareStepArtifacts: vitest.fn().mockResolvedValue(undefined),
       finalizeStepArtifacts: vitest.fn().mockResolvedValue(undefined),
+      snapshotMainCheckoutGuard: vitest.fn().mockResolvedValue(null),
       verifyFindingRefs: vitest.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vitest.fn().mockResolvedValue([]),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires

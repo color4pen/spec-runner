@@ -17,13 +17,14 @@ import { createAnthropicSessionClient } from "../adapter/managed-agent/session-c
 import { createRuntime } from "../core/runtime/index.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { RuntimeStrategy } from "../core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../core/types.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 
 export interface BootstrapResult {
   config: SpecRunnerConfig;
   githubClient: GitHubClient;
-  runtime: RuntimeStrategy;
+  runtime: RuntimeStrategy & PipelineDepsBuilder;
   githubToken: string;
 }
 

@@ -20,7 +20,7 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
-import type { PipelineDeps } from "../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../src/errors.js";
@@ -85,7 +85,7 @@ function makeJobState(jobId: string): JobState {
  * Build a RuntimeStrategy mock where validateStepInputs always rejects with
  * the given error. All other methods are no-ops or return safe defaults.
  */
-function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
+function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy & PipelineDepsBuilder {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner {

@@ -118,7 +118,6 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const { Pipeline } = await import("../src/core/pipeline/pipeline.js");
     const { STANDARD_TRANSITIONS } = await import("../src/core/pipeline/types.js");
     const { EventBus } = await import("../src/core/event/event-bus.js");
-    type PipelineDeps = import("../src/core/types.js").PipelineDeps;
     type Step = import("../src/core/step/types.js").Step;
     type JobState = import("../src/state/schema.js").JobState;
     type StepExecutorType = import("../src/core/step/executor.js").StepExecutor;
@@ -209,7 +208,6 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     });
 
     const result = await pipeline.run("design", state, {
-      client: {} as PipelineDeps["client"],
       config: {
         version: 1,
         agents: { design: { agentId: "agent_001", definitionHash: "sha", lastSyncedAt: "2026-01-01" } },

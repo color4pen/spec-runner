@@ -154,7 +154,7 @@ function makeBaseState(
 
 function makeDeps(
   tempDir: string,
-  roundGitEffects: RoundGitEffectsCapability | undefined,
+  roundGitEffects: RoundGitEffectsCapability,
 ): PipelineDeps {
   return {
     cwd: tempDir,

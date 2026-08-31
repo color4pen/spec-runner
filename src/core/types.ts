@@ -5,7 +5,9 @@ import type { SpawnFn } from "../util/spawn.js";
 import type { SpawnFn as GitExecSpawnFn } from "../util/git-exec.js";
 import type { JobStateStore } from "../store/job-state-store.js";
 import type { ResumeContextSnapshot } from "./resume/resume-context.js";
-import type { ChangedFilesCapability, CommitInspectionCapability, RevisionContentCapability } from "./port/runtime-strategy.js";
+import type { ChangedFilesCapability, CommitInspectionCapability, RevisionContentCapability, WorkspaceContext } from "./port/runtime-strategy.js";
+import type { SpecRunnerConfig } from "../config/schema.js";
+import type { ParsedRequest } from "../parser/request-md.js";
 import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "./step/step-capability.js";
 import type { TerminalStateCapability, RoundGitEffectsCapability } from "./pipeline/pipeline-capability.js";
 
@@ -153,3 +155,50 @@ export interface PipelineDeps extends StepContext {
    */
   roundOwnsGitEffects?: boolean;
 }
+
+/**
+ * Domain-owned contract for assembling PipelineDeps from a resolved workspace.
+ *
+ * T-18: Moved off RuntimeStrategy (ports layer) onto the domain layer so that
+ * runtime-strategy.ts no longer needs to import from types.ts (DSM §3 closure).
+ * Concrete runtimes (LocalRuntime, ManagedRuntime) implement this alongside
+ * RuntimeStrategy. Composition-root types (CommandRunner, factory.ts) use the
+ * intersection RuntimeStrategy & PipelineDepsBuilder.
+ */
+export interface PipelineDepsBuilder {
+  /**
+   * Assemble PipelineDeps for the resolved workspace.
+   * Called by CommandRunner.execute() after setupWorkspace() succeeds.
+   */
+  buildDeps(
+    config: SpecRunnerConfig,
+    request: ParsedRequest,
+    slug: string,
+    workspace: WorkspaceContext,
+  ): PipelineDeps;
+}
+
+// ---------------------------------------------------------------------------
+// T-19: Consumer-owned composite deps — structural subsets of PipelineDeps
+// ---------------------------------------------------------------------------
+
+/**
+ * Deps required by StepExecutor (execute / produceResult).
+ * Omits terminalState, roundGitEffects (pipeline-level), client and runner (composition-root).
+ * PipelineDeps is structurally assignable to StepExecutionDeps (TC-049).
+ */
+export type StepExecutionDeps = Omit<PipelineDeps, "terminalState" | "roundGitEffects" | "client" | "runner">;
+
+/**
+ * Deps required by ParallelReviewRound.run.
+ * Extends StepExecutionDeps with the required roundGitEffects capability.
+ * PipelineDeps is structurally assignable to ParallelReviewRoundDeps (TC-049).
+ */
+export type ParallelReviewRoundDeps = Omit<PipelineDeps, "terminalState" | "client" | "runner">;
+
+/**
+ * Deps required by Pipeline.run / runInternal.
+ * Extends ParallelReviewRoundDeps with the required terminalState capability.
+ * PipelineDeps is structurally assignable to PipelineOrchestrationDeps (TC-049).
+ */
+export type PipelineOrchestrationDeps = Omit<PipelineDeps, "client" | "runner">;
