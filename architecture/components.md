@@ -64,13 +64,13 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
 ### StepExecutor — step 実行エンジン（producer）
 - **責務**: AgentStep なら `AgentRunner.run(ctx)` を呼び、CliStep なら `step.run()` を呼ぶ。結果を `StepRun` として finalize する — **state への永続化・FSM 遷移・halt 適用は行わない**（B-13 / B-14。すべて CommitOrchestrator に委譲し、guard は `StepHalt` 値を生成するだけ）。`reportTool` 登録・follow-up 制御・project.md 注入（`needsProjectContext`）。
 - **出力契約ゲート**: runner 成功後・commit 前に、`writes()` 宣言 + `outputContracts()` を `RuntimeStrategy.validateStepOutputs` に渡して検証。violation あり → `STEP_OUTPUT_MISSING`。`follow-up` class の契約は `OutputVerificationPolicy`（`ctx.policy.outputVerification`）として adapter に注入し、同セッション内の repair loop を可能にする。**`unpushable-path` 契約は commit 前ゲートの対象外** — このゲートは commitAndPush の `git reset --mixed` 正規化より前に走るため、agent の self-commit を偽陽性で halt させてしまう。unpushable-path の担当は (1) adapter の follow-up（`OutputVerificationPolicy` は `step.outputContracts` をゲートと独立に読むため除外の影響を受けない。follow-up は 1 回限り）と (2) commit/push 時の backstop（`collectPublishablePaths` → `UnpushablePathBlockedError` → `UNPUSHABLE_PATH_BLOCKED` の awaiting-resume halt）の 2 層。
-- **協調**: AgentRunner（port）/ Step / CommitOrchestrator（永続）/ EventBus / RuntimeStrategy（output gate）。
+- **協調**: AgentRunner（port）/ Step / CommitOrchestrator（永続）/ EventBus / StepArtifactLifecycleCapability（artifact finalize）/ StepIoValidationCapability（output gate）。
 - → `src/core/step/executor.ts`
 
 ### CommitOrchestrator — step commit 適用の単一所有者（committer）
 - **責務**: step 実行経路の状態書き込み・git 副作用の**唯一の適用点**（B-13 / B-14）。step 結果の commit（journal 追記・projection 永続・git commit/push・touched files 記録）、halt の適用（`commitHalt` — FSM 遷移・rethrow の一括担当）、並列 round の一括書き込み（`commitRound` — 宣言出力への scoped staging、B-15）。
 - **staging containment**: commit 前の guarded staging — 除外 glob・staged 件数上限・staged バイト量上限の fail-closed 3 層 guard（違反は commit せず escalation halt）。生成物・肥大 artifact が branch に混入する経路を構造で塞ぐ。
-- **協調**: StepExecutor / ParallelReviewRound（producer）/ JobStateStore（永続）/ RuntimeStrategy（git seam）/ EventBus。
+- **協調**: StepExecutor / ParallelReviewRound（producer）/ JobStateStore（永続）/ RoundGitEffectsCapability（git seam）/ CommitInspectionCapability（commit inspection）/ EventBus。
 - → `src/core/step/commit-orchestrator.ts` ／ `src/core/step/staging-containment.ts` ／ `src/core/step/round-git-scope.ts`
 
 ### AgentRegistry / AgentDefinition
