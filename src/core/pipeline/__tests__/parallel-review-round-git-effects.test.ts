@@ -139,7 +139,7 @@ function makeFakeExecutor(): {
 function makeRuntimeStrategy(opts: {
   worktreeChanges?: string[];
   inspectionResult?: { kind: "success"; paths: string[] } | { kind: "unavailable"; reason: string };
-}): RoundGitEffectsCapability {
+}) {
   const inspectionResult = opts.inspectionResult ?? { kind: "success" as const, paths: opts.worktreeChanges ?? [] };
   return {
     captureHeadSha: vi.fn(async () => "abc123"),
