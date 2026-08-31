@@ -622,7 +622,7 @@ export class Pipeline {
     // that seam is intentionally NOT moved here to preserve existing test coverage.
     if (state.status === "awaiting-resume") {
       // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-      await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+      await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).
