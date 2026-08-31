@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T07:05:14.119Z",
+  "updatedAt": "2026-08-31T07:33:45.213Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -258,6 +258,11 @@
       "text": "Operator decision: both escalated findings have been fixed by an operator-apply commit pushed directly to the job branch (commit a874498e): (1) test-cases.md TC-038 now states 2 pre-existing casts in tests/pipeline-sole-committer-e2e.test.ts (protected canon path — fixed by operator since no fixer may write it), and (2) architecture/components.md lines 60/66 now reference StepIoValidationCapability (deps.stepIo) instead of RuntimeStrategy.validateStepInputs/Outputs. Do NOT attempt to re-fix these files and do NOT make any new implementation changes unless a reviewer surfaces a concrete new finding. Re-run the review gates on the current branch head and proceed through PR creation.",
       "step": "code-review",
       "recordedAt": "2026-08-31T07:03:37.311Z"
+    },
+    {
+      "text": "Operator decision: retry after transient infrastructure failure. The previous run's code-review approved with zero findings and explicitly verified the operator-apply commit a874498e (TC-038 count fix and components.md StepIoValidationCapability references). The halt was solely a CODEX_SDK_ERROR ('Selected model is at capacity') in the cross-boundary-invariants custom reviewer — not a finding. Do NOT make any implementation or documentation changes. Re-run from the custom-reviewers phase onward and proceed through PR creation.",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-31T07:33:40.930Z"
     }
   ],
   "reviewerStatuses": [
@@ -291,7 +296,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 404,
+    "historyCount": 408,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -302,9 +307,9 @@
       "verification": 19,
       "code-review": 12,
       "code-fixer": 14,
-      "cross-boundary-invariants": 7,
+      "cross-boundary-invariants": 8,
       "scale-tolerance": 1,
-      "custom-reviewers": 8,
+      "custom-reviewers": 9,
       "regression-gate": 12,
       "conformance": 9
     }

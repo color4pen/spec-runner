@@ -592,3 +592,9 @@
 {"type":"step-attempt","step":"custom-reviewers","sessionId":null,"outcome":{"verdict":"escalation","findingsPath":null,"error":null},"startedAt":"2026-08-31T07:05:09.437Z","endedAt":"2026-08-31T07:05:14.116Z"}
 {"type":"transition","ts":"2026-08-31T07:05:14.119Z","step":"custom-reviewers","status":"error","message":"custom-reviewers iteration 1 completed with verdict: escalation"}
 {"type":"transition","ts":"2026-08-31T07:05:14.119Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: custom-reviewers escalated"}
+{"type":"transition","ts":"2026-08-31T07:33:40.930Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'custom-reviewers'"}
+{"type":"transition","ts":"2026-08-31T07:33:41.280Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CODEX_SDK_ERROR","message":"Selected model is at capacity. Please try a different model.","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-31T07:33:41.582Z","endedAt":"2026-08-31T07:33:45.184Z"}
+{"type":"step-attempt","step":"custom-reviewers","sessionId":null,"outcome":{"verdict":"escalation","findingsPath":null,"error":null},"startedAt":"2026-08-31T07:33:41.284Z","endedAt":"2026-08-31T07:33:45.209Z"}
+{"type":"transition","ts":"2026-08-31T07:33:45.213Z","step":"custom-reviewers","status":"error","message":"custom-reviewers iteration 1 completed with verdict: escalation"}
+{"type":"transition","ts":"2026-08-31T07:33:45.213Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: custom-reviewers escalated"}
