@@ -479,7 +479,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** all test fakes previously using `runtimeStrategy: { ... }` are migrated per T-13
 **WHEN** the entire `src/` tree is scanned for `as unknown as RuntimeStrategy`
-**THEN** exactly the 4 pre-existing occurrences in full-pipeline e2e test files remain; no new occurrences are present
+**THEN** exactly the 2 pre-existing occurrences in `tests/pipeline-sole-committer-e2e.test.ts` remain; no new occurrences are present
 
 ---
 
