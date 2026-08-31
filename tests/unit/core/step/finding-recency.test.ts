@@ -279,7 +279,7 @@ describe("TC-005: iteration 2 で per-finding の後出し判定が記録され�
       findings,
       cwd: "/some/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     // appendFindingRecency should be called exactly once
@@ -323,7 +323,7 @@ describe("TC-006: iteration 1 では finding-recency 記録が append されな�
       findings,
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     expect(appendFindingRecencyMock).not.toHaveBeenCalled();
@@ -344,7 +344,7 @@ describe("TC-006: iteration 1 では finding-recency 記録が append されな�
       ],
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     expect(appendFindingRecencyMock).not.toHaveBeenCalled();
@@ -387,7 +387,7 @@ describe("TC-007: late な finding を含む round でも verdict は不変", ()
       findings: lateFindings,
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     })).resolves.not.toThrow();
 
     // appendFindingRecency was called (journal updated)
@@ -426,7 +426,7 @@ describe("TC-008: late が 1 件以上で stderr 要約が出る", () => {
       findings,
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     // stderr should have been written (the spy is set up in beforeEach)
@@ -470,7 +470,7 @@ describe("TC-017: late が 0 件のとき stderrWrite を呼ばない (should)",
       findings,
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     // No new stderr writes about late findings (the spy may have been called before,
@@ -501,7 +501,7 @@ describe("TC-017: late が 0 件のとき stderrWrite を呼ばない (should)",
       findings,
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     const newCalls = stderrSpy.mock.calls.slice(callsBefore);
@@ -528,7 +528,7 @@ describe("TC-018: finding が 0 件のとき appendFindingRecency を呼ばな�
       findings: [],  // no findings
       cwd: "/cwd",
       branch: "main",
-      runtimeStrategy: fakeRuntime,
+      revisionContent: fakeRuntime,
     });
 
     expect(appendFindingRecencyMock).not.toHaveBeenCalled();

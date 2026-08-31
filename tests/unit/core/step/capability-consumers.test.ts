@@ -184,20 +184,20 @@ describe("TC-009: derivePriorRoundContext accepts CommitInspectionCapability nar
       state: state as never,
       iteration: 1,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     expect(result).toBeNull();
   });
 
-  it("can be called with undefined runtimeStrategy → null (no capability)", async () => {
+  it("can be called with undefined commitInspection → null (no capability)", async () => {
     const state = makeMinimalJobState();
 
     const result = await derivePriorRoundContext({
       state: state as never,
       iteration: 2,
       cwd: "/cwd",
-      runtimeStrategy: undefined,
+      commitInspection: undefined,
     });
 
     expect(result).toBeNull();
@@ -230,7 +230,7 @@ describe("TC-010: derivePriorRoundContext — capability absent at iteration≥2
       state: state as never,
       iteration: 2,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     expect(result).toBeNull();
@@ -264,7 +264,7 @@ describe("TC-021: derivePriorRoundContext — listCommitChangedFiles unavailable
       state: state as never,
       iteration: 2,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     expect(result).toBeNull();
@@ -295,7 +295,7 @@ describe("TC-021: derivePriorRoundContext — listCommitChangedFiles unavailable
       state: state as never,
       iteration: 2,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     // success → context returned with changedFiles
@@ -320,7 +320,7 @@ describe("TC-027: derivePostFixContext accepts CommitInspectionCapability narrow
     const result = await derivePostFixContext({
       state: state as never,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     expect(result).toBeNull();
@@ -344,13 +344,13 @@ describe("TC-011: deriveCustomReviewerPriorRound accepts CommitInspectionCapabil
       reviewerName: "my-reviewer",
       iteration: 1,
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      commitInspection: narrow,
     });
 
     expect(result).toBeNull();
   });
 
-  it("undefined runtimeStrategy → null (no capability)", async () => {
+  it("undefined commitInspection → null (no capability)", async () => {
     const state = makeMinimalJobState();
 
     const result = await deriveCustomReviewerPriorRound({
@@ -358,7 +358,7 @@ describe("TC-011: deriveCustomReviewerPriorRound accepts CommitInspectionCapabil
       reviewerName: "my-reviewer",
       iteration: 2,
       cwd: "/cwd",
-      runtimeStrategy: undefined,
+      commitInspection: undefined,
     });
 
     expect(result).toBeNull();
@@ -379,7 +379,7 @@ describe("TC-012: computeExtraScopeFindings accepts minimal deps type", () => {
       slug: "test-slug",
       request: { baseBranch: "main" },
       cwd: "/cwd",
-      runtimeStrategy: narrow,
+      changedFiles: narrow,
     };
 
     const state = makeMinimalJobState();
@@ -395,12 +395,12 @@ describe("TC-012: computeExtraScopeFindings accepts minimal deps type", () => {
     expect(result).toEqual([]);
   });
 
-  it("can be called with undefined runtimeStrategy in minimal deps", async () => {
+  it("can be called with undefined changedFiles in minimal deps", async () => {
     const minimalDeps = {
       slug: "test-slug",
       request: { baseBranch: "main" },
       cwd: "/cwd",
-      runtimeStrategy: undefined,
+      changedFiles: undefined,
     };
 
     const state = makeMinimalJobState();
@@ -412,7 +412,7 @@ describe("TC-012: computeExtraScopeFindings accepts minimal deps type", () => {
       minimalDeps,
     );
 
-    // runtimeStrategy undefined → []
+    // changedFiles undefined → []
     expect(result).toEqual([]);
   });
 });
