@@ -82,16 +82,18 @@ Define four new capability interfaces, each owned by the consumer module that re
 Remove `runtimeStrategy?: RuntimeStrategy` from `PipelineDeps` (`src/core/types.ts`). Replace with typed capability fields:
 
 ```
-stepArtifact?:       StepArtifactLifecycleCapability   // StepExecutor + CommitOrchestrator
-stepIo?:             StepIoValidationCapability         // StepExecutor validation
-terminalState?:      TerminalStateCapability            // Pipeline + CommandRunner gate
-roundGitEffects?:    RoundGitEffectsCapability          // ParallelReviewRound
+stepArtifact:        StepArtifactLifecycleCapability    // StepExecutor + CommitOrchestrator (required)
+stepIo:              StepIoValidationCapability         // StepExecutor validation (required)
+terminalState:       TerminalStateCapability            // Pipeline + CommandRunner gate (required)
+roundGitEffects:     RoundGitEffectsCapability          // ParallelReviewRound (required)
 changedFiles?:       ChangedFilesCapability             // Activation gate + no-op detect (R2a, port layer)
 commitInspection?:   CommitInspectionCapability         // adr-gen / custom-reviewer / spec-review (R2a)
 revisionContent?:    RevisionContentCapability          // finding-recency / commit-orchestrator (R2a)
 ```
 
-**Rationale**: `PipelineDeps` holds `runtimeStrategy?: RuntimeStrategy`, creating the `types.ts → runtime-strategy.ts` dependency. Removing this field eliminates the cycle. Without the cycle, `runtime-strategy.ts` can import `PipelineDeps` and type `buildDeps` with a concrete return type.
+The four mutation/lifecycle capability fields are **required non-nullable**: both production runtimes always inject real (or explicit no-op) implementations, so there is no legitimate capability-absent production state. Making them optional would let a composition omission pass the type checker while optional chaining silently skips validation, commit/push, terminal checkpoint publication, and parallel-round inspection (fail-open). Test fakes inject the explicit no-op implementations from `src/core/step/noop-capabilities.ts` or custom stubs. Only the three R2a read-only capabilities remain optional/`undefined`-able.
+
+**Rationale**: `PipelineDeps` holds `runtimeStrategy?: RuntimeStrategy`, creating the `types.ts → runtime-strategy.ts` dependency. Removing this field eliminates that edge, but it does **not** make a reverse import legal: `types.ts` still imports the R2a capability types (`ChangedFilesCapability` etc.) from `runtime-strategy.ts`, so any `runtime-strategy.ts → types.ts` import — even `import type` — forms a two-file compile-time cycle and a ports→domain edge. The DSM ratchet over ports→domain is delete-only; no new allowlist entry may be added for this. Typing `buildDeps` therefore moves out of the port entirely (see D3).
 
 The R2a capabilities (`ChangedFilesCapability`, `CommitInspectionCapability`, `RevisionContentCapability`) are already in the port layer and safe to add to `PipelineDeps`. Adding them as explicit fields also closes the "still deriving from `deps.runtimeStrategy`" pattern in `step-completion.ts` and `commit-orchestrator.ts`.
 
@@ -99,11 +101,16 @@ The R2a capabilities (`ChangedFilesCapability`, `CommitInspectionCapability`, `R
 
 ---
 
-### D3 — `buildDeps` returns typed `PipelineDeps`
+### D3 — `buildDeps` moves off the port to a domain-owned `PipelineDepsBuilder` contract
 
-After D2 breaks the cycle, `RuntimeStrategy.buildDeps(config, request, slug, workspace)` can declare its return type as `PipelineDeps` instead of `unknown`. The `as PipelineDeps` cast at runner.ts line 222 is eliminated.
+`buildDeps` cannot be typed on the `RuntimeStrategy` port: importing `PipelineDeps` from `../types.js` creates a ports→domain compile-time cycle (see D2 rationale) and would require a new DSM allowlist entry, which the delete-only ratchet forbids.
 
-`LocalRuntime.buildDeps` already returns `PipelineDeps` via bivariant method checking. After D3, the port interface formally matches. `ManagedRuntime.buildDeps` is updated identically.
+Instead:
+- Declare a `PipelineDepsBuilder` interface in the domain layer (`src/core/types.ts` or an adjacent domain module): `buildDeps(config, request, slug, workspace): PipelineDeps`. The domain layer may import port capability types, so this direction is legal.
+- Remove `buildDeps` from the `RuntimeStrategy` port interface entirely. `src/core/port/runtime-strategy.ts` has no import from `../types.js` and no reference to `PipelineDeps`.
+- `LocalRuntime` and `ManagedRuntime` implement `PipelineDepsBuilder` in addition to `RuntimeStrategy` (their existing `buildDeps` methods already match the signature).
+- The composition root types the runtime as `RuntimeStrategy & PipelineDepsBuilder` (e.g. via `RealRuntimeStrategy` or the factory return type), so `CommandRunner.execute` assigns `deps = this.runtime.buildDeps(...)` without any cast.
+- The DSM allowlist entry for `src/core/port/runtime-strategy.ts` in `tests/unit/architecture/arch-allowlist.ts` is deleted.
 
 ---
 
@@ -121,17 +128,35 @@ These three methods carry `unknown` parameters that cannot be eliminated in the 
 
 ### D5 — Derive helpers follow the R2a `bind`-based pattern
 
-For each new capability, a `derive*Capability(runtime)` helper is defined alongside the capability interface (in the same consumer-domain file). The helper binds methods from `LocalRuntime` (or any `RealRuntimeStrategy`-typed value) to the capability interface. `undefined` is returned when the runtime does not have the required method.
+For each new capability, a `derive*Capability(runtime)` helper is defined alongside the capability interface (in the same consumer-domain file). The helper binds methods from `LocalRuntime` (or any `RealRuntimeStrategy`-typed value) to the capability interface. For the four required mutation/lifecycle capabilities the helper always yields a capability (real or explicit no-op — see D6); `undefined` is returned only for the optional R2a read-only capabilities when the runtime does not support them.
 
 `LocalRuntime.buildDeps` and `ManagedRuntime.buildDeps` call these helpers to construct and inject all capability fields into the returned `PipelineDeps`.
 
 ---
 
-### D6 — Capability absence uses `undefined` injection, not optional methods
+### D6 — Required lifecycle capabilities; `undefined` absence only for read-only capabilities
 
-Capability method signatures are **required** (no `?`). Consumers check `deps.stepArtifact ? ... : undefined` (field presence), not `deps.stepArtifact?.captureHeadSha?.()` (method presence). This preserves the existing semantics of optional capability injection while keeping capability contracts strict.
+Capability method signatures are **required** (no `?`), including `snapshotMainCheckoutGuard`: both production runtimes implement it, and "cannot perform the check" is expressed by returning `null` (a runtime result), not by omitting the method. A no-op implementation explicitly returns `null`. Making the method optional would let a structurally valid capability silently skip drift detection.
 
-`snapshotMainCheckoutGuard` is an exception: it remains optional on `StepArtifactLifecycleCapability` because fail-open semantics (return null) are structurally meaningful — null is not an absence of capability but a runtime result.
+The four mutation/lifecycle capability fields (`stepArtifact`, `stepIo`, `terminalState`, `roundGitEffects`) are **required non-nullable** in `PipelineDeps` (see D2). Consumers call them directly — no field-presence checks, no optional chaining on these fields. "This runtime has no local worktree" is expressed by injecting an explicit no-op implementation (`src/core/step/noop-capabilities.ts`), which preserves the legacy absent-capability behavior observably.
+
+`undefined`-field absence semantics apply only to the three R2a read-only capabilities (`changedFiles`, `commitInspection`, `revisionContent`), where consumers check field presence (`deps.commitInspection ? ... : undefined`).
+
+---
+
+### D7 — Consumer-owned composite deps types
+
+Splitting capabilities into `PipelineDeps` fields is necessary but not sufficient: if every consumer still receives the full `PipelineDeps` aggregate, each consumer can reach every dependency and the use-case split is not enforced by types. Each major consumer therefore declares a consumer-owned composite deps type listing **only the fields it uses**:
+
+- **`StepExecutionDeps`** (`src/core/step/` — owned by `StepExecutor`): the subset of `PipelineDeps` that `StepExecutor` actually reads (e.g. `stepArtifact`, `stepIo`, `changedFiles`, agent runner, store, logging/config fields it touches).
+- **`ParallelReviewRoundDeps`** (`src/core/pipeline/` or the round's module — owned by `ParallelReviewRound`): e.g. `roundGitEffects` plus the fields the round reads.
+- **`PipelineOrchestrationDeps`** (`src/core/pipeline/` — owned by `Pipeline`): what `Pipeline` itself reads (e.g. `terminalState`, transition/store fields) plus the composites it forwards.
+
+Rules:
+- Each composite is defined structurally so that `PipelineDeps` is assignable to it **without casts** (subset-of-fields pattern, e.g. `Pick<PipelineDeps, ...>` or an explicit interface that `PipelineDeps` satisfies).
+- `StepExecutor`, `ParallelReviewRound`, and `Pipeline` public entry signatures accept their composite type, not `PipelineDeps`.
+- A consumer MUST NOT reach a capability outside its composite; adding a field to a composite is an explicit, reviewable act.
+- Exact field membership is determined at implementation time from actual usage; the contract is "only fields the consumer reads", enforced by the narrowed signatures compiling without casts.
 
 ## Risks / Trade-offs
 

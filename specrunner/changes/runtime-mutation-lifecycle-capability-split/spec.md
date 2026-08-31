@@ -12,11 +12,11 @@
 **When** `StepExecutor` calls `finalizeStepArtifacts` after a successful agent run
 **Then** the call passes `step: AgentStep`, `cwd: string`, `slug: string`, and `infra: CommitPushInfra` as typed arguments — no cast to `unknown` or from `unknown` at the call site
 
-#### Scenario: StepExecutor skips finalize when capability is absent
+#### Scenario: No-op step artifact capability preserves absent-runtime behavior
 
-**Given** `deps.stepArtifact` is `undefined`
+**Given** `deps.stepArtifact` is an explicit no-op `StepArtifactLifecycleCapability` (managed runtime, or `noopStepArtifact` in tests)
 **When** `StepExecutor` reaches the finalize step in `runAgentStep`
-**Then** `finalizeStepArtifacts` is not called and execution continues as if no git commit occurred (same behavior as before when `deps.runtimeStrategy` was absent)
+**Then** `finalizeStepArtifacts` runs without git effects and execution continues as if no git commit occurred (observably the same behavior as the legacy path where `deps.runtimeStrategy` was absent)
 
 ---
 
@@ -52,13 +52,19 @@
 
 ### Requirement: buildDeps returns typed PipelineDeps without a cast
 
-`RuntimeStrategy.buildDeps` SHALL declare its return type as `PipelineDeps`. No `as PipelineDeps` cast SHALL appear in `CommandRunner.execute`.
+A domain-owned `PipelineDepsBuilder` contract SHALL declare `buildDeps(config, request, slug, workspace): PipelineDeps` (design D3). `buildDeps` SHALL NOT be declared on the `RuntimeStrategy` port interface. `src/core/port/runtime-strategy.ts` SHALL NOT import from `../types.js` (not even `import type`), and `tests/unit/architecture/arch-allowlist.ts` SHALL contain no entry for `src/core/port/runtime-strategy.ts`. Both runtimes SHALL implement `PipelineDepsBuilder`; the composition root SHALL type the runtime so that `CommandRunner.execute` needs no `as PipelineDeps` cast.
 
 #### Scenario: CommandRunner assigns buildDeps result without cast
 
-**Given** `this.runtime` is a `RuntimeStrategy` implementation
+**Given** `this.runtime` is typed to include `PipelineDepsBuilder` at the composition root
 **When** `CommandRunner.execute` calls `this.runtime.buildDeps(config, request, slug, workspace)`
 **Then** the result is assigned to `deps: PipelineDeps` without a type cast — the assignment is type-safe at the TypeScript level
+
+#### Scenario: RuntimeStrategy port has no domain import
+
+**Given** `src/core/port/runtime-strategy.ts` at the current revision
+**When** its import statements and interface declarations are inspected
+**Then** there is no import (type-only included) from `../types.js`, no `buildDeps` declaration on `RuntimeStrategy`, and no `src/core/port/runtime-strategy.ts` entry in `tests/unit/architecture/arch-allowlist.ts`
 
 ---
 
@@ -71,6 +77,30 @@
 **Given** the updated `PipelineDeps` type
 **When** a test fake injects step artifact lifecycle behavior
 **Then** the fake implements only `StepArtifactLifecycleCapability` — it does not need to provide unrelated methods such as `bootstrapJob`, `persistJobState`, or `setupWorkspace`
+
+---
+
+### Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps
+
+`StepExecutor`, `ParallelReviewRound`, and `Pipeline` SHALL each declare a consumer-owned composite deps type (`StepExecutionDeps`, `ParallelReviewRoundDeps`, `PipelineOrchestrationDeps` — design D7) containing only the `PipelineDeps` fields that consumer reads. Their public entry signatures SHALL accept the composite type instead of `PipelineDeps`. `PipelineDeps` SHALL be structurally assignable to each composite without casts.
+
+#### Scenario: StepExecutor signature is narrowed to StepExecutionDeps
+
+**Given** the `StepExecutor` entry points (`runAgentStep` and related public methods)
+**When** their parameter types are inspected
+**Then** the deps parameter is typed `StepExecutionDeps` (not `PipelineDeps`), and `StepExecutionDeps` lists only fields `StepExecutor` reads
+
+#### Scenario: ParallelReviewRound and Pipeline signatures are narrowed
+
+**Given** the `ParallelReviewRound` and `Pipeline` entry points
+**When** their deps parameter types are inspected
+**Then** they are typed `ParallelReviewRoundDeps` and `PipelineOrchestrationDeps` respectively, and neither type exposes capability fields the consumer does not read
+
+#### Scenario: PipelineDeps assigns to composites without casts
+
+**Given** a fully built `PipelineDeps` value at the composition root
+**When** it is passed to `Pipeline`, and by `Pipeline` onward to `StepExecutor` / `ParallelReviewRound`
+**Then** every assignment is accepted by the TypeScript compiler with no `as` cast
 
 ---
 
@@ -105,9 +135,9 @@
 
 ### Requirement: Capability methods are required; absence is expressed via undefined field
 
-All methods in a capability interface SHALL be required (no `?` modifier). The ability to inject no capability SHALL be expressed by assigning `undefined` to the capability field in `PipelineDeps`, not by making the methods optional.
+All methods in a capability interface SHALL be required (no `?` modifier), `StepArtifactLifecycleCapability.snapshotMainCheckoutGuard` included: "the check cannot be performed" SHALL be expressed by the method returning `null` (no-op implementations explicitly return `null`), never by omitting the method.
 
-**Exception**: `StepArtifactLifecycleCapability.snapshotMainCheckoutGuard` SHALL be the sole optional method (`?` modifier is permitted). This exception exists because the method's fail-open semantics require a `null` return value (not capability absence) when the check cannot be performed — omitting the method entirely is a valid expression of "this runtime does not support snapshot guard" without needing to inject a separate undefined field.
+The four mutation/lifecycle capability fields in `PipelineDeps` (`stepArtifact`, `stepIo`, `terminalState`, `roundGitEffects`) SHALL be required non-nullable fields: every producer of a `PipelineDeps` (production runtimes and test fixtures alike) SHALL inject a real or explicit no-op implementation. Absence-as-`undefined` field semantics SHALL apply only to the R2a read-only capability fields (`changedFiles`, `commitInspection`, `revisionContent`).
 
 #### Scenario: Compile-time enforcement of complete capability fake
 

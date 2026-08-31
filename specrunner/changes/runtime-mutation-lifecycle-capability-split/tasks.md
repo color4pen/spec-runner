@@ -26,7 +26,7 @@
   - `captureHeadSha(cwd: string): Promise<string | null>`
   - `prepareStepArtifacts(cwd: string, slug: string, stepName: string, state: JobState): Promise<void>`
   - `finalizeStepArtifacts(step: AgentStep, state: JobState, cwd: string, slug: string, headBeforeStep: string | null, infra: CommitPushInfra): Promise<void>`
-  - `snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>` (optional: fail-open semantics require null result, not capability absence)
+  - `snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>` (required; "check cannot be performed" is expressed by returning null — no-op implementations explicitly return null)
   - `digestArtifacts(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>`
 - [x] Define `StepIoValidationCapability` interface with required methods:
   - `validateStepInputs(inputs: RequiredInput[], cwd: string, branch: string | null): Promise<void>`
@@ -38,7 +38,7 @@
 **Acceptance Criteria**:
 - `StepArtifactLifecycleCapability` and `StepIoValidationCapability` compile without errors
 - No method in either interface uses `unknown` for domain payloads
-- `snapshotMainCheckoutGuard?` is the only optional method (fail-open semantics)
+- No method in either interface is optional (`snapshotMainCheckoutGuard` included — null return expresses "cannot check")
 
 ---
 
@@ -72,11 +72,11 @@
 - [x] Open `src/core/types.ts`
 - [x] Remove the `runtimeStrategy?: RuntimeStrategy` field from `PipelineDeps`
 - [x] Remove the `import type { RuntimeStrategy } from "./port/runtime-strategy.js"` import (if RuntimeStrategy is no longer referenced elsewhere in the file; check first)
-- [x] Add typed capability fields to `PipelineDeps`:
-  - `stepArtifact?: StepArtifactLifecycleCapability` — import from `./step/step-capability.js`
-  - `stepIo?: StepIoValidationCapability` — import from `./step/step-capability.js`
-  - `terminalState?: TerminalStateCapability` — import from `./pipeline/pipeline-capability.js`
-  - `roundGitEffects?: RoundGitEffectsCapability` — import from `./pipeline/pipeline-capability.js`
+- [x] Add typed capability fields to `PipelineDeps` (the four mutation/lifecycle fields are required non-nullable — design D2/D6):
+  - `stepArtifact: StepArtifactLifecycleCapability` — import from `./step/step-capability.js`
+  - `stepIo: StepIoValidationCapability` — import from `./step/step-capability.js`
+  - `terminalState: TerminalStateCapability` — import from `./pipeline/pipeline-capability.js`
+  - `roundGitEffects: RoundGitEffectsCapability` — import from `./pipeline/pipeline-capability.js`
   - `changedFiles?: ChangedFilesCapability` — import from `./port/runtime-strategy.js` (already in port, R2a)
   - `commitInspection?: CommitInspectionCapability` — import from `./port/runtime-strategy.js` (R2a)
   - `revisionContent?: RevisionContentCapability` — import from `./port/runtime-strategy.js` (R2a)
@@ -86,15 +86,15 @@
 **Acceptance Criteria**:
 - `PipelineDeps` no longer has `runtimeStrategy?: RuntimeStrategy`
 - `types.ts` no longer imports `RuntimeStrategy` (unless the import is still needed for another reason — verify)
-- Seven capability fields are correctly typed in PipelineDeps with appropriate optionality
+- Seven capability fields are correctly typed in PipelineDeps: the four mutation/lifecycle fields required non-nullable, the three R2a read-only fields optional
 
 ---
 
 ## T-05: Update RuntimeStrategy port — buildDeps return type + remove unknown methods
 
 - [x] Open `src/core/port/runtime-strategy.ts`
-- [x] Import `PipelineDeps` from `../types.js` (cycle is now broken since types.ts no longer imports runtime-strategy.ts)
-- [x] Change `buildDeps(config, request, slug, workspace): unknown` to `buildDeps(config, request, slug, workspace): PipelineDeps`
+- [x] ~~Import `PipelineDeps` from `../types.js`~~ — **superseded by T-18**: types.ts still imports capability types from this file, so this import forms a ports→domain compile-time cycle; `buildDeps` moves to a domain-owned `PipelineDepsBuilder` (design D3)
+- [x] ~~Change `buildDeps(...): unknown` to `buildDeps(...): PipelineDeps`~~ — **superseded by T-18**: `buildDeps` is removed from the port interface entirely
 - [x] Remove `finalizeStepArtifacts` method from the `RuntimeStrategy` interface (consumers now use `StepArtifactLifecycleCapability`)
 - [x] Remove `commitFinalState` method from the `RuntimeStrategy` interface (consumers now use `TerminalStateCapability`)
 - [x] Remove `commitRoundArtifacts` method from the `RuntimeStrategy` interface (consumers now use `RoundGitEffectsCapability`)
@@ -103,7 +103,7 @@
 - [x] Run `bun run typecheck` — expect LocalRuntime/ManagedRuntime method mismatch errors for the removed port methods; resolve by updating the runtime implementations in T-06/T-07
 
 **Acceptance Criteria**:
-- `buildDeps` returns `PipelineDeps` in the port interface
+- ~~`buildDeps` returns `PipelineDeps` in the port interface~~ — superseded by T-18: `buildDeps` is not declared on the port; typing lives on `PipelineDepsBuilder`
 - `finalizeStepArtifacts`, `commitFinalState`, `commitRoundArtifacts` are removed from `RuntimeStrategy` and `RealRuntimeStrategy`
 - Zero domain-payload `unknown` remain in the four target signatures (3 methods removed, 1 method return type fixed)
 - The file still compiles (or has only the expected downstream errors in runtime implementations)
@@ -178,7 +178,7 @@
 
 - [x] Open `src/core/step/executor.ts`
 - [x] Replace all `deps.runtimeStrategy?.captureHeadSha(...)` with `deps.stepArtifact?.captureHeadSha(...)`
-- [x] Replace `deps.runtimeStrategy?.snapshotMainCheckoutGuard(...)` with `deps.stepArtifact?.snapshotMainCheckoutGuard?(...)`
+- [x] Replace `deps.runtimeStrategy?.snapshotMainCheckoutGuard(...)` with `deps.stepArtifact.snapshotMainCheckoutGuard(...)` (required field, required method — design D2/D6; "cannot check" is a `null` return)
 - [x] Replace `deps.runtimeStrategy?.prepareStepArtifacts(...)` with `deps.stepArtifact?.prepareStepArtifacts(...)`
 - [x] Replace `deps.runtimeStrategy?.validateStepInputs(...)` with `deps.stepIo?.validateStepInputs(...)`
 - [x] Replace `deps.runtimeStrategy?.validateStepOutputs(...)` with `deps.stepIo?.validateStepOutputs(...)`
@@ -387,3 +387,55 @@ Per Acceptance Criteria of the request: command lifecycle, step finalize, termin
 - `architecture/components.md` accurately describes the post-R2b responsibility and dependency model
 - All before/after metrics are documented in the PR body
 - Monotone decrease confirmed: no new domain-payload `unknown`, no new broad facade casts added
+
+---
+
+## T-18: Move buildDeps to a domain-owned PipelineDepsBuilder; remove the ports→domain import and its DSM allowlist entry
+
+Operator review on PR #1105 rejected the ports→domain `import type` allowlist approach (design D3 revised).
+
+- [ ] Declare `PipelineDepsBuilder` in the domain layer (`src/core/types.ts` or an adjacent domain module): `buildDeps(config: SpecRunnerConfig, request: ParsedRequest, slug: string, workspace: WorkspaceInfo): PipelineDeps` (match the existing runtime signature exactly)
+- [ ] Remove the `buildDeps` declaration from the `RuntimeStrategy` interface in `src/core/port/runtime-strategy.ts`
+- [ ] Remove the `import type { PipelineDeps } from "../types.js"` import and the related doc-comment paragraphs from `src/core/port/runtime-strategy.ts`
+- [ ] Delete the `src/core/port/runtime-strategy.ts` entry (tracking `T-05-T-12-buildDeps-PipelineDeps-return-type`) from `tests/unit/architecture/arch-allowlist.ts`, including its explanatory comment block
+- [ ] Type the runtime at the composition root as `RuntimeStrategy & PipelineDepsBuilder` (via `RealRuntimeStrategy`, the factory return type, or the `CommandRunner` constructor parameter — whichever keeps `deps = this.runtime.buildDeps(...)` cast-free)
+- [ ] Confirm `LocalRuntime` and `ManagedRuntime` satisfy `PipelineDepsBuilder` (their existing `buildDeps` methods already match)
+- [ ] Run `bun run typecheck` and the architecture invariant tests
+
+**Acceptance Criteria**:
+- `src/core/port/runtime-strategy.ts` has no import from `../types.js` and no `buildDeps` declaration
+- `tests/unit/architecture/arch-allowlist.ts` has no entry for `src/core/port/runtime-strategy.ts`
+- `CommandRunner.execute` still assigns `deps: PipelineDeps` from `this.runtime.buildDeps(...)` without a cast
+- Architecture invariant tests pass with the allowlist entry removed
+
+---
+
+## T-19: Define consumer-owned composite deps and narrow consumer signatures
+
+Operator review on PR #1105: splitting capabilities into fields is not the use-case split #1103 asks for while every consumer still receives the full `PipelineDeps` (design D7).
+
+- [ ] Audit which `PipelineDeps` fields each consumer actually reads: `StepExecutor`, `ParallelReviewRound`, `Pipeline`
+- [ ] Define `StepExecutionDeps` (step layer), `ParallelReviewRoundDeps`, and `PipelineOrchestrationDeps` (pipeline layer) as structural subsets of `PipelineDeps` containing only those fields (explicit interface or `Pick<PipelineDeps, ...>`)
+- [ ] Narrow the public entry signatures of `StepExecutor`, `ParallelReviewRound`, and `Pipeline` to their composite types
+- [ ] Verify `PipelineDeps` is assignable to each composite with no `as` casts at any call site (composition root, `Pipeline` → `StepExecutor` / `ParallelReviewRound` forwarding)
+- [ ] Update test fixtures that construct deps for these consumers to the composite types where the full `PipelineDeps` is not needed
+- [ ] Run `bun run typecheck` and the full test suite
+
+**Acceptance Criteria**:
+- `StepExecutor`, `ParallelReviewRound`, and `Pipeline` entry signatures no longer accept `PipelineDeps`
+- Each composite lists only fields its consumer reads; no cast appears in any deps hand-off
+- Full test suite passes
+
+---
+
+## T-20: Add before/after metrics to the PR body
+
+Operator review on PR #1105: the measured before/after values required by issue #1103 (with their aggregation conditions stated) are missing from the PR body.
+
+- [ ] Compute after-state values for every metric listed in T-01/T-17, on the current branch head
+- [ ] Write the before/after table into the PR body, stating for each metric the aggregation condition (what was counted, over which files, with which pattern)
+- [ ] Include the capability-level table: production consumer count and test-fake count per capability
+
+**Acceptance Criteria**:
+- PR #1105's body contains the complete before/after metrics table with aggregation conditions
+- Numbers are reproducible from the stated conditions

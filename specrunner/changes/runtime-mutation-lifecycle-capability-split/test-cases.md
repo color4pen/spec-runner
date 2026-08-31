@@ -67,11 +67,11 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-002: StepExecutor skips finalize when capability is absent
+### TC-002: No-op step artifact capability preserves absent-runtime behavior
 
 **Category**: unit
 **Priority**: must
-**Source**: spec.md > Requirement: Step artifact lifecycle capability is consumer-owned and typed > Scenario: StepExecutor skips finalize when capability is absent
+**Source**: spec.md > Requirement: Step artifact lifecycle capability is consumer-owned and typed > Scenario: No-op step artifact capability preserves absent-runtime behavior
 
 ---
 
@@ -87,7 +87,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-004: snapshotMainCheckoutGuard is the sole optional method on StepArtifactLifecycleCapability
+### TC-004: All StepArtifactLifecycleCapability methods are required, snapshotMainCheckoutGuard included
 
 **Category**: unit
 **Priority**: should
@@ -95,7 +95,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `StepArtifactLifecycleCapability` is defined in `src/core/step/step-capability.ts`
 **WHEN** the interface declaration is inspected
-**THEN** exactly one method — `snapshotMainCheckoutGuard?` — carries the optional modifier; all other methods (`captureHeadSha`, `prepareStepArtifacts`, `finalizeStepArtifacts`, `digestArtifacts`) are required
+**THEN** no method carries the optional modifier — `captureHeadSha`, `prepareStepArtifacts`, `finalizeStepArtifacts`, `snapshotMainCheckoutGuard`, and `digestArtifacts` are all required; a no-op implementation of `snapshotMainCheckoutGuard` explicitly returns `null`
 
 ---
 
@@ -291,15 +291,15 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-022: RuntimeStrategy.buildDeps port signature returns PipelineDeps
+### TC-022: buildDeps typed on domain-owned PipelineDepsBuilder; port has no domain import
 
 **Category**: unit
 **Priority**: must
-**Source**: tasks.md > T-05
+**Source**: tasks.md > T-18; spec.md > Requirement: buildDeps returns typed PipelineDeps without a cast > Scenario: RuntimeStrategy port has no domain import
 
-**GIVEN** `src/core/port/runtime-strategy.ts` is updated
-**WHEN** the `buildDeps` signature is inspected
-**THEN** the return type is `PipelineDeps` (not `unknown`), and the file imports `PipelineDeps` from `../types.js` without creating a circular dependency
+**GIVEN** `src/core/port/runtime-strategy.ts` and the domain-owned `PipelineDepsBuilder` contract are updated per T-18
+**WHEN** the port file's imports and interface declarations are inspected
+**THEN** `runtime-strategy.ts` has no import from `../types.js` (type-only included) and no `buildDeps` declaration; `PipelineDepsBuilder.buildDeps` declares return type `PipelineDeps`; `tests/unit/architecture/arch-allowlist.ts` has no entry for `src/core/port/runtime-strategy.ts`
 
 ---
 
@@ -327,15 +327,15 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-025: Capability absence expressed via undefined field, not optional methods
+### TC-025: Lifecycle capability fields are required; undefined absence only for R2a read capabilities
 
 **Category**: unit
 **Priority**: must
 **Source**: design.md > D6; tasks.md T-04, T-08, T-10, T-11
 
-**GIVEN** a consumer calls a lifecycle method on an optional capability (e.g. `deps.stepArtifact?.finalizeStepArtifacts(...)`)
-**WHEN** `deps.stepArtifact` is `undefined`
-**THEN** the call evaluates to `undefined` (optional chain short-circuits), and no `TypeError` is thrown; the capability interface method itself has no `?` modifier
+**GIVEN** the `PipelineDeps` type and a consumer of an R2a read-only capability (e.g. `deps.commitInspection`)
+**WHEN** `PipelineDeps` field declarations are inspected and the consumer runs with `deps.commitInspection` set to `undefined`
+**THEN** `stepArtifact`, `stepIo`, `terminalState`, and `roundGitEffects` are required non-nullable fields (a `PipelineDeps` literal omitting any of them fails to compile); `changedFiles`, `commitInspection`, and `revisionContent` remain optional; the consumer's field-presence check short-circuits without a `TypeError`; no capability interface method has a `?` modifier
 
 ---
 
@@ -583,14 +583,42 @@ Review `architecture/components.md` and confirm:
 
 ---
 
+---
+
+## Consumer-Owned Composite Deps (operator review, PR #1105)
+
+### TC-047: StepExecutor signature is narrowed to StepExecutionDeps
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps > Scenario: StepExecutor signature is narrowed to StepExecutionDeps
+
+---
+
+### TC-048: ParallelReviewRound and Pipeline signatures are narrowed
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps > Scenario: ParallelReviewRound and Pipeline signatures are narrowed
+
+---
+
+### TC-049: PipelineDeps assigns to composites without casts
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps > Scenario: PipelineDeps assigns to composites without casts
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 46
-automated: 45
+total: 49
+automated: 48
 manual: 1
-must: 41
+must: 44
 should: 5
 could: 0
 blocked_reasons: []
