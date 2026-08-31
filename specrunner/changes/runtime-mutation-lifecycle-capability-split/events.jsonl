@@ -740,3 +740,10 @@
 {"type":"transition","ts":"2026-08-31T13:48:57.635Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-08-31T13:48:57.638Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-08-31T13:48:57.640Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-31T13:56:51.470Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"9d2c8e10-8a48-4324-9c49-3d6acf1c0636","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/runtime-mutation-lifecycle-capability-split/regression-gate-result-015.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":37,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-31T13:48:57.679Z","endedAt":"2026-08-31T13:56:49.755Z","commitOid":"cae3ff5607446759b548e2e92b4411f51b0781ff"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-31T13:56:49.755Z","outputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split/regression-gate-result-015.md","hash":"sha256:58145c540987b33f7bd9d13797997fe7244712d8ffdf6b22d337495e1c2034cc"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-31T13:56:51.476Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-31T13:56:51.476Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-31T13:56:51.479Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-31T13:56:51.482Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
