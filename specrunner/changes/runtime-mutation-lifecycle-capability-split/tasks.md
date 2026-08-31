@@ -415,7 +415,7 @@ Operator review on PR #1105 rejected the ports→domain `import type` allowlist 
 Operator review on PR #1105: splitting capabilities into fields is not the use-case split #1103 asks for while every consumer still receives the full `PipelineDeps` (design D7).
 
 - [x] Audit which `PipelineDeps` fields each consumer actually reads: `StepExecutor`, `ParallelReviewRound`, `Pipeline`
-- [x] Define `StepExecutionDeps` (step layer), `ParallelReviewRoundDeps`, and `PipelineOrchestrationDeps` (pipeline layer) as structural subsets of `PipelineDeps` containing only those fields (explicit interface or `Pick<PipelineDeps, ...>`)
+- [x] ~~Define `StepExecutionDeps` (step layer), `ParallelReviewRoundDeps`, and `PipelineOrchestrationDeps` (pipeline layer) as structural subsets of `PipelineDeps` containing only those fields (explicit interface or `Pick<PipelineDeps, ...>`)~~ (superseded by T-21: `Pick`/`Omit` derivation is forbidden)
 - [x] Narrow the public entry signatures of `StepExecutor`, `ParallelReviewRound`, and `Pipeline` to their composite types
 - [x] Verify `PipelineDeps` is assignable to each composite with no `as` casts at any call site (composition root, `Pipeline` → `StepExecutor` / `ParallelReviewRound` forwarding)
 - [x] Update test fixtures that construct deps for these consumers to the composite types where the full `PipelineDeps` is not needed
@@ -447,9 +447,10 @@ Operator review on PR #1105: the measured before/after values required by issue 
 | DSM allowlist entries for `runtime-strategy.ts` | Entries in `arch-allowlist.ts` | 1 (`T-05-T-12-buildDeps-PipelineDeps-return-type`) | 0 |
 | `PipelineDeps.runtimeStrategy` field | Occurrences in `src/core/types.ts` | 1 | 0 |
 | `PipelineDepsBuilder` interface | Declared in `src/core/types.ts` | absent | present |
-| `StepExecutionDeps` | Declared in `src/core/types.ts` | absent | `Omit<PipelineDeps, "terminalState" \| "roundGitEffects" \| "client" \| "runner">` |
-| `ParallelReviewRoundDeps` | Declared in `src/core/types.ts` | absent | `Omit<PipelineDeps, "terminalState" \| "client" \| "runner">` |
-| `PipelineOrchestrationDeps` | Declared in `src/core/types.ts` | absent | `Omit<PipelineDeps, "client" \| "runner">` |
+| `StepExecutionDeps` | Declared in `src/core/step/step-deps.ts` (T-21) | absent | explicit `interface` extending `StepContext` |
+| `ParallelReviewRoundDeps` | Declared in `src/core/pipeline/parallel-review-round.ts` (T-21) | absent | explicit `interface` extending `StepExecutionDeps` |
+| `PipelineOrchestrationDeps` | Declared in `src/core/pipeline/pipeline.ts` (T-21) | absent | explicit `interface` extending `ParallelReviewRoundDeps` |
+| `Pick`/`Omit` derivations from `PipelineDeps` in `src/` | `grep -rE '(Pick|Omit)\s*<\s*PipelineDeps' src/` | 0 | 0 (enforced by TC-050 test) |
 | `StepExecutor.execute` entry type | Public method signature | `deps: PipelineDeps` | `deps: StepExecutionDeps` |
 | `ParallelReviewRound.run` entry type | Public method signature | `deps: PipelineDeps` | `deps: ParallelReviewRoundDeps` |
 | `Pipeline.run` entry type | Public method signature | `deps: PipelineDeps` | `deps: PipelineOrchestrationDeps` |
@@ -468,3 +469,27 @@ Operator review on PR #1105: the measured before/after values required by issue 
 **Acceptance Criteria**:
 - PR #1105's body contains the complete before/after metrics table with aggregation conditions
 - Numbers are reproducible from the stated conditions
+
+---
+
+## T-21: Replace Pick-derived composites with consumer-owned explicit interfaces
+
+Operator blocking comment on PR #1105 (types.ts:201): issue #1103 forbids expressing consumer
+contracts by deriving from the producer's key set (`Pick` を増やして facade 依存を隠さない).
+The T-19 composites were implemented as `Pick<PipelineDeps, ...>` in `src/core/types.ts`
+(the producer's module), which leaves the shared bag as the source of truth. Applied directly
+by the operator.
+
+- [x] Delete the three `Pick<PipelineDeps, ...>` aliases from `src/core/types.ts`
+- [x] Declare `StepExecutionDeps` as an explicit interface in `src/core/step/step-deps.ts` (new file, extends `StepContext`)
+- [x] Declare `ParallelReviewRoundDeps` as an explicit interface in `src/core/pipeline/parallel-review-round.ts` (extends `StepExecutionDeps`, adds `roundGitEffects`)
+- [x] Declare `PipelineOrchestrationDeps` as an explicit interface in `src/core/pipeline/pipeline.ts` (extends `ParallelReviewRoundDeps`, adds `terminalState`)
+- [x] Update consumer imports (`executor.ts`, `commit-orchestrator.ts`, `step-completion.ts`, `step-context-builder.ts`, `parallel-review-round.ts`, `pipeline.ts`)
+- [x] Add `tests/unit/architecture/composite-deps-ownership.test.ts`: compile-time assignability proof (TC-049) and source-level invariant forbidding `Pick`/`Omit` derivation from `PipelineDeps` plus declaration-placement checks (TC-050)
+- [x] Run `bun run typecheck`, full vitest suite, and `bun run lint`
+
+**Acceptance Criteria**:
+- No `Pick<PipelineDeps` / `Omit<PipelineDeps` occurrence anywhere in `src/` (TC-050 test enforces)
+- Each composite is declared in its consumer's module; `src/core/types.ts` declares none of them
+- `PipelineDeps` assigns to every composite without casts (TC-049 test proves)
+- Entry signatures of `StepExecutor` / `ParallelReviewRound` / `Pipeline` remain narrowed (unchanged from T-19)

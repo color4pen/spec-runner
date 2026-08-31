@@ -609,16 +609,32 @@ Review `architecture/components.md` and confirm:
 **Priority**: must
 **Source**: spec.md > Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps > Scenario: PipelineDeps assigns to composites without casts
 
+**Automated by**: `tests/unit/architecture/composite-deps-ownership.test.ts` (compile-time assignability proof)
+
+---
+
+### TC-050: Composites are consumer-owned declarations, not producer derivations
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps > Scenario: Composites are consumer-owned declarations, not producer derivations
+
+**GIVEN** the production sources under `src/`
+**WHEN** the composite deps declarations are inspected
+**THEN** `StepExecutionDeps` is declared as an explicit interface in `src/core/step/step-deps.ts`, `ParallelReviewRoundDeps` in `src/core/pipeline/parallel-review-round.ts`, `PipelineOrchestrationDeps` in `src/core/pipeline/pipeline.ts`; `src/core/types.ts` declares none of them; and no file under `src/` matches `Pick<PipelineDeps` or `Omit<PipelineDeps`
+
+**Automated by**: `tests/unit/architecture/composite-deps-ownership.test.ts`
+
 ---
 
 ## Result
 
 ```yaml
 result: completed
-total: 49
-automated: 48
+total: 50
+automated: 49
 manual: 1
-must: 44
+must: 45
 should: 5
 could: 0
 blocked_reasons: []

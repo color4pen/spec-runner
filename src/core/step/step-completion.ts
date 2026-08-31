@@ -15,7 +15,7 @@
 import { stderrWrite } from "../../logger/stdout.js";
 import type { Step } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
-import type { StepExecutionDeps } from "../types.js";
+import type { StepExecutionDeps } from "./step-deps.js";
 import type { BaseReportResult } from "../port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../port/report-result.js";
 import type { Finding, Evidence } from "../../kernel/report-result.js";

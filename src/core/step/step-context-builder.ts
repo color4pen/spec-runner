@@ -17,7 +17,7 @@
 import * as path from "node:path";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
-import type { StepExecutionDeps } from "../types.js";
+import type { StepExecutionDeps } from "./step-deps.js";
 import type { AgentRunContext } from "../port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { OutputContract, OutputVerificationPolicy } from "../port/output-contract.js";

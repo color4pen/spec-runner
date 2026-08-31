@@ -82,7 +82,7 @@ A domain-owned `PipelineDepsBuilder` contract SHALL declare `buildDeps(config, r
 
 ### Requirement: Major consumers accept consumer-owned composite deps, not the full PipelineDeps
 
-`StepExecutor`, `ParallelReviewRound`, and `Pipeline` SHALL each declare a consumer-owned composite deps type (`StepExecutionDeps`, `ParallelReviewRoundDeps`, `PipelineOrchestrationDeps` — design D7) containing only the `PipelineDeps` fields that consumer reads. Their public entry signatures SHALL accept the composite type instead of `PipelineDeps`. `PipelineDeps` SHALL be structurally assignable to each composite without casts.
+`StepExecutor`, `ParallelReviewRound`, and `Pipeline` SHALL each declare a consumer-owned composite deps type (`StepExecutionDeps`, `ParallelReviewRoundDeps`, `PipelineOrchestrationDeps` — design D7) containing only the `PipelineDeps` fields that consumer reads. Each composite SHALL be declared as an explicit `interface` in its consumer's module (`StepExecutionDeps` in the step layer; the other two in the pipeline layer) and SHALL NOT be derived from `PipelineDeps` via `Pick`/`Omit` (#1103: the consumer owns the contract; composing a higher-level contract from a lower consumer's contract via `extends` is permitted). Their public entry signatures SHALL accept the composite type instead of `PipelineDeps`. `PipelineDeps` SHALL be structurally assignable to each composite without casts.
 
 #### Scenario: StepExecutor signature is narrowed to StepExecutionDeps
 
@@ -101,6 +101,12 @@ A domain-owned `PipelineDepsBuilder` contract SHALL declare `buildDeps(config, r
 **Given** a fully built `PipelineDeps` value at the composition root
 **When** it is passed to `Pipeline`, and by `Pipeline` onward to `StepExecutor` / `ParallelReviewRound`
 **Then** every assignment is accepted by the TypeScript compiler with no `as` cast
+
+#### Scenario: Composites are consumer-owned declarations, not producer derivations
+
+**Given** the production sources under `src/`
+**When** the composite deps declarations are inspected
+**Then** `StepExecutionDeps` is declared as an explicit interface in the step layer, `ParallelReviewRoundDeps` and `PipelineOrchestrationDeps` in the pipeline layer, `src/core/types.ts` declares none of them, and no production source contains `Pick<PipelineDeps` or `Omit<PipelineDeps`
 
 ---
 

@@ -9,7 +9,8 @@
 import type { Step } from "../step/types.js";
 import type { ParallelReviewConfig } from "./types.js";
 import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
-import type { ParallelReviewRoundDeps } from "../types.js";
+import type { StepExecutionDeps } from "../step/step-deps.js";
+import type { RoundGitEffectsCapability } from "./pipeline-capability.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { quarantineRoundHeadAdvanceEvidence } from "../step/commit-push.js";
@@ -32,6 +33,23 @@ import { partitionRoundChanges, excludePipelineManagedChangePaths } from "./roun
 import { canonicalDocPaths } from "../../util/paths.js";
 import { resolveStagingExcludePatterns, applyStagingExclusions } from "../step/staging-containment.js";
 import { findWriteScopeViolations } from "../step/write-scope.js";
+
+/**
+ * ParallelReviewRoundDeps — consumer-owned deps contract for ParallelReviewRound.run.
+ *
+ * T-19 (operator review, PR #1105): declared here in the round's own module as an
+ * explicit interface, NOT derived from PipelineDeps via Pick/Omit. It composes the
+ * step-layer contract (the round drives StepExecutor for each member) and adds the
+ * coordinator-owned git effects capability. PipelineDeps satisfies it structurally
+ * without casts at the Pipeline → ParallelReviewRound hand-off.
+ */
+export interface ParallelReviewRoundDeps extends StepExecutionDeps {
+  /**
+   * Round-owned git effects capability (R2b). Required non-nullable —
+   * runtimes without a local worktree inject a no-op implementation.
+   */
+  roundGitEffects: RoundGitEffectsCapability;
+}
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;

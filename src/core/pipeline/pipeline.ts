@@ -4,7 +4,7 @@ import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import { appendHistoryEntry } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
-import type { PipelineOrchestrationDeps } from "../types.js";
+import type { TerminalStateCapability } from "./pipeline-capability.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
@@ -14,6 +14,24 @@ import { notifyJobTerminal } from "../notify/issue-notifier.js";
 import { resolveActiveReviewer, lastReviewerFixableCount } from "./reviewer-chain.js";
 import { ConvergenceBudget } from "./convergence-budget.js";
 import { ParallelReviewRound } from "./parallel-review-round.js";
+import type { ParallelReviewRoundDeps } from "./parallel-review-round.js";
+
+/**
+ * PipelineOrchestrationDeps — consumer-owned deps contract for Pipeline.run.
+ *
+ * T-19 (operator review, PR #1105): declared here in Pipeline's own module as an
+ * explicit interface, NOT derived from PipelineDeps via Pick/Omit. It composes the
+ * round contract (Pipeline forwards deps to StepExecutor / ParallelReviewRound) and
+ * adds the pipeline-level terminal-state capability. PipelineDeps satisfies it
+ * structurally without casts at the CommandRunner → Pipeline hand-off.
+ */
+export interface PipelineOrchestrationDeps extends ParallelReviewRoundDeps {
+  /**
+   * Terminal state capability (R2b). Required non-nullable —
+   * runtimes without a local checkout inject a no-op implementation.
+   */
+  terminalState: TerminalStateCapability;
+}
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([

@@ -152,10 +152,12 @@ Splitting capabilities into `PipelineDeps` fields is necessary but not sufficien
 - **`ParallelReviewRoundDeps`** (`src/core/pipeline/` or the round's module — owned by `ParallelReviewRound`): e.g. `roundGitEffects` plus the fields the round reads.
 - **`PipelineOrchestrationDeps`** (`src/core/pipeline/` — owned by `Pipeline`): what `Pipeline` itself reads (e.g. `terminalState`, transition/store fields) plus the composites it forwards.
 
-Rules:
-- Each composite is defined structurally so that `PipelineDeps` is assignable to it **without casts** (subset-of-fields pattern, e.g. `Pick<PipelineDeps, ...>` or an explicit interface that `PipelineDeps` satisfies).
+Rules (amended per operator blocking comment on PR #1105):
+- Each composite is declared as an **explicit `interface` in its consumer's own module** (`StepExecutionDeps` in the step layer; `ParallelReviewRoundDeps` and `PipelineOrchestrationDeps` in the pipeline layer), listing its required fields and capabilities.
+- Deriving a composite from `PipelineDeps` via `Pick`/`Omit` is **forbidden** (#1103: the consumer owns the contract; the source of truth must not be the producer's key set). Composing a higher-level contract from a lower consumer's contract (e.g. `PipelineOrchestrationDeps extends ParallelReviewRoundDeps extends StepExecutionDeps`) is allowed — orchestration may aggregate the contracts of the consumers it drives.
+- `PipelineDeps` remains structurally assignable to each composite **without casts**; this is enforced by the compiler at the existing hand-off call sites and by an executable assignability proof (TC-049).
 - `StepExecutor`, `ParallelReviewRound`, and `Pipeline` public entry signatures accept their composite type, not `PipelineDeps`.
-- A consumer MUST NOT reach a capability outside its composite; adding a field to a composite is an explicit, reviewable act.
+- A consumer MUST NOT reach a capability outside its composite; adding a field to a composite is an explicit, reviewable act in the consumer's module.
 - Exact field membership is determined at implementation time from actual usage; the contract is "only fields the consumer reads", enforced by the narrowed signatures compiling without casts.
 
 ## Risks / Trade-offs
