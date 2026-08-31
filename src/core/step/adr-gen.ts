@@ -184,7 +184,7 @@ export const AdrGenStep: AgentStep = {
     const result = await derivePostFixContext({
       state,
       cwd,
-      runtimeStrategy: commitInspection,
+      commitInspection: commitInspection,
     });
     if (!result) return null;
     return { postFixContext: result };

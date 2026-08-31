@@ -48,7 +48,7 @@ type BuildPostFixContextBlockFn = (ctx: PostFixContext) => string;
 type DerivePostFixContextFn = (params: {
   state: JobState;
   cwd: string;
-  runtimeStrategy: unknown;
+  commitInspection: unknown;
 }) => Promise<PostFixContext | null>;
 
 // ---------------------------------------------------------------------------
@@ -808,7 +808,7 @@ describe("TC-001 (derivePostFixContext): fixer round の changed files と指摘
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -838,7 +838,7 @@ describe("TC-001 (derivePostFixContext): fixer round の changed files と指摘
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -900,7 +900,7 @@ describe("TC-002: 複数 fixer round の全件が post-fix ブロックに含ま
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -940,7 +940,7 @@ describe("TC-003: changed files と指摘要約は機械事実のみを真実源
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -989,7 +989,7 @@ describe("TC-003: changed files と指摘要約は機械事実のみを真実源
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -1049,7 +1049,7 @@ describe("TC-004: code-review iteration の findings が対応 round に併記�
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: fakeStrategy,
+      commitInspection: fakeStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -1083,7 +1083,7 @@ describe("TC-005 (derivePostFixContext function level): code-fixer が走って�
     let threw = false;
     let result: PostFixContext | null | undefined;
     try {
-      result = await derivePostFixContext!({ state, cwd: "/tmp/worktree", runtimeStrategy: fakeStrategy });
+      result = await derivePostFixContext!({ state, cwd: "/tmp/worktree", commitInspection: fakeStrategy });
     } catch {
       threw = true;
     }
@@ -1098,7 +1098,7 @@ describe("TC-005 (derivePostFixContext function level): code-fixer が走って�
 // ===========================================================================
 
 describe("TC-006: listCommitChangedFiles port が不在で null 縮退する", () => {
-  it("TC-006: returns null when runtimeStrategy is undefined", async () => {
+  it("TC-006: returns null when commitInspection is undefined", async () => {
     expect(derivePostFixContext).toBeDefined();
 
     const state = makeBaseState();
@@ -1112,7 +1112,7 @@ describe("TC-006: listCommitChangedFiles port が不在で null 縮退する", (
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: undefined,
+        commitInspection: undefined,
       });
     } catch {
       threw = true;
@@ -1122,7 +1122,7 @@ describe("TC-006: listCommitChangedFiles port が不在で null 縮退する", (
     expect(result).toBeNull();
   });
 
-  it("TC-006: returns null when runtimeStrategy has no listCommitChangedFiles method (managed runtime equivalent)", async () => {
+  it("TC-006: returns null when commitInspection has no listCommitChangedFiles method (managed runtime equivalent)", async () => {
     expect(derivePostFixContext).toBeDefined();
 
     const state = makeBaseState();
@@ -1142,7 +1142,7 @@ describe("TC-006: listCommitChangedFiles port が不在で null 縮退する", (
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: strategyWithoutPort,
+        commitInspection: strategyWithoutPort,
       });
     } catch {
       threw = true;
@@ -1160,14 +1160,14 @@ describe("TC-006: listCommitChangedFiles port が不在で null 縮退する", (
       [STEP_NAMES.CODE_FIXER]: [makeCodeFixerRun({ commitOid: "oid1" })],
     };
 
-    // All null/undefined runtimeStrategy variants must not throw
+    // All null/undefined commitInspection variants must not throw
     for (const strategy of [undefined, null, {}, { otherMethod: () => {} }]) {
       let threw = false;
       try {
         await derivePostFixContext!({
           state,
           cwd: "/tmp/worktree",
-          runtimeStrategy: strategy,
+          commitInspection: strategy,
         });
       } catch {
         threw = true;
@@ -1201,7 +1201,7 @@ describe("TC-007: commitOid を持つ round が無い場合に null 縮退する
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: fakeStrategy,
+        commitInspection: fakeStrategy,
       });
     } catch {
       threw = true;
@@ -1224,7 +1224,7 @@ describe("TC-007: commitOid を持つ round が無い場合に null 縮退する
     const fakeStrategy = makeFakeRuntimeStrategy();
 
     await expect(
-      derivePostFixContext!({ state, cwd: "/tmp/worktree", runtimeStrategy: fakeStrategy }),
+      derivePostFixContext!({ state, cwd: "/tmp/worktree", commitInspection: fakeStrategy }),
     ).resolves.toBeNull();
   });
 });
@@ -1250,7 +1250,7 @@ describe("TC-008: listCommitChangedFiles が unavailable / port が throw する
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: unavailableStrategy,
+        commitInspection: unavailableStrategy,
       });
     } catch {
       threw = true;
@@ -1276,7 +1276,7 @@ describe("TC-008: listCommitChangedFiles が unavailable / port が throw する
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: throwingStrategy,
+        commitInspection: throwingStrategy,
       });
     } catch {
       threw = true;
@@ -1314,7 +1314,7 @@ describe("TC-008: listCommitChangedFiles が unavailable / port が throw する
       result = await derivePostFixContext!({
         state,
         cwd: "/tmp/worktree",
-        runtimeStrategy: partialThrowStrategy,
+        commitInspection: partialThrowStrategy,
       });
     } catch {
       threw = true;
@@ -1330,9 +1330,9 @@ describe("TC-008: listCommitChangedFiles が unavailable / port が throw する
 // TC-022 (should): 層越え禁止 — post-fix-context.ts が node:child_process / git を直接 import しない
 // ===========================================================================
 
-describe("TC-022 (should): 層越え禁止 — post-fix-context.ts の I/O は runtimeStrategy port 背後のみ", () => {
-  it("TC-022: derivePostFixContext result comes exclusively from runtimeStrategy port (sentinel behavioral check)", async () => {
-    // Behavioral proof: I/O is routed through runtimeStrategy.listCommitChangedFiles exclusively.
+describe("TC-022 (should): 層越え禁止 — post-fix-context.ts の I/O は commitInspection port 背後のみ", () => {
+  it("TC-022: derivePostFixContext result comes exclusively from commitInspection port (sentinel behavioral check)", async () => {
+    // Behavioral proof: I/O is routed through commitInspection.listCommitChangedFiles exclusively.
     // If post-fix-context.ts directly called git subprocess, the result would not match
     // the mock's sentinel values.
     expect(derivePostFixContext).toBeDefined();
@@ -1349,7 +1349,7 @@ describe("TC-022 (should): 層越え禁止 — post-fix-context.ts の I/O は r
     const result = await derivePostFixContext!({
       state,
       cwd: "/tmp/worktree",
-      runtimeStrategy: mockStrategy,
+      commitInspection: mockStrategy,
     });
 
     expect(result).not.toBeNull();

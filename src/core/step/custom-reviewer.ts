@@ -153,7 +153,7 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
         reviewerName: snapshot.name,
         iteration,
         cwd,
-        runtimeStrategy: commitInspection,
+        commitInspection: commitInspection,
       });
 
       // Derive operator adjudication context (null if both ledgers are empty)

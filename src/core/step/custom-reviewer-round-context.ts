@@ -6,7 +6,7 @@
  * また、operator 裁定（operatorAdjudications + decisions ledger）を注入する。
  *
  * Design:
- *   - I/O は runtimeStrategy port 背後のみ（node:child_process / git を直接 import しない）
+ *   - I/O は commitInspection port 背後のみ（node:child_process / git を直接 import しない）
  *   - 注入は one-shot（state への永続化なし。DynamicContext に乗せて buildMessage に渡す）
  *   - 導出できない場合（git 失敗・findings 欠落）は null を返して黙って degrade（throw しない）
  *   - 前周 context 縮退は all-or-nothing — 部分注入しない
@@ -212,7 +212,7 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
 }
 
 // ---------------------------------------------------------------------------
-// Async derivation: prior-round context (I/O via runtimeStrategy port)
+// Async derivation: prior-round context (I/O via commitInspection port)
 // ---------------------------------------------------------------------------
 
 /**
@@ -222,7 +222,7 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
  * - iteration < 2 (no prior round)
  * - state.steps[reviewerName] is absent or empty (no prior run recorded)
  * - prior reviewer StepRun has no toolResult (getLatestJudgeFindings returns null)
- * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
+ * - commitInspection is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" } for any commit
  * - listCommitChangedFiles throws for any commit (all-or-nothing)
  *
@@ -241,9 +241,9 @@ export async function deriveCustomReviewerPriorRound(params: {
   reviewerName: string;
   iteration: number;
   cwd: string;
-  runtimeStrategy: CommitInspectionCapability | undefined;
+  commitInspection: CommitInspectionCapability | undefined;
 }): Promise<CustomReviewerPriorRound | null> {
-  const { state, reviewerName, iteration, cwd, runtimeStrategy } = params;
+  const { state, reviewerName, iteration, cwd, commitInspection } = params;
 
   try {
     // Guard: only inject for iteration ≥ 2
@@ -263,7 +263,7 @@ export async function deriveCustomReviewerPriorRound(params: {
     if (rawFindings === null) return null;
 
     // Guard: commit-inspection capability must be injected
-    if (!runtimeStrategy) return null;
+    if (!commitInspection) return null;
 
     // Resolve code-fixer rounds after prior reviewer endedAt
     const allFixerRounds = resolveCodeFixerRounds(state);
@@ -273,7 +273,7 @@ export async function deriveCustomReviewerPriorRound(params: {
     // Build union of changed files from all relevant fixer commits (all-or-nothing)
     const changedFilesSet = new Set<string>();
     for (const round of relevantRounds) {
-      const result = await runtimeStrategy.listCommitChangedFiles(round.commitOid, cwd);
+      const result = await commitInspection.listCommitChangedFiles(round.commitOid, cwd);
       if (result.kind !== "success") return null; // all-or-nothing
       for (const f of result.files) {
         changedFilesSet.add(f);

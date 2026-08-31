@@ -362,7 +362,7 @@ export class CommitOrchestrator {
             findings: agentFindings,
             cwd: deps.cwd,
             branch: state.branch ?? null,
-            runtimeStrategy: deps.revisionContent,
+            revisionContent: deps.revisionContent,
           });
         } catch {
           // Best-effort: finding-recency failure must not affect step completion

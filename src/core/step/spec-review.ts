@@ -108,7 +108,7 @@ export const SpecReviewStep: AgentStep = {
       state,
       iteration,
       cwd,
-      runtimeStrategy: commitInspection,
+      commitInspection: commitInspection,
     });
     if (!result) return null;
     return { priorRoundContext: result };

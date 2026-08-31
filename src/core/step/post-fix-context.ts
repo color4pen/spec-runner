@@ -6,7 +6,7 @@
  * 機械的に導出する。agent 自己申告には依存しない。
  *
  * Design:
- *   - I/O は runtimeStrategy port 背後のみ（node:child_process / git を直接 import しない）
+ *   - I/O は commitInspection port 背後のみ（node:child_process / git を直接 import しない）
  *   - 注入は one-shot（state への永続化なし。DynamicContext に乗せて buildMessage に渡す）
  *   - 導出できない場合（port 不在・OID 欠落・diff unavailable・throw）は null を返して黙って degrade
  *   - 縮退は all-or-nothing — 1 round でも失敗すれば全体 null（部分注入による誤認を防ぐ）
@@ -200,7 +200,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
 }
 
 // ---------------------------------------------------------------------------
-// Async derivation (I/O via runtimeStrategy port)
+// Async derivation (I/O via commitInspection port)
 // ---------------------------------------------------------------------------
 
 /**
@@ -208,7 +208,7 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
  *
  * Returns null (injection skipped) in any of these cases:
  * - No code-fixer runs with a commitOid exist in state (fixer-less run)
- * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
+ * - commitInspection is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles throws or returns { kind: "unavailable" } for any round
  *   (all-or-nothing degradation — partial injection risks misleading the agent)
  *
@@ -223,23 +223,23 @@ export function buildPostFixContextBlock(ctx: PostFixContext): string {
 export async function derivePostFixContext(params: {
   state: JobState;
   cwd: string;
-  runtimeStrategy: CommitInspectionCapability | undefined;
+  commitInspection: CommitInspectionCapability | undefined;
 }): Promise<PostFixContext | null> {
-  const { state, cwd, runtimeStrategy } = params;
+  const { state, cwd, commitInspection } = params;
 
   // Guard: code-fixer must have at least one run with a commitOid
   const fixerRounds = resolveCodeFixerRounds(state);
   if (fixerRounds.length === 0) return null;
 
   // Guard: commit-inspection capability must be injected
-  if (!runtimeStrategy) return null;
+  if (!commitInspection) return null;
 
   // Derive changed files for each round — all-or-nothing (any failure → null)
   try {
     const rounds: PostFixRound[] = [];
     for (let i = 0; i < fixerRounds.length; i++) {
       const { commitOid, endedAt } = fixerRounds[i]!;
-      const result = await runtimeStrategy.listCommitChangedFiles(commitOid, cwd);
+      const result = await commitInspection.listCommitChangedFiles(commitOid, cwd);
       if (result.kind !== "success") return null;
 
       const findings = findFindingsBeforeTimestamp(state, endedAt);
