@@ -24,6 +24,7 @@ import { StepExecutor } from "../executor.js";
 import type { AgentStep, CliStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState, HistoryEntry } from "../../../state/schema.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -180,10 +181,10 @@ function makeDeps(store: ReturnType<typeof makeTrackingStore>): PipelineDeps {
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

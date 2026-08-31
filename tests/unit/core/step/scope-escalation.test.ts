@@ -70,6 +70,7 @@ import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 
 // Issue notifier
 import { buildEscalationComment } from "../../../../src/core/notify/issue-notifier.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -116,8 +117,8 @@ function makeDeps(strategy?: any): PipelineDeps {
     changedFiles: strategy as never,
     stepArtifact: strategy as never,
     stepIo: strategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

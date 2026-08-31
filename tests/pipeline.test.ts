@@ -8,6 +8,7 @@ import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-run
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { SpawnFn } from "../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -195,10 +196,10 @@ describe("TC-035: propose pipeline — normal completion with full history", () 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -236,10 +237,10 @@ describe("TC-036: propose pipeline — pre-set branch from CLI is used (D4)", ()
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // With branch pre-set, propose should succeed
@@ -271,10 +272,10 @@ describe("TC-037: propose pipeline — SSE stream connected before initial messa
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // streamEvents() was called — the SessionClient port guarantees SSE is connected
@@ -323,10 +324,10 @@ describe("TC-038: propose pipeline — initial message contains user-request tag
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // With cwd set to tempDir (no specrunner/project.md), requestContent is the raw
@@ -360,10 +361,10 @@ describe("TC-039: propose pipeline — CHANGE_FOLDER_NOT_FOUND", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -395,10 +396,10 @@ describe("TC-040: propose pipeline — branch not found on GitHub is warning onl
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -436,10 +437,10 @@ describe("TC-041: propose pipeline — GITHUB_TOKEN_EXPIRED on 401", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-resume");
@@ -474,10 +475,10 @@ describe("TC-042: session creation parameters", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);

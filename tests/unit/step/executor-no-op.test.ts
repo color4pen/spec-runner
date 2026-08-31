@@ -24,6 +24,7 @@ import type { SpawnFn } from "../../../src/util/spawn.js";
 import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
+import { noopRoundGitEffects, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -153,9 +154,9 @@ function makeDeps(runtimeStrategy?: any): PipelineDeps {
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

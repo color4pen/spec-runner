@@ -26,6 +26,7 @@ import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js
 import { SpecRunnerError, ERROR_CODES } from "../../../src/errors.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -166,10 +167,10 @@ function makeBaseDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

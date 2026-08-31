@@ -92,33 +92,37 @@ export interface PipelineDeps extends StepContext {
    * Step artifact lifecycle capability (R2b).
    * Injected by buildDeps(). Handles captureHeadSha, prepareStepArtifacts,
    * finalizeStepArtifacts, snapshotMainCheckoutGuard, digestArtifacts.
-   * Required field — must be explicitly set; assign undefined to express capability absence.
-   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
+   * Required non-nullable field — both LocalRuntime and ManagedRuntime always inject a
+   * real implementation. ManagedRuntime injects no-op implementations (no local worktree).
+   * Tests must inject noopStepArtifact (src/core/step/noop-capabilities.ts) or a custom stub.
    */
-  stepArtifact: StepArtifactLifecycleCapability | undefined;
+  stepArtifact: StepArtifactLifecycleCapability;
   /**
    * Step I/O validation capability (R2b).
    * Injected by buildDeps(). Handles validateStepInputs, validateStepOutputs,
    * verifyFindingRefs.
-   * Required field — must be explicitly set; assign undefined to express capability absence.
-   * Both LocalRuntime and ManagedRuntime always inject a value.
+   * Required non-nullable field — both LocalRuntime and ManagedRuntime always inject a
+   * real implementation.
+   * Tests must inject noopStepIo (src/core/step/noop-capabilities.ts) or a custom stub.
    */
-  stepIo: StepIoValidationCapability | undefined;
+  stepIo: StepIoValidationCapability;
   /**
    * Terminal state capability (R2b).
    * Injected by buildDeps(). Handles commitFinalState for pipeline/command terminal transitions.
-   * Required field — must be explicitly set; assign undefined to express capability absence.
-   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
+   * Required non-nullable field — both LocalRuntime and ManagedRuntime always inject a
+   * real implementation. ManagedRuntime injects a no-op implementation.
+   * Tests must inject noopTerminalState (src/core/step/noop-capabilities.ts) or a custom stub.
    */
-  terminalState: TerminalStateCapability | undefined;
+  terminalState: TerminalStateCapability;
   /**
    * Round-owned git effects capability (R2b).
    * Injected by buildDeps(). Handles coordinator fan-out git operations:
    * captureHeadSha, listWorktreeChanges, commitRoundArtifacts, digestArtifacts, listChangedFiles.
-   * Required field — must be explicitly set; assign undefined to express capability absence.
-   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
+   * Required non-nullable field — both LocalRuntime and ManagedRuntime always inject a
+   * real implementation. ManagedRuntime injects no-op implementations (no local worktree).
+   * Tests must inject noopRoundGitEffects (src/core/step/noop-capabilities.ts) or a custom stub.
    */
-  roundGitEffects: RoundGitEffectsCapability | undefined;
+  roundGitEffects: RoundGitEffectsCapability;
   /**
    * Changed-files derivation capability (R2a).
    * Injected by buildDeps(). Handles listChangedFiles and canDeriveChangedFiles.

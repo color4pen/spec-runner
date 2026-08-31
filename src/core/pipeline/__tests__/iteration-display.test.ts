@@ -13,6 +13,7 @@ import { EventBus } from "../../event/event-bus.js";
 import type { AgentStep } from "../../step/types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,10 +100,10 @@ function makeDeps(store: ReturnType<typeof makeStore>): PipelineDeps {
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

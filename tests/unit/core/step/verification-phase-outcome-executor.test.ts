@@ -30,6 +30,7 @@ import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agen
 import type { RuntimeStrategy, FindingRef } from "../../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -159,8 +160,8 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     stepArtifact: makeRuntimeStrategy() as never,
     stepIo: makeRuntimeStrategy() as never,
     changedFiles: makeRuntimeStrategy() as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

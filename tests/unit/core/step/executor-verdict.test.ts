@@ -39,6 +39,7 @@ import {
   REQUEST_REVIEW_REPORT_TOOL,
 } from "../../../../src/core/step/report-tool.js";
 import { RequestReviewStep } from "../../../../src/core/step/request-review.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 
@@ -81,10 +82,10 @@ function makeDeps(): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

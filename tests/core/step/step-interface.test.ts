@@ -23,6 +23,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { specReviewResultPath } from "../../../src/util/paths.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -131,10 +132,10 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     repo: "repo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

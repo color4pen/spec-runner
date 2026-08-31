@@ -51,6 +51,7 @@ import type { JobState, StepRun } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { Finding } from "../../../src/kernel/report-result.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Import of not-yet-exported symbol (T-01)
@@ -142,10 +143,10 @@ function makeMinimalDeps(): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

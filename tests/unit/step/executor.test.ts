@@ -18,6 +18,7 @@ import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -177,10 +178,10 @@ describe("TC-030: StepExecutor resolves agent ID via step.agent.role", () => {
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -251,10 +252,10 @@ describe("TC-031: spec-review Step does not use propose Agent ID", () => {
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -323,10 +324,10 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -387,10 +388,10 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -453,10 +454,10 @@ describe("StepExecutor — commit-and-push silently skips when no SHA change (T-
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -516,10 +517,10 @@ describe("StepExecutor — commit-and-push silently skips when no SHA change (T-
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -578,10 +579,10 @@ describe("StepExecutor — commit-and-push silently skips when no SHA change (T-
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -640,10 +641,10 @@ describe("StepExecutor — commit-and-push silently skips when no SHA change (T-
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutor(events, deps);
@@ -745,10 +746,10 @@ describe("TC-007 to TC-010: allowlist steps set ctx.projectContext from specrunn
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
   }
 
@@ -860,10 +861,10 @@ describe("TC-011 to TC-014: non-allowlist steps — ctx.projectContext is undefi
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
   }
 
@@ -954,10 +955,10 @@ describe("TC-EX: StepExecutor injects resumeSessionId for fixer steps", () => {
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
   }
 
@@ -1092,10 +1093,10 @@ describe("TC-015: specrunner/project.md not found — no error, ctx.projectConte
         repo: "repo",
         spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
       };
 
       const step: Step = {
@@ -1181,10 +1182,10 @@ describe("TC-05: runAgentStep — StepRun.startedAt < StepRun.endedAt (success p
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const resultState = await executor.execute(step, state, deps);
@@ -1262,10 +1263,10 @@ describe("TC-06: runCliStep — StepRun.startedAt < StepRun.endedAt (success pat
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const resultState = await executor.execute(cliStep, state, deps);
@@ -1330,10 +1331,10 @@ describe("TC-05 / TC-06: executor が step.followUpPrompt を ctx.followUpPrompt
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
   }
 

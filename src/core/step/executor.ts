@@ -228,7 +228,7 @@ export class StepExecutor {
     cwd: string,
     recordOpts: { startedAt?: string },
   ): Promise<StepHalt | null> {
-    if (!deps.stepIo || !step.reads) return null;
+    if (!step.reads) return null;
     const reads = step.reads(state, deps);
     const required: RequiredInput[] = reads
       .filter((r) => r.required !== false)
@@ -322,8 +322,9 @@ export class StepExecutor {
     });
 
     // Capture main-checkout guard snapshot before agent executes (D2, D4).
+    // snapshotMainCheckoutGuard is optional on the interface; null = guard unavailable.
     const guardBefore: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-      deps.stepArtifact?.snapshotMainCheckoutGuard
+      deps.stepArtifact.snapshotMainCheckoutGuard
         ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
         : null;
 
@@ -331,12 +332,12 @@ export class StepExecutor {
     // Uses raw git spawn rather than stepArtifact.captureHeadSha so that only the
     // post-finalize captureHeadSha call (for commitOid, below) goes through the port.
     // TC-012: the ordering invariant is asserted in executor-oid-capture.test.ts.
-    const headBeforeStep: string | null = deps.stepArtifact
-      ? await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"])
-      : null;
+    // Coerce empty string (no-op spawn) to null — consistent with captureHeadSha semantics.
+    const headBeforeStep: string | null =
+      (await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"])) || null;
 
     // Place step output templates in the change folder before the agent runs.
-    await deps.stepArtifact?.prepareStepArtifacts(cwd, deps.slug, step.name, state);
+    await deps.stepArtifact.prepareStepArtifacts(cwd, deps.slug, step.name, state);
 
     const startedAt = new Date().toISOString();
 
@@ -394,7 +395,7 @@ export class StepExecutor {
     // ---------------------------------------------------------------------------
     if (guardBefore !== null) {
       const guardAfter: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-        deps.stepArtifact?.snapshotMainCheckoutGuard
+        deps.stepArtifact.snapshotMainCheckoutGuard
           ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
           : null;
 
@@ -419,25 +420,23 @@ export class StepExecutor {
     // the correct backstop — it runs AFTER the mixed reset and evaluates the final publishable
     // state. Layer 1 (follow-up prompt) still fires via the adapter's OutputVerificationPolicy,
     // which reads step.outputContracts independently of this gate.
-    if (deps.stepIo) {
-      const allContracts = buildAllOutputContracts(step, state, deps)
-        .filter((c) => c.kind !== "unpushable-path");
+    const allContracts = buildAllOutputContracts(step, state, deps)
+      .filter((c) => c.kind !== "unpushable-path");
 
-      if (allContracts.length > 0) {
-        const checkResult = await deps.stepIo.validateStepOutputs(
-          allContracts, cwd, state.branch ?? null,
-        );
-        const { followUp, halt: haltViolations } = partitionByPolicy(checkResult);
+    if (allContracts.length > 0) {
+      const checkResult = await deps.stepIo.validateStepOutputs(
+        allContracts, cwd, state.branch ?? null,
+      );
+      const { followUp, halt: haltViolations } = partitionByPolicy(checkResult);
 
-        if (haltViolations.length > 0 || followUp.length > 0) {
-          const allViolations = [...haltViolations, ...followUp];
+      if (haltViolations.length > 0 || followUp.length > 0) {
+        const allViolations = [...haltViolations, ...followUp];
 
-          // agent-context-observability: forward contextMetrics from the successful runner result
-          // so commitHalt can persist them even though the halt is due to a post-success gate.
-          // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
-          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt }, runResult.contextMetrics, runResult.sessionRollovers);
-          return { kind: "halt", halt };
-        }
+        // agent-context-observability: forward contextMetrics from the successful runner result
+        // so commitHalt can persist them even though the halt is due to a post-success gate.
+        // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
+        const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt }, runResult.contextMetrics, runResult.sessionRollovers);
+        return { kind: "halt", halt };
       }
     }
 
@@ -463,7 +462,6 @@ export class StepExecutor {
       const myFinalize = this.commitMutex
         .catch(() => {}) // Absorb any previous chain error; each call handles its own
         .then(async () => {
-          if (!deps.stepArtifact) return;
           await deps.stepArtifact.finalizeStepArtifacts(step, stateForFinalize, cwd, deps.slug, headForFinalize, { ...this.commitPushInfra, pushCapability: deps.pushCapability })
             .catch((err: unknown) => { finalizeError = err; });
         });
@@ -508,8 +506,9 @@ export class StepExecutor {
 
     // Capture HEAD OID after the per-node commit.
     // Only for sequential steps that own their own git commit (roundOwnsGitEffects === false).
+    // Returns undefined when roundOwnsGitEffects is true, or when captureHeadSha returns null.
     const commitOid: string | undefined =
-      !deps.roundOwnsGitEffects && deps.stepArtifact
+      !deps.roundOwnsGitEffects
         ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
         : undefined;
 
@@ -607,11 +606,8 @@ export class StepExecutor {
     // T-01: Capture entry-HEAD commitOid BEFORE step.run().
     // step.run() may advance HEAD (e.g. propagateVerificationResult commits a result file).
     // We capture the pre-run HEAD so the StepRun records the evaluated revision.
-    // When stepArtifact is absent (e.g. managed runtime without git access), commitOid
-    // remains undefined (no captureHeadSha available). null result → also undefined.
-    const entryHeadSha = deps.stepArtifact
-      ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
-      : undefined;
+    // captureHeadSha returns null for no-op/managed runtimes → commitOid stays undefined.
+    const entryHeadSha = (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined;
 
     // Run the CLI step.
     // CliStep.run() returns Promise<CliStepRunOutcome | void>. Multi-phase steps
@@ -637,9 +633,7 @@ export class StepExecutor {
     // CommitOrchestrator appends exitCommitOid to synthesizedCommits so that
     // commitFinalState's verifyEgressLedger does not flag it as an unknown commit
     // if the CLI step's own push failed and left the commit local-only.
-    const exitHeadSha = deps.stepArtifact
-      ? (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined
-      : undefined;
+    const exitHeadSha = (await deps.stepArtifact.captureHeadSha(cwd)) ?? undefined;
     const exitCommitOid =
       exitHeadSha && entryHeadSha && exitHeadSha !== entryHeadSha
         ? exitHeadSha

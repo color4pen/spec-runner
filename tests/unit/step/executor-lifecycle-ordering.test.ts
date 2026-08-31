@@ -26,6 +26,7 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 
@@ -109,10 +110,10 @@ function makeBaseDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }
@@ -291,7 +292,7 @@ describe("T-15: Step finalize lifecycle ordering", () => {
 // ---------------------------------------------------------------------------
 
 describe("T-15: Terminal commit lifecycle ordering", () => {
-  it("TC-T15-03: terminalState?.commitFinalState called with string cwd and slug (not deps)", async () => {
+  it("TC-T15-03: terminalState.commitFinalState called with string cwd and slug (not deps)", async () => {
     const commitFinalStateSpy = vi.fn<(cwd: string, slug: string, state: unknown) => Promise<void>>().mockResolvedValue(undefined);
 
     // Simulate the exact expression from pipeline.ts / runner.ts
@@ -304,8 +305,9 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
     });
 
     // Inline the exact call from runner.ts gate-halt path.
+    // terminalState is non-nullable (R2b finding fix) — direct call, no optional chaining.
     const fakeHaltState = {};
-    await deps.terminalState?.commitFinalState(deps.cwd ?? "", deps.slug, fakeHaltState as never);
+    await deps.terminalState.commitFinalState(deps.cwd ?? "", deps.slug, fakeHaltState as never);
 
     expect(commitFinalStateSpy).toHaveBeenCalledOnce();
     const [calledCwd, calledSlug, calledState] = commitFinalStateSpy.mock.calls[0] as [string, string, unknown];
@@ -317,12 +319,11 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
     expect(calledState).toBe(fakeHaltState);
   });
 
-  it("TC-T15-04: terminalState absent — optional chain evaluates to undefined (no throw)", async () => {
-    const deps = makeBaseDeps({ terminalState: undefined });
-    // This is the guard used in both pipeline.ts and runner.ts.
-    const result = await deps.terminalState?.commitFinalState("", "slug", {} as never);
-    expect(result).toBeUndefined();
-  });
+  // TC-T15-04 was: "terminalState absent — optional chain evaluates to undefined (no throw)"
+  // Removed: terminalState is now a required non-nullable field (R2b finding fix).
+  // Compositions must always inject a noopTerminalState or real implementation.
+  // The optional-chain guard (deps.terminalState?.commitFinalState) is no longer present
+  // in pipeline.ts or runner.ts — the field is always non-null.
 });
 
 // ---------------------------------------------------------------------------

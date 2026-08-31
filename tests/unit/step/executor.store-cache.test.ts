@@ -16,6 +16,7 @@ import type { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { CliStep } from "../../../src/core/step/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -114,10 +115,10 @@ function makeMinimalDeps(): Omit<PipelineDeps, "storeFactory"> {
     owner: "testowner",
     repo: "testrepo",
     spawn: noopSpawn,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

@@ -21,6 +21,7 @@ import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 
@@ -120,10 +121,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

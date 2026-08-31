@@ -20,6 +20,7 @@ import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -86,8 +87,8 @@ function makeMinimalDeps(runtimeStrategy: ReturnType<typeof makeMinimalRuntimeSt
     cwd: tempDir,
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

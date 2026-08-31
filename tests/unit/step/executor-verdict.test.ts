@@ -22,6 +22,7 @@ import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { computeFindingKey } from "../../../src/core/decision/decision-ledger.js";
 import type { Finding } from "../../../src/kernel/report-result.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -182,8 +183,8 @@ function makeDeps(
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

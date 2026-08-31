@@ -53,6 +53,7 @@ import { STEP_NAMES } from "../step-names.js";
 
 import * as canonEscalationNS from "../canon-escalation.js";
 import * as judgeVerdictNS from "../judge-verdict.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 type EffectiveFixerFn = (f: Finding) => FixTarget;
 type RoutableSelectorFn = (
@@ -626,10 +627,10 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);
@@ -713,10 +714,10 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);

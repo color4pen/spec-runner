@@ -240,7 +240,7 @@ export async function deriveStepCompletion(
       //     If it is found to exist, the declaration is false → override to escalation.
       //   - regular (no fileMissing): the file is EXPECTED to exist.
       //     If it is not found, it is a hallucinated ref → override to escalation (existing behavior).
-      if ((isJudgeStep || isRequestReviewStep) && deps.stepIo) {
+      if (isJudgeStep || isRequestReviewStep) {
         const tr = (persistToolResult ?? effectiveToolResult) as JudgeReportResult | RequestReviewReportResult;
         const allFindings = tr.findings ?? [];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);

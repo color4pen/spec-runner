@@ -142,9 +142,9 @@ function makeDeps(runtimeStrategy?: ReturnType<typeof makeRuntimeStrategy>): Pip
     resumePrompt: undefined,
     resumeContext: undefined,
     stepArtifact: runtimeStrategy as never,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     changedFiles: runtimeStrategy as never,
   } as PipelineDeps;
 }
@@ -512,6 +512,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
 // ---------------------------------------------------------------------------
 
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../../pipeline/types.js";
+import { noopRoundGitEffects, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 /**
  * Build a state that has a code-review run with the given verdict and a finding

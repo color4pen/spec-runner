@@ -23,6 +23,7 @@ import {
 } from "../src/errors.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -241,10 +242,10 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       repo: "repo",
       spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");

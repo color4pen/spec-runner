@@ -45,6 +45,7 @@ import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ===========================================================================
 // Shared helpers
@@ -202,8 +203,8 @@ function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): Pipe
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

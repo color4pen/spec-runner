@@ -30,6 +30,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -128,10 +129,10 @@ function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     spawn: noopSpawn,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

@@ -39,6 +39,7 @@ import type { StepExecutionResult } from "../src/core/step/commit-orchestrator.j
 import type { ArtifactRef } from "../src/state/artifact-types.js";
 import type { RoundGitEffectsCapability } from "../src/core/pipeline/pipeline-capability.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -174,9 +175,9 @@ function makeDeps(
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore(tempDir) as never,
     roundGitEffects,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
   };
 }
 

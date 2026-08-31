@@ -397,7 +397,7 @@ export class Pipeline {
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
           // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-          await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)

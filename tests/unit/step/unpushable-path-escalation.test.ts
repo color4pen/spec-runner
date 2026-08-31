@@ -45,6 +45,7 @@ import { makeUnpushablePathHalt } from "../../../src/core/step/step-halt.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { WORKFLOWS_PATTERN } from "../../../src/git/push-capability.js";
 import type { PushCapability } from "../../../src/git/push-capability.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test state
@@ -177,10 +178,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

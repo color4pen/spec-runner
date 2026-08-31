@@ -36,6 +36,7 @@ import type { StepExecutionResult } from "../../../src/core/step/commit-orchestr
 import type { ParallelReviewConfig } from "../../../src/core/pipeline/types.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test state
@@ -231,9 +232,9 @@ function makeDeps(
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
     roundGitEffects: runtimeStrategy as never,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
     ...overrides,
   };
 }

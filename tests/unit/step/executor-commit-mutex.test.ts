@@ -20,6 +20,7 @@ import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentStepName } from "../../../src/kernel/agent-definition.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -147,8 +148,8 @@ function makeDeps(strategy?: ReturnType<typeof makeStrategy>): PipelineDeps {
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: strategy as never,
     stepIo: strategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

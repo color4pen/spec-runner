@@ -28,6 +28,7 @@ import {
   buildPipelineMockClient,
   buildMockGithubClient,
 } from "./helpers/pipeline-mock-client.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -302,10 +303,10 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -367,10 +368,10 @@ describe("TC-011: runPipeline — iter=1 needs-fix → spec-fixer → iter=2 app
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -427,10 +428,10 @@ describe("TC-012: runPipeline — retries exhausted: escalation + SPEC_REVIEW_RE
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // spec-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 bypass → spec-fixer
@@ -476,10 +477,10 @@ describe("TC-013: runPipeline — spec-review needs-fix invokes spec-fixer (R3: 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // spec-fixer IS created (escalation → needs-fix in R3, which loops to spec-fixer)
@@ -516,10 +517,10 @@ describe("TC-014: runPipeline — spec-review loop skipped when propose fails", 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // request-review(1) + propose/design session created (1, then fails) = 2 sessions total
@@ -555,10 +556,10 @@ describe("TC-015: runPipeline — fresh session IDs per iteration", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     const specReviewArr = result.steps?.["spec-review"];
@@ -605,10 +606,10 @@ describe("TC-016: runPipeline — stderr contains 'retries exhausted, escalating
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     }, events);
 
     const stdout = stderrLines.join("");
@@ -647,10 +648,10 @@ describe("TC-017: runPipeline — Pipeline finished summary line in stderr", () 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     }, events);
 
     const stdout = stderrLines.join("");
@@ -693,10 +694,10 @@ describe("TC-018: runPipeline — stdout log order for needs-fix → approved pa
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     }, events);
 
     const stdout = stderrLines.join("");
@@ -744,10 +745,10 @@ describe("TC-050: state.step updated: spec-fixer → spec-review within loop", (
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // After spec-review approved → implementer → verification → code-review → conformance → adr-gen → pr-create → end.
@@ -810,8 +811,8 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       // return true after re-verification (code-fixer ran after initial verification).
       stepArtifact: makeCommitOidStubStrategy() as never,
       stepIo: makeCommitOidStubStrategy() as never,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
       // gitTransportSpawn returning exitCode 1 → gitExec returns null → headBeforeStep = null
       // → no-op detection skipped for code-fixer (avoids "needs-fix" verdict override).
       gitTransportSpawn: makeFailingGitSpawnFn(),
@@ -882,10 +883,10 @@ describe("TC-061: runPipeline — code-review retries exhausted: escalation + CO
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // code-review: 3 entries (iter1 needs-fix, iter2 needs-fix, iter3 +1 bypass → escalation)
@@ -952,8 +953,8 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       // so conformanceApprovedForVerifiedRevision returns true after re-verification.
       stepArtifact: makeCommitOidStubStrategy() as never,
       stepIo: makeCommitOidStubStrategy() as never,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
       gitTransportSpawn: makeFailingGitSpawnFn(),
     });
 
@@ -1013,10 +1014,10 @@ describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed an
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1092,10 +1093,10 @@ describe("TC-064: verification / implementer recovery pair — fixer final iter 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1136,10 +1137,10 @@ describe("TC-030: runPipeline — persistence: both propose and spec-review step
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Verify the final persisted state has both steps recorded — reload via store
@@ -1201,10 +1202,10 @@ describe("TC-DC-101: DynamicContext forwarded to all agent steps via AgentRunCon
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // All agent steps must have received dynamicContext
@@ -1247,10 +1248,10 @@ describe("TC-DC-103: projectContext injected only for allowlist steps", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     const allowlistNames = ["design", "spec-review", "implementer", "code-review"];
@@ -1290,10 +1291,10 @@ describe("TC-DC-104: projectContext undefined for non-allowlist steps", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // test-case-gen is a non-allowlist step that runs on the approved path
@@ -1339,10 +1340,10 @@ describe("TC-DC-105: enrichContext is called for spec-review step", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
@@ -1387,10 +1388,10 @@ describe("TC-DC-106: enrichContext returns unmodified dynamicContext when no spe
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(enrichSpy).toHaveBeenCalledOnce();
@@ -1424,10 +1425,10 @@ describe("TC-DC-107: project.md absent — projectContext is undefined for all s
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline must not throw — project.md absence is not an error
@@ -1465,10 +1466,10 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1614,8 +1615,8 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       storeFactory: makeStoreFactory(tempDir),
       stepArtifact: makeTestRuntimeStrategy(gitSpawnFn) as never,
       stepIo: makeTestRuntimeStrategy(gitSpawnFn) as never,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Implementer must have completed (no halt)
@@ -1742,10 +1743,10 @@ describe("TC-065: verification/implementer recovery exhaustion — VERIFICATION_
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline halts with exhaustion error
@@ -1815,10 +1816,10 @@ describe("TC-070: escalation → resume roundtrip", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(halted.status).toBe("awaiting-resume");
@@ -1863,10 +1864,10 @@ describe("TC-070: escalation → resume roundtrip", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const resumed = await createStandardPipeline(resumeDeps).run(resumeStep, resumedState, resumeDeps);
@@ -1911,10 +1912,10 @@ describe("T-07: #1015 歯 — spec-review needs-fix loop は test-case-gen を�
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // spec-fixer IS invoked (loop ran)

@@ -626,7 +626,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       // R2b capability fields — config and request are captured in closure, not stored
       // in mutable instance state. This eliminates the hidden ordering precondition
       // on _currentConfig / _currentRequest that existed in the previous iteration.
-      stepArtifact: this.buildStepArtifactCapability(capturedConfig, request),
+      stepArtifact: this.buildStepArtifactCapability(capturedConfig, request, slug, workspace),
       stepIo: deriveStepIoValidationCapability(this),
       terminalState: deriveTerminalStateCapability(this),
       roundGitEffects: deriveRoundGitEffectsCapability(this),
@@ -641,22 +641,40 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * Build a StepArtifactLifecycleCapability with config and request captured in a closure.
+   * Build a StepArtifactLifecycleCapability with config, request, and slugOpts captured
+   * at capability-construction time.
    *
    * Called once per buildDeps() invocation. The returned capability always refers to the
    * config and request from THIS buildDeps call — not from any later call. This eliminates
    * the hidden ordering precondition that existed via _currentConfig / _currentRequest.
    *
+   * MEDIUM finding (local.ts:781): slugOpts are now captured from the buildDeps parameters
+   * at construction time, not from `this.slugStoreOpts()` at finalize time. This prevents
+   * job A's capability from reading job B's mutable workspace/store context when the commit
+   * mutex serializes finalize calls across concurrent jobs.
+   *
    * Both config and request are forwarded to commitAndPush (via doFinalizeStepArtifacts)
    * because step.writes() implementations may access deps.request to resolve declared paths.
    */
-  private buildStepArtifactCapability(config: SpecRunnerConfig, request: ParsedRequest): StepArtifactLifecycleCapability {
+  private buildStepArtifactCapability(
+    config: SpecRunnerConfig,
+    request: ParsedRequest,
+    slug: string,
+    workspace: WorkspaceContext,
+  ): StepArtifactLifecycleCapability {
+    // Capture slugOpts at capability-construction time using the buildDeps parameters.
+    // This prevents cross-job contamination: doFinalizeStepArtifacts no longer calls
+    // this.slugStoreOpts(), which reads mutable instance state (this.workspace / this.currentSlug).
+    const stateRoot = workspace.worktreePath ?? workspace.cwd;
+    const capturedSlugOpts: { slug: string; stateRoot: string } | undefined =
+      stateRoot ? { slug, stateRoot } : undefined;
+
     return {
       captureHeadSha: (cwd) => this.captureHeadSha(cwd),
-      prepareStepArtifacts: (cwd, slug, stepName, state) =>
-        this.prepareStepArtifacts(cwd, slug, stepName, state),
-      finalizeStepArtifacts: (step, state, cwd, slug, headBeforeStep, infra) =>
-        this.doFinalizeStepArtifacts(step, state, cwd, slug, headBeforeStep, infra, config, request),
+      prepareStepArtifacts: (cwd, stepSlug, stepName, state) =>
+        this.prepareStepArtifacts(cwd, stepSlug, stepName, state),
+      finalizeStepArtifacts: (step, state, cwd, stepSlug, headBeforeStep, infra) =>
+        this.doFinalizeStepArtifacts(step, state, cwd, stepSlug, headBeforeStep, infra, config, request, capturedSlugOpts),
       ...(this.snapshotMainCheckoutGuard
         ? { snapshotMainCheckoutGuard: (cwd: string, cfg: SpecRunnerConfig) => this.snapshotMainCheckoutGuard(cwd, cfg) }
         : {}),
@@ -756,10 +774,15 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   /**
    * Internal implementation of step artifact finalize, called from the capability closure.
    *
-   * Config and request are captured at capability construction time (via
+   * Config, request, and capturedSlugOpts are captured at capability construction time (via
    * buildStepArtifactCapability) and passed here — no mutable instance state is needed.
-   * Both are forwarded to commitAndPush because step.writes() implementations may access
-   * deps.request to resolve declared output paths (e.g. design.ts uses deps.request.type).
+   * Both config and request are forwarded to commitAndPush because step.writes() implementations
+   * may access deps.request to resolve declared output paths (e.g. design.ts uses deps.request.type).
+   *
+   * MEDIUM finding (local.ts:781): capturedSlugOpts is the slugOpts snapshot taken at
+   * buildDeps() time, not from this.slugStoreOpts() at call time. This prevents job A's
+   * capability from reading job B's mutable workspace/store context when the commit mutex
+   * serializes finalize calls across concurrent jobs.
    */
   private async doFinalizeStepArtifacts(
     step: AgentStep,
@@ -770,6 +793,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     infra: CommitPushInfra,
     config: SpecRunnerConfig,
     request: ParsedRequest,
+    capturedSlugOpts: { slug: string; stateRoot: string } | undefined,
   ): Promise<void> {
     await cleanupOutputTemplates(cwd, slug, step.name, state);
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
@@ -778,15 +802,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // written to the synthesizedCommits ledger before push is attempted. This mirrors
     // the existing implementation in parallel-review-round and prevents a push failure
     // from leaving the ledger incomplete and blocking resume via EGRESS_UNKNOWN_COMMIT.
-    const slugOpts = this.slugStoreOpts();
+    // capturedSlugOpts was captured at capability-construction time (buildDeps), not from
+    // mutable this.slugStoreOpts() — prevents cross-job ledger corruption.
     const finalInfra: CommitPushInfra = {
       ...infra,
-      persistBeforePush: slugOpts
+      persistBeforePush: capturedSlugOpts
         ? async (oid: string) => {
             await this.updateJobState(
               state.jobId,
               (s) => appendSynthesizedCommit(s, oid),
-              slugOpts,
+              capturedSlugOpts,
             );
           }
         : undefined,

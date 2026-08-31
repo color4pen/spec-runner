@@ -28,6 +28,7 @@ import { JUDGE_REPORT_TOOL } from "../report-tool.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 function finding(
   severity: Finding["severity"],
@@ -342,10 +343,10 @@ function makeTc021Deps(storeFactory: ReturnType<typeof makeTc021Store>): Pipelin
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     // runtimeStrategy absent: scope check, no-op detection, and findingRef verification all skip
   } as PipelineDeps;
 }

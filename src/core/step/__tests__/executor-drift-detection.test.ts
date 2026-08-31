@@ -18,6 +18,7 @@ import type { AgentStep, CliStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { MainCheckoutGuardSnapshot } from "../../port/runtime-strategy.js";
+import { noopRoundGitEffects, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -151,9 +152,9 @@ function makeDeps(
     resumePrompt: undefined,
     resumeContext: undefined,
     stepArtifact: runtimeStrategy as never,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

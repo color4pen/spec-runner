@@ -45,6 +45,7 @@ import type { DynamicContext } from "../../../git/dynamic-context.js";
 import { collectDynamicContext } from "../../../git/dynamic-context.js";
 import { SpecReviewStep } from "../spec-review.js";
 import { buildStepContext, type BuildStepContextFs } from "../step-context-builder.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // SpecReviewStep type assertion — prepareRoundContext is a new optional method
 const SpecReviewStepRecord = SpecReviewStep as unknown as Record<string, unknown>;
@@ -169,10 +170,10 @@ function makeDeps(opts: {
     resumeContext: undefined,
     repoRoot: undefined,
     commitInspection: opts.commitInspection,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

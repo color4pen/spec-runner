@@ -22,6 +22,7 @@ import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
 import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState, noopRoundGitEffects } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -169,9 +170,9 @@ function makeDeps(store: ReturnType<typeof makeSpyStore>, overrides: Partial<Pip
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
     roundGitEffects: {
       captureHeadSha: async () => "sha123",
       listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
@@ -215,7 +216,7 @@ describe("ParallelReviewRound state commit — single persist per round (AC #1 /
     const executor = makeProduceFakeExecutor(new Map());
     const round = makeRound(executor);
 
-    await round.run(COORDINATOR, stateWithApproved, makeDeps(store, { roundGitEffects: undefined }));
+    await round.run(COORDINATOR, stateWithApproved, makeDeps(store, { roundGitEffects: noopRoundGitEffects }));
 
     expect(store.persist).toHaveBeenCalledTimes(1);
     // produceResult NOT called (fast path, no pending members)

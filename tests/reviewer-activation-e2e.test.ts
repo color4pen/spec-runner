@@ -46,6 +46,7 @@ import { fold } from "../src/store/event-journal.js";
 import { buildPipelineForJob } from "../src/core/pipeline/index.js";
 import type { JobState } from "../src/state/schema.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../src/core/pipeline/types.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -278,10 +279,10 @@ async function runPipelineWith(
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   });
 }
 
@@ -569,10 +570,10 @@ describe("TC-010: backward recovery — job stopped with ROUND_ALL_MEMBERS_SKIPP
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: undefined,
-      stepIo: undefined,
-      terminalState: undefined,
-      roundGitEffects: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     // Run from the coordinator step (not from the beginning)

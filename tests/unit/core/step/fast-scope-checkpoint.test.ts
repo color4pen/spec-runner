@@ -35,6 +35,7 @@ import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,8 +82,8 @@ function makeDeps(strategy?: any): PipelineDeps {
     changedFiles: strategy as never,
     stepArtifact: strategy as never,
     stepIo: strategy as never,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

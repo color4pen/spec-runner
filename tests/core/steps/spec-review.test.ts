@@ -20,6 +20,7 @@ import { createManagedAgentRunner } from "../../../src/adapter/managed-agent/age
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 
@@ -119,10 +120,10 @@ function buildDeps(opts: {
     repo: "repo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: undefined,
-    stepIo: undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

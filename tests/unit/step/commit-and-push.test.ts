@@ -41,6 +41,7 @@ import { EventEmitter } from "node:events";
 import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -163,8 +164,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
     stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
-    terminalState: undefined,
-    roundGitEffects: undefined,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };

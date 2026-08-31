@@ -39,6 +39,7 @@ import type { GitHubClient } from "../../src/core/port/github-client.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import type { LocalRuntimeOptions } from "../../src/core/runtime/local.js";
 import { ResumeCommand } from "../../src/core/command/resume.js";
+import { noopRoundGitEffects } from "../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Silence stdout/stderr from pipeline internals in tests
@@ -311,7 +312,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         stepIo: machineAStrategy as never,
         changedFiles: machineAStrategy as never,
         gitTransportSpawn: defaultSpawnFn,
-        roundGitEffects: undefined,
+        roundGitEffects: noopRoundGitEffects,
       };
 
       // Build and run the pipeline — starts at "implementer"

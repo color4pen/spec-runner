@@ -36,6 +36,7 @@ import type { ParallelReviewConfig } from "../src/core/pipeline/types.js";
 import type { SpawnFn as GitExecSpawnFn } from "../src/util/git-exec.js";
 import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
+import { noopStepArtifact, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Git sync helpers
@@ -476,8 +477,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
         roundGitEffects: runtimeStrategy as never,
         stepIo: runtimeStrategy as never,
-        stepArtifact: undefined,
-        terminalState: undefined,
+        stepArtifact: noopStepArtifact,
+        terminalState: noopTerminalState,
         storeFactory,
         gitTransportSpawn: gitExecSpawnFn,
       };
@@ -619,8 +620,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
         roundGitEffects: runtimeStrategy as never,
         stepIo: runtimeStrategy as never,
-        stepArtifact: undefined,
-        terminalState: undefined,
+        stepArtifact: noopStepArtifact,
+        terminalState: noopTerminalState,
         storeFactory,
       };
 
