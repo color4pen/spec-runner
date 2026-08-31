@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T01:52:22.656Z",
+  "updatedAt": "2026-08-31T01:55:48.519Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
@@ -120,7 +120,9 @@
     "5eea04529e9c6ad82e02c7ebf952cd38cb5c24f2",
     "383da615206c9220354ebb6445aabc85c16a748c",
     "97d5e2e91ed1a9b18208934f57d794b4b4da6f49",
-    "2b66018442607be8b7f6d515859a8f7b82220ba5"
+    "2b66018442607be8b7f6d515859a8f7b82220ba5",
+    "6ee5f06a83ccbbff62df436ee0f574b8bd3e0129",
+    "7f628ca3a61e89934605f40976ea1068729c3af7"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -157,12 +159,9 @@
       "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts"
     ],
     "code-fixer": [
-      "src/core/pipeline/pipeline-capability.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/command/runner.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/managed.ts",
-      "tests/core/pipeline/pipeline.test.ts"
+      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
+      "src/core/pipeline/pipeline-capability.ts"
     ],
     "regression-gate": [],
     "conformance": [
@@ -216,7 +215,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "df2fce3a692291204860b8c8c13b7b080d249e54",
+      "approvedAtCommit": "6ee5f06a83ccbbff62df436ee0f574b8bd3e0129",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -243,7 +242,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 255,
+    "historyCount": 264,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -253,10 +252,10 @@
       "implementer": 8,
       "verification": 12,
       "code-review": 8,
-      "code-fixer": 8,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 9,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 4,
+      "custom-reviewers": 5,
       "regression-gate": 6,
       "conformance": 6
     }
