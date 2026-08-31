@@ -93,6 +93,7 @@ function makeRuntimeStrategy(
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},

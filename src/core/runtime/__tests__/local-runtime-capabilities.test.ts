@@ -75,8 +75,8 @@ describe("T-14: LocalRuntime capability contracts — StepArtifactLifecycleCapab
     expect(typeof cap.captureHeadSha).toBe("function");
     expect(typeof cap.prepareStepArtifacts).toBe("function");
     expect(typeof cap.finalizeStepArtifacts).toBe("function");
+    expect(typeof cap.snapshotMainCheckoutGuard).toBe("function");
     expect(typeof cap.digestArtifacts).toBe("function");
-    // snapshotMainCheckoutGuard is optional — allowed to be present or absent.
   });
 
   it("TC-T14-02: captureHeadSha delegates to source and returns sha", async () => {

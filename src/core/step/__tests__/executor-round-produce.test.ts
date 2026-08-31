@@ -98,6 +98,7 @@ function makeRuntimeStrategy() {
     captureHeadSha: vi.fn(async () => null as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts: vi.fn(async () => {}),
+    snapshotMainCheckoutGuard: vi.fn(async () => null),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => ({ violations: [] })),
   };

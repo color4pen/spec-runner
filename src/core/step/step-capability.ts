@@ -6,11 +6,11 @@
  * (StepExecutor, commit-orchestrator, step-completion).
  *
  * Design:
- * - Methods are required — capability absence is expressed as `Capability | undefined` at the
- *   injection site (PipelineDeps field), not via optional methods.
- * - snapshotMainCheckoutGuard? is the sole exception: fail-open semantics require that a
- *   null result means "guard not available" (not capability absence), so the method itself
- *   is optional on the interface.
+ * - All methods are required — capability absence is expressed as `Capability | undefined` at
+ *   the injection site (PipelineDeps field), not via optional methods.
+ * - snapshotMainCheckoutGuard is required and uses null return to express runtime unavailability
+ *   (no-worktree, managed runtime, or git failure) — not capability absence. This prevents
+ *   silent drift-guard omission when a structurally valid capability skips the method.
  * - Derive helpers are defined here (same file as the interface) per D5 convention.
  */
 import type { AgentStep } from "./types.js";
@@ -74,11 +74,12 @@ export interface StepArtifactLifecycleCapability {
   /**
    * Snapshot guarded main-checkout paths before the agent runs.
    *
-   * Optional: fail-open semantics — null return means guard unavailable (no-worktree,
-   * managed, or git failure), not capability absence. Capability absence is expressed
-   * by `PipelineDeps.stepArtifact` being undefined.
+   * Required: null return means guard unavailable (no-worktree, managed runtime, or git
+   * failure) — not capability absence. Capability absence is expressed by
+   * `PipelineDeps.stepArtifact` being undefined. Both production runtimes implement this
+   * method; no-op implementations must explicitly return null.
    */
-  snapshotMainCheckoutGuard?(
+  snapshotMainCheckoutGuard(
     cwd: string,
     config: SpecRunnerConfig,
   ): Promise<MainCheckoutGuardSnapshot | null>;
@@ -149,7 +150,7 @@ interface StepArtifactSource {
   captureHeadSha(cwd: string): Promise<string | null>;
   prepareStepArtifacts(cwd: string, slug: string, stepName: string, state: JobState): Promise<void>;
   finalizeStepArtifacts(step: AgentStep, state: JobState, cwd: string, slug: string, headBeforeStep: string | null, infra: CommitPushInfra): Promise<void>;
-  snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
+  snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
   digestArtifacts(refs: { path: string }[], cwd: string, branch: string | null): Promise<ArtifactRef[]>;
 }
 
@@ -168,9 +169,7 @@ export function deriveStepArtifactLifecycleCapability(
       runtime.prepareStepArtifacts(cwd, slug, stepName, state),
     finalizeStepArtifacts: (step, state, cwd, slug, head, infra) =>
       runtime.finalizeStepArtifacts(step, state, cwd, slug, head, infra),
-    ...(runtime.snapshotMainCheckoutGuard
-      ? { snapshotMainCheckoutGuard: (cwd, config) => runtime.snapshotMainCheckoutGuard!(cwd, config) }
-      : {}),
+    snapshotMainCheckoutGuard: (cwd, config) => runtime.snapshotMainCheckoutGuard(cwd, config),
     digestArtifacts: (refs, cwd, branch) => runtime.digestArtifacts(refs, cwd, branch),
   };
 }

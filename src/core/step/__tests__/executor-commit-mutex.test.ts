@@ -135,6 +135,7 @@ describe("StepExecutor — TC-035: commitMutex serializes finalizeStepArtifacts"
         callLog.push(`end:${name}`);
         activeCount--;
       }),
+      snapshotMainCheckoutGuard: vi.fn(async () => null),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => [] as never[]),
     };
@@ -191,6 +192,7 @@ describe("StepExecutor — TC-035: commitMutex serializes finalizeStepArtifacts"
       finalizeStepArtifacts: vi.fn(async (step: unknown) => {
         finalizeCalls.push((step as { name: string }).name);
       }),
+      snapshotMainCheckoutGuard: vi.fn(async () => null),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => [] as never[]),
     };

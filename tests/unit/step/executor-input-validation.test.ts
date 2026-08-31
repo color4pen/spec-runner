@@ -101,6 +101,7 @@ function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {
       throw errorToThrow;
     },

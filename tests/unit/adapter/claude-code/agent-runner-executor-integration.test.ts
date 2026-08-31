@@ -794,6 +794,7 @@ function makeRolloverRuntimeStrategy(opts: {
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: opts.finalizeStepArtifacts ?? vi.fn().mockResolvedValue(undefined),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     async bootstrapJob() { throw new Error("not implemented"); },

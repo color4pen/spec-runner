@@ -90,6 +90,7 @@ describe("T-14: ManagedRuntime capability contracts — StepArtifactLifecycleCap
     expect(typeof cap.captureHeadSha).toBe("function");
     expect(typeof cap.prepareStepArtifacts).toBe("function");
     expect(typeof cap.finalizeStepArtifacts).toBe("function");
+    expect(typeof cap.snapshotMainCheckoutGuard).toBe("function");
   });
 
   it("TC-T14-M02: captureHeadSha returns null (managed no-op semantics)", async () => {

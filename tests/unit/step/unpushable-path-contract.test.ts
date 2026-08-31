@@ -211,6 +211,7 @@ function makePipelineDeps(
     async teardown() {},
     async captureHeadSha() { return null; },
     async prepareStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
     async validateStepInputs() {},
     async bootstrapJob() { throw new Error("not implemented"); },
     async persistJobState() {},

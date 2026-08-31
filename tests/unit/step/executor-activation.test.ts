@@ -132,6 +132,7 @@ function makeRuntimeStrategy(
     async captureHeadSha() { return null; },
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
     async validateStepInputs() {},
     async validateStepOutputs() { return { violations: [] }; },
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },

@@ -143,6 +143,7 @@ describe("T-15: Step finalize lifecycle ordering", () => {
       async captureHeadSha(): Promise<string | null> { return null; },
       async prepareStepArtifacts(): Promise<void> {},
       finalizeStepArtifacts: finalizeSpy,
+      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
       async digestArtifacts(refs: { path: string }[]) {
         return refs.map((r) => ({ path: r.path, hash: null as null }));
       },
@@ -185,6 +186,7 @@ describe("T-15: Step finalize lifecycle ordering", () => {
       async captureHeadSha(): Promise<string | null> { return null; },
       async prepareStepArtifacts(): Promise<void> {},
       finalizeStepArtifacts: finalizeSpy,
+      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
       async digestArtifacts(refs: { path: string }[]) {
         return refs.map((r) => ({ path: r.path, hash: null as null }));
       },
@@ -253,6 +255,7 @@ describe("T-15: Step finalize lifecycle ordering", () => {
       async captureHeadSha(): Promise<string | null> { return null; },
       prepareStepArtifacts: prepareArtifactsSpy,
       finalizeStepArtifacts: finalizeSpy,
+      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
       async digestArtifacts(refs: { path: string }[]) {
         return refs.map((r) => ({ path: r.path, hash: null as null }));
       },

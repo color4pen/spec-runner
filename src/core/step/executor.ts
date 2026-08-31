@@ -322,11 +322,9 @@ export class StepExecutor {
     });
 
     // Capture main-checkout guard snapshot before agent executes (D2, D4).
-    // snapshotMainCheckoutGuard is optional on the interface; null = guard unavailable.
+    // snapshotMainCheckoutGuard is required; null return means guard unavailable (managed / no-worktree).
     const guardBefore: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-      deps.stepArtifact.snapshotMainCheckoutGuard
-        ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
-        : null;
+      await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config);
 
     // Capture HEAD SHA before agent executes (for no-op detection and finalize).
     // Uses raw git spawn rather than stepArtifact.captureHeadSha so that only the
@@ -395,9 +393,7 @@ export class StepExecutor {
     // ---------------------------------------------------------------------------
     if (guardBefore !== null) {
       const guardAfter: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
-        deps.stepArtifact.snapshotMainCheckoutGuard
-          ? await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config)
-          : null;
+        await deps.stepArtifact.snapshotMainCheckoutGuard(cwd, deps.config);
 
       if (guardAfter !== null) {
         const drift = diffGuardSnapshots(guardBefore, guardAfter);

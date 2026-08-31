@@ -675,9 +675,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         this.prepareStepArtifacts(cwd, stepSlug, stepName, state),
       finalizeStepArtifacts: (step, state, cwd, stepSlug, headBeforeStep, infra) =>
         this.doFinalizeStepArtifacts(step, state, cwd, stepSlug, headBeforeStep, infra, config, request, capturedSlugOpts),
-      ...(this.snapshotMainCheckoutGuard
-        ? { snapshotMainCheckoutGuard: (cwd: string, cfg: SpecRunnerConfig) => this.snapshotMainCheckoutGuard(cwd, cfg) }
-        : {}),
+      snapshotMainCheckoutGuard: (cwd: string, cfg: SpecRunnerConfig) => this.snapshotMainCheckoutGuard(cwd, cfg),
       digestArtifacts: (refs, cwd, branch) => this.digestArtifacts(refs, cwd, branch),
     };
   }

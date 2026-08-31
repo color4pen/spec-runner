@@ -141,6 +141,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     captureHeadSha: vi.fn(async () => "abc123head" as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts: vi.fn(async () => {}),
+    snapshotMainCheckoutGuard: vi.fn(async () => null),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => [] as never[]),
     listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),

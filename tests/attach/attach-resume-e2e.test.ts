@@ -163,6 +163,7 @@ function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrateg
       return gitExec(defaultSpawnFn, cwd, ["rev-parse", "HEAD"]);
     },
     async prepareStepArtifacts(): Promise<void> {},
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async validateStepOutputs() { return { violations: [] }; },
     async bootstrapJob(): Promise<JobState> { throw new Error("not used"); },

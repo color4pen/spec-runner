@@ -110,6 +110,7 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
       await cleanupOutputTemplates(cwd, slug, step.name, state);
       await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async verifyFindingRefs() { return [] as never[]; },
     async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {

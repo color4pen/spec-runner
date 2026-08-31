@@ -97,6 +97,7 @@ function makeRuntimeStrategy(
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     finalizeStepArtifacts: finalizeSpy,
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async verifyFindingRefs() { return [] as never; },
     async digestArtifacts(refs: { path: string }[]) {

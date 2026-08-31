@@ -101,6 +101,7 @@ function makeStrategy(opts: {
     async finalizeStepArtifacts(...args: unknown[]): Promise<void> {
       return opts.finalizeStepArtifacts(...args);
     },
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async validateStepOutputs() { return { violations: [] }; },
     async verifyFindingRefs() { return []; },

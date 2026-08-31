@@ -28,13 +28,14 @@ import type { TerminalStateCapability, RoundGitEffectsCapability } from "../pipe
  * - captureHeadSha: returns null (no git HEAD in test context).
  * - prepareStepArtifacts: no-op (no worktree templates to write).
  * - finalizeStepArtifacts: no-op (no git commit/push).
+ * - snapshotMainCheckoutGuard: returns null (no local worktree in test context).
  * - digestArtifacts: returns all-null hashes (no worktree content).
- * - snapshotMainCheckoutGuard: absent (method optional on the interface).
  */
 export const noopStepArtifact: StepArtifactLifecycleCapability = {
   captureHeadSha: async () => null,
   prepareStepArtifacts: async () => {},
   finalizeStepArtifacts: async () => {},
+  snapshotMainCheckoutGuard: async () => null,
   digestArtifacts: async (refs) => refs.map((r) => ({ path: r.path, hash: null })),
 };
 

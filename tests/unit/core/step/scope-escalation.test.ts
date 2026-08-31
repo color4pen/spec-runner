@@ -182,6 +182,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     async captureHeadSha() { return null as string | null; },
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
     async validateStepInputs() {},
     async validateStepOutputs() { return { violations: [] as never[] }; },
     async verifyFindingRefs() { return [] as never[]; },
