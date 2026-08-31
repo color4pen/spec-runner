@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T00:50:51.881Z",
+  "updatedAt": "2026-08-31T00:58:07.891Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-mutation-lifecycle-capability-split/test-cases.md, title: \"TC-038 description says 'exactly 4' but only 2 pre-existing casts remain\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -118,7 +122,8 @@
     "b350ba582625e4d6c9bf3c464453374fcfc68d6f",
     "3a477a1ba8902c7319effcc4986ef3eb94a9886c",
     "5eea04529e9c6ad82e02c7ebf952cd38cb5c24f2",
-    "383da615206c9220354ebb6445aabc85c16a748c"
+    "383da615206c9220354ebb6445aabc85c16a748c",
+    "97d5e2e91ed1a9b18208934f57d794b4b4da6f49"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -152,21 +157,21 @@
     "code-review": [
       "src/core/step/step-capability.ts",
       "src/core/pipeline/pipeline-capability.ts",
-      "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
+      "src/core/types.ts",
       "src/core/step/executor.ts",
       "src/core/pipeline/pipeline.ts",
       "src/core/command/runner.ts",
       "src/core/runtime/local.ts",
-      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
       "tests/unit/step/executor-lifecycle-ordering.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/runtime/managed.ts",
+      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
       "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
-      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
       "architecture/components.md",
+      "src/core/step/commit-orchestrator.ts",
       "src/core/port/step-types.ts",
-      "src/core/step/no-op-detect.ts"
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/runtime/managed.ts"
     ],
     "code-fixer": [
       "src/core/pipeline/pipeline-capability.ts",
@@ -195,7 +200,11 @@
       "src/core/step/commit-orchestrator.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-mutation-lifecycle-capability-split/test-cases.md, title: \"TC-038 description says 'exactly 4' but only 2 pre-existing casts remain\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -250,7 +259,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 245,
+    "historyCount": 248,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -259,7 +268,7 @@
       "spec-fixer": 1,
       "implementer": 8,
       "verification": 12,
-      "code-review": 6,
+      "code-review": 7,
       "code-fixer": 8,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
