@@ -318,11 +318,8 @@ export abstract class CommandRunner {
         }
 
         // Commit final state to remote (best-effort — managed runtime only).
-        // Guard: only commit when cwd is available (always true in production via buildDeps).
         try {
-          if (deps.terminalState && deps.cwd) {
-            await deps.terminalState.commitFinalState(deps.cwd, deps.slug, haltState);
-          }
+          await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
         } catch {
           // Best-effort: do not let remote sync failure block local halt reporting.
         }
