@@ -545,3 +545,6 @@
 {"type":"lineage","step":"regression-gate","ts":"2026-08-31T04:05:28.451Z","outputs":[{"path":"specrunner/changes/runtime-mutation-lifecycle-capability-split/regression-gate-result-012.md","hash":"sha256:06587f472b5f70aa551019031d2c75faf62d744d432d077369dda0b3149e8530"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-08-31T04:05:29.959Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
 {"type":"transition","ts":"2026-08-31T04:05:29.959Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: conformance did not approve after 2 iterations"}
+{"type":"transition","ts":"2026-08-31T04:45:15.259Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-08-31T04:45:15.698Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-31T04:45:15.701Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
