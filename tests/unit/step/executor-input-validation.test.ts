@@ -166,6 +166,10 @@ function makeBaseDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }

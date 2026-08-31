@@ -147,6 +147,10 @@ function makeDeps(slug: string, cwd: string): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

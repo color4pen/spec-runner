@@ -120,6 +120,10 @@ function makeMinimalDeps(storeFactory: StoreFactory, githubClientOverrides: Reco
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

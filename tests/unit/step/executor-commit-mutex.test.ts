@@ -147,6 +147,8 @@ function makeDeps(strategy?: ReturnType<typeof makeStrategy>): PipelineDeps {
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: strategy as never,
     stepIo: strategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

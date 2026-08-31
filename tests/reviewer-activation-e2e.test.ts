@@ -278,6 +278,10 @@ async function runPipelineWith(
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   });
 }
 
@@ -565,6 +569,10 @@ describe("TC-010: backward recovery — job stopped with ROUND_ALL_MEMBERS_SKIPP
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     // Run from the coordinator step (not from the beginning)

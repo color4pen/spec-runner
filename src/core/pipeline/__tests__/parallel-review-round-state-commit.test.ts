@@ -169,6 +169,9 @@ function makeDeps(store: ReturnType<typeof makeSpyStore>, overrides: Partial<Pip
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
     roundGitEffects: {
       captureHeadSha: async () => "sha123",
       listChangedFiles: async () => ({ kind: "success" as const, files: [] }),

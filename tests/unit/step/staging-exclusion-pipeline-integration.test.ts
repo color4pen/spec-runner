@@ -120,6 +120,10 @@ function makeDeps(slug: string, cwd: string): PipelineDeps {
       patterns: [".github/workflows/**"],
       source: "integration-test capability",
     },
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

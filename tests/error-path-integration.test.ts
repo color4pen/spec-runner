@@ -179,6 +179,10 @@ function makePipelineDeps(): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 
@@ -320,6 +324,10 @@ describe("TC-T05-dn: spec-review with decision-needed finding → verdict escala
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Pipeline halts — decision-needed triggers escalation
@@ -392,6 +400,8 @@ describe("TC-T05-ref: spec-review with high finding referencing non-existent fil
       storeFactory: makeStoreFactory(tempDir),
       stepArtifact: runtimeStrategyWithMissingRef as never,
       stepIo: runtimeStrategyWithMissingRef as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Pipeline halts — non-existent file ref triggers escalation
@@ -442,6 +452,10 @@ describe("TC-T06: session termination → SESSION_TERMINATED error code → awai
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Observable: SESSION_TERMINATED error recorded in state
@@ -541,6 +555,10 @@ describe("TC-T07: verification partial failure (build passed, test failed) → i
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Pipeline should complete after implementer recovery fixes the test failure

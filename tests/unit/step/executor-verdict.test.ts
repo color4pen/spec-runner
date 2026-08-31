@@ -182,6 +182,8 @@ function makeDeps(
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }

@@ -73,6 +73,10 @@ function makeDeps(slug = "test-slug"): PipelineDeps {
     resumePrompt: undefined,
     resumeContext: undefined,
     repoRoot: undefined,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

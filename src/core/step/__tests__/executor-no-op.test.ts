@@ -142,6 +142,9 @@ function makeDeps(runtimeStrategy?: ReturnType<typeof makeRuntimeStrategy>): Pip
     resumePrompt: undefined,
     resumeContext: undefined,
     stepArtifact: runtimeStrategy as never,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     changedFiles: runtimeStrategy as never,
   } as PipelineDeps;
 }

@@ -231,6 +231,9 @@ function makeDeps(
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
     roundGitEffects: runtimeStrategy as never,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
     ...overrides,
   };
 }

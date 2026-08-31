@@ -271,6 +271,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
       save: vi.fn().mockResolvedValue(undefined),
       appendHistory: vi.fn().mockResolvedValue(undefined),
     }) as unknown as JobStateStore,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }

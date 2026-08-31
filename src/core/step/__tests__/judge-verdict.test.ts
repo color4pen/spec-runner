@@ -342,6 +342,10 @@ function makeTc021Deps(storeFactory: ReturnType<typeof makeTc021Store>): Pipelin
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     // runtimeStrategy absent: scope check, no-op detection, and findingRef verification all skip
   } as PipelineDeps;
 }

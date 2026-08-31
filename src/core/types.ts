@@ -92,29 +92,33 @@ export interface PipelineDeps extends StepContext {
    * Step artifact lifecycle capability (R2b).
    * Injected by buildDeps(). Handles captureHeadSha, prepareStepArtifacts,
    * finalizeStepArtifacts, snapshotMainCheckoutGuard, digestArtifacts.
-   * Optional: undefined when runtime does not support artifact lifecycle (e.g. test stubs).
+   * Required field — must be explicitly set; assign undefined to express capability absence.
+   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
    */
-  stepArtifact?: StepArtifactLifecycleCapability;
+  stepArtifact: StepArtifactLifecycleCapability | undefined;
   /**
    * Step I/O validation capability (R2b).
    * Injected by buildDeps(). Handles validateStepInputs, validateStepOutputs,
    * verifyFindingRefs.
-   * Optional: undefined when runtime does not support I/O validation.
+   * Required field — must be explicitly set; assign undefined to express capability absence.
+   * Both LocalRuntime and ManagedRuntime always inject a value.
    */
-  stepIo?: StepIoValidationCapability;
+  stepIo: StepIoValidationCapability | undefined;
   /**
    * Terminal state capability (R2b).
    * Injected by buildDeps(). Handles commitFinalState for pipeline/command terminal transitions.
-   * Optional: undefined when the runtime does not support terminal state commit (e.g. test stubs).
+   * Required field — must be explicitly set; assign undefined to express capability absence.
+   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
    */
-  terminalState?: TerminalStateCapability;
+  terminalState: TerminalStateCapability | undefined;
   /**
    * Round-owned git effects capability (R2b).
    * Injected by buildDeps(). Handles coordinator fan-out git operations:
    * captureHeadSha, listWorktreeChanges, commitRoundArtifacts, digestArtifacts, listChangedFiles.
-   * Optional: undefined when runtime does not support round git effects.
+   * Required field — must be explicitly set; assign undefined to express capability absence.
+   * Both LocalRuntime and ManagedRuntime always inject a value (no-op for managed).
    */
-  roundGitEffects?: RoundGitEffectsCapability;
+  roundGitEffects: RoundGitEffectsCapability | undefined;
   /**
    * Changed-files derivation capability (R2a).
    * Injected by buildDeps(). Handles listChangedFiles and canDeriveChangedFiles.

@@ -86,6 +86,8 @@ function makeMinimalDeps(runtimeStrategy: ReturnType<typeof makeMinimalRuntimeSt
     cwd: tempDir,
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

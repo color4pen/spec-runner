@@ -120,6 +120,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }

@@ -449,6 +449,10 @@ describe("TC-040: single custom reviewer runs after code-review", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -503,6 +507,10 @@ describe("TC-041: multiple reviewers run in declaration order", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -560,6 +568,10 @@ describe("TC-044: code-fixer returns to reviewer that issued needs-fix", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -610,6 +622,10 @@ describe("TC-045: zero reviewers — existing behavior unchanged", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -659,6 +675,10 @@ describe("TC-046: per-reviewer iteration budget is independent", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Pipeline should exhaust on r1 (maxIterations=1) and transition to awaiting-resume
@@ -705,6 +725,10 @@ describe("TC-047: findings source identification — reviewer name in code-fixer
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -760,6 +784,10 @@ describe("TC-048: resume uses snapshot — definition changes don't affect runni
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -802,6 +830,10 @@ describe("custom reviewer ok=false → escalation", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // ok=false should escalate
@@ -853,6 +885,8 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       storeFactory: makeStoreFactory(tempDir),
       stepArtifact: mockRuntimeStrategy as never,
       stepIo: mockRuntimeStrategy as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Non-existent file ref → verdict escalation → pipeline awaiting-resume
@@ -905,6 +939,8 @@ describe("TC-RG-01: regression-gate detects regression → code-fixer → approv
       // regression-gate to run a 3rd time.
       stepArtifact: makeCommitOidStubStrategy() as never,
       stepIo: makeCommitOidStubStrategy() as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -954,6 +990,10 @@ describe("TC-RG-02: regression-gate decision-needed → escalation", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // decision-needed → escalation → awaiting-resume
@@ -993,6 +1033,10 @@ describe("TC-RG-03: regression-gate exhaustion → awaiting-resume", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // regression-gate exhausted → awaiting-resume
@@ -1049,6 +1093,10 @@ describe("TC-050: resume skip — approved reviewer excluded from coordinator fa
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1136,6 +1184,7 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       stepIo: mockRuntimeStrategy as never,
       changedFiles: mockRuntimeStrategy as never,
       roundGitEffects: mockRuntimeStrategy as never,
+      terminalState: undefined,
     };
 
     const bus = new EventBus();

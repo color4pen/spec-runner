@@ -117,6 +117,10 @@ function makeMinimalDeps(storeFactory: StoreFactory): PipelineDeps {
     repo: "repo",
     spawn: noopSpawn,
     storeFactory,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

@@ -151,6 +151,9 @@ function makeDeps(
     resumePrompt: undefined,
     resumeContext: undefined,
     stepArtifact: runtimeStrategy as never,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

@@ -138,6 +138,8 @@ function makeDepsWithCaptureHeadSha(
     resumeContext: undefined,
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     changedFiles: runtimeStrategy as never,
     roundOwnsGitEffects: false,
   } as unknown as PipelineDeps;
@@ -224,6 +226,8 @@ describe("TC-012: sequential agent step captures HEAD OID into commitOid after p
       resumeContext: undefined,
       stepArtifact: runtimeStrategy as never,
       stepIo: runtimeStrategy as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
       changedFiles: runtimeStrategy as never,
       roundOwnsGitEffects: false,
     } as unknown as PipelineDeps;
@@ -271,7 +275,11 @@ describe("TC-012: sequential agent step captures HEAD OID into commitOid after p
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      // runtimeStrategy intentionally omitted
+      // capability fields absent — tests that absence is handled gracefully
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     } as PipelineDeps;
 
     await executor.execute(step, state, deps);

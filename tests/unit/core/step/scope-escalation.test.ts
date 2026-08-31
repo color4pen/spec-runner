@@ -116,6 +116,8 @@ function makeDeps(strategy?: any): PipelineDeps {
     changedFiles: strategy as never,
     stepArtifact: strategy as never,
     stepIo: strategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

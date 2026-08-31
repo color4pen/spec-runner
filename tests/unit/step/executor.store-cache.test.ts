@@ -114,6 +114,10 @@ function makeMinimalDeps(): Omit<PipelineDeps, "storeFactory"> {
     owner: "testowner",
     repo: "testrepo",
     spawn: noopSpawn,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

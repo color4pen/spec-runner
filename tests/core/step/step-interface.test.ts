@@ -131,6 +131,10 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     repo: "repo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

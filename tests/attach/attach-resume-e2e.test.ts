@@ -311,6 +311,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         stepIo: machineAStrategy as never,
         changedFiles: machineAStrategy as never,
         gitTransportSpawn: defaultSpawnFn,
+        roundGitEffects: undefined,
       };
 
       // Build and run the pipeline — starts at "implementer"

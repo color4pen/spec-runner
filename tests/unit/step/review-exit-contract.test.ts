@@ -556,6 +556,10 @@ describe("TC-011: executor iteration — spec-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -618,6 +622,10 @@ describe("TC-011: executor iteration — spec-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -682,6 +690,10 @@ describe("TC-012: executor iteration — code-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -744,6 +756,10 @@ describe("TC-012: executor iteration — code-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const executor = makeExecutorFromDeps(events, deps);

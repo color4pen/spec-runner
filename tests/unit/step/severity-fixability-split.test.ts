@@ -202,6 +202,8 @@ function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): Pipe
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

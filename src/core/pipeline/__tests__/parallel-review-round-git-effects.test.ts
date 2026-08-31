@@ -194,6 +194,9 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore() as never,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
     roundGitEffects: undefined,
     ...overrides,
   };

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71d6a83e-12f1-4001-8e1e-7ecc1b9fb79e",
   "createdAt": "2026-08-30T11:27:03.772Z",
-  "updatedAt": "2026-08-31T08:39:10.726Z",
+  "updatedAt": "2026-08-31T09:13:29.120Z",
   "request": {
     "title": "RuntimeStrategy の mutation / lifecycle consumer を use-case capability へ分割する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/runtime-mutation-lifecycle-capability-split-71d6a83e",
   "error": null,
   "pipelineId": "standard",
@@ -265,6 +265,11 @@
       "text": "Operator decision: retry after transient upstream capacity failure (second attempt; gpt-5.6-sol was at capacity at 07:05 and 07:33 UTC). code-review already approved with zero findings and verified operator-apply commit a874498e. Do NOT make any implementation or documentation changes. Re-run from the custom-reviewers phase onward and proceed through PR creation.",
       "step": "custom-reviewers",
       "recordedAt": "2026-08-31T08:23:56.369Z"
+    },
+    {
+      "text": "Operator review verdict on PR #1105 (CHANGES_REQUESTED, commit 8cb70ca2). Address ALL of the following:\n\n1. [High] src/core/types.ts:97 — Do NOT make production-required safety capabilities optional. stepArtifact, stepIo, terminalState, roundGitEffects are implemented and injected by BOTH Local and Managed runtimes; there is no legitimate capability-absent state in production. Optional fields let composition omissions pass the type checker while optional chaining silently skips input/output validation, step commit/push, terminal checkpoint publish, and parallel-round HEAD/worktree inspection. Make them required in production PipelineDeps; test fakes must pass explicit no-op/unavailable capabilities instead. snapshotMainCheckoutGuard is implemented by both runtimes with null already expressing unavailability — do not additionally make the method optional.\n\n2. [Medium] src/core/runtime/local.ts:159 — Do NOT stash context needed by buildDeps results into the runtime's mutable last-built state (_currentRequest/_currentConfig). A capability built by buildDeps(A) will read B's config/request after buildDeps(B) is called, and the added 'buildDeps must be called before finalizeStepArtifacts' guard contradicts the claim of removing hidden ordering dependencies. Capture required config in an immutable closure at capability construction time, or pass a consumer-owned typed DTO to finalizeStepArtifacts. Note: commitAndPush does not reference request, so _currentRequest itself appears unnecessary — remove it.\n\n3. [Medium] src/core/port/runtime-strategy.ts:36 — Do NOT resolve the cast by allowlisting a ports->domain compile-time cycle in the DSM ratchet (types.ts imports capability types from this port, so the reverse import type creates the cycle). Remove the allowlist exception and eliminate the cast structurally, e.g. move buildDeps into a composition-root-owned typed builder/adapter so the port never references the domain PipelineDeps type (this is the approach issue #1103 itself lists as a candidate).\n\n4. Consumer-owned composite deps: StepExecutor, ParallelReviewRound, and Pipeline still take the full PipelineDeps. Splitting capabilities into fields is not the use-case split #1103 asks for — each consumer can still reach every dependency. Define consumer-owned composites (e.g. StepExecutionDeps, ParallelReviewRoundDeps, a terminal-lifecycle deps type) and narrow each signature to its minimal contract. This also resolves the optional/fail-open problem in item 1.\n\n5. PR body metrics: #1103 requires measured before/after numbers with the aggregation conditions stated: number of target consumers, PipelineDeps.runtimeStrategy reference count, unknown occurrences inside target signatures, target casts, and per-capability consumer/test-fake counts. Measure and add them to the PR body.\n\nDo not weaken or skip any existing test to get green. All existing verification (tests, lint, typecheck, DSM ratchet with zero real violations) must pass after the rework.",
+      "step": "implementer",
+      "recordedAt": "2026-08-31T09:13:28.848Z"
     }
   ],
   "reviewerStatuses": [
@@ -303,7 +308,7 @@
     "createdAt": "2026-08-31T08:39:09.875Z"
   },
   "_journal": {
-    "historyCount": 435,
+    "historyCount": 438,
     "stepCounts": {
       "request-review": 2,
       "design": 1,

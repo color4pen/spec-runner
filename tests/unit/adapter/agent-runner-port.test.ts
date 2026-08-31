@@ -128,6 +128,10 @@ function makeMinimalDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     spawn: noopSpawn,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

@@ -193,6 +193,8 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy, extra?: Partial<PipelineDep
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: runtimeStrategy as never,
     stepIo: runtimeStrategy as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...extra,
   };
 }

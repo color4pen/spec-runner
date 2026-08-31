@@ -174,6 +174,9 @@ function makeDeps(
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore(tempDir) as never,
     roundGitEffects,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
   };
 }
 

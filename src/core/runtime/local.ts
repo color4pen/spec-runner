@@ -43,7 +43,8 @@ import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
-import { deriveStepArtifactLifecycleCapability, deriveStepIoValidationCapability } from "../step/step-capability.js";
+import { deriveStepIoValidationCapability } from "../step/step-capability.js";
+import type { StepArtifactLifecycleCapability } from "../step/step-capability.js";
 import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../pipeline/pipeline-capability.js";
 import type { RoundEgressParams } from "../pipeline/pipeline-capability.js";
 import type { ArtifactRef, CheckpointRestackRecord } from "../../store/event-journal.js";
@@ -149,15 +150,6 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   private workspace: WorkspaceContext | null = null;
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
   private currentSlug: string | null = null;
-  /**
-   * Stable fields from the last buildDeps() call, used by finalizeStepArtifacts.
-   *
-   * R2b: _latestBuiltDeps is replaced by these two stable fields. pushCapability is
-   * now threaded via CommitPushInfra from the StepExecutor call site, eliminating the
-   * invisible ordering precondition on the full PipelineDeps reference.
-   */
-  private _currentConfig: SpecRunnerConfig | null = null;
-  private _currentRequest: ParsedRequest | null = null;
 
   /**
    * Hub for in-flight query AbortControllers.
@@ -610,6 +602,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     slug: string,
     workspace: WorkspaceContext,
   ): PipelineDeps {
+    // Capture config in an immutable closure so capabilities built here always
+    // refer to the config from THIS buildDeps call — not from a later call.
+    const capturedConfig = config;
     const deps: PipelineDeps = {
       client: undefined,
       config,
@@ -628,8 +623,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       },
       repoRoot: this.cwd,
       gitTransportSpawn: this.transportAuth.wrapGitExecSpawn(defaultSpawnFn),
-      // R2b capability fields
-      stepArtifact: deriveStepArtifactLifecycleCapability(this),
+      // R2b capability fields — config and request are captured in closure, not stored
+      // in mutable instance state. This eliminates the hidden ordering precondition
+      // on _currentConfig / _currentRequest that existed in the previous iteration.
+      stepArtifact: this.buildStepArtifactCapability(capturedConfig, request),
       stepIo: deriveStepIoValidationCapability(this),
       terminalState: deriveTerminalStateCapability(this),
       roundGitEffects: deriveRoundGitEffectsCapability(this),
@@ -640,9 +637,31 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       commitInspection: deriveCommitInspectionCapability(this),
       revisionContent: deriveRevisionContentCapability(this),
     };
-    this._currentConfig = config;
-    this._currentRequest = request;
     return deps;
+  }
+
+  /**
+   * Build a StepArtifactLifecycleCapability with config and request captured in a closure.
+   *
+   * Called once per buildDeps() invocation. The returned capability always refers to the
+   * config and request from THIS buildDeps call — not from any later call. This eliminates
+   * the hidden ordering precondition that existed via _currentConfig / _currentRequest.
+   *
+   * Both config and request are forwarded to commitAndPush (via doFinalizeStepArtifacts)
+   * because step.writes() implementations may access deps.request to resolve declared paths.
+   */
+  private buildStepArtifactCapability(config: SpecRunnerConfig, request: ParsedRequest): StepArtifactLifecycleCapability {
+    return {
+      captureHeadSha: (cwd) => this.captureHeadSha(cwd),
+      prepareStepArtifacts: (cwd, slug, stepName, state) =>
+        this.prepareStepArtifacts(cwd, slug, stepName, state),
+      finalizeStepArtifacts: (step, state, cwd, slug, headBeforeStep, infra) =>
+        this.doFinalizeStepArtifacts(step, state, cwd, slug, headBeforeStep, infra, config, request),
+      ...(this.snapshotMainCheckoutGuard
+        ? { snapshotMainCheckoutGuard: (cwd: string, cfg: SpecRunnerConfig) => this.snapshotMainCheckoutGuard(cwd, cfg) }
+        : {}),
+      digestArtifacts: (refs, cwd, branch) => this.digestArtifacts(refs, cwd, branch),
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -734,13 +753,23 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     await writeOutputTemplates(cwd, slug, stepName, state);
   }
 
-  async finalizeStepArtifacts(
+  /**
+   * Internal implementation of step artifact finalize, called from the capability closure.
+   *
+   * Config and request are captured at capability construction time (via
+   * buildStepArtifactCapability) and passed here — no mutable instance state is needed.
+   * Both are forwarded to commitAndPush because step.writes() implementations may access
+   * deps.request to resolve declared output paths (e.g. design.ts uses deps.request.type).
+   */
+  private async doFinalizeStepArtifacts(
     step: AgentStep,
     state: JobState,
     cwd: string,
     slug: string,
     headBeforeStep: string | null,
     infra: CommitPushInfra,
+    config: SpecRunnerConfig,
+    request: ParsedRequest,
   ): Promise<void> {
     await cleanupOutputTemplates(cwd, slug, step.name, state);
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
@@ -762,17 +791,13 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
           }
         : undefined,
     };
-    // Build a minimal StepDeps from stable instance fields set in buildDeps().
-    // pushCapability is threaded via finalInfra (from the executor call site) —
-    // no ordering dependency on a full PipelineDeps reference is needed.
-    if (!this._currentConfig || !this._currentRequest) {
-      throw new Error("LocalRuntime: buildDeps must be called before finalizeStepArtifacts");
-    }
+    // Build a minimal StepDeps from the closure-captured config, request, and the
+    // explicit cwd/slug parameters — no ordering dependency on mutable instance state.
     const stableCtx = {
-      config: this._currentConfig,
+      config,
       slug,
       cwd,
-      request: this._currentRequest,
+      request,
     };
     await commitAndPush(step, state, stableCtx, headBeforeStep, finalInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);

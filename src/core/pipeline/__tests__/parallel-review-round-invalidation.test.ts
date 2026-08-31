@@ -159,6 +159,9 @@ function makeDeps(
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
     roundGitEffects: roundGitEffects as never,
   };
 }

@@ -83,6 +83,10 @@ function makeMinimalDeps(): PipelineDeps {
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

@@ -153,6 +153,9 @@ function makeDeps(runtimeStrategy?: any): PipelineDeps {
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: runtimeStrategy as never,
     changedFiles: runtimeStrategy as never,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   };
 }
 

@@ -202,6 +202,10 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const verdictEvents: string[] = [];
@@ -296,6 +300,10 @@ describe("TC-146: ClaudeCodeRunner + StepExecutor — local runtime state propag
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     await expect(executor.execute(step, initialState, deps)).rejects.toMatchObject({
@@ -378,6 +386,10 @@ describe("TC-001: completionVerdict fallback — resultContent null + completion
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const verdictEvents: string[] = [];
@@ -461,6 +473,10 @@ describe("TC-002: completionVerdict fallback — resultContent null + completion
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -542,6 +558,10 @@ describe("TC-003 (behavior): completionVerdict is NOT used when resultContent is
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -619,6 +639,10 @@ describe("TC-004: setsBranch flag — state.branch set after propose step comple
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -695,6 +719,10 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -928,6 +956,8 @@ describe("TC-007 (T-07): rollover + success → finalizeStepArtifacts が 1 回�
       storeFactory: makeStoreFactory(tempDir),
       stepArtifact: runtimeStrategy as never,
       stepIo: runtimeStrategy as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     const resultState = await executor.execute(step, initialState, deps);
@@ -1006,6 +1036,8 @@ describe("TC-009 (T-07): rollover budget 超過 → CONTEXT_WINDOW_EXHAUSTED hal
       storeFactory: makeStoreFactory(tempDir),
       stepArtifact: runtimeStrategy as never,
       stepIo: runtimeStrategy as never,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     };
 
     // executor.execute() must throw with CONTEXT_WINDOW_EXHAUSTED

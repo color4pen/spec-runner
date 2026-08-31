@@ -180,6 +180,10 @@ function makeDeps(store: ReturnType<typeof makeTrackingStore>): PipelineDeps {
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

@@ -163,6 +163,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
     stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
     stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
     storeFactory: overrides.storeFactory ?? makeStoreFactory(tempDir),
   };

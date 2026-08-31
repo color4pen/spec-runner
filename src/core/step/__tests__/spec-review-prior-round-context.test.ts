@@ -169,6 +169,10 @@ function makeDeps(opts: {
     resumeContext: undefined,
     repoRoot: undefined,
     commitInspection: opts.commitInspection,
+    stepArtifact: undefined,
+    stepIo: undefined,
+    terminalState: undefined,
+    roundGitEffects: undefined,
   } as PipelineDeps;
 }
 

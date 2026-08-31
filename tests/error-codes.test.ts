@@ -241,6 +241,10 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       repo: "repo",
       spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as SpawnFn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");

@@ -159,6 +159,8 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     stepArtifact: makeRuntimeStrategy() as never,
     stepIo: makeRuntimeStrategy() as never,
     changedFiles: makeRuntimeStrategy() as never,
+    terminalState: undefined,
+    roundGitEffects: undefined,
     ...overrides,
   };
 }

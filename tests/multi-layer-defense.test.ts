@@ -145,6 +145,10 @@ describe("TC-01: happy path — spec-review approved, pipeline completes", () =>
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -189,6 +193,10 @@ describe("TC-02: spec-review catches insufficient spec — spec-fixer repairs, r
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(result.status).toBe("awaiting-archive");

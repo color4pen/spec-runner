@@ -476,6 +476,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
         roundGitEffects: runtimeStrategy as never,
         stepIo: runtimeStrategy as never,
+        stepArtifact: undefined,
+        terminalState: undefined,
         storeFactory,
         gitTransportSpawn: gitExecSpawnFn,
       };
@@ -617,6 +619,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
         roundGitEffects: runtimeStrategy as never,
         stepIo: runtimeStrategy as never,
+        stepArtifact: undefined,
+        terminalState: undefined,
         storeFactory,
       };
 

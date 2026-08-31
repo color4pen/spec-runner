@@ -166,6 +166,10 @@ describe("TC-006: runSpecReviewStep — pollUntilComplete is called with default
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // pollUntilComplete should be called with the default timeoutMs (900000ms) on first call
@@ -197,6 +201,10 @@ describe("TC-017: runSpecReviewStep — treats status='idle' as complete", () =>
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     const lastSpecReview = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
@@ -230,6 +238,10 @@ describe("TC-018: runSpecReviewStep — SESSION_TERMINATED error handling", () =
         repo: "testrepo",
         spawn: noopSpawn,
         storeFactory: makeStoreFactory(tempDir),
+        stepArtifact: undefined,
+        stepIo: undefined,
+        terminalState: undefined,
+        roundGitEffects: undefined,
       }),
     ).rejects.toMatchObject({ code: "SESSION_TERMINATED" });
   });
@@ -262,6 +274,10 @@ describe("TC-020: runSpecReviewStep — invalid toolResult (no findings) → esc
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // Invalid toolResult (no findings) → no valid tool call → null toolResult → escalation
@@ -293,6 +309,10 @@ describe("TC-021: runSpecReviewStep — escalation when report_result missing fi
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     // No findings → invalid tool call → null toolResult → judge step → "escalation"
@@ -323,6 +343,10 @@ describe("TC-041: runSpecReviewStep — records session, verdict, findingsPath, 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     const stepResultArr = result.steps?.["spec-review"];
@@ -357,6 +381,10 @@ describe("TC-042: runSpecReviewStep — session created without custom tools", (
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     expect(createSessionMock).toHaveBeenCalledTimes(1);
@@ -394,6 +422,10 @@ describe("TC-049: runSpecReviewStep — findingsPath has correct format", () => 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: undefined,
+      stepIo: undefined,
+      terminalState: undefined,
+      roundGitEffects: undefined,
     });
 
     const lastStepResult = result.steps?.["spec-review"]?.[result.steps["spec-review"]!.length - 1];
