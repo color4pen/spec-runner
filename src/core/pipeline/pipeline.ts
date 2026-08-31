@@ -396,7 +396,7 @@ export class Pipeline {
           const endStore = deps.storeFactory(state.jobId);
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
-          await deps.terminalState?.commitFinalState(deps.cwd, deps.slug, state);
+          await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)
@@ -620,7 +620,7 @@ export class Pipeline {
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
     if (state.status === "awaiting-resume") {
-      await deps.terminalState?.commitFinalState(deps.cwd, deps.slug, state);
+      await deps.terminalState?.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).

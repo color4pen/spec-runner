@@ -752,6 +752,36 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     // Exactly one commitFinalState call from the loop-end seam
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("omitted deps.cwd → commitFinalState receives process.cwd() as cwd argument", async () => {
+    // Spec scenario: call sites must supply deps.cwd ?? process.cwd().
+    // When deps.cwd is undefined (omitted from makeMinimalDeps), the pipeline must
+    // pass process.cwd() as the first argument to commitFinalState.
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    // Confirm cwd is not set (undefined) on the minimal deps fixture
+    expect(deps.cwd).toBeUndefined();
+
+    const designResult: JobState = {
+      ...state,
+      status: "failed",
+      error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not found", hint: "" },
+    };
+
+    const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
+    deps.terminalState = {
+      commitFinalState: commitFinalStateSpy,
+    } as unknown as TerminalStateCapability;
+
+    const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
+    const result = await pipeline.run("design", state, deps);
+
+    expect(result.status).toBe("awaiting-resume");
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    // When deps.cwd is undefined, the call site must fall back to process.cwd()
+    const [calledCwd] = commitFinalStateSpy.mock.calls[0] as [string, string, JobState];
+    expect(calledCwd).toBe(process.cwd());
+  });
 });
 
 // TC-PUB-002: commitFinalState does NOT throw → pipeline result stays awaiting-resume
