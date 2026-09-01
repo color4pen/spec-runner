@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T04:55:38.095Z",
+  "updatedAt": "2026-09-01T05:02:57.742Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
-  "status": "running",
+  "step": "verification",
+  "status": "awaiting-resume",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
-  "error": null,
+  "error": {
+    "code": "VERIFICATION_RETRIES_EXHAUSTED",
+    "message": "verification did not pass after 2 iterations",
+    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -89,7 +93,9 @@
     "4433dee569f729efec62a991ba14fb8e2b6434ba",
     "09eece14a8c72dbca09816ca590033c54d236149",
     "43f0b0fa4908d6e82673ccef997c32f6cf998bb1",
-    "a0dd3f54f78f6feeed23edb65b39f252e60ac50a"
+    "a0dd3f54f78f6feeed23edb65b39f252e60ac50a",
+    "5bfe08a58a7ab8a8d753b8d3f3d3c3c3968338b8",
+    "f3102a5ef9fc5baaf2de87c7ea4763c5f0558136"
   ],
   "touchedFiles": {
     "request-review": [
@@ -121,11 +127,8 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "tests/unit/core/command/runner.test.ts",
-      "src/core/port/command-runtime.ts",
-      "src/core/types.ts",
-      "src/core/command/runner.ts",
-      "src/core/port/runtime-strategy.ts"
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts"
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
@@ -174,7 +177,12 @@
       "src/core/runtime/managed.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "implementer",
+    "reason": "verification did not pass after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -207,15 +215,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 111,
+    "historyCount": 118,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 4,
-      "verification": 5,
+      "implementer": 5,
+      "verification": 6,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
