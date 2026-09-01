@@ -73,7 +73,7 @@ function makeFakeRuntime(
   assertNoDuplicate: (() => Promise<void>) | undefined,
 ): RuntimeStrategy & PipelineDepsBuilder & {
   bootstrapJob: ReturnType<typeof vi.fn>;
-  assertNoDuplicateLiveJob?: ReturnType<typeof vi.fn>;
+  assertNoDuplicateLiveJob: ReturnType<typeof vi.fn>;
 } {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
@@ -83,12 +83,9 @@ function makeFakeRuntime(
   const bootstrapJobSpy = vi.fn().mockResolvedValue(initialState);
   const assertNoDuplicateSpy = assertNoDuplicate !== undefined
     ? vi.fn().mockImplementation(assertNoDuplicate)
-    : undefined;
+    : vi.fn().mockResolvedValue(undefined);
 
-  const runtime: RuntimeStrategy & PipelineDepsBuilder & {
-    bootstrapJob: ReturnType<typeof vi.fn>;
-    assertNoDuplicateLiveJob?: ReturnType<typeof vi.fn>;
-  } = {
+  return {
     bootstrapJob: bootstrapJobSpy,
     persistJobState: vi.fn().mockResolvedValue(undefined),
     query: vi.fn(),
@@ -105,13 +102,17 @@ function makeFakeRuntime(
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
     canDeriveChangedFiles: () => true,
+    assertNoDuplicateLiveJob: assertNoDuplicateSpy,
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
-
-  if (assertNoDuplicateSpy !== undefined) {
-    runtime.assertNoDuplicateLiveJob = assertNoDuplicateSpy;
-  }
-
-  return runtime;
 }
 
 /**

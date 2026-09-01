@@ -53,17 +53,17 @@ export class UnsupportedRuntimeCapabilityError extends Error {
  *
  * Gate logic:
  *   - If descriptor.permissionScope is absent → no requirement → pass (return).
- *   - If runtime.canDeriveChangedFiles?.() === false → capability not met → throw.
- *   - If runtime.canDeriveChangedFiles?.() === true OR absent (undefined) → pass (return).
+ *   - If runtime.canDeriveChangedFiles() === false → capability not met → throw.
+ *   - If runtime.canDeriveChangedFiles() === true → capability met → pass.
  *
  * The gate fires ONLY on the intersection of:
- *   descriptor.permissionScope !== undefined  AND  canDeriveChangedFiles?.() === false
+ *   descriptor.permissionScope !== undefined  AND  canDeriveChangedFiles() === false
  *
  * Judgement is derived from descriptor.permissionScope presence — NOT from descriptor.id value.
  * No "if id === 'fast'" or similar profile-name branches exist here.
  *
  * @param descriptor - resolved PipelineDescriptor for the selected pipeline
- * @param runtime    - RuntimeStrategy (only canDeriveChangedFiles is consulted)
+ * @param runtime    - ChangedFilesCapability (only canDeriveChangedFiles is consulted)
  * @throws UnsupportedRuntimeCapabilityError when scope is declared and runtime cannot derive changed files
  */
 export function assertRuntimeSupportsScope(
@@ -76,11 +76,10 @@ export function assertRuntimeSupportsScope(
   }
 
   // Scope is declared. Check runtime capability.
-  // canDeriveChangedFiles is optional on RuntimeStrategy.
-  // absent (undefined) → treated as "does not block" (fall-through to listChangedFiles path).
-  // false             → capability not met → throw.
-  // true              → capability met → pass.
-  if (runtime.canDeriveChangedFiles?.() === false) {
+  // canDeriveChangedFiles() is required on ChangedFilesCapability.
+  // false → capability not met → throw.
+  // true  → capability met → pass.
+  if (runtime.canDeriveChangedFiles() === false) {
     throw new UnsupportedRuntimeCapabilityError(descriptor.id);
   }
 }

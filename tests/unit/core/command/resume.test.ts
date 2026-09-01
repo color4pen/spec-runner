@@ -141,6 +141,37 @@ function buildMockRuntime(): RuntimeStrategy & PipelineDepsBuilder {
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockImplementation(async () => {
+      // In resume tests, workspaceOpts.existingWorktreePath is set, so this is not called.
+      // Return a generic state as a fallback.
+      return {
+        version: 1 as const,
+        jobId: "test-reload-id",
+        slug: "test-slug",
+        status: "running" as const,
+        step: "request-review" as const,
+        request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
+        repository: { owner: "testowner", name: "testrepo" },
+        session: null,
+        branch: "feat/test",
+        history: [],
+        error: null,
+        steps: {},
+        pipelineId: "standard",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      };
+    }),
+    canDeriveChangedFiles: () => false,
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
 }
 
@@ -280,6 +311,17 @@ function buildResumeTestRuntime(): RuntimeStrategy & PipelineDepsBuilder {
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    canDeriveChangedFiles: () => false,
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
 }
 

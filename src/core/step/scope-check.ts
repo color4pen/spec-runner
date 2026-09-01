@@ -50,8 +50,7 @@ export async function computeExtraScopeFindings(
   // Fail-closed: if the runtime explicitly declares it cannot derive changed files,
   // skip listChangedFiles (which would silently return [] = fail-open) and synthesize
   // an UNKNOWN decision-needed finding instead.
-  // predicate absent or true → fall through to existing listChangedFiles path (#689 behavior).
-  if (deps.changedFiles.canDeriveChangedFiles?.() === false) {
+  if (deps.changedFiles.canDeriveChangedFiles() === false) {
     return synthesizeScopeUnverifiableFinding({ slug: deps.slug });
   }
 

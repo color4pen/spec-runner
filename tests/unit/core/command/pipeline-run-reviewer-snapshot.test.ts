@@ -101,10 +101,10 @@ function makeFakePreflightResult(pipelineId?: string): PreflightResult {
 
 /**
  * Build a fake RuntimeStrategy with bootstrapJob returning a fresh initial state.
- * canDeriveChangedFiles is set to `() => canDerive` when canDerive is a boolean.
+ * Note (R2c): "absent" case removed — canDeriveChangedFiles is now required.
  */
 function makeFakeRuntime(
-  canDerive: boolean | "absent",
+  canDerive: boolean,
 ): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
@@ -114,7 +114,7 @@ function makeFakeRuntime(
 
   const bootstrapJobSpy = vi.fn().mockResolvedValue(initialState);
 
-  const runtime: RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } = {
+  return {
     bootstrapJob: bootstrapJobSpy,
     persistJobState: vi.fn().mockResolvedValue(undefined),
     query: vi.fn(),
@@ -130,13 +130,18 @@ function makeFakeRuntime(
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    canDeriveChangedFiles: () => canDerive,
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
-
-  if (canDerive !== "absent") {
-    runtime.canDeriveChangedFiles = () => canDerive;
-  }
-
-  return runtime;
 }
 
 /** Thin subclass exposing protected prepare() for testing. */

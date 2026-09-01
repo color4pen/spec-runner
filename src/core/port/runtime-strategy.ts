@@ -232,9 +232,12 @@ export type CleanupHandle = { readonly __brand: unique symbol } & Record<string,
  *
  * Read-only leaf consumers (scope-check, no-op-detect, runtime-capability-gate)
  * depend on this narrow capability instead of the full RuntimeStrategy facade.
+ *
+ * canDeriveChangedFiles() is required: both LocalRuntime and ManagedRuntime implement it.
+ * Absence of this capability is expressed at the injection site as `ChangedFilesCapability | undefined`.
  */
 export interface ChangedFilesCapability {
-  canDeriveChangedFiles?(): boolean;
+  canDeriveChangedFiles(): boolean;
   listChangedFiles(
     baseBranch: string,
     cwd: string,
@@ -250,9 +253,8 @@ export interface ChangedFilesCapability {
  * the full RuntimeStrategy facade.
  *
  * The method is required: `{}` does not satisfy this capability. Absence of the
- * capability is expressed at the injection site as `CommitInspectionCapability | undefined`
- * (derive from a facade via deriveCommitInspectionCapability). Per-call inability
- * remains expressed by the `unavailable` variant of ChangedFilesResult.
+ * capability is expressed at the injection site as `CommitInspectionCapability | undefined`.
+ * Per-call inability remains expressed by the `unavailable` variant of ChangedFilesResult.
  */
 export interface CommitInspectionCapability {
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
@@ -265,8 +267,7 @@ export interface CommitInspectionCapability {
  * instead of the full RuntimeStrategy facade.
  *
  * The method is required: `{}` does not satisfy this capability. Absence of the
- * capability is expressed at the injection site as `RevisionContentCapability | undefined`
- * (derive from a facade via deriveRevisionContentCapability).
+ * capability is expressed at the injection site as `RevisionContentCapability | undefined`.
  */
 export interface RevisionContentCapability {
   readRevisionContent(
@@ -275,34 +276,6 @@ export interface RevisionContentCapability {
     cwd: string,
     branch: string | null,
   ): Promise<RevisionContentPair>;
-}
-
-/**
- * Derive a CommitInspectionCapability from a RuntimeStrategy facade.
- *
- * The facade declares listCommitChangedFiles as optional; the capability requires it.
- * Returns undefined when the facade (or the method) is absent — consumers treat
- * undefined as "capability not available" and degrade exactly as before.
- */
-export function deriveCommitInspectionCapability(
-  runtime: Pick<RuntimeStrategy, "listCommitChangedFiles"> | undefined,
-): CommitInspectionCapability | undefined {
-  if (!runtime?.listCommitChangedFiles) return undefined;
-  return { listCommitChangedFiles: runtime.listCommitChangedFiles.bind(runtime) };
-}
-
-/**
- * Derive a RevisionContentCapability from a RuntimeStrategy facade.
- *
- * The facade declares readRevisionContent as optional; the capability requires it.
- * Returns undefined when the facade (or the method) is absent — consumers treat
- * undefined as "capability not available" and degrade exactly as before.
- */
-export function deriveRevisionContentCapability(
-  runtime: Pick<RuntimeStrategy, "readRevisionContent"> | undefined,
-): RevisionContentCapability | undefined {
-  if (!runtime?.readRevisionContent) return undefined;
-  return { readRevisionContent: runtime.readRevisionContent.bind(runtime) };
 }
 
 // ---------------------------------------------------------------------------
@@ -538,13 +511,9 @@ export interface RuntimeStrategy {
    * - managed: always returns success with empty paths (no local worktree;
    *            known Non-Goal for managed runtime — worktree absence is not a failure).
    *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
-   *
    * @param cwd - Working directory (the worktree in which to run git status).
    */
-  listWorktreeChanges?(cwd: string): Promise<WorktreeInspectionResult>;
-
+  listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
 
   /**
    * Seam meta-information: whether this runtime can structurally derive changed files.
@@ -565,25 +534,17 @@ export interface RuntimeStrategy {
    *
    * - `true`  — runtime can derive changed files (e.g. LocalRuntime with git worktree).
    * - `false` — runtime cannot derive changed files (e.g. ManagedRuntime, no local worktree).
-   * - absent  — treated as derivable: the listChangedFiles path is used, and
-   *             fail-closed behavior does NOT fire for runtimes without this predicate.
-   *
-   * Optional to preserve backward compatibility with test fakes typed as RuntimeStrategy:
-   * absent is treated as "evaluate via listChangedFiles" (not as "cannot derive").
-   * Only predicate=false triggers the short-circuit in both consumers.
    */
-  canDeriveChangedFiles?(): boolean;
+  canDeriveChangedFiles(): boolean;
 
   /**
-   * Reject a second run while a live job already holds this slug (local runtime only).
+   * Reject a second run while a live job already holds this slug.
    * Called by PipelineRunCommand.prepare() immediately before bootstrapJob so a rejected
    * run creates no job state.
    * - local:   scan slug occupancy; if non-terminal prior found → throw SLUG_OCCUPIED.
-   * - managed: no-op (out of scope for this change).
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it; RealRuntimeStrategy
-   * requires it (mirrors canDeriveChangedFiles).
+   * - managed: no-op.
    */
-  assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
+  assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
 
   /**
    * Assert that the provider is ready before any side effects (job state / worktree / branch
@@ -595,11 +556,8 @@ export interface RuntimeStrategy {
    * - local:   calls the injected ProviderReadinessProbe once; throws a classified
    *            SpecRunnerError("PROVIDER_NOT_READY", ...) when the probe returns a non-ready kind.
    * - managed: no-op (managed readiness / preflight is unchanged by this change).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it; RealRuntimeStrategy
-   * requires it (compile-time enforcement on concrete runtimes — mirrors assertNoDuplicateLiveJob).
    */
-  assertProviderReadiness?(env: Record<string, string | undefined>): Promise<void>;
+  assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>;
 
   /**
    * Reload job state from the canonical slug store after setupWorkspace() completes.
@@ -607,20 +565,16 @@ export interface RuntimeStrategy {
    * Called by CommandRunner.execute() immediately after setupWorkspace() succeeds so that
    * all fields written to the store during setup (worktreePath, synthesizedCommits, branch,
    * request.path, etc.) are reflected in the in-memory state passed to the pipeline.
-   * Replaces the former manual mirror (worktreePath / branch only) with a single store reload
-   * that picks up every field, regardless of which fields setupWorkspace() writes in the future.
+   *
+   * Skip condition (enforced by CommandRunner): skip when workspaceOpts.existingWorktreePath
+   * !== undefined (resume path — state already loaded, setupWorkspace doesn't write new fields).
    *
    * - local:   constructs a JobStateStore with `workspace.worktreePath ?? cwd` as stateRoot
-   *            and calls `.load()`. Returns the loaded state cast as JobState (safe: no step
-   *            runs have occurred at this lifecycle point, so steps is always {}).
-   * - managed: fail-closed throw (store topology not verified for managed runtime; reload
-   *            safety must be confirmed in a separate request — D3 / T-03 choice).
+   *            and calls `.load()`. Returns the loaded state cast as JobState.
+   * - managed: fail-closed throw (store topology not verified for managed runtime).
    * - throws on load error (caller is fail-closed: reload failure prevents pipeline start).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
-  reloadJobState?(
+  reloadJobState(
     jobId: string,
     slug: string,
     workspace: WorkspaceContext,
@@ -640,11 +594,8 @@ export interface RuntimeStrategy {
    *
    * - local:   `git diff --name-only <oid>^ <oid>` executed in cwd.
    * - managed: always returns unavailable (no local worktree; structural limitation).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
-  listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
 
   /**
    * Read a file from a specific commit OID by trailing-suffix path resolution.
@@ -663,13 +614,9 @@ export interface RuntimeStrategy {
    * Contract:
    * - Never throws — returns unavailable on any failure.
    * - 0 or ≥2 suffix matches → unavailable (fail-closed; ambiguity not tolerated).
-   * - Non-existent OID / non-existent path → unavailable.
    * - Managed runtime: always unavailable (no local worktree).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
-  readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+  readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
 
   /**
    * Snapshot the state of guarded main-checkout paths at a moment in time.
@@ -678,15 +625,11 @@ export interface RuntimeStrategy {
    * escape-writes to main checkout guarded paths (forbiddenSurfaces + .specrunner/).
    *
    * Contract:
-   * - Never throws — returns null on any git/fs error (fail-open backstop, D6).
+   * - Never throws — returns null on any git/fs error (fail-open backstop).
    * - no-worktree mode: detectSpecrunnerWorktree returns false → null.
    * - managed runtime: null (no local worktree).
-   * - Git status ignores are naturally excluded (git status --porcelain omits them).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes remain unaffected.
-   * RealRuntimeStrategy requires the implementation (compile-time enforcement).
    */
-  snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
+  snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
 
   /**
    * Read a file's content at the current worktree revision and at a specific prior commitOid.
@@ -697,19 +640,9 @@ export interface RuntimeStrategy {
    * Contract:
    * - Never throws — returns null for any field that cannot be resolved.
    * - `current`: read from `path.join(cwd, file)` (local) or `getRawFile(branch, file)` (managed).
-   *   Returns null if the file does not exist or a read error occurs.
-   * - `prior`: resolved via `git show <priorOid>:<file>` (local) or always null (managed,
-   *   because arbitrary OID resolution is not supported in the managed runtime).
-   *   Returns null if the OID does not exist, spawn fails, or any error occurs.
-   *
-   * - local:   reads current file from fs; prior via `git show <priorOid>:<file>` in cwd.
-   * - managed: current via `githubClient.getRawFile(branch, file)` (branch null → null);
-   *            prior is always null (cannot resolve arbitrary OIDs).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   * - `prior`: resolved via `git show <priorOid>:<file>` (local) or always null (managed).
    */
-  readRevisionContent?(
+  readRevisionContent(
     file: string,
     priorOid: string,
     cwd: string,
@@ -724,60 +657,16 @@ export interface RuntimeStrategy {
    *
    * Contract:
    * - Never throws — returns a discriminated union instead.
-   * - found:       git history has a commit for this path; oid is the commit SHA and
-   *               subject is the first line of the commit message.
+   * - found:       git history has a commit for this path; oid is the commit SHA.
    * - none:        the path has never been committed (empty git log output).
-   * - unavailable: git command failed (non-zero exit, spawn error, etc.); reason carries
-   *               the error summary.
+   * - unavailable: git command failed (non-zero exit, spawn error, etc.).
    *
    * - local:   `git log -1 --format="%H\x1f%s" -- <path>` executed in cwd.
-   *            empty stdout → none; non-zero exit / spawn error → unavailable; else → found.
    * - managed: always returns unavailable (no local worktree; structural limitation).
-   *
-   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
-   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
-  lastCommitTouchingPath?(path: string, cwd: string): Promise<
-    | { kind: "found"; oid: string; subject: string }
-    | { kind: "none" }
-    | { kind: "unavailable"; reason: string }
-  >;
-}
-
-// ---------------------------------------------------------------------------
-// RealRuntimeStrategy — intersection type for concrete runtime implementations
-// ---------------------------------------------------------------------------
-
-/**
- * Intersection type that concrete runtime classes in src/core/runtime/ must implement.
- *
- * Extends RuntimeStrategy with a required (non-optional) canDeriveChangedFiles().
- * Using this type for LocalRuntime and ManagedRuntime ensures that:
- * - predicate implementation is enforced at compile time for real runtimes.
- * - test fakes typed as RuntimeStrategy remain unaffected (optional predicate).
- * - a future concrete runtime that omits canDeriveChangedFiles() fails to compile.
- *
- * Port interface (RuntimeStrategy) keeps predicate optional for test-fake convenience.
- * Composition-root implementations use RealRuntimeStrategy to close the optional hole.
- */
-export type RealRuntimeStrategy = RuntimeStrategy & {
-  canDeriveChangedFiles(): boolean;
-  assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
-  assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>;
-  reloadJobState(jobId: string, slug: string, workspace: WorkspaceContext): Promise<JobState>;
-  snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
-  listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
-  listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
-  readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
-  readRevisionContent(
-    file: string,
-    priorOid: string,
-    cwd: string,
-    branch: string | null,
-  ): Promise<RevisionContentPair>;
   lastCommitTouchingPath(path: string, cwd: string): Promise<
     | { kind: "found"; oid: string; subject: string }
     | { kind: "none" }
     | { kind: "unavailable"; reason: string }
   >;
-};
+}

@@ -169,6 +169,17 @@ function makeFakeRuntime(): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJ
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    canDeriveChangedFiles: () => false,
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
 
   return runtime;

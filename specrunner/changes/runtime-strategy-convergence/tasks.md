@@ -2,15 +2,15 @@
 
 ## T-01: 変更前の影響範囲を監査し、before-state メトリクスを記録する
 
-- [ ] `RuntimeStrategy` を import している production ファイルを grep して一覧化する
-- [ ] `RealRuntimeStrategy` を参照しているファイルをすべて列挙する
-- [ ] `deriveCommitInspectionCapability` / `deriveRevisionContentCapability` を使っているファイルを列挙する
-- [ ] `as unknown as RuntimeStrategy` を grep して全ファイルと行番号を記録する
-- [ ] `assertProviderReadiness` / `assertNoDuplicateLiveJob` / `reloadJobState` / `canDeriveChangedFiles` の optional 呼び出し（`?.`、存在確認 `if`）を列挙する
-- [ ] `RuntimeStrategy & PipelineDepsBuilder` の出現箇所を全列挙する
-- [ ] `Pick<RuntimeStrategy` の出現箇所を全列挙する
-- [ ] runtime-strategy.ts の行数と RuntimeStrategy メソッド数（required / optional 別）を記録する
-- [ ] production の full-interface import/reference 件数を記録する
+- [x] `RuntimeStrategy` を import している production ファイルを grep して一覧化する
+- [x] `RealRuntimeStrategy` を参照しているファイルをすべて列挙する
+- [x] `deriveCommitInspectionCapability` / `deriveRevisionContentCapability` を使っているファイルを列挙する
+- [x] `as unknown as RuntimeStrategy` を grep して全ファイルと行番号を記録する
+- [x] `assertProviderReadiness` / `assertNoDuplicateLiveJob` / `reloadJobState` / `canDeriveChangedFiles` の optional 呼び出し（`?.`、存在確認 `if`）を列挙する
+- [x] `RuntimeStrategy & PipelineDepsBuilder` の出現箇所を全列挙する
+- [x] `Pick<RuntimeStrategy` の出現箇所を全列挙する
+- [x] runtime-strategy.ts の行数と RuntimeStrategy メソッド数（required / optional 別）を記録する
+- [x] production の full-interface import/reference 件数を記録する
 
 **Acceptance Criteria**:
 - before-state メトリクスがすべて記録されており、実装タスクの実行前に参照できる
@@ -20,14 +20,14 @@
 
 ## T-02: `src/core/port/command-runtime.ts` を新規作成し、4 つの lifecycle capability interface を定義する
 
-- [ ] `src/core/port/command-runtime.ts` を新規作成する
-- [ ] `ProviderReadinessCapability` interface を定義する（`assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>` を required で含む）
-- [ ] `JobBootstrapCapability` interface を定義する（`assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>` と `bootstrapJob(repoRoot: string, params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string }): Promise<JobState>` を required で含む）
-- [ ] `WorkspaceLifecycleCapability` interface を定義する（`setupWorkspace`, `registerCleanup`, `teardown` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
-- [ ] `JobStatePersistenceCapability` interface を定義する（`persistJobState`, `reloadJobState` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
-- [ ] `RuntimeFacade = ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を type alias として export する
-- [ ] 必要な import（`JobState`, `RequestInfo`, `RepositoryInfo`, `WorkspaceContext`, `CleanupHandle`, `WorkspaceOptions` など）を `runtime-strategy.ts` や `state/schema.ts` から引く
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/port/command-runtime.ts` を新規作成する
+- [x] `ProviderReadinessCapability` interface を定義する（`assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>` を required で含む）
+- [x] `JobBootstrapCapability` interface を定義する（`assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>` と `bootstrapJob(repoRoot: string, params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string }): Promise<JobState>` を required で含む）
+- [x] `WorkspaceLifecycleCapability` interface を定義する（`setupWorkspace`, `registerCleanup`, `teardown` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
+- [x] `JobStatePersistenceCapability` interface を定義する（`persistJobState`, `reloadJobState` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
+- [x] `RuntimeFacade = ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を type alias として export する
+- [x] 必要な import（`JobState`, `RequestInfo`, `RepositoryInfo`, `WorkspaceContext`, `CleanupHandle`, `WorkspaceOptions` など）を `runtime-strategy.ts` や `state/schema.ts` から引く
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `src/core/port/command-runtime.ts` が存在し、4 interface + 1 type alias がすべて export されている
@@ -39,11 +39,11 @@
 
 ## T-03: `factory.ts` と `BootstrapResult` の型を `RuntimeFacade` に更新する
 
-- [ ] `src/core/runtime/factory.ts` で `createRuntime()` の戻り値型を `RuntimeStrategy & PipelineDepsBuilder` から `RuntimeFacade` に変更する
-- [ ] `src/cli/bootstrap.ts` で `BootstrapResult.runtime` の型を `RuntimeFacade` に変更する
-- [ ] 両ファイルの import を更新する（`command-runtime.ts` の `RuntimeFacade` を import し、`RuntimeStrategy` / `PipelineDepsBuilder` の import を削除するか確認する）
-- [ ] `LocalRuntime` と `ManagedRuntime` が構造的に `RuntimeFacade` を満たすことを typecheck で確認する（コンパイルエラーが出た場合は当該クラスを先に修正する）
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/runtime/factory.ts` で `createRuntime()` の戻り値型を `RuntimeStrategy & PipelineDepsBuilder` から `RuntimeFacade` に変更する
+- [x] `src/cli/bootstrap.ts` で `BootstrapResult.runtime` の型を `RuntimeFacade` に変更する
+- [x] 両ファイルの import を更新する（`command-runtime.ts` の `RuntimeFacade` を import し、`RuntimeStrategy` / `PipelineDepsBuilder` の import を削除するか確認する）
+- [x] `LocalRuntime` と `ManagedRuntime` が構造的に `RuntimeFacade` を満たすことを typecheck で確認する（コンパイルエラーが出た場合は当該クラスを先に修正する）
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `factory.ts` の `createRuntime()` 戻り値型が `RuntimeFacade` である
@@ -55,12 +55,12 @@
 
 ## T-04: `CommandRunner` を更新し、optional call ガードを除去する
 
-- [ ] `src/core/command/runner.ts` のコンストラクタ引数 `runtime` の型を、以下の intersection に変更する:
+- [x] `src/core/command/runner.ts` のコンストラクタ引数 `runtime` の型を、以下の intersection に変更する:
   `ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`
-- [ ] runner.ts:110 の `if (this.runtime.assertProviderReadiness)` 存在チェックを削除し、`await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>)` を直接呼ぶ形に変更する
-- [ ] runner.ts:195 の `if (this.runtime.reloadJobState && workspaceOpts.existingWorktreePath === undefined)` を `if (workspaceOpts.existingWorktreePath === undefined)` に変更する（メソッド存在確認のみ削除し、スキップ条件 `existingWorktreePath === undefined` は維持する）
-- [ ] import を更新する（`RuntimeStrategy` の import を削除し、新 interface を import する）
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] runner.ts:110 の `if (this.runtime.assertProviderReadiness)` 存在チェックを削除し、`await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>)` を直接呼ぶ形に変更する
+- [x] runner.ts:195 の `if (this.runtime.reloadJobState && workspaceOpts.existingWorktreePath === undefined)` を `if (workspaceOpts.existingWorktreePath === undefined)` に変更する（メソッド存在確認のみ削除し、スキップ条件 `existingWorktreePath === undefined` は維持する）
+- [x] import を更新する（`RuntimeStrategy` の import を削除し、新 interface を import する）
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `runner.ts` に `if (this.runtime.assertProviderReadiness)` が存在しない
@@ -72,13 +72,13 @@
 
 ## T-05: `PipelineRunCommand` を更新し、optional chaining を除去する
 
-- [ ] `src/core/command/pipeline-run.ts` のコンストラクタ引数 `runtime` の型を以下に変更する:
+- [x] `src/core/command/pipeline-run.ts` のコンストラクタ引数 `runtime` の型を以下に変更する:
   `ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`
   （または `RuntimeFacade` を使い、親 class と型を合わせる）
-- [ ] pipeline-run.ts:141 の `await this.runtime.assertNoDuplicateLiveJob?.(cwd, slug)` の `?.` を除去し `await this.runtime.assertNoDuplicateLiveJob(cwd, slug)` にする
-- [ ] pipeline-run.ts:141 付近のコメント「Optional on the port (test fakes may omit it)」を削除する
-- [ ] import を更新する（`RuntimeStrategy` を削除し、新 interface/alias を import する）
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] pipeline-run.ts:141 の `await this.runtime.assertNoDuplicateLiveJob?.(cwd, slug)` の `?.` を除去し `await this.runtime.assertNoDuplicateLiveJob(cwd, slug)` にする
+- [x] pipeline-run.ts:141 付近のコメント「Optional on the port (test fakes may omit it)」を削除する
+- [x] import を更新する（`RuntimeStrategy` を削除し、新 interface/alias を import する）
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `pipeline-run.ts` に `assertNoDuplicateLiveJob?.` が存在しない
@@ -89,9 +89,9 @@
 
 ## T-06: `ResumeCommand` を更新する
 
-- [ ] `src/core/command/resume.ts` のコンストラクタ引数 `runtime` の型を、CommandRunner と同じ composition（または `RuntimeFacade`）に変更する
-- [ ] `RuntimeStrategy` の import を削除し、新 interface/alias に差し替える
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/command/resume.ts` のコンストラクタ引数 `runtime` の型を、CommandRunner と同じ composition（または `RuntimeFacade`）に変更する
+- [x] `RuntimeStrategy` の import を削除し、新 interface/alias に差し替える
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `resume.ts` に `RuntimeStrategy` の import が存在しない
@@ -103,19 +103,19 @@
 
 以下の 10 メソッドから `?` を除去する:
 
-- [ ] `listWorktreeChanges?` → `listWorktreeChanges`（JSDoc の "Optional on the port so RuntimeStrategy-typed test fakes may omit it" を削除）
-- [ ] `canDeriveChangedFiles?` → `canDeriveChangedFiles`（JSDoc 更新）
-- [ ] `assertNoDuplicateLiveJob?` → `assertNoDuplicateLiveJob`（JSDoc 更新）
-- [ ] `assertProviderReadiness?` → `assertProviderReadiness`（JSDoc 更新）
-- [ ] `reloadJobState?` → `reloadJobState`（JSDoc 更新）
-- [ ] `listCommitChangedFiles?` → `listCommitChangedFiles`（JSDoc 更新）
-- [ ] `readFileAtCommit?` → `readFileAtCommit`（JSDoc 更新）
-- [ ] `snapshotMainCheckoutGuard?` → `snapshotMainCheckoutGuard`（JSDoc 更新）
-- [ ] `readRevisionContent?` → `readRevisionContent`（JSDoc 更新）
-- [ ] `lastCommitTouchingPath?` → `lastCommitTouchingPath`（JSDoc 更新）
-- [ ] `RealRuntimeStrategy` 型エイリアスを `runtime-strategy.ts` から削除する
-- [ ] `LocalRuntime` が `implements RuntimeStrategy` を維持していれば typecheck で全メソッド実装が確認できることを確認する（同様に `ManagedRuntime`）
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `listWorktreeChanges?` → `listWorktreeChanges`（JSDoc の "Optional on the port so RuntimeStrategy-typed test fakes may omit it" を削除）
+- [x] `canDeriveChangedFiles?` → `canDeriveChangedFiles`（JSDoc 更新）
+- [x] `assertNoDuplicateLiveJob?` → `assertNoDuplicateLiveJob`（JSDoc 更新）
+- [x] `assertProviderReadiness?` → `assertProviderReadiness`（JSDoc 更新）
+- [x] `reloadJobState?` → `reloadJobState`（JSDoc 更新）
+- [x] `listCommitChangedFiles?` → `listCommitChangedFiles`（JSDoc 更新）
+- [x] `readFileAtCommit?` → `readFileAtCommit`（JSDoc 更新）
+- [x] `snapshotMainCheckoutGuard?` → `snapshotMainCheckoutGuard`（JSDoc 更新）
+- [x] `readRevisionContent?` → `readRevisionContent`（JSDoc 更新）
+- [x] `lastCommitTouchingPath?` → `lastCommitTouchingPath`（JSDoc 更新）
+- [x] `RealRuntimeStrategy` 型エイリアスを `runtime-strategy.ts` から削除する
+- [x] `LocalRuntime` が `implements RuntimeStrategy` を維持していれば typecheck で全メソッド実装が確認できることを確認する（同様に `ManagedRuntime`）
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `runtime-strategy.ts` に `RealRuntimeStrategy` が存在しない
@@ -126,12 +126,12 @@
 
 ## T-08: `ChangedFilesCapability.canDeriveChangedFiles` を required にし、optional chaining を除去する
 
-- [ ] `src/core/port/runtime-strategy.ts` の `ChangedFilesCapability` 内で `canDeriveChangedFiles?(): boolean` を `canDeriveChangedFiles(): boolean` に変更する
-- [ ] `src/core/step/scope-check.ts` の `deps.changedFiles.canDeriveChangedFiles?.()` を `deps.changedFiles.canDeriveChangedFiles()` に変更する（`changedFiles` フィールド自体が `undefined` の場合の guard は維持する）
-- [ ] `src/core/step/executor.ts` の `deps.changedFiles?.canDeriveChangedFiles?.()` の内側の `?.` を除去し `deps.changedFiles?.canDeriveChangedFiles()` にする
-- [ ] `src/core/pipeline/runtime-capability-gate.ts` の `runtime.canDeriveChangedFiles?.() === false` を `runtime.canDeriveChangedFiles() === false` に変更する
-- [ ] `runtime-capability-gate.ts` のコメント内 "canDeriveChangedFiles is optional on RuntimeStrategy. absent (undefined) → treated as 'does not block'" という記述を実態に合わせて更新する
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/port/runtime-strategy.ts` の `ChangedFilesCapability` 内で `canDeriveChangedFiles?(): boolean` を `canDeriveChangedFiles(): boolean` に変更する
+- [x] `src/core/step/scope-check.ts` の `deps.changedFiles.canDeriveChangedFiles?.()` を `deps.changedFiles.canDeriveChangedFiles()` に変更する（`changedFiles` フィールド自体が `undefined` の場合の guard は維持する）
+- [x] `src/core/step/executor.ts` の `deps.changedFiles?.canDeriveChangedFiles?.()` の内側の `?.` を除去し `deps.changedFiles?.canDeriveChangedFiles()` にする
+- [x] `src/core/pipeline/runtime-capability-gate.ts` の `runtime.canDeriveChangedFiles?.() === false` を `runtime.canDeriveChangedFiles() === false` に変更する
+- [x] `runtime-capability-gate.ts` のコメント内 "canDeriveChangedFiles is optional on RuntimeStrategy. absent (undefined) → treated as 'does not block'" という記述を実態に合わせて更新する
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - production ソースに `canDeriveChangedFiles?.()` が存在しない
@@ -142,14 +142,14 @@
 
 ## T-09: Pick-based shim を削除し、`buildDeps()` で直接 capability を構築する
 
-- [ ] `src/core/port/runtime-strategy.ts` から `deriveCommitInspectionCapability` 関数を削除する
-- [ ] `src/core/port/runtime-strategy.ts` から `deriveRevisionContentCapability` 関数を削除する
-- [ ] `src/core/port/runtime-strategy.ts` の `CommitInspectionCapability` / `RevisionContentCapability` の JSDoc から shim 関数への参照（"derive from a facade via derive\*"）を削除する
-- [ ] `src/core/runtime/local.ts` の `buildDeps()` で `deriveCommitInspectionCapability(this)` を `{ listCommitChangedFiles: this.listCommitChangedFiles.bind(this) }` に差し替える
-- [ ] `src/core/runtime/local.ts` の `buildDeps()` で `deriveRevisionContentCapability(this)` を `{ readRevisionContent: this.readRevisionContent.bind(this) }` に差し替える
-- [ ] `src/core/runtime/managed.ts` の `buildDeps()` で shim 呼び出しを直接構築に差し替える（ManagedRuntime は `listCommitChangedFiles` が常に `unavailable` を返す実装済みのため、同様に bind または `undefined` を適切に設定する）
-- [ ] `local.ts` / `managed.ts` から `deriveCommitInspectionCapability` / `deriveRevisionContentCapability` の import を削除する
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/port/runtime-strategy.ts` から `deriveCommitInspectionCapability` 関数を削除する
+- [x] `src/core/port/runtime-strategy.ts` から `deriveRevisionContentCapability` 関数を削除する
+- [x] `src/core/port/runtime-strategy.ts` の `CommitInspectionCapability` / `RevisionContentCapability` の JSDoc から shim 関数への参照（"derive from a facade via derive\*"）を削除する
+- [x] `src/core/runtime/local.ts` の `buildDeps()` で `deriveCommitInspectionCapability(this)` を `{ listCommitChangedFiles: this.listCommitChangedFiles.bind(this) }` に差し替える
+- [x] `src/core/runtime/local.ts` の `buildDeps()` で `deriveRevisionContentCapability(this)` を `{ readRevisionContent: this.readRevisionContent.bind(this) }` に差し替える
+- [x] `src/core/runtime/managed.ts` の `buildDeps()` で shim 呼び出しを直接構築に差し替える（ManagedRuntime は `listCommitChangedFiles` が常に `unavailable` を返す実装済みのため、同様に bind または `undefined` を適切に設定する）
+- [x] `local.ts` / `managed.ts` から `deriveCommitInspectionCapability` / `deriveRevisionContentCapability` の import を削除する
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `deriveCommitInspectionCapability` がどのファイルにも存在しない
@@ -163,14 +163,14 @@
 
 対象: pipeline-sole-committer-e2e.test.ts 行 382 と 541（2 件の `as unknown as RuntimeStrategy`）
 
-- [ ] 行 367-382 のブロックを分析し、`roundGitEffects` slot に注入している partial object をリストアップする（`captureHeadSha`, `listWorktreeChanges`, `listChangedFiles`, `digestArtifacts`）
-- [ ] `roundGitEffects` 用の typed object を `RoundGitEffectsCapability` 型として構築する（不足メソッド `commitRoundArtifacts` は `vi.fn().mockResolvedValue(...)` で補完する）
-- [ ] `stepIo` 用の typed object を `StepIoValidationCapability` 型として構築する（`validateStepInputs`, `validateStepOutputs`, 不足の `verifyFindingRefs` を `vi.fn().mockResolvedValue([])` で補完する）
-- [ ] deps 構築時の `roundGitEffects: runtimeStrategy as never` を `roundGitEffects: roundGitEffectsImpl`（typed 変数）に置き換える
-- [ ] deps 構築時の `stepIo: runtimeStrategy as never` を `stepIo: stepIoImpl`（typed 変数）に置き換える
-- [ ] 行 534-541 の 2 件目の `as unknown as RuntimeStrategy` も同様に修正する
-- [ ] `RuntimeStrategy` の import がテストファイルで使われなくなった場合は import を削除する
-- [ ] `bun run typecheck` および `bun run test tests/pipeline-sole-committer-e2e.test.ts` を実行してエラーがないことを確認する
+- [x] 行 367-382 のブロックを分析し、`roundGitEffects` slot に注入している partial object をリストアップする（`captureHeadSha`, `listWorktreeChanges`, `listChangedFiles`, `digestArtifacts`）
+- [x] `roundGitEffects` 用の typed object を `RoundGitEffectsCapability` 型として構築する（不足メソッド `commitRoundArtifacts` は `vi.fn().mockResolvedValue(...)` で補完する）
+- [x] `stepIo` 用の typed object を `StepIoValidationCapability` 型として構築する（`validateStepInputs`, `validateStepOutputs`, 不足の `verifyFindingRefs` を `vi.fn().mockResolvedValue([])` で補完する）
+- [x] deps 構築時の `roundGitEffects: runtimeStrategy as never` を `roundGitEffects: roundGitEffectsImpl`（typed 変数）に置き換える
+- [x] deps 構築時の `stepIo: runtimeStrategy as never` を `stepIo: stepIoImpl`（typed 変数）に置き換える
+- [x] 行 534-541 の 2 件目の `as unknown as RuntimeStrategy` も同様に修正する
+- [x] `RuntimeStrategy` の import がテストファイルで使われなくなった場合は import を削除する
+- [x] `bun run typecheck` および `bun run test tests/pipeline-sole-committer-e2e.test.ts` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `tests/pipeline-sole-committer-e2e.test.ts` に `as unknown as RuntimeStrategy` が存在しない
@@ -181,10 +181,10 @@
 
 ## T-11: `RealRuntimeStrategy` への参照が残るテストファイルを更新する
 
-- [ ] `src/core/runtime/__tests__/last-commit-touching-path.test.ts` の `RealRuntimeStrategy` 参照（describe/comment 含む）を確認する
-- [ ] TC-011 が「concrete runtime に lastCommitTouchingPath が必須実装されていること」を検証する意図を保ちつつ、`RealRuntimeStrategy` 型なしで同等の検証を記述し直す（例: `LocalRuntime` が `RuntimeStrategy` を implements するとコンパイル時に確認できる型アサーションに差し替える）
-- [ ] T-01 で見つかった他の `RealRuntimeStrategy` 参照ファイルをすべて更新する
-- [ ] `bun run typecheck` および `bun run test` を実行してエラーがないことを確認する
+- [x] `src/core/runtime/__tests__/last-commit-touching-path.test.ts` の `RealRuntimeStrategy` 参照（describe/comment 含む）を確認する
+- [x] TC-011 が「concrete runtime に lastCommitTouchingPath が必須実装されていること」を検証する意図を保ちつつ、`RealRuntimeStrategy` 型なしで同等の検証を記述し直す（例: `LocalRuntime` が `RuntimeStrategy` を implements するとコンパイル時に確認できる型アサーションに差し替える）
+- [x] T-01 で見つかった他の `RealRuntimeStrategy` 参照ファイルをすべて更新する
+- [x] `bun run typecheck` および `bun run test` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `RealRuntimeStrategy` がすべてのファイルに存在しない
@@ -196,13 +196,13 @@
 
 `src/core/runtime/__tests__/command-lifecycle-contract.test.ts` を新規作成する:
 
-- [ ] LocalRuntime が `RuntimeFacade` を構造的に満たすことをコンパイル時に検証する型代入アサーションを書く（例: `const _: RuntimeFacade = new LocalRuntime(...)` が型エラーなしでコンパイルされること）
-- [ ] ManagedRuntime が `RuntimeFacade` を構造的に満たすことを同様に検証する
-- [ ] `assertProviderReadiness`: LocalRuntime はプローブを呼ぶ / ManagedRuntime は no-op であることを単体テストで確認する
-- [ ] `assertNoDuplicateLiveJob`: LocalRuntime は slug 占有チェックをする / ManagedRuntime は no-op であることを確認する
-- [ ] `reloadJobState`: LocalRuntime はストアから読み込む / ManagedRuntime は throw することを確認する（managed 新規 run では `existingWorktreePath === undefined` が true のため reloadJobState が呼ばれ throw → RELOAD_FAILED となる。この挙動を正として記録する。managed resume 実装時には reloadJobState の managed 対応が別途必要）
-- [ ] `canDeriveChangedFiles()`: LocalRuntime は boolean を返す / ManagedRuntime は false を返すことを確認する
-- [ ] `bun run test src/core/runtime/__tests__/command-lifecycle-contract.test.ts` を実行してすべて通ることを確認する
+- [x] LocalRuntime が `RuntimeFacade` を構造的に満たすことをコンパイル時に検証する型代入アサーションを書く（例: `const _: RuntimeFacade = new LocalRuntime(...)` が型エラーなしでコンパイルされること）
+- [x] ManagedRuntime が `RuntimeFacade` を構造的に満たすことを同様に検証する
+- [x] `assertProviderReadiness`: LocalRuntime はプローブを呼ぶ / ManagedRuntime は no-op であることを単体テストで確認する
+- [x] `assertNoDuplicateLiveJob`: LocalRuntime は slug 占有チェックをする / ManagedRuntime は no-op であることを確認する
+- [x] `reloadJobState`: LocalRuntime はストアから読み込む / ManagedRuntime は throw することを確認する（managed 新規 run では `existingWorktreePath === undefined` が true のため reloadJobState が呼ばれ throw → RELOAD_FAILED となる。この挙動を正として記録する。managed resume 実装時には reloadJobState の managed 対応が別途必要）
+- [x] `canDeriveChangedFiles()`: LocalRuntime は boolean を返す / ManagedRuntime は false を返すことを確認する
+- [x] `bun run test src/core/runtime/__tests__/command-lifecycle-contract.test.ts` を実行してすべて通ることを確認する
 
 **Acceptance Criteria**:
 - contract test が Local / Managed の両方を対象として存在する
@@ -215,18 +215,18 @@
 
 `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` を新規作成する:
 
-- [ ] `src/` 配下のすべての `.ts` ファイルを再帰的に読み込むユーティリティを実装する（fs.readdir + readFile）
-- [ ] 以下の各パターンが production ソース（`src/` 配下、`__tests__/` ディレクトリは除外）に 0 件であることを assert する:
+- [x] `src/` 配下のすべての `.ts` ファイルを再帰的に読み込むユーティリティを実装する（fs.readdir + readFile）
+- [x] 以下の各パターンが production ソース（`src/` 配下、`__tests__/` ディレクトリは除外）に 0 件であることを assert する:
   - `RuntimeStrategy & PipelineDepsBuilder`
   - `RealRuntimeStrategy`
   - `Pick<RuntimeStrategy`
   - `deriveCommitInspectionCapability`（import および呼び出し）
   - `deriveRevisionContentCapability`（import および呼び出し）
   - `canDeriveChangedFiles?.`（scope-check / executor / runtime-capability-gate の `?.` 再導入を防ぐ。TypeScript 型システムは外側 `?.` の存在により内側 `?.` を型エラーにしないため ratchet で明示禁止する）
-- [ ] 以下が test ファイル（`src/**/__tests__/` および `tests/`）に 0 件であることを assert する:
+- [x] 以下が test ファイル（`src/**/__tests__/` および `tests/`）に 0 件であることを assert する:
   - `as unknown as RuntimeStrategy`
-- [ ] LocalRuntime と ManagedRuntime が `RuntimeFacade` を満たすコンパイル時型アサーションを test ファイルに含める（T-12 で書いたものと重複する場合は参照するか共通化する）
-- [ ] `bun run test src/core/port/__tests__/runtime-strategy-ratchet.test.ts` を実行してすべて通ることを確認する
+- [x] LocalRuntime と ManagedRuntime が `RuntimeFacade` を満たすコンパイル時型アサーションを test ファイルに含める（T-12 で書いたものと重複する場合は参照するか共通化する）
+- [x] `bun run test src/core/port/__tests__/runtime-strategy-ratchet.test.ts` を実行してすべて通ることを確認する
 
 **Acceptance Criteria**:
 - ratchet test が存在し、すべての pattern について 0 件を assert している
@@ -237,10 +237,10 @@
 
 ## T-14: 全体 verification と after-state メトリクスの記録
 
-- [ ] `bun run typecheck` — エラー 0 件
-- [ ] `bun run test` — 既存テストすべて通ること
-- [ ] `bun run lint` — 新規 lint エラーなし
-- [ ] 以下の after-state メトリクスを記録する（PR 本文用）:
+- [x] `bun run typecheck` — エラー 0 件
+- [x] `bun run test` — 既存テストすべて通ること
+- [x] `bun run lint` — 新規 lint エラーなし
+- [x] 以下の after-state メトリクスを記録する（PR 本文用）:
   - `runtime-strategy.ts` 行数
   - `RuntimeStrategy` メソッド数（required のみ、optional は 0 になっているはず）
   - production の full-interface import/reference 数（target: 0）

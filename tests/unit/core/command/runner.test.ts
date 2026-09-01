@@ -127,6 +127,18 @@ function buildMockRuntime(opts: {
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    // Preserve jobId so storeFactory lookups match the correct disk file.
+    reloadJobState: vi.fn().mockImplementation(async (jobId: string) => buildJobState({ jobId })),
+    canDeriveChangedFiles: () => false,
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
   };
 }
 
@@ -677,6 +689,8 @@ describe("TC-SW-RUNNER-001: fast + forbidden empty config → scope warning in s
     });
 
     const runtime = buildMockRuntime();
+    // R2c: reloadJobState must return the prepare's state so pipelineId="fast" is preserved.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(fastJobState);
     const command = new TestCommand(runtime, prepareResult);
     await command.execute();
 
@@ -698,6 +712,8 @@ describe("TC-SW-RUNNER-001: fast + forbidden empty config → scope warning in s
     });
 
     const runtime = buildMockRuntime();
+    // R2c: reloadJobState must return the prepare's state so pipelineId="fast" is preserved.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(fastJobState);
     const command = new TestCommand(runtime, prepareResult);
     await command.execute();
 

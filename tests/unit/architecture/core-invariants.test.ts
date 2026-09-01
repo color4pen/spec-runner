@@ -928,71 +928,65 @@ describe("B-10: host↔token 束縛 — composition-root の全呼び出しで h
   });
 });
 
-// ─── B-11: bare implements RuntimeStrategy 不在 pin ──────────────────────────
+// ─── B-11: RealRuntimeStrategy 不在 pin (R2c 以降) ───────────────────────────
 
 describe("B-11 (arch pin): src/core/runtime/ 具象クラスは bare implements RuntimeStrategy を使わない", () => {
   /**
-   * B-11: concrete runtime classes in src/core/runtime/ must implement RealRuntimeStrategy,
-   * not bare RuntimeStrategy.
+   * B-11 (updated for R2c — runtime-strategy-convergence):
    *
-   * This ensures canDeriveChangedFiles() is required for all concrete runtimes,
-   * making predicate omission a compile-time error (type-level pin).
+   * Previously this test required concrete runtime classes to use
+   * `implements RealRuntimeStrategy` (not bare RuntimeStrategy). After R2c,
+   * RealRuntimeStrategy is DELETED and all 10 previously-optional methods are now
+   * required on RuntimeStrategy itself. The correct form for concrete classes is now
+   * `implements RuntimeStrategy` directly.
    *
-   * Test fakes in tests/ are excluded — the optional predicate in RuntimeStrategy port
-   * remains the convenience for test fakes.
+   * This test is updated to verify the post-R2c invariant:
+   *   - `RealRuntimeStrategy` must NOT appear anywhere in src/core/runtime/
+   *   - (Positive check: `implements RuntimeStrategy` is now the correct form)
    *
-   * This test only checks "bare implements" absence, not individual methods —
-   * so it has zero maintenance cost as RuntimeStrategy methods evolve over time.
+   * Note: runtime-strategy-ratchet.test.ts TC-009/TC-031 separately enforce that
+   * RealRuntimeStrategy is absent from ALL of src/ and tests/.
    */
   it("src/core/runtime/ に bare 'implements RuntimeStrategy' が存在しない (RealRuntimeStrategy のみ許容)", () => {
-    // Grep for any "implements RuntimeStrategy" in src/core/runtime/
-    const raw = grepE(`"implements RuntimeStrategy"`, "src/core/runtime");
+    // R2c: RealRuntimeStrategy is deleted. Concrete classes now use `implements RuntimeStrategy`
+    // directly. Verify that RealRuntimeStrategy does NOT appear in src/core/runtime/.
+    const raw = grepE(`"RealRuntimeStrategy"`, "src/core/runtime");
     const matches = parseGrepOutput(raw);
-
-    // Exclude comment lines
     const nonComment = matches.filter((m) => !isCommentLine(m.content));
-
-    // Exclude lines that use RealRuntimeStrategy (the correct form for real runtimes)
-    const bareImplements = nonComment.filter(
-      (m) => !m.content.includes("RealRuntimeStrategy"),
-    );
-
-    // No bare "implements RuntimeStrategy" should remain in src/core/runtime/
-    expect(violationLines(bareImplements)).toEqual([]);
+    // No RealRuntimeStrategy should exist in src/core/runtime/
+    expect(violationLines(nonComment)).toEqual([]);
   });
 
-  it("B-11 regression guard: bare implements RuntimeStrategy (without Real prefix) is detected", () => {
-    // Simulate a new runtime class that uses bare implements RuntimeStrategy
+  it("B-11 regression guard: RealRuntimeStrategy in src/core/runtime/ is detected", () => {
+    // Simulate a file that incorrectly uses the deleted RealRuntimeStrategy
     const injectedMatches: GrepMatch[] = [
       {
         file: "src/core/runtime/some-new-runtime.ts",
         line: 10,
-        content: "export class SomeNewRuntime implements RuntimeStrategy {",
+        content: "export class SomeNewRuntime implements RealRuntimeStrategy {",
       },
     ];
-
-    // Filter: not RealRuntimeStrategy → should be detected
-    const bareImplements = injectedMatches.filter(
-      (m) => !isCommentLine(m.content) && !m.content.includes("RealRuntimeStrategy"),
+    // Contains RealRuntimeStrategy → should be detected as a violation
+    const violations = injectedMatches.filter(
+      (m) => !isCommentLine(m.content) && m.content.includes("RealRuntimeStrategy"),
     );
-    expect(bareImplements).toHaveLength(1);
+    expect(violations).toHaveLength(1);
   });
 
-  it("B-11: RealRuntimeStrategy is not falsely detected as bare implements", () => {
-    // Simulate a correct runtime class using RealRuntimeStrategy
+  it("B-11: implements RuntimeStrategy (the correct R2c form) is not detected as violation", () => {
+    // After R2c, implements RuntimeStrategy IS the correct form for concrete classes.
     const injectedMatches: GrepMatch[] = [
       {
         file: "src/core/runtime/local.ts",
-        line: 81,
-        content: "export class LocalRuntime implements RealRuntimeStrategy {",
+        line: 123,
+        content: "export class LocalRuntime implements RuntimeStrategy, MaterializerHost {",
       },
     ];
-
-    // Filter: contains RealRuntimeStrategy → correctly excluded
-    const bareImplements = injectedMatches.filter(
-      (m) => !isCommentLine(m.content) && !m.content.includes("RealRuntimeStrategy"),
+    // Does NOT contain RealRuntimeStrategy → correctly NOT flagged
+    const violations = injectedMatches.filter(
+      (m) => !isCommentLine(m.content) && m.content.includes("RealRuntimeStrategy"),
     );
-    expect(bareImplements).toHaveLength(0);
+    expect(violations).toHaveLength(0);
   });
 });
 

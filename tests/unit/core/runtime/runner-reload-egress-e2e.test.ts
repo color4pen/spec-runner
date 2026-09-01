@@ -382,6 +382,16 @@ describe("TC-014 / TC-013b: Runner 経路の封鎖 — pipeline に渡る state 
         digestArtifacts: vi.fn().mockResolvedValue([]),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+        // R2c: previously optional methods, now required on RuntimeStrategy
+        assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+        assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+        canDeriveChangedFiles: () => false,
+        listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+        listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+        readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+        snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+        readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+        lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
       } as RuntimeStrategy & PipelineDepsBuilder;
 
       const command = new TestCommand(runtime as RuntimeStrategy & PipelineDepsBuilder, buildPrepareResultForTC014());

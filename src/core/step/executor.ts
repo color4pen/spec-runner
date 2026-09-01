@@ -276,7 +276,7 @@ export class StepExecutor {
       // Structural short-circuit: if the runtime explicitly declares it cannot derive
       // changed files, skip listChangedFiles entirely and activate fail-closed.
       const structurallyDerivable =
-        deps.changedFiles?.canDeriveChangedFiles?.() !== false;
+        deps.changedFiles?.canDeriveChangedFiles() !== false;
       let changedFiles: string[] = [];
       let changedFilesDerivable = structurallyDerivable;
       if (deps.changedFiles && structurallyDerivable) {

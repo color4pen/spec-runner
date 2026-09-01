@@ -176,8 +176,9 @@ function makeRunnerWithToolResult(toolResult: Record<string, unknown> | null): A
 /**
  * Make a RuntimeStrategy that returns the given changedFiles list.
  * verifyFindingRefs always returns [] (no non-existent refs).
+ * R2c: canDeriveChangedFiles is now required; defaults to () => true (parity with old "absent" behavior).
  */
-function makeRuntimeStrategy(changedFiles: string[]) {
+function makeRuntimeStrategy(changedFiles: string[], canDeriveChangedFilesImpl: () => boolean = () => true) {
   return {
     async captureHeadSha() { return null as string | null; },
     async prepareStepArtifacts() {},
@@ -188,6 +189,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     async verifyFindingRefs() { return [] as never[]; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     async listChangedFiles() { return { kind: "success" as const, files: changedFiles }; },
+    canDeriveChangedFiles: canDeriveChangedFilesImpl,
   };
 }
 
@@ -1299,11 +1301,12 @@ describe("T-06-NEW: canDerive=true + listChangedFiles unavailable → UNKNOWN fi
   });
 });
 
-describe("T-07: predicate absent → #689 parity (existing tests confirm this)", () => {
-  it("predicate absent + breach → same escalation as #689 (backward compat)", async () => {
-    // makeRuntimeStrategy does NOT have canDeriveChangedFiles (predicate absent)
+describe("T-07: predicate=true → #689 parity (existing tests confirm this)", () => {
+  it("predicate=true + breach → same escalation as #689 (backward compat)", async () => {
+    // R2c: canDeriveChangedFiles is now required; makeRuntimeStrategy defaults to () => true
+    // (same effective behavior as the old "absent" = can derive).
     const jobState = await createRunningJobState();
-    const strategy = makeRuntimeStrategy(["src/auth/login.ts"]); // no canDeriveChangedFiles
+    const strategy = makeRuntimeStrategy(["src/auth/login.ts"]); // canDeriveChangedFiles: () => true
 
     const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
     const executor = new StepExecutor(
@@ -1316,11 +1319,11 @@ describe("T-07: predicate absent → #689 parity (existing tests confirm this)",
     const finalState = await executor.execute(step, jobState, makeDeps(strategy));
 
     const outcome = getLastOutcome(finalState, "spec-review");
-    // Absent predicate → fallthrough to listChangedFiles → breach found → escalation
+    // predicate=true → fallthrough to listChangedFiles → breach found → escalation
     expect(outcome?.verdict).toBe("escalation");
   });
 
-  it("predicate absent + no breach → approved (backward compat)", async () => {
+  it("predicate=true + no breach → approved (backward compat)", async () => {
     const jobState = await createRunningJobState();
     const strategy = makeRuntimeStrategy(["src/core/pipeline/types.ts"]); // no forbidden file
 

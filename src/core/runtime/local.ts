@@ -41,8 +41,7 @@ import {
 import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
-import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import { deriveStepIoValidationCapability } from "../step/step-capability.js";
 import type { StepArtifactLifecycleCapability } from "../step/step-capability.js";
 import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../pipeline/pipeline-capability.js";
@@ -121,7 +120,7 @@ export interface LocalRuntimeOptions {
   providerReadinessProbe?: import("../port/provider-readiness.js").ProviderReadinessProbe;
 }
 
-export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
+export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
   readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly githubToken: string;
@@ -634,8 +633,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         canDeriveChangedFiles: () => this.canDeriveChangedFiles(),
         listChangedFiles: (baseBranch, cwd, branch) => this.listChangedFiles(baseBranch, cwd, branch),
       },
-      commitInspection: deriveCommitInspectionCapability(this),
-      revisionContent: deriveRevisionContentCapability(this),
+      commitInspection: { listCommitChangedFiles: this.listCommitChangedFiles.bind(this) },
+      revisionContent: { readRevisionContent: this.readRevisionContent.bind(this) },
     };
     return deps;
   }

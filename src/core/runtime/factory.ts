@@ -1,5 +1,5 @@
 /**
- * createRuntime: factory for RuntimeStrategy.
+ * createRuntime: factory for RuntimeFacade.
  *
  * Design D4: ALL config.runtime branching is confined to this function.
  * The sessionClient for managed runtime is provided by the CLI layer (DI),
@@ -11,14 +11,13 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { SessionClient } from "../port/session-client.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../types.js";
+import type { RuntimeFacade } from "../port/command-runtime.js";
 import { LocalRuntime } from "./local.js";
 import { ManagedRuntime } from "./managed.js";
 import { spawnBackground } from "../../util/spawn.js";
 
 /**
- * Create the appropriate RuntimeStrategy for the given config.
+ * Create the appropriate RuntimeFacade for the given config.
  *
  * @param config - Loaded SpecRunnerConfig (must include runtime field)
  * @param cwd - Current working directory (repo root)
@@ -34,7 +33,7 @@ export function createRuntime(
   repo: OriginInfo,
   sessionClient: SessionClient | undefined,
   githubToken: string,
-): RuntimeStrategy & PipelineDepsBuilder {
+): RuntimeFacade {
   if (config.runtime === "local") {
     return new LocalRuntime({ cwd, githubClient, githubToken, owner: repo.owner, repo: repo.name, workspaceSetup: config.workspace?.setup, spawnBackgroundFn: spawnBackground });
   }

@@ -209,10 +209,42 @@ function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-s
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
-    persistJobState: vi.fn().mockResolvedValue(undefined),
+    // R2c: persistJobState must write to disk so TC-029/030/031/032 can read back
+    // the persisted state (gate-halt path calls persistJobState, tests then call store.load()).
+    persistJobState: vi.fn().mockImplementation(
+      async (jobId: string, _slug: string, _workspace: unknown, state: JobState) => {
+        await storeFactory(jobId).persist(state);
+      }
+    ),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    // R2c: reloadJobState must preserve the caller-supplied jobId. If state exists on
+    // disk (written by a prior persistJobState call), read it; otherwise create a fresh
+    // state using the same jobId. This ensures downstream persistJobState calls write
+    // to the same path that tests read from.
+    reloadJobState: vi.fn().mockImplementation(async (jobId: string) => {
+      try {
+        return await storeFactory(jobId).load();
+      } catch {
+        // State not on disk yet — return a fresh state with the same jobId.
+        const fresh = buildInitialJobState({
+          request: { path: path.join(tempDir, "specrunner", "changes", slug, "request.md"), title: "Test", type: "new-feature", slug },
+          repository: { owner: "testowner", name: "testrepo" },
+        });
+        return { ...fresh, jobId };
+      }
+    }),
+    canDeriveChangedFiles: () => false,
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
     capturedDeps,
   };
   return runtime;
@@ -682,6 +714,11 @@ describe("TC-027: halt 時に linked issue へ escalation comment が書かれ�
     const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn().mockResolvedValue({ undeclaredDrops: ["missing req"] } satisfies IssueFidelityComparison) });
 
     const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    // R2c: reloadJobState must return the prepared state so that jobState.issueNumber (875)
+    // is visible in the gate-halt path → notifyJobTerminal → createIssueComment.
+    // Without this, reloadJobState returns a fresh state without issueNumber and
+    // the `if (jobState.issueNumber)` guard skips the comment.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(prepared.jobState);
     const command = new TestCommand(runtime, prepared, comparatorFactory);
 
     await command.execute();

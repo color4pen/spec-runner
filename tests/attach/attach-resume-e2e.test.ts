@@ -174,6 +174,16 @@ function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrateg
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
     async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    // R2c: previously optional methods, now required on RuntimeStrategy
+    async assertProviderReadiness() {},
+    async assertNoDuplicateLiveJob() {},
+    async reloadJobState(): Promise<JobState> { throw new Error("not implemented"); },
+    canDeriveChangedFiles: () => false,
+    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
+    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
+    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
+    async readRevisionContent() { return { current: null, prior: null }; },
+    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
   };
 }
 

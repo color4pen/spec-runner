@@ -35,7 +35,8 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { buildPipelineForJob } from "../pipeline/index.js";
 import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
-import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
+import type { CleanupHandle, WorkspaceOptions } from "../port/runtime-strategy.js";
+import type { ProviderReadinessCapability, WorkspaceLifecycleCapability, JobStatePersistenceCapability } from "../port/command-runtime.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
@@ -87,7 +88,7 @@ export interface PrepareResult {
  */
 export abstract class CommandRunner {
   constructor(
-    protected readonly runtime: RuntimeStrategy & PipelineDepsBuilder,
+    protected readonly runtime: ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder,
     protected readonly events: EventBus,
     /**
      * Optional factory for the entrance fidelity gate's IssueFidelityComparator.
@@ -105,23 +106,20 @@ export abstract class CommandRunner {
   async execute(): Promise<number> {
     // Step 0: provider readiness gate — must fire before prepare() so that readiness
     // failures surface prior to any persistent side effects (job record / worktree /
-    // branch / journal). Uses optional call (`?.`) so test fakes without the method
-    // are unaffected (backward-compatible with RuntimeStrategy-typed fakes).
-    if (this.runtime.assertProviderReadiness) {
-      try {
-        await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>);
-      } catch (err) {
-        if (err instanceof SpecRunnerError) {
-          logError(err.message);
-          if (err.hint) {
-            stderrWrite(`Hint: ${err.hint}`);
-          }
-        } else {
-          logError((err as Error).message ?? String(err));
+    // branch / journal).
+    try {
+      await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>);
+    } catch (err) {
+      if (err instanceof SpecRunnerError) {
+        logError(err.message);
+        if (err.hint) {
+          stderrWrite(`Hint: ${err.hint}`);
         }
-        // Do NOT emit RunResultContract JSON here — no job exists yet.
-        return 1;
+      } else {
+        logError((err as Error).message ?? String(err));
       }
+      // Do NOT emit RunResultContract JSON here — no job exists yet.
+      return 1;
     }
 
     // Step 1: prepare — subclass override
@@ -192,7 +190,7 @@ export abstract class CommandRunner {
       // Skip reload on the resume path (existingWorktreePath !== undefined): the
       // resume prepare() already loaded the full state, and setupWorkspace() in the
       // resume/recreate branch does not write synthesizedCommits to the store.
-      if (this.runtime.reloadJobState && workspaceOpts.existingWorktreePath === undefined) {
+      if (workspaceOpts.existingWorktreePath === undefined) {
         try {
           jobState = await this.runtime.reloadJobState(jobState.jobId, slug, workspace);
         } catch (err) {

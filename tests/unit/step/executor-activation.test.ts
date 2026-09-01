@@ -120,9 +120,13 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 
 function makeRuntimeStrategy(
   listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<ChangedFilesResult>,
-  canDeriveChangedFilesImpl?: () => boolean,
+  // R2c: canDeriveChangedFiles is now required. Default is () => true to match the old
+  // "absent method" behaviour (absent → canDeriveChangedFiles?.() returned undefined
+  // → undefined !== false → true → structurallyDerivable).
+  // Tests that exercise the fail-closed path pass () => false explicitly.
+  canDeriveChangedFilesImpl: () => boolean = () => true,
 ) {
-  const base = {
+  return {
     async *query() {},
     createAgentRunner() { return { async run() { return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }; } }; },
     async setupWorkspace() { return { cwd: "" }; },
@@ -140,11 +144,17 @@ function makeRuntimeStrategy(
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     listChangedFiles,
+    canDeriveChangedFiles: canDeriveChangedFilesImpl,
+    // R2c: other previously optional methods, now required on RuntimeStrategy
+    async assertProviderReadiness() {},
+    async assertNoDuplicateLiveJob() {},
+    async reloadJobState(): Promise<JobState> { throw new Error("not implemented"); },
+    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
+    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
+    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
+    async readRevisionContent() { return { current: null, prior: null }; },
+    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
   };
-  if (canDeriveChangedFilesImpl !== undefined) {
-    return { ...base, canDeriveChangedFiles: canDeriveChangedFilesImpl };
-  }
-  return base;
 }
 
 // ---------------------------------------------------------------------------

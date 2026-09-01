@@ -24,8 +24,7 @@ import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "..
 import { livenessJsonPath } from "../../util/paths.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../types.js";
+import type { RuntimeFacade } from "../port/command-runtime.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
@@ -119,7 +118,7 @@ async function haltWithCanonPreflight(
  */
 export class ResumeCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: RuntimeFacade,
     events: EventBus,
     private readonly slug: string,
     private readonly options: ResumeOptions = {},

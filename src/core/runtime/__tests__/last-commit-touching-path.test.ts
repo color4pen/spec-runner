@@ -5,7 +5,7 @@
  * TC-008: local runtime が履歴を持たない path に none を返す
  * TC-009: local runtime が非 0 exit / spawn error で unavailable を返す
  * TC-010: managed runtime が常に unavailable を返す
- * TC-011: RealRuntimeStrategy 交差型に新 method が必須追加されて typecheck が通る
+ * TC-011: RuntimeStrategy に lastCommitTouchingPath が必須メソッドとして存在することを確認
  *         (typecheck で検証済みのため、ここでは型が存在することのみ確認)
  */
 
@@ -175,12 +175,12 @@ describe("TC-010: managed runtime が常に unavailable を返す", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: RealRuntimeStrategy 交差型に lastCommitTouchingPath が必須追加されている
+// TC-011: RuntimeStrategy に lastCommitTouchingPath が必須メソッドとして存在する
 // ---------------------------------------------------------------------------
 
-describe("TC-011: RealRuntimeStrategy に lastCommitTouchingPath が必須追加されている (typecheck)", () => {
+describe("TC-011: RuntimeStrategy に lastCommitTouchingPath が必須追加されている (typecheck)", () => {
   it("TC-011: LocalRuntime と ManagedRuntime が lastCommitTouchingPath を実装している", () => {
-    // This is verified by typecheck (tsc --noEmit) which enforces RealRuntimeStrategy.
+    // This is verified by typecheck (tsc --noEmit) which enforces RuntimeStrategy.
     // Here we simply confirm both instances have the method at runtime.
     const local = makeLocalRuntime(makeSpawnFn(0, ""));
     const managed = makeManagedRuntime();

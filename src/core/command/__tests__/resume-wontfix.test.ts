@@ -122,6 +122,33 @@ import type { StepRun } from "../../../state/schema.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Minimal runtime fake for tests that call cmd.execute().
+ * R2c: assertProviderReadiness is now always called in CommandRunner.execute()
+ * (no optional guard). Without it, execute() returns 1 (not 2) before reaching
+ * prepare(), breaking TC-006/007/008 which expect exit code 2.
+ */
+function buildMockRuntime() {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    canDeriveChangedFiles: () => false,
+    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({} as never),
+    buildDeps: vi.fn().mockReturnValue({} as never),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    bootstrapJob: vi.fn().mockResolvedValue({ jobId: "test-job" }),
+  };
+}
+
 const MOCK_REQUEST = {
   title: "Test request",
   type: "new-feature" as const,
@@ -246,8 +273,9 @@ describe("TC-006: regression-gate 未実行で exit code 2", () => {
     vi.mocked(resolveJobStateBySlug).mockResolvedValue(baseState);
     vi.mocked(transitionJob).mockReturnValue({ state: makeRunningState(baseState), noop: false });
 
+    // R2c: must provide assertProviderReadiness so execute() reaches prepare()
     const cmd = new ResumeCommand(
-      {} as never, {} as never, "test-slug",
+      buildMockRuntime() as never, {} as never, "test-slug",
       { cwd: "/repo", wontfix: "1", wontfixReason: "reason" },
     );
     const exitCode = await cmd.execute();
@@ -275,8 +303,9 @@ describe("TC-007: 番号が範囲外で exit code 2", () => {
     vi.mocked(resolveJobStateBySlug).mockResolvedValue(baseState);
     vi.mocked(transitionJob).mockReturnValue({ state: makeRunningState(baseState), noop: false });
 
+    // R2c: must provide assertProviderReadiness so execute() reaches prepare()
     const cmd = new ResumeCommand(
-      {} as never, {} as never, "test-slug",
+      buildMockRuntime() as never, {} as never, "test-slug",
       { cwd: "/repo", wontfix: "3", wontfixReason: "reason" },
     );
     const exitCode = await cmd.execute();
@@ -298,8 +327,9 @@ describe("TC-008: reason 欠落で exit code 2", () => {
     vi.mocked(resolveJobStateBySlug).mockResolvedValue(baseState);
     vi.mocked(transitionJob).mockReturnValue({ state: makeRunningState(baseState), noop: false });
 
+    // R2c: must provide assertProviderReadiness so execute() reaches prepare()
     const cmd = new ResumeCommand(
-      {} as never, {} as never, "test-slug",
+      buildMockRuntime() as never, {} as never, "test-slug",
       { cwd: "/repo", wontfix: "1" }, // no wontfixReason
     );
     const exitCode = await cmd.execute();
