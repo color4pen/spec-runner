@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T15:07:32.939Z",
+  "updatedAt": "2026-09-01T15:13:06.619Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -103,7 +103,9 @@
     "0f84270c5d116debe6da11c319a763eaa7bb6203",
     "ac892fa4d0e3c5ece2eade83658bea9e5ab5a8e9",
     "f23039220a39102e1ad4355abbce47f70dd5c782",
-    "51ab8df6e4caa12bf8919a139fd01687864dc105"
+    "51ab8df6e4caa12bf8919a139fd01687864dc105",
+    "68a74b539e4d08fc4c3e051dbeb8d5d7e17c7cbc",
+    "b38515d39799cd105d85bad86df717262d719610"
   ],
   "touchedFiles": {
     "request-review": [
@@ -203,14 +205,14 @@
       "src/core/command/runner.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/command/resume.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/runtime-facade.ts",
       "src/core/runtime/factory.ts",
       "src/cli/bootstrap.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/step/scope-check.ts",
-      "src/core/step/executor.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/step/executor.ts"
     ]
   },
   "resumePoint": null,
@@ -258,7 +260,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 193,
+    "historyCount": 202,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -266,14 +268,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 7,
-      "verification": 9,
+      "verification": 10,
       "code-review": 5,
       "code-fixer": 4,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
       "regression-gate": 3,
-      "conformance": 3,
+      "conformance": 4,
       "adr-gen": 1,
       "pr-create": 1
     }
