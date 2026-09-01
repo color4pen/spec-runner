@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T15:04:52.383Z",
+  "updatedAt": "2026-09-01T15:07:32.939Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -102,7 +102,8 @@
     "633550c964ae4ec742708ac6461b9ceff718a54c",
     "0f84270c5d116debe6da11c319a763eaa7bb6203",
     "ac892fa4d0e3c5ece2eade83658bea9e5ab5a8e9",
-    "f23039220a39102e1ad4355abbce47f70dd5c782"
+    "f23039220a39102e1ad4355abbce47f70dd5c782",
+    "51ab8df6e4caa12bf8919a139fd01687864dc105"
   ],
   "touchedFiles": {
     "request-review": [
@@ -186,12 +187,16 @@
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
-      "src/core/port/provider-readiness.ts",
-      "tests/unit/core/command/runner.test.ts",
+      "src/core/port/command-runtime.ts",
       "src/core/types.ts",
-      "src/core/port/runtime-strategy.ts"
+      "src/core/port/runtime-strategy.ts",
+      "tests/unit/core/command/runner.test.ts",
+      "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "tests/unit/core/pipeline/resolve-scope.test.ts",
+      "src/core/port/provider-readiness.ts",
+      "tests/unit/core/runtime/runner-reload-after-setup.test.ts"
     ],
     "conformance": [
       "src/core/port/command-runtime.ts",
@@ -253,7 +258,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 188,
+    "historyCount": 193,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -267,7 +272,7 @@
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 3,
       "adr-gen": 1,
       "pr-create": 1
