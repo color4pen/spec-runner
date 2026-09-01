@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T05:50:46.447Z",
+  "updatedAt": "2026-09-01T05:58:45.929Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -93,7 +93,8 @@
     "5bfe08a58a7ab8a8d753b8d3f3d3c3c3968338b8",
     "f3102a5ef9fc5baaf2de87c7ea4763c5f0558136",
     "61dd87e441e21e2e1137426790e9bc4101a590cf",
-    "afad42832105f9ebcae2a45dd7adce4274887051"
+    "afad42832105f9ebcae2a45dd7adce4274887051",
+    "60acc25a212397db978b9dbf69c5c4ebb59b9be7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -132,17 +133,23 @@
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
-      "src/core/command/runner.ts",
       "src/core/port/runtime-strategy.ts",
+      "src/core/command/runner.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/command/resume.ts",
       "src/core/runtime/factory.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "src/core/types.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
+      "src/cli/bootstrap.ts",
+      "tests/pipeline-sole-committer-e2e.test.ts",
+      "src/core/runtime/local.ts",
+      "src/core/port/provider-readiness.ts",
+      "tests/unit/core/command/runner.test.ts",
       "src/core/runtime/managed.ts",
-      "src/cli/bootstrap.ts"
+      "src/core/step/scope-check.ts",
+      "src/core/step/executor.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
       "src/core/port/command-runtime.ts"
@@ -183,7 +190,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "787090f30a34c4ce730507d8b7ba0fc3cd77429d",
+      "approvedAtCommit": "60acc25a212397db978b9dbf69c5c4ebb59b9be7",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -210,7 +217,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 129,
+    "historyCount": 137,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -219,11 +226,11 @@
       "spec-fixer": 2,
       "implementer": 6,
       "verification": 7,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 1,
       "conformance": 2
     }
