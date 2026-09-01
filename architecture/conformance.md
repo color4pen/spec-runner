@@ -43,7 +43,6 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-8** runtime 分岐集約 | `config.runtime` の分岐が `createRuntime` 以外（domain/CLI）に現れていないか | grep 検査 |
 | **B-9** status 単一 mutator | `JobState.status` の変更が `transitionJob` 経由のみか（`patch`/`persist` で status 直書きしていないか）| grep 検査 |
 | **B-10** host↔token 束縛 | composition-root の全 `resolveGitHubToken` 呼び出しに host 引数、全 `createGitHubClient` 呼び出しに baseUrl 引数があるか（token を誤った host へ送らない構造前提）| grep 検査（call-site）|
-| **B-11** concrete runtime の能力 interface | `src/core/runtime/` に bare `implements RuntimeStrategy` が無い（具象は `RealRuntimeStrategy` を implements＝`canDeriveChangedFiles` を必須化）か | grep 検査（`tests/` の fake は対象外）|
 | **B-12** subprocess seam 限定 | `node:child_process` の直接 import が seam（`util/spawn.ts` / `util/git-exec.ts`）＋ allowlist 済み composition-internal の外に無いか（env-omission spawn の封じ込め）| grep 検査（import・`arch-allowlist.ts` の B-12 台帳）|
 | **B-13** StepExecutor 単一書き込み禁止 | `executor.ts` が `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` / `store.appendOperatorEvent` を直接呼んでいないか（CommitOrchestrator が唯一の書き込みオーナー）。並列 round も同一 — `parallel-review-round.ts` が store を直接 persist せず `CommitOrchestrator.commitRound` で一括書き込みするか | grep 検査（call-site, executor.ts / parallel-review-round.ts）|
 | **B-14** StepHalt 適用オーナー集約 | `executor.ts` が `transitionJob` / `attachStateAndRethrow` を直接呼んでいないか（halt の FSM 遷移・rethrow は CommitOrchestrator のみ担う）| grep 検査（call-site, executor.ts 限定）|
@@ -52,7 +51,9 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか（ガード対象: awaiting-archive → awaiting-resume） | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
 | **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client / issue-fidelity-comparator）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index` — 削除済み。再導入検知）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
 
-- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）／ `value-import-scc.test.ts`（src 全体の value-import SCC 0 件・`review-routing.ts` の一方向依存。type-only import/export は除外）。
+> **B-11 は欠番**（R2c `runtime-strategy-convergence` で退役 — `RealRuntimeStrategy` 交差型の削除により旧 optional メンバーが `RuntimeStrategy` port の required member へ昇格。再導入は `src/core/port/__tests__/runtime-strategy-ratchet.test.ts`（TC-009 / TC-031）が禁止）。
+
+- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18（B-11 は欠番）を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）／ `value-import-scc.test.ts`（src 全体の value-import SCC 0 件・`review-routing.ts` の一方向依存。type-only import/export は除外）。
 - closure: model.md §3 の許可行列にない edge を全て divergence にする（`allowed` whitelist 方式＝DSM 検査）。
 - 現状の divergence・実装状態は `divergence-status.md`（状況断面）を参照。
 

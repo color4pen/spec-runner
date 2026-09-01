@@ -122,7 +122,7 @@ interface ForbiddenSurface { id: string; paths: readonly string[] }   // base...
 interface PermissionScope { checkpoint: string; forbidden: readonly ForbiddenSurface[] }  // checkpoint = breach を評価する judge step
 ```
 - **役割**: `PipelineDescriptor.permissionScope?`（任意・absent = 無制限 = 現行）として、その profile が「触らないと約束する面」を宣言する。`checkpoint` の judge step で、最終 diff の変更ファイルを `forbidden` の glob に当てて breach を機械導出する。
-- **不変条件**: breach 判定は純関数（`deriveScopeBreach`。I/O は RuntimeStrategy seam 経由＝B-5）。breach も評価不能（UNKNOWN）も `origin:"scope"` の decision-needed finding に**合成**され、既存の judge verdict 導出経路へ載る。`permissionScope` を宣言する profile は changed-files 導出可能な runtime を要求する（着手前 capability gate → `dynamic-model.md`、real runtime 側の能力必須化は B-11）。
+- **不変条件**: breach 判定は純関数（`deriveScopeBreach`。I/O は RuntimeStrategy seam 経由＝B-5）。breach も評価不能（UNKNOWN）も `origin:"scope"` の decision-needed finding に**合成**され、既存の judge verdict 導出経路へ載る。`permissionScope` を宣言する profile は changed-files 導出可能な runtime を要求する（着手前 capability gate → `dynamic-model.md`、real runtime 側の能力必須化は `RuntimeStrategy` port の required member 化＝R2c。旧 B-11 は欠番）。
 - → `src/core/pipeline/types.ts`（型）/ `src/core/pipeline/scope.ts`（breach 導出・finding 合成の純関数）
 
 ### StepHalt — step 停止判断の VO
