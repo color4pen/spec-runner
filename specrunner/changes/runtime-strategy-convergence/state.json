@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
