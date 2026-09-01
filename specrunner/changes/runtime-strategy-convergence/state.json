@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T15:13:06.619Z",
+  "updatedAt": "2026-09-01T15:19:34.507Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -105,7 +105,9 @@
     "f23039220a39102e1ad4355abbce47f70dd5c782",
     "51ab8df6e4caa12bf8919a139fd01687864dc105",
     "68a74b539e4d08fc4c3e051dbeb8d5d7e17c7cbc",
-    "b38515d39799cd105d85bad86df717262d719610"
+    "b38515d39799cd105d85bad86df717262d719610",
+    "b91416b64ccd9f2de993e3b6cd1a2ce77dcffa00",
+    "721366b1f769c761a74f9dda809689fda7205bf3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -137,32 +139,10 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/port/command-runtime.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/types.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/factory.ts",
-      "src/cli/bootstrap.ts",
-      "src/core/command/runner.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/index.ts",
-      "src/core/command/resume.ts",
-      "tests/unit/core/command/runner.test.ts",
-      "tests/core/provider-readiness-gate.test.ts",
-      "tests/unit/core/command/runner-fidelity-gate.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "tests/unit/core/pipeline/runtime-capability-gate.test.ts",
+      "tests/unit/core/pipeline/registry-invariants.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
-      "tests/unit/core/command/pipeline-run.test.ts",
-      "tests/unit/core/command/resume.test.ts",
-      "tests/unit/core/command/pipeline-run-duplicate-guard.test.ts",
-      "tests/unit/core/command/pipeline-run-gate.test.ts",
-      "tests/unit/core/command/pipeline-run-inbox-origin.test.ts",
-      "tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts",
-      "tests/unit/core/command/pipeline-run-input-completeness.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/core/runtime-facade.ts",
-      "tasks.md"
+      "src/core/port/runtime-strategy.ts"
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
@@ -260,15 +240,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 202,
+    "historyCount": 211,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 7,
-      "verification": 10,
+      "implementer": 8,
+      "verification": 11,
       "code-review": 5,
       "code-fixer": 4,
       "cross-boundary-invariants": 3,
