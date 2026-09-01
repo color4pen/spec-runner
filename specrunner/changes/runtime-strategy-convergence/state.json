@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T04:40:20.583Z",
+  "updatedAt": "2026-09-01T04:49:50.537Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -85,7 +85,9 @@
     "af724e10d87c9f907d1b5d632d9546b3a8f6dfb1",
     "18b38c25aad04093ef787814e24c8f0e8487677a",
     "52dff5b49d4846a168b7b4ee36c89049f9da9f31",
-    "59f954c5594680f173fae08495cd5322440e7603"
+    "59f954c5594680f173fae08495cd5322440e7603",
+    "4433dee569f729efec62a991ba14fb8e2b6434ba",
+    "09eece14a8c72dbca09816ca590033c54d236149"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,16 +152,22 @@
     "conformance": [
       "src/core/port/command-runtime.ts",
       "src/core/command/runner.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/command/resume.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/port/runtime-strategy.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/command/resume.ts",
       "src/core/runtime/factory.ts",
       "src/cli/bootstrap.ts",
       "src/core/step/executor.ts",
-      "src/core/step/scope-check.ts"
+      "src/core/step/scope-check.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/pipeline-sole-committer-e2e.test.ts",
+      "tests/unit/core/command/runner.test.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts"
     ]
   },
   "resumePoint": null,
@@ -195,7 +203,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -203,14 +211,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 3,
-      "verification": 3,
+      "verification": 4,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
