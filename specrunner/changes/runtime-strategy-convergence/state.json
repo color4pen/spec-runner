@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T05:58:45.929Z",
+  "updatedAt": "2026-09-01T06:00:58.456Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -94,7 +94,8 @@
     "f3102a5ef9fc5baaf2de87c7ea4763c5f0558136",
     "61dd87e441e21e2e1137426790e9bc4101a590cf",
     "afad42832105f9ebcae2a45dd7adce4274887051",
-    "60acc25a212397db978b9dbf69c5c4ebb59b9be7"
+    "60acc25a212397db978b9dbf69c5c4ebb59b9be7",
+    "90948f89d19cce7a1a95445788f6e92872431a3e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,10 +159,10 @@
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
-      "src/core/types.ts",
-      "src/core/port/runtime-strategy.ts",
       "src/core/port/provider-readiness.ts",
-      "tests/unit/core/command/runner.test.ts"
+      "tests/unit/core/command/runner.test.ts",
+      "src/core/types.ts",
+      "src/core/port/runtime-strategy.ts"
     ],
     "conformance": [
       "src/core/port/command-runtime.ts",
@@ -217,7 +218,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 137,
+    "historyCount": 142,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -231,7 +232,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "conformance": 2
     }
   }
