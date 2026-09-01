@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T04:39:44.981Z",
+  "updatedAt": "2026-09-01T04:40:20.583Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -84,7 +84,8 @@
     "787090f30a34c4ce730507d8b7ba0fc3cd77429d",
     "af724e10d87c9f907d1b5d632d9546b3a8f6dfb1",
     "18b38c25aad04093ef787814e24c8f0e8487677a",
-    "52dff5b49d4846a168b7b4ee36c89049f9da9f31"
+    "52dff5b49d4846a168b7b4ee36c89049f9da9f31",
+    "59f954c5594680f173fae08495cd5322440e7603"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,8 +136,7 @@
       "src/cli/bootstrap.ts"
     ],
     "code-fixer": [
-      "src/core/types.ts",
-      "src/core/port/runtime-strategy.ts"
+      "src/core/port/command-runtime.ts"
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
@@ -195,7 +195,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 90,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -205,7 +205,7 @@
       "implementer": 3,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
