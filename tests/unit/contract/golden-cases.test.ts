@@ -26,6 +26,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // T-03: VerificationStep.parseResult — golden cases
@@ -162,6 +163,10 @@ function makeDeps(): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

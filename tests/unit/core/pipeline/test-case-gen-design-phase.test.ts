@@ -47,6 +47,7 @@ import { changeFolderPath } from "../../../../src/util/paths.js";
 import { Pipeline } from "../../../../src/core/pipeline/pipeline.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { Step } from "../../../../src/core/step/types.js";
+import { noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // Namespace import for new exports from spec-observation.ts (RED until T-03 implements them)
 import * as specObsNS from "../../../../src/core/pipeline/spec-observation.js";
@@ -215,6 +216,7 @@ function makeIntegrationDeps(slug: string, type: string) {
       appendInterruption: async () => undefined,
       appendLineage: async () => undefined,
     })) as never,
+    terminalState: noopTerminalState,
   } as never;
 }
 

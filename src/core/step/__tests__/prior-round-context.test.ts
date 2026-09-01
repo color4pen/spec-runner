@@ -10,7 +10,7 @@
  * TC-011: resolvePriorFixerOid — spec-fixer StepRun が無い場合 null を返す (must)
  * TC-012: resolvePriorFixerOid — 末尾 StepRun に commitOid が無い場合 null を返す (must)
  * TC-013: derivePriorRoundContext — iteration 1 で null を返す (must)
- * TC-014: derivePriorRoundContext — runtimeStrategy が undefined で null を返す (must)
+ * TC-014: derivePriorRoundContext — commitInspection が undefined で null を返す (must)
  * TC-015: derivePriorRoundContext — 前周 fixer OID あり・mock が files を返す → findings と changedFiles を返す (must)
  * TC-016: buildPriorRoundContextBlock — 出力が prior-round-context XML タグで囲まれる (must)
  * TC-017: buildPriorRoundContextBlock — findings が空配列の場合に「前周指摘なし」を明示する (should)
@@ -40,7 +40,7 @@ type DerivePriorRoundContextFn = (params: {
   state: JobState;
   iteration: number;
   cwd: string;
-  runtimeStrategy: unknown;
+  commitInspection: unknown;
 }) => Promise<PriorRoundContext | null>;
 
 let resolvePriorFixerOid: ResolvePriorFixerOidFn | undefined;
@@ -219,18 +219,18 @@ describe("TC-013: derivePriorRoundContext — iteration 1 で null を返す", (
       state,
       iteration: 1,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy(),
+      commitInspection: makeFakeRuntimeStrategy(),
     });
     expect(result).toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-014: derivePriorRoundContext — runtimeStrategy が undefined で null を返す
+// TC-014: derivePriorRoundContext — commitInspection が undefined で null を返す
 // ---------------------------------------------------------------------------
 
-describe("TC-014: derivePriorRoundContext — runtimeStrategy が undefined で null を返す", () => {
-  it("TC-014: returns null when runtimeStrategy is undefined (managed runtime equivalent)", async () => {
+describe("TC-014: derivePriorRoundContext — commitInspection が undefined で null を返す", () => {
+  it("TC-014: returns null when commitInspection is undefined (managed runtime equivalent)", async () => {
     expect(derivePriorRoundContext).toBeDefined();
     const state = makeStateWithSpecReviewRun({
       specFixerRuns: [{ commitOid: "abc123" }],
@@ -239,7 +239,7 @@ describe("TC-014: derivePriorRoundContext — runtimeStrategy が undefined で 
       state,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: undefined,
+      commitInspection: undefined,
     });
     expect(result).toBeNull();
   });
@@ -265,7 +265,7 @@ describe("TC-015: derivePriorRoundContext — 前周 fixer OID あり・mock が
       state,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: mockStrategy,
+      commitInspection: mockStrategy,
     });
 
     expect(result).not.toBeNull();
@@ -302,7 +302,7 @@ describe("TC-015: derivePriorRoundContext — 前周 fixer OID あり・mock が
       state,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy({ files: ["a.ts"] }),
+      commitInspection: makeFakeRuntimeStrategy({ files: ["a.ts"] }),
     });
 
     expect(result).not.toBeNull();
@@ -394,7 +394,7 @@ describe("TC-019 (should): derivePriorRoundContext — changedFiles が空配列
       state,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy({ files: [] }),
+      commitInspection: makeFakeRuntimeStrategy({ files: [] }),
     });
 
     // Must NOT be null — empty changedFiles is still valid information
@@ -460,7 +460,7 @@ describe("TC-030 (should): managed runtime 相当（listCommitChangedFiles が u
         state,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: managedFakeStrategy,
+        commitInspection: managedFakeStrategy,
       });
     } catch {
       threw = true;
@@ -514,7 +514,7 @@ describe("TC-031 (should): getLatestJudgeFindings が空配列を返す（前周
       state,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy({ files: ["b.ts"] }),
+      commitInspection: makeFakeRuntimeStrategy({ files: ["b.ts"] }),
     });
 
     expect(result).not.toBeNull();

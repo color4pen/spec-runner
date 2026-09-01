@@ -18,6 +18,7 @@ import { EventBus } from "../../event/event-bus.js";
 import type { AgentStep } from "../types.js";
 import type { JobState, StepRun } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -136,7 +137,11 @@ function makeDepsWithCaptureHeadSha(
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
+    changedFiles: runtimeStrategy as never,
     roundOwnsGitEffects: false,
   } as unknown as PipelineDeps;
 }
@@ -220,7 +225,11 @@ describe("TC-012: sequential agent step captures HEAD OID into commitOid after p
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      runtimeStrategy,
+      stepArtifact: runtimeStrategy as never,
+      stepIo: runtimeStrategy as never,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
+      changedFiles: runtimeStrategy as never,
       roundOwnsGitEffects: false,
     } as unknown as PipelineDeps;
 
@@ -267,7 +276,11 @@ describe("TC-012: sequential agent step captures HEAD OID into commitOid after p
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      // runtimeStrategy intentionally omitted
+      // capability fields absent — tests that absence is handled gracefully
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     } as PipelineDeps;
 
     await executor.execute(step, state, deps);

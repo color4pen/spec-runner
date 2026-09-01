@@ -1,0 +1,33 @@
+{
+  "requestHash": "sha256:1918af8175d34f257c6de33e47d9ab159a4a7b643b79efce38a198587b4e9310",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/port/runtime-strategy.ts: 875 lines",
+    "RuntimeStrategy interface: 28 methods (bootstrapJob, persistJobState, query, createAgentRunner, setupWorkspace, buildDeps, registerCleanup, teardown, captureHeadSha, prepareStepArtifacts, finalizeStepArtifacts, validateStepInputs, validateStepOutputs, commitFinalState, verifyFindingRefs, digestArtifacts, listChangedFiles, listWorktreeChanges?, commitRoundArtifacts?, canDeriveChangedFiles?, assertNoDuplicateLiveJob?, assertProviderReadiness?, reloadJobState?, listCommitChangedFiles?, readFileAtCommit?, snapshotMainCheckoutGuard?, readRevisionContent?, lastCommitTouchingPath?)",
+    "src/core/port/runtime-strategy.ts: 21 unknown tokens",
+    "buildDeps return type: unknown (line 385)",
+    "finalizeStepArtifacts(step: unknown, deps: unknown, commitPushInfra: unknown) (lines 438/440/442)",
+    "commitFinalState(deps: unknown, state: unknown) (line 508)",
+    "commitRoundArtifacts(commitPushInfra: unknown, egressParams?: unknown) (lines 627/629)",
+    "as unknown as RuntimeStrategy: 4 occurrences (pipeline-integration.test.ts, custom-reviewers-e2e.test.ts, pipeline-sole-committer-e2e.test.ts x2)",
+    "as PipelineDeps cast: runner.ts line 222",
+    "as CommitPushInfra cast: local.ts line 931",
+    "egress params restore cast: local.ts line 932",
+    "PipelineDeps.runtimeStrategy?: RuntimeStrategy at src/core/types.ts line 91",
+    "LocalRuntime.buildDeps returns runtimeStrategy: this (local.ts line 617)",
+    "pipeline.ts: deps.runtimeStrategy?.commitFinalState(deps, state) at 2 locations (lines 399, 623)",
+    "ChangedFilesCapability defined in runtime-strategy.ts",
+    "CommitInspectionCapability defined in runtime-strategy.ts",
+    "RevisionContentCapability defined in runtime-strategy.ts",
+    "deriveCommitInspectionCapability helper defined",
+    "deriveRevisionContentCapability helper defined",
+    "architecture/components.md exists",
+    "src/core/step/adr-gen.ts line 183: runtimeStrategy parameter type is RuntimeStrategy | undefined (not yet narrowed)",
+    "src/core/step/custom-reviewer.ts line 147: runtimeStrategy parameter type is RuntimeStrategy | undefined (not yet narrowed)",
+    "src/core/step/spec-review.ts line 105: runtimeStrategy parameter type is RuntimeStrategy | undefined (not yet narrowed)",
+    "adr-gen.ts line 188: internally calls deriveCommitInspectionCapability(runtimeStrategy)",
+    "custom-reviewer.ts line 157: internally calls deriveCommitInspectionCapability(runtimeStrategy)",
+    "spec-review.ts line 112: internally calls deriveCommitInspectionCapability(runtimeStrategy)"
+  ],
+  "sourceRevision": "660d48fb20d448f690cf991e09b4aac930bc2de4"
+}

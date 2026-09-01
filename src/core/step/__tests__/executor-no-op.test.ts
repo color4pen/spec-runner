@@ -98,6 +98,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     captureHeadSha: vi.fn(async () => "abc123head" as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts: vi.fn(async () => {}),
+    snapshotMainCheckoutGuard: vi.fn(async () => null),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => [] as never[]),
     listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
@@ -141,7 +142,11 @@ function makeDeps(runtimeStrategy?: ReturnType<typeof makeRuntimeStrategy>): Pip
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: runtimeStrategy as never,
+    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
+    changedFiles: runtimeStrategy as never,
   } as PipelineDeps;
 }
 
@@ -508,6 +513,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
 // ---------------------------------------------------------------------------
 
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../../pipeline/types.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 /**
  * Build a state that has a code-review run with the given verdict and a finding

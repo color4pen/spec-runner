@@ -20,6 +20,7 @@ import {
 import { UnsupportedRuntimeCapabilityError } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import type { PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
 import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -101,7 +102,7 @@ function makeFakePreflightResult(pipelineId?: string): PreflightResult {
  */
 function makeFakeRuntime(
   canDerive: boolean | "absent",
-): RuntimeStrategy & { bootstrapJob: ReturnType<typeof vi.fn> } {
+): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
@@ -109,7 +110,7 @@ function makeFakeRuntime(
 
   const bootstrapJobSpy = vi.fn().mockResolvedValue(initialState);
 
-  const runtime: RuntimeStrategy & { bootstrapJob: ReturnType<typeof vi.fn> } = {
+  const runtime: RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } = {
     bootstrapJob: bootstrapJobSpy,
     persistJobState: vi.fn().mockResolvedValue(undefined),
     query: vi.fn(),
@@ -120,10 +121,8 @@ function makeFakeRuntime(
     teardown: vi.fn().mockResolvedValue(undefined),
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
@@ -150,7 +149,7 @@ class TestablePipelineRunCommand extends PipelineRunCommand {
  */
 function makeCommand(
   preflightResult: PreflightResult,
-  runtime: RuntimeStrategy,
+  runtime: RuntimeStrategy & PipelineDepsBuilder,
 ): TestablePipelineRunCommand {
   return new TestablePipelineRunCommand(
     runtime,

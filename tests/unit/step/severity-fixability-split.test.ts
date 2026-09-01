@@ -45,6 +45,7 @@ import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ===========================================================================
 // Shared helpers
@@ -140,6 +141,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     captureHeadSha: vi.fn(async () => "abc123head" as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts: vi.fn(async () => {}),
+    snapshotMainCheckoutGuard: vi.fn(async () => null),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => [] as never[]),
     listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
@@ -199,7 +201,11 @@ function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): Pipe
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: runtimeStrategy as never,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: runtimeStrategy as never,
+    changedFiles: runtimeStrategy as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

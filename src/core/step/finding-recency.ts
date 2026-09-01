@@ -109,11 +109,11 @@ export function classifyFindingRecency(
 
 /**
  * Compute recency classification for each finding by reading the prior revision's
- * file content via `runtimeStrategy.readRevisionContent`.
+ * file content via `revisionContent.readRevisionContent`.
  *
  * Fail-to-indeterminate contract:
  *   - `priorOid === null` → all indeterminate (no prior revision to compare).
- *   - `runtimeStrategy` undefined (capability not derivable) → all indeterminate.
+ *   - `revisionContent` undefined (capability not derivable) → all indeterminate.
  *   - `finding.line === undefined` → indeterminate for that finding.
  *   - `readRevisionContent` throws → `{ current: null, prior: null }` (indeterminate).
  *   - `current` content line at `finding.line` out of range → targetLineContent = null (indeterminate).
@@ -122,14 +122,14 @@ export function classifyFindingRecency(
  * @param priorOid       - CommitOid of the prior spec-review round, or null.
  * @param cwd            - Working directory for the runtime.
  * @param branch         - Current branch name, or null.
- * @param runtimeStrategy - Revision-content capability, or undefined when not derivable.
+ * @param revisionContent - Revision-content capability, or undefined when not derivable.
  */
 export async function computeFindingRecency(
   findings: Finding[],
   priorOid: string | null,
   cwd: string,
   branch: string | null,
-  runtimeStrategy: RevisionContentCapability | undefined,
+  revisionContent: RevisionContentCapability | undefined,
 ): Promise<FindingRecencyResult[]> {
   // Cache of per-file revision content to avoid redundant reads
   const contentCache = new Map<string, { current: string | null; prior: string | null }>();
@@ -138,7 +138,7 @@ export async function computeFindingRecency(
 
   for (const finding of findings) {
     // Guard: revision-content capability not injected → indeterminate
-    if (!runtimeStrategy) {
+    if (!revisionContent) {
       results.push({
         file: finding.file,
         line: finding.line,
@@ -177,7 +177,7 @@ export async function computeFindingRecency(
     let pair = contentCache.get(finding.file);
     if (!pair) {
       try {
-        pair = await runtimeStrategy.readRevisionContent(finding.file, priorOid, cwd, branch);
+        pair = await revisionContent.readRevisionContent(finding.file, priorOid, cwd, branch);
       } catch {
         pair = { current: null, prior: null };
       }
@@ -223,7 +223,7 @@ export interface RecordFindingRecencyParams {
   findings: Finding[];
   cwd: string;
   branch: string | null;
-  runtimeStrategy: RevisionContentCapability | undefined;
+  revisionContent: RevisionContentCapability | undefined;
 }
 
 /**
@@ -239,7 +239,7 @@ export interface RecordFindingRecencyParams {
  *   - All errors from compute/append are caller-responsibility (best-effort wrapper at call site).
  */
 export async function recordFindingRecency(params: RecordFindingRecencyParams): Promise<void> {
-  const { store, stepName, iteration, priorOid, findings, cwd, branch, runtimeStrategy } = params;
+  const { store, stepName, iteration, priorOid, findings, cwd, branch, revisionContent } = params;
 
   // Gate: no prior round to compare against
   if (iteration < 2) return;
@@ -247,7 +247,7 @@ export async function recordFindingRecency(params: RecordFindingRecencyParams): 
   // Gate: nothing to record
   if (findings.length === 0) return;
 
-  const results = await computeFindingRecency(findings, priorOid, cwd, branch, runtimeStrategy);
+  const results = await computeFindingRecency(findings, priorOid, cwd, branch, revisionContent);
 
   const record: FindingRecencyRecord = {
     type: "finding-recency",

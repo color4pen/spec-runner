@@ -23,6 +23,7 @@ import type { StepExecutor } from "../../step/executor.js";
 import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
 import type { ResumeContextSnapshot } from "../../resume/resume-context.js";
 import { buildResumePrompt } from "../../resume/resume-context.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -109,12 +110,15 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => makeStore() as never,
-    runtimeStrategy: {
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: {
       captureHeadSha: async () => "abc123",
       listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
-      finalizeStepArtifacts: async () => undefined,
-      validateStepInputs: async () => undefined,
-      validateStepOutputs: async () => ({ violations: [] }),
+      listWorktreeChanges: async () => ({ kind: "success" as const, paths: [] }),
+      commitRoundArtifacts: async () => undefined,
+      digestArtifacts: async () => [],
     } as never,
     ...overrides,
   };

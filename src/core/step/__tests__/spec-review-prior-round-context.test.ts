@@ -33,6 +33,7 @@ import { describe, it, expect, vi } from "vitest";
 import type { JobState } from "../../../state/schema.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
+import type { CommitInspectionCapability } from "../../port/runtime-strategy.js";
 import type { Finding } from "../../../kernel/report-result.js";
 import { STEP_NAMES } from "../step-names.js";
 
@@ -44,6 +45,7 @@ import type { DynamicContext } from "../../../git/dynamic-context.js";
 import { collectDynamicContext } from "../../../git/dynamic-context.js";
 import { SpecReviewStep } from "../spec-review.js";
 import { buildStepContext, type BuildStepContextFs } from "../step-context-builder.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // SpecReviewStep type assertion — prepareRoundContext is a new optional method
 const SpecReviewStepRecord = SpecReviewStep as unknown as Record<string, unknown>;
@@ -132,9 +134,9 @@ function makeDynamicContext(extra: Partial<DynamicContext> = {}): DynamicContext
   };
 }
 
-/** Fake PipelineDeps with optional runtimeStrategy */
+/** Fake PipelineDeps with optional commitInspection */
 function makeDeps(opts: {
-  runtimeStrategy?: PipelineDeps["runtimeStrategy"];
+  commitInspection?: CommitInspectionCapability;
   dynamicContext?: DynamicContext;
 } = {}): PipelineDeps {
   const store = {
@@ -167,7 +169,11 @@ function makeDeps(opts: {
     resumePrompt: undefined,
     resumeContext: undefined,
     repoRoot: undefined,
-    runtimeStrategy: opts.runtimeStrategy,
+    commitInspection: opts.commitInspection,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 
@@ -185,7 +191,7 @@ function makeFakeRuntimeStrategy(opts: {
       return { kind: "success" as const, files };
     },
     validateStepOutputs: async () => [],
-  } as unknown as PipelineDeps["runtimeStrategy"];
+  } as unknown as CommitInspectionCapability;
 }
 
 const stubFsAdapter: BuildStepContextFs = {

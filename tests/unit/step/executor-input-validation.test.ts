@@ -20,12 +20,13 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
-import type { PipelineDeps } from "../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../src/errors.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -84,7 +85,7 @@ function makeJobState(jobId: string): JobState {
  * Build a RuntimeStrategy mock where validateStepInputs always rejects with
  * the given error. All other methods are no-ops or return safe defaults.
  */
-function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
+function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy & PipelineDepsBuilder {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner {
@@ -95,16 +96,15 @@ function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy {
       };
     },
     async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {
       throw errorToThrow;
     },
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
@@ -168,6 +168,10 @@ function makeBaseDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }
@@ -215,7 +219,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,
@@ -268,7 +272,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     let thrownErr: unknown;
     try {
@@ -329,7 +333,7 @@ describe("TC-022: CliStep — validateStepInputs failure halts before step.run()
       parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ runtimeStrategy });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,

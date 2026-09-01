@@ -38,7 +38,7 @@ import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
-import type { PipelineDeps } from "../types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
@@ -87,7 +87,7 @@ export interface PrepareResult {
  */
 export abstract class CommandRunner {
   constructor(
-    protected readonly runtime: RuntimeStrategy,
+    protected readonly runtime: RuntimeStrategy & PipelineDepsBuilder,
     protected readonly events: EventBus,
     /**
      * Optional factory for the entrance fidelity gate's IssueFidelityComparator.
@@ -219,7 +219,7 @@ export abstract class CommandRunner {
       // Step 4: registerCleanup
       let handle: CleanupHandle;
       try {
-        deps = this.runtime.buildDeps(config, request, slug, workspace) as PipelineDeps;
+        deps = this.runtime.buildDeps(config, request, slug, workspace);
 
         // Step 3c: propagate resumePrompt from prepare() into deps (one-shot injection)
         if (prepared.resumePrompt) {
@@ -318,8 +318,9 @@ export abstract class CommandRunner {
         }
 
         // Commit final state to remote (best-effort — managed runtime only).
+        // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
         try {
-          await deps.runtimeStrategy?.commitFinalState(deps, haltState);
+          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
         } catch {
           // Best-effort: do not let remote sync failure block local halt reporting.
         }

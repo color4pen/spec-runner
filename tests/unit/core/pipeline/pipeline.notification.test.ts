@@ -15,6 +15,7 @@ import type { JobState, ErrorInfo, HistoryEntry } from "../../../../src/state/sc
 import type { PipelineDeps, StoreFactory } from "../../../../src/core/types.js";
 import type { JobStateStore } from "../../../../src/store/job-state-store.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -120,6 +121,10 @@ function makeMinimalDeps(storeFactory: StoreFactory, githubClientOverrides: Reco
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

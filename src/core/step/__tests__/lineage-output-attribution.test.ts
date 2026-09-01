@@ -209,7 +209,7 @@ function makeDeps(
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: makeRealDigestRuntimeStrategy() as never,
+    stepArtifact: makeRealDigestRuntimeStrategy() as never,
     ...overrides,
   } as PipelineDeps;
 }

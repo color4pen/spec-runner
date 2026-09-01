@@ -36,6 +36,7 @@ import type { ParallelReviewConfig } from "../src/core/pipeline/types.js";
 import type { SpawnFn as GitExecSpawnFn } from "../src/util/git-exec.js";
 import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
+import { noopStepArtifact, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Git sync helpers
@@ -375,8 +376,7 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
           return { kind: "success" as const, paths };
         },
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-        digestArtifacts: undefined,
-        finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+        digestArtifacts: vi.fn().mockResolvedValue([]),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
       } as unknown as RuntimeStrategy;
@@ -475,7 +475,10 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        runtimeStrategy,
+        roundGitEffects: runtimeStrategy as never,
+        stepIo: runtimeStrategy as never,
+        stepArtifact: noopStepArtifact,
+        terminalState: noopTerminalState,
         storeFactory,
         gitTransportSpawn: gitExecSpawnFn,
       };
@@ -532,8 +535,7 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         captureHeadSha: async () => gitSync(["rev-parse", "HEAD"], tempDir),
         listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-        digestArtifacts: undefined,
-        finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+        digestArtifacts: vi.fn().mockResolvedValue([]),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
       } as unknown as RuntimeStrategy;
@@ -616,7 +618,10 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        runtimeStrategy,
+        roundGitEffects: runtimeStrategy as never,
+        stepIo: runtimeStrategy as never,
+        stepArtifact: noopStepArtifact,
+        terminalState: noopTerminalState,
         storeFactory,
       };
 

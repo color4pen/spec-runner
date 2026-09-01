@@ -15,12 +15,12 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentStepName } from "../../../src/kernel/agent-definition.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -90,35 +90,27 @@ function makeSuccessRunner(): AgentRunner {
 }
 
 /**
- * Build a RuntimeStrategy with an injectable finalizeStepArtifacts implementation.
+ * Build a step artifact capability with an injectable finalizeStepArtifacts implementation.
  */
 function makeStrategy(opts: {
-  finalizeStepArtifacts: (step: AgentStep, ...rest: unknown[]) => Promise<void>;
-}): RuntimeStrategy {
+  finalizeStepArtifacts: (...args: unknown[]) => Promise<void>;
+}) {
   return {
-    async *query() {},
-    createAgentRunner: () => makeSuccessRunner(),
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(step, ...rest): Promise<void> {
-      return opts.finalizeStepArtifacts(step as AgentStep, ...rest);
+    async finalizeStepArtifacts(...args: unknown[]): Promise<void> {
+      return opts.finalizeStepArtifacts(...args);
     },
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
+    async validateStepOutputs() { return { violations: [] }; },
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async validateStepOutputs() { return { violations: [] }; },
     async listChangedFiles() { return { kind: "success" as const, files: [] }; },
   };
 }
 
-function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
+function makeDeps(strategy?: ReturnType<typeof makeStrategy>): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -155,7 +147,10 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: strategy as never,
+    stepIo: strategy as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

@@ -35,7 +35,6 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { OutputCheckResult, OutputContract } from "../../../src/core/port/output-contract.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
@@ -46,6 +45,7 @@ import { makeUnpushablePathHalt } from "../../../src/core/step/step-halt.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { WORKFLOWS_PATTERN } from "../../../src/git/push-capability.js";
 import type { PushCapability } from "../../../src/git/push-capability.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test state
@@ -118,28 +118,27 @@ const declaringCapability: PushCapability = {
  */
 function makeRuntimeStrategy(
   validateFn: () => Promise<OutputCheckResult>,
-): { strategy: RuntimeStrategy; finalizeSpy: ReturnType<typeof vi.fn> } {
+): { strategy: ReturnType<typeof _makeRuntimeStrategyObj>; finalizeSpy: ReturnType<typeof vi.fn> } {
   const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const strategy: RuntimeStrategy = {
-    async *query() {},
-    createAgentRunner(): AgentRunner { return makeSuccessRunner(); },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
+  const strategy = _makeRuntimeStrategyObj(validateFn, finalizeSpy);
+  return { strategy, finalizeSpy };
+}
+
+function _makeRuntimeStrategyObj(
+  validateFn: () => Promise<OutputCheckResult>,
+  finalizeSpy: ReturnType<typeof vi.fn>,
+) {
+  return {
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     finalizeStepArtifacts: finalizeSpy,
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async verifyFindingRefs() { return [] as never[]; },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     validateStepOutputs: validateFn,
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
   };
-  return { strategy, finalizeSpy };
 }
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
@@ -180,6 +179,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }
@@ -253,7 +256,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
 
     // Gate does NOT halt — it passes through to finalizeStepArtifacts (Layer 2).
     await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -284,7 +288,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -311,7 +316,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     const resultState = await executor.execute(step, state, makeDeps({
-      runtimeStrategy: strategy,
+      stepArtifact: strategy as never,
+      stepIo: strategy as never,
       pushCapability: declaringCapability,
     }));
 
@@ -351,7 +357,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -379,7 +385,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -519,11 +525,12 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
     return { spawnFn, calls };
   }
 
-  function makeInfra(spawnFn: SpawnFn): CommitPushInfra {
+  function makeInfra(spawnFn: SpawnFn, pushCapability?: PushCapability | null): CommitPushInfra {
     return {
       spawnFn,
       sleepFn: async () => {},
       events: new EventBus(),
+      pushCapability,
     };
   }
 
@@ -568,7 +575,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   it("TC-037: throws UNPUSHABLE_PATH_BLOCKED when workflow file is in publishable set", async () => {
     // The worktree has .github/workflows/ci.yml modified
     const { spawnFn } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       ...{
@@ -594,7 +601,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-015: Push never attempted
   it("TC-015: no push git command when workflow file is in publishable set", async () => {
     const { spawnFn, calls } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-015", createdAt: "", updatedAt: "",
@@ -619,7 +626,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-015: commit never attempted either
   it("TC-015: no commit git command when workflow file is in publishable set", async () => {
     const { spawnFn, calls } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-015b", createdAt: "", updatedAt: "",
@@ -644,7 +651,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-016: Rejection reason names path and constraint
   it("TC-016: error message contains the matched path and environment constraint", async () => {
     const { spawnFn } = makeGitSpawn("M  .github/workflows/ci.yml\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-016", createdAt: "", updatedAt: "",
@@ -672,7 +679,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   it("TC-018: non-matching path allows commit/push to proceed (no backstop throw)", async () => {
     // Worktree has only src/foo.ts — does not match .github/workflows/**
     const { spawnFn } = makeGitSpawn("M  src/foo.ts\0");
-    const infra = makeInfra(spawnFn);
+    const infra = makeInfra(spawnFn, declaringCapability);
     const step = makeMinimalStep();
     const state: JobState = {
       version: 1, jobId: "tc-018-l2", createdAt: "", updatedAt: "",
@@ -824,6 +831,7 @@ describe("F1 round-trip: unpushablePathBlockedError → UnpushablePathBlockedErr
       spawnFn,
       sleepFn: async () => {},
       events: new EventBus(),
+      pushCapability: declaringCapability,
     };
     const step = {
       kind: "agent" as const,
@@ -848,7 +856,6 @@ describe("F1 round-trip: unpushablePathBlockedError → UnpushablePathBlockedErr
       slug: "test-slug",
       cwd: tempDir,
       spawn: noopSpawn,
-      pushCapability: declaringCapability,
     } as unknown as import("../../../src/core/types.js").PipelineDeps;
 
     let thrownErr: unknown;

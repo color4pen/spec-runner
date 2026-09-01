@@ -5,7 +5,7 @@
  * stays lean. Follows the same sibling-file pattern as scope-check.ts.
  *
  * Design: detectNoOp is a free async function that takes an injectable
- * RuntimeStrategy seam — no direct fs I/O.
+ * ChangedFilesCapability seam — no direct fs I/O.
  */
 import type { AgentStep } from "./types.js";
 import type { Verdict } from "../../state/schema.js";
@@ -24,7 +24,7 @@ const ARTIFACT_PREFIXES = ["specrunner/changes/", ".specrunner/"] as const;
  *
  * Preconditions (caller must check before calling):
  * - step.noOpDetect === true
- * - runtimeStrategy is available (local runtime)
+ * - deps.changedFiles is available (ChangedFilesCapability injected)
  * - headBeforeStep is non-null (git SHA captured before the step ran)
  * - completionReason === "success" (not a timeout or hard error)
  *
@@ -33,7 +33,7 @@ const ARTIFACT_PREFIXES = ["specrunner/changes/", ".specrunner/"] as const;
  */
 export async function detectNoOp(
   step: AgentStep,
-  runtimeStrategy: ChangedFilesCapability,
+  changedFiles: ChangedFilesCapability,
   params: {
     headBeforeStep: string;
     cwd: string;
@@ -67,7 +67,7 @@ export async function detectNoOp(
   if (!step.noOpDetect) return undefined;
   if (params.completionReason !== "success") return undefined;
 
-  const result = await runtimeStrategy.listChangedFiles(
+  const result = await changedFiles.listChangedFiles(
     params.headBeforeStep,
     params.cwd,
     params.branch,
@@ -75,7 +75,7 @@ export async function detectNoOp(
 
   // Behavior preservation: unavailable (managed runtime, local transient failure) is
   // treated as empty (no-signal). This keeps the no-op escalation direction safe.
-  const changedFiles = result.kind === "success" ? result.files : [];
+  const files = result.kind === "success" ? result.files : [];
 
   // Filter out artifact files — only source file changes count as real work.
   // Finding-target exemption: paths named by routed findings are exempt from artifact
@@ -83,7 +83,7 @@ export async function detectNoOp(
   // exempt = findingTargetPaths − pipelineManagedPaths. Omitting either param → exempt = ∅.
   const managed = new Set(params.pipelineManagedPaths ?? []);
   const exempt = new Set((params.findingTargetPaths ?? []).filter((f) => !managed.has(f)));
-  const sourceFiles = changedFiles.filter((f) =>
+  const sourceFiles = files.filter((f) =>
     exempt.has(f) ? true : !ARTIFACT_PREFIXES.some((prefix) => f.startsWith(prefix)),
   );
 

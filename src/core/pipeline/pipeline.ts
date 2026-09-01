@@ -4,7 +4,7 @@ import { LOOP_ERROR_CODES } from "./types.js";
 import type { JobState, Verdict, StepRun } from "../../state/schema.js";
 import { appendHistoryEntry } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
-import type { PipelineDeps } from "../types.js";
+import type { TerminalStateCapability } from "./pipeline-capability.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
@@ -14,6 +14,24 @@ import { notifyJobTerminal } from "../notify/issue-notifier.js";
 import { resolveActiveReviewer, lastReviewerFixableCount } from "./reviewer-chain.js";
 import { ConvergenceBudget } from "./convergence-budget.js";
 import { ParallelReviewRound } from "./parallel-review-round.js";
+import type { ParallelReviewRoundDeps } from "./parallel-review-round.js";
+
+/**
+ * PipelineOrchestrationDeps — consumer-owned deps contract for Pipeline.run.
+ *
+ * T-19 (operator review, PR #1105): declared here in Pipeline's own module as an
+ * explicit interface, NOT derived from PipelineDeps via Pick/Omit. It composes the
+ * round contract (Pipeline forwards deps to StepExecutor / ParallelReviewRound) and
+ * adds the pipeline-level terminal-state capability. PipelineDeps satisfies it
+ * structurally without casts at the CommandRunner → Pipeline hand-off.
+ */
+export interface PipelineOrchestrationDeps extends ParallelReviewRoundDeps {
+  /**
+   * Terminal state capability (R2b). Required non-nullable —
+   * runtimes without a local checkout inject a no-op implementation.
+   */
+  terminalState: TerminalStateCapability;
+}
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -136,7 +154,7 @@ export class Pipeline {
   async run(
     startStep: string,
     jobState: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
   ): Promise<JobState> {
     logPipelineDiag("pipeline:run:entry", `jobId=${jobState.jobId}, startStep=${startStep}`);
     this.events.emit("pipeline:start", { state: jobState });
@@ -199,7 +217,7 @@ export class Pipeline {
   private async runInternal(
     startStep: string,
     jobState: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
   ): Promise<JobState> {
     let state = jobState;
     let currentStep = startStep;
@@ -209,7 +227,7 @@ export class Pipeline {
     // (which may carry resumePrompt / resumeContext). Subsequent units receive a clone
     // with both resume fields stripped. This replaces the per-executor in-place clearing
     // that was previously in executor.ts.
-    const depsWithoutResume: PipelineDeps = { ...deps, resumePrompt: undefined, resumeContext: undefined };
+    const depsWithoutResume: PipelineOrchestrationDeps = { ...deps, resumePrompt: undefined, resumeContext: undefined };
     let firstUnitExecuted = false;
 
     while (true) {
@@ -396,7 +414,8 @@ export class Pipeline {
           const endStore = deps.storeFactory(state.jobId);
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
-          await deps.runtimeStrategy?.commitFinalState(deps, state);
+          // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
+          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)
@@ -620,7 +639,8 @@ export class Pipeline {
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
     if (state.status === "awaiting-resume") {
-      await deps.runtimeStrategy?.commitFinalState(deps, state);
+      // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
+      await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).
@@ -643,7 +663,7 @@ export class Pipeline {
    */
   private async tryExhaust(
     state: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
     opts: {
       iteration: number;
       stepName: string;
@@ -731,7 +751,7 @@ export class Pipeline {
    */
   private async handleExhausted(
     state: JobState,
-    deps: PipelineDeps,
+    deps: PipelineOrchestrationDeps,
     exhaustedLoopName: string = this.loopName,
     exhaustionPhase?: "review-after-final-fix" | "review-exhausted",
   ): Promise<JobState> {

@@ -33,6 +33,7 @@ import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -92,6 +93,10 @@ function makeMinimalDeps(): PipelineDeps {
     repo: "repo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

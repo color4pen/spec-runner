@@ -19,12 +19,14 @@ import { toLegacyStepResult } from "../../../src/state/helpers.js";
 import type { Step } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
+import type { TerminalStateCapability } from "../../../src/core/pipeline/pipeline-capability.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { reviewFeedbackPath, verificationResultPath, prCreateResultPath } from "../../../src/util/paths.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -127,6 +129,10 @@ function makeMinimalDeps(): PipelineDeps {
     repo: "repo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 
@@ -691,6 +697,7 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
   it("calls runtimeStrategy.commitFinalState exactly once when pipeline exits with awaiting-resume", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass to call commitFinalState
 
     // A failed design result with a non-fatal error triggers awaiting-resume via escalation
     const designResult: JobState = {
@@ -700,9 +707,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     };
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
     const result = await pipeline.run("design", state, deps);
@@ -710,15 +717,15 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(result.status).toBe("awaiting-resume");
     // The single-seam publisher (D5) must call commitFinalState exactly once
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
-    // commitFinalState is called with (deps, state) where state.status === "awaiting-resume"
-    const [calledDeps, calledState] = commitFinalStateSpy.mock.calls[0] as [typeof deps, JobState];
-    expect(calledDeps).toBe(deps);
+    // commitFinalState is called with (cwd, slug, state) where state.status === "awaiting-resume"
+    const [_calledCwd, _calledSlug, calledState] = commitFinalStateSpy.mock.calls[0] as [string, string, JobState];
     expect((calledState as JobState).status).toBe("awaiting-resume");
   });
 
   it("calls commitFinalState once for exhaustion-triggered awaiting-resume", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass to call commitFinalState
 
     const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
     // All spec-review calls return needs-fix → loop exhausts → awaiting-resume
@@ -735,9 +742,9 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     const specFixerResult: JobState = { ...designResult };
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({
       designResult,
@@ -751,6 +758,39 @@ describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at l
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
     // Exactly one commitFinalState call from the loop-end seam
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("omitted deps.cwd → commitFinalState is called with process.cwd() fallback", async () => {
+    // Spec scenario: call sites use `deps.cwd ?? process.cwd()` —
+    // when deps.cwd is undefined, commitFinalState is still called with the process.cwd() fallback.
+    // In production, buildDeps always sets cwd; the fallback covers test-only stubs.
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    // Confirm cwd is not set (undefined) on the minimal deps fixture
+    expect(deps.cwd).toBeUndefined();
+
+    const designResult: JobState = {
+      ...state,
+      status: "awaiting-resume",
+      error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not found", hint: "" },
+    };
+
+    const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
+    deps.terminalState = {
+      commitFinalState: commitFinalStateSpy,
+    } as unknown as TerminalStateCapability;
+
+    const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
+    const result = await pipeline.run("design", state, deps);
+
+    expect(result.status).toBe("awaiting-resume");
+    // When deps.cwd is undefined, commitFinalState is still called with process.cwd() fallback
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    expect(commitFinalStateSpy).toHaveBeenCalledWith(
+      process.cwd(),
+      deps.slug,
+      expect.objectContaining({ status: "awaiting-resume" }),
+    );
   });
 });
 
@@ -767,9 +807,9 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     };
 
     // commitFinalState does nothing (e.g., git push silently failed internally)
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: vi.fn().mockResolvedValue(undefined),
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
     const result = await pipeline.run("design", state, deps);
@@ -784,11 +824,12 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     // because state.status !== "awaiting-resume"
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
+    deps.cwd = "/fake/test-cwd"; // required: if (deps.cwd) guard must pass for in-loop publish
 
     const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
-    deps.runtimeStrategy = {
+    deps.terminalState = {
       commitFinalState: commitFinalStateSpy,
-    } as unknown as typeof deps.runtimeStrategy;
+    } as unknown as TerminalStateCapability;
 
     // A successful design run → eventually awaiting-archive
     // buildMockPipeline handles the full standard pipeline with all step defaults
@@ -813,8 +854,8 @@ describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffe
     // commitFinalState is called from in-loop publish (awaiting-archive), NOT from the seam
     // Total calls should be exactly 1 (in-loop publish)
     expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
-    // The call was made with state.status === "awaiting-archive"
-    const [, calledState] = commitFinalStateSpy.mock.calls[0] as [unknown, JobState];
+    // The call was made with state.status === "awaiting-archive" (cwd, slug, state)
+    const [,, calledState] = commitFinalStateSpy.mock.calls[0] as [unknown, unknown, JobState];
     expect((calledState as JobState).status).toBe("awaiting-archive");
   });
 });

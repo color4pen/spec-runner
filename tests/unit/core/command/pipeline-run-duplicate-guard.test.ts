@@ -12,6 +12,7 @@ import * as os from "node:os";
 import { PipelineRunCommand } from "../../../../src/core/command/pipeline-run.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -70,7 +71,7 @@ function makeFakePreflightResult(): PreflightResult {
  */
 function makeFakeRuntime(
   assertNoDuplicate: (() => Promise<void>) | undefined,
-): RuntimeStrategy & {
+): RuntimeStrategy & PipelineDepsBuilder & {
   bootstrapJob: ReturnType<typeof vi.fn>;
   assertNoDuplicateLiveJob?: ReturnType<typeof vi.fn>;
 } {
@@ -84,7 +85,7 @@ function makeFakeRuntime(
     ? vi.fn().mockImplementation(assertNoDuplicate)
     : undefined;
 
-  const runtime: RuntimeStrategy & {
+  const runtime: RuntimeStrategy & PipelineDepsBuilder & {
     bootstrapJob: ReturnType<typeof vi.fn>;
     assertNoDuplicateLiveJob?: ReturnType<typeof vi.fn>;
   } = {
@@ -98,10 +99,8 @@ function makeFakeRuntime(
     teardown: vi.fn().mockResolvedValue(undefined),
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
@@ -126,7 +125,7 @@ class TestablePipelineRunCommand extends PipelineRunCommand {
 
 function makeCommand(
   preflightResult: PreflightResult,
-  runtime: RuntimeStrategy,
+  runtime: RuntimeStrategy & PipelineDepsBuilder,
 ): TestablePipelineRunCommand {
   return new TestablePipelineRunCommand(
     runtime,

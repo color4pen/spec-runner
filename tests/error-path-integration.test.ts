@@ -18,7 +18,6 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import type { AgentRunner, AgentRunResult } from "../src/core/port/agent-runner.js";
 import type { JobState } from "../src/state/schema.js";
 import type { PipelineDeps } from "../src/core/types.js";
-import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import { EventBus } from "../src/core/event/event-bus.js";
 import { StepExecutor } from "../src/core/step/executor.js";
@@ -31,6 +30,7 @@ import {
 } from "./helpers/pipeline-mock-client.js";
 import { createManagedAgentRunner } from "../src/adapter/managed-agent/agent-runner.js";
 import type { GitHubClient } from "../src/core/port/github-client.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 // Mock verification runner (same as other integration test files)
 vi.mock("../src/core/verification/runner.js", () => ({
@@ -180,6 +180,10 @@ function makePipelineDeps(): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 
@@ -321,6 +325,10 @@ describe("TC-T05-dn: spec-review with decision-needed finding → verdict escala
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline halts — decision-needed triggers escalation
@@ -352,22 +360,23 @@ describe("TC-T05-ref: spec-review with high finding referencing non-existent fil
     });
 
     // RuntimeStrategy that declares the file reference non-existent
-    const runtimeStrategyWithMissingRef: Partial<RuntimeStrategy> = {
-      async verifyFindingRefs(_refs, _cwd, _branch) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const runtimeStrategyWithMissingRef: any = {
+      async verifyFindingRefs(_refs: { file: string }[], _cwd: string, _branch: string | null) {
         // All refs are non-existent
         return _refs.map((r) => ({ file: r.file }));
       },
       async captureHeadSha() { return null; },
       async prepareStepArtifacts() {},
       async finalizeStepArtifacts() {},
+      async snapshotMainCheckoutGuard() { return null; },
       async validateStepInputs() {},
       async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> { return { violations: [] }; },
-      async commitFinalState() {},
       async persistJobState() {},
       async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
       async setupWorkspace() { return { cwd: "" }; },
       buildDeps() { return {} as PipelineDeps; },
-      registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+      registerCleanup() { return {} as never; },
       async teardown() {},
       async *query() {},
       createAgentRunner() {
@@ -391,7 +400,10 @@ describe("TC-T05-ref: spec-review with high finding referencing non-existent fil
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      runtimeStrategy: runtimeStrategyWithMissingRef as RuntimeStrategy,
+      stepArtifact: runtimeStrategyWithMissingRef as never,
+      stepIo: runtimeStrategyWithMissingRef as never,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline halts — non-existent file ref triggers escalation
@@ -442,6 +454,10 @@ describe("TC-T06: session termination → SESSION_TERMINATED error code → awai
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Observable: SESSION_TERMINATED error recorded in state
@@ -541,6 +557,10 @@ describe("TC-T07: verification partial failure (build passed, test failed) → i
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline should complete after implementer recovery fixes the test failure

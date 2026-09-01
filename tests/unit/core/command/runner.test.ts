@@ -16,6 +16,7 @@ import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
@@ -90,7 +91,7 @@ function buildMockRuntime(opts: {
   setupThrow?: Error;
   /** When set, the mock buildDeps will include a real storeFactory pointing to this dir. */
   storeRootDir?: string;
-} = {}): RuntimeStrategy {
+} = {}): RuntimeStrategy & PipelineDepsBuilder {
   const _finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
   return {
@@ -119,9 +120,7 @@ function buildMockRuntime(opts: {
     teardown: vi.fn().mockResolvedValue(undefined),
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockResolvedValue(buildJobState()),
     persistJobState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
@@ -134,7 +133,7 @@ function buildMockRuntime(opts: {
 // Concrete subclass for testing
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
     private readonly prepareShouldThrow?: Error,
   ) {

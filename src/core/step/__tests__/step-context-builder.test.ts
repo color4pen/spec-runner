@@ -14,6 +14,7 @@ import { buildStepContext, type BuildStepContextFs } from "../step-context-build
 import type { AgentStep } from "../../port/step-types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -73,7 +74,10 @@ function makeDeps(slug = "test-slug"): PipelineDeps {
     resumePrompt: undefined,
     resumeContext: undefined,
     repoRoot: undefined,
-    runtimeStrategy: undefined,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 

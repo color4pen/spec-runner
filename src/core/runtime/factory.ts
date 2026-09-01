@@ -12,6 +12,7 @@ import type { GitHubClient } from "../port/github-client.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { SessionClient } from "../port/session-client.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../types.js";
 import { LocalRuntime } from "./local.js";
 import { ManagedRuntime } from "./managed.js";
 import { spawnBackground } from "../../util/spawn.js";
@@ -33,7 +34,7 @@ export function createRuntime(
   repo: OriginInfo,
   sessionClient: SessionClient | undefined,
   githubToken: string,
-): RuntimeStrategy {
+): RuntimeStrategy & PipelineDepsBuilder {
   if (config.runtime === "local") {
     return new LocalRuntime({ cwd, githubClient, githubToken, owner: repo.owner, repo: repo.name, workspaceSetup: config.workspace?.setup, spawnBackgroundFn: spawnBackground });
   }

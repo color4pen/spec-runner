@@ -18,7 +18,7 @@ import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
-import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { closeVerboseLog, setLogLevel } from "../../../../src/logger/stdout.js";
@@ -112,7 +112,7 @@ const NOOP_WORKSPACE: WorkspaceContext = { cwd: "/worktree" };
 /** Deps object returned by the mock runtime.buildDeps(). Same reference is mutated by execute(). */
 let capturedDeps: PipelineDeps;
 
-function buildMockRuntime(): RuntimeStrategy {
+function buildMockRuntime(): RuntimeStrategy & PipelineDepsBuilder {
   capturedDeps = {
     request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", adr: false },
     slug: "test-slug",
@@ -134,9 +134,7 @@ function buildMockRuntime(): RuntimeStrategy {
     teardown: vi.fn().mockResolvedValue(undefined),
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented in test")),
     persistJobState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
@@ -148,7 +146,7 @@ function buildMockRuntime(): RuntimeStrategy {
 
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());
@@ -265,7 +263,7 @@ class TestableResumeCommand extends ResumeCommand {
  * Build a minimal RuntimeStrategy mock for TC-011.
  * (ResumeCommand.prepare() does not call setupWorkspace — that happens in execute().)
  */
-function buildResumeTestRuntime(): RuntimeStrategy {
+function buildResumeTestRuntime(): RuntimeStrategy & PipelineDepsBuilder {
   return {
     query: vi.fn(),
     createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
@@ -275,10 +273,8 @@ function buildResumeTestRuntime(): RuntimeStrategy {
     teardown: vi.fn().mockResolvedValue(undefined),
     captureHeadSha: vi.fn().mockResolvedValue(null),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
     persistJobState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),

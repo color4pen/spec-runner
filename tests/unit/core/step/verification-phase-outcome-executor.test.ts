@@ -25,11 +25,12 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { CliStep } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy, FindingRef } from "../../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -83,19 +84,17 @@ function makeJobState(jobId: string): JobState {
   };
 }
 
-function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy> = {}): RuntimeStrategy {
+function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy & PipelineDepsBuilder> = {}): RuntimeStrategy & PipelineDepsBuilder {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner { return noopRunner; },
     async setupWorkspace() { return { cwd: tempDir }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     verifyFindingRefs: async (_refs: FindingRef[], _cwd: string, _branch: string | null) => [],
@@ -158,7 +157,11 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy: makeRuntimeStrategy(),
+    stepArtifact: makeRuntimeStrategy() as never,
+    stepIo: makeRuntimeStrategy() as never,
+    changedFiles: makeRuntimeStrategy() as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

@@ -87,6 +87,7 @@ function makeRuntimeStrategy(finalizeStepArtifacts = vi.fn(async () => {})) {
     captureHeadSha: vi.fn(async () => null as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts,
+    snapshotMainCheckoutGuard: vi.fn(async () => null),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => ({ violations: [] })),
   };
@@ -140,7 +141,7 @@ describe("StepExecutor — roundOwnsGitEffects: true → finalizeStepArtifacts s
       makeAgentStep("reviewer-alpha"),
       makeState(),
       makeDeps({
-        runtimeStrategy: runtimeStrategy as never,
+        stepArtifact: runtimeStrategy as never,
         roundOwnsGitEffects: true,
       }),
     );
@@ -161,7 +162,7 @@ describe("StepExecutor — roundOwnsGitEffects: true → finalizeStepArtifacts s
     );
 
     const deps = makeDeps({
-      runtimeStrategy: runtimeStrategy as never,
+      stepArtifact: runtimeStrategy as never,
       roundOwnsGitEffects: true,
     });
 
@@ -194,7 +195,7 @@ describe("StepExecutor — roundOwnsGitEffects absent → finalizeStepArtifacts 
       makeAgentStep("implementer"),
       makeState(),
       // No roundOwnsGitEffects — sequential path
-      makeDeps({ runtimeStrategy: runtimeStrategy as never }),
+      makeDeps({ stepArtifact: runtimeStrategy as never }),
     );
 
     expect(finalizeStepArtifacts).toHaveBeenCalledTimes(1);
@@ -215,7 +216,7 @@ describe("StepExecutor — roundOwnsGitEffects absent → finalizeStepArtifacts 
       makeAgentStep("implementer"),
       makeState(),
       makeDeps({
-        runtimeStrategy: runtimeStrategy as never,
+        stepArtifact: runtimeStrategy as never,
         roundOwnsGitEffects: false,
       }),
     );

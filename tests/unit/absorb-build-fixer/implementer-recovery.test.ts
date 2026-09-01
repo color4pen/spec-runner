@@ -93,7 +93,6 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     resumePrompt: undefined,
     resumeContext: undefined,
     repoRoot: undefined,
-    runtimeStrategy: undefined,
     ...overrides,
   } as PipelineDeps;
 }

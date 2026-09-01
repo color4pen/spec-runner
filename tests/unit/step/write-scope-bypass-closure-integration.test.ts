@@ -29,6 +29,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock pipelineManagedPaths to return controllable set
@@ -147,6 +148,10 @@ function makeDeps(slug: string, cwd: string): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 

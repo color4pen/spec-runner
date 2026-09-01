@@ -36,6 +36,7 @@ import type { StepExecutionResult } from "../../../src/core/step/commit-orchestr
 import type { ParallelReviewConfig } from "../../../src/core/pipeline/types.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test state
@@ -185,7 +186,7 @@ function makeRuntimeStrategyMock(opts: {
       vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
     listChangedFiles:
       opts.listChangedFiles ?? vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    digestArtifacts: opts.digestArtifacts ?? undefined,
+    digestArtifacts: opts.digestArtifacts ?? vi.fn().mockResolvedValue([]),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any as RuntimeStrategy;
 }
@@ -229,8 +230,11 @@ function makeDeps(
     owner: "user",
     repo: "repo",
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-    runtimeStrategy,
+    roundGitEffects: runtimeStrategy as never,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
     ...overrides,
   };
 }

@@ -23,7 +23,6 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { BaseReportResult } from "../../../../src/core/port/report-result.js";
@@ -36,6 +35,7 @@ import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
+import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -60,7 +60,8 @@ function makeConfig(): SpecRunnerConfig {
   return { version: 1, runtime: "managed", agents: {} };
 }
 
-function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeDeps(strategy?: any): PipelineDeps {
   return {
     config: makeConfig(),
     slug: "fast-test-feature",
@@ -78,7 +79,11 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy): PipelineDeps {
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    runtimeStrategy,
+    changedFiles: strategy as never,
+    stepArtifact: strategy as never,
+    stepIo: strategy as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   };
 }
 
@@ -121,37 +126,23 @@ function makeRunnerWithToolResult(toolResult: Record<string, unknown> | null): A
  * Build a RuntimeStrategy that can derive changed files and returns the given list.
  * canDeriveChangedFiles returns true.
  */
-function makeEvaluableStrategy(changedFiles: string[]): RuntimeStrategy {
+function makeEvaluableStrategy(changedFiles: string[]) {
   return {
-    async *query() {},
-    createAgentRunner() {
-      return {
-        async run() {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as never; },
-    registerCleanup() { return {} as never; },
-    async teardown() {},
-    async captureHeadSha() { return null; },
+    async captureHeadSha() { return null as string | null; },
     async prepareStepArtifacts() {},
     async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
     async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState() {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState() {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+    async validateStepOutputs() { return { violations: [] as never[] }; },
+    async verifyFindingRefs() { return [] as never[]; },
+    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
     async listChangedFiles() { return { kind: "success" as const, files: changedFiles }; },
     canDeriveChangedFiles: () => true,
   };
 }
 
 /** Build a spy-wrapped evaluable strategy so listChangedFiles calls can be counted. */
-function makeEvaluableStrategyWithSpy(changedFiles: string[]): RuntimeStrategy & { listChangedFiles: ReturnType<typeof vi.fn> } {
+function makeEvaluableStrategyWithSpy(changedFiles: string[]) {
   const base = makeEvaluableStrategy(changedFiles);
   const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: changedFiles });
   return { ...base, listChangedFiles: listFn };

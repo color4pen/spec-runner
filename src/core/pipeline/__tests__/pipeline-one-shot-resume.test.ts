@@ -18,6 +18,7 @@ import type { Step } from "../../step/types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState, StepRun } from "../../../state/schema.js";
 import type { ResumeContextSnapshot } from "../../resume/resume-context.js";
+import { noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -92,9 +93,9 @@ function makeDeps(
     repo: "repo",
     spawn: vi.fn() as never,
     storeFactory: () => store as never,
-    runtimeStrategy: undefined,
     resumePrompt: undefined,
     resumeContext: undefined,
+    terminalState: noopTerminalState,
     ...overrides,
   } as PipelineDeps;
 }

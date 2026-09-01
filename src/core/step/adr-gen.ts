@@ -4,8 +4,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import { deriveCommitInspectionCapability } from "../port/runtime-strategy.js";
+import type { CommitInspectionCapability } from "../port/runtime-strategy.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../../prompts/adr-gen-system.js";
 import { changeFolderPath, requestMdPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -180,12 +179,12 @@ export const AdrGenStep: AgentStep = {
   async prepareRoundContext(
     state: JobState,
     cwd: string,
-    runtimeStrategy: RuntimeStrategy | undefined,
+    commitInspection: CommitInspectionCapability | undefined,
   ): Promise<Partial<DynamicContext> | null> {
     const result = await derivePostFixContext({
       state,
       cwd,
-      runtimeStrategy: deriveCommitInspectionCapability(runtimeStrategy),
+      commitInspection: commitInspection,
     });
     if (!result) return null;
     return { postFixContext: result };

@@ -42,6 +42,11 @@ import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/comm
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
+import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
+import { deriveStepIoValidationCapability } from "../step/step-capability.js";
+import type { StepArtifactLifecycleCapability } from "../step/step-capability.js";
+import { deriveTerminalStateCapability, deriveRoundGitEffectsCapability } from "../pipeline/pipeline-capability.js";
+import type { RoundEgressParams } from "../pipeline/pipeline-capability.js";
 import type { ArtifactRef, CheckpointRestackRecord } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
@@ -597,7 +602,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     slug: string,
     workspace: WorkspaceContext,
   ): PipelineDeps {
-    return {
+    // Capture config in an immutable closure so capabilities built here always
+    // refer to the config from THIS buildDeps call — not from a later call.
+    const capturedConfig = config;
+    const deps: PipelineDeps = {
       client: undefined,
       config,
       request,
@@ -614,8 +622,61 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         return new JobStateStore(id, this.cwd, { slug, stateRoot });
       },
       repoRoot: this.cwd,
-      runtimeStrategy: this,
       gitTransportSpawn: this.transportAuth.wrapGitExecSpawn(defaultSpawnFn),
+      // R2b capability fields — config and request are captured in closure, not stored
+      // in mutable instance state. This eliminates the hidden ordering precondition
+      // on _currentConfig / _currentRequest that existed in the previous iteration.
+      stepArtifact: this.buildStepArtifactCapability(capturedConfig, request, slug, workspace),
+      stepIo: deriveStepIoValidationCapability(this),
+      terminalState: deriveTerminalStateCapability(this),
+      roundGitEffects: deriveRoundGitEffectsCapability(this),
+      changedFiles: {
+        canDeriveChangedFiles: () => this.canDeriveChangedFiles(),
+        listChangedFiles: (baseBranch, cwd, branch) => this.listChangedFiles(baseBranch, cwd, branch),
+      },
+      commitInspection: deriveCommitInspectionCapability(this),
+      revisionContent: deriveRevisionContentCapability(this),
+    };
+    return deps;
+  }
+
+  /**
+   * Build a StepArtifactLifecycleCapability with config, request, and slugOpts captured
+   * at capability-construction time.
+   *
+   * Called once per buildDeps() invocation. The returned capability always refers to the
+   * config and request from THIS buildDeps call — not from any later call. This eliminates
+   * the hidden ordering precondition that existed via _currentConfig / _currentRequest.
+   *
+   * MEDIUM finding (local.ts:781): slugOpts are now captured from the buildDeps parameters
+   * at construction time, not from `this.slugStoreOpts()` at finalize time. This prevents
+   * job A's capability from reading job B's mutable workspace/store context when the commit
+   * mutex serializes finalize calls across concurrent jobs.
+   *
+   * Both config and request are forwarded to commitAndPush (via doFinalizeStepArtifacts)
+   * because step.writes() implementations may access deps.request to resolve declared paths.
+   */
+  private buildStepArtifactCapability(
+    config: SpecRunnerConfig,
+    request: ParsedRequest,
+    slug: string,
+    workspace: WorkspaceContext,
+  ): StepArtifactLifecycleCapability {
+    // Capture slugOpts at capability-construction time using the buildDeps parameters.
+    // This prevents cross-job contamination: doFinalizeStepArtifacts no longer calls
+    // this.slugStoreOpts(), which reads mutable instance state (this.workspace / this.currentSlug).
+    const stateRoot = workspace.worktreePath ?? workspace.cwd;
+    const capturedSlugOpts: { slug: string; stateRoot: string } | undefined =
+      stateRoot ? { slug, stateRoot } : undefined;
+
+    return {
+      captureHeadSha: (cwd) => this.captureHeadSha(cwd),
+      prepareStepArtifacts: (cwd, stepSlug, stepName, state) =>
+        this.prepareStepArtifacts(cwd, stepSlug, stepName, state),
+      finalizeStepArtifacts: (step, state, cwd, stepSlug, headBeforeStep, infra) =>
+        this.doFinalizeStepArtifacts(step, state, cwd, stepSlug, headBeforeStep, infra, config, request, capturedSlugOpts),
+      snapshotMainCheckoutGuard: (cwd: string, cfg: SpecRunnerConfig) => this.snapshotMainCheckoutGuard(cwd, cfg),
+      digestArtifacts: (refs, cwd, branch) => this.digestArtifacts(refs, cwd, branch),
     };
   }
 
@@ -708,35 +769,60 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     await writeOutputTemplates(cwd, slug, stepName, state);
   }
 
-  async finalizeStepArtifacts(
+  /**
+   * Internal implementation of step artifact finalize, called from the capability closure.
+   *
+   * Config, request, and capturedSlugOpts are captured at capability construction time (via
+   * buildStepArtifactCapability) and passed here — no mutable instance state is needed.
+   * Both config and request are forwarded to commitAndPush because step.writes() implementations
+   * may access deps.request to resolve declared output paths (e.g. design.ts uses deps.request.type).
+   *
+   * MEDIUM finding (local.ts:781): capturedSlugOpts is the slugOpts snapshot taken at
+   * buildDeps() time, not from this.slugStoreOpts() at call time. This prevents job A's
+   * capability from reading job B's mutable workspace/store context when the commit mutex
+   * serializes finalize calls across concurrent jobs.
+   */
+  private async doFinalizeStepArtifacts(
     step: AgentStep,
     state: JobState,
-    deps: PipelineDeps,
+    cwd: string,
+    slug: string,
     headBeforeStep: string | null,
-    commitPushInfra: CommitPushInfra,
+    infra: CommitPushInfra,
+    config: SpecRunnerConfig,
+    request: ParsedRequest,
+    capturedSlugOpts: { slug: string; stateRoot: string } | undefined,
   ): Promise<void> {
-    const cwd = deps.cwd ?? process.cwd();
-    await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+    await cleanupOutputTemplates(cwd, slug, step.name, state);
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
     // Persist-before-push invariant (egress-ledger-push-failure fix):
     // Extend infra with a persistBeforePush callback so the synthesis commit OID is
     // written to the synthesizedCommits ledger before push is attempted. This mirrors
     // the existing implementation in parallel-review-round and prevents a push failure
     // from leaving the ledger incomplete and blocking resume via EGRESS_UNKNOWN_COMMIT.
-    const slugOpts = this.slugStoreOpts();
-    const infra: CommitPushInfra = {
-      ...commitPushInfra,
-      persistBeforePush: slugOpts
+    // capturedSlugOpts was captured at capability-construction time (buildDeps), not from
+    // mutable this.slugStoreOpts() — prevents cross-job ledger corruption.
+    const finalInfra: CommitPushInfra = {
+      ...infra,
+      persistBeforePush: capturedSlugOpts
         ? async (oid: string) => {
             await this.updateJobState(
               state.jobId,
               (s) => appendSynthesizedCommit(s, oid),
-              slugOpts,
+              capturedSlugOpts,
             );
           }
         : undefined,
     };
-    await commitAndPush(step, state, deps, headBeforeStep, infra);
+    // Build a minimal StepDeps from the closure-captured config, request, and the
+    // explicit cwd/slug parameters — no ordering dependency on mutable instance state.
+    const stableCtx = {
+      config,
+      slug,
+      cwd,
+      request,
+    };
+    await commitAndPush(step, state, stableCtx, headBeforeStep, finalInfra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
   }
 
@@ -749,10 +835,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
    * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
-  async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
-    const cwd = deps.cwd ?? process.cwd();
+  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<void> {
+    const effectiveCwd = cwd;
     const branch = state.branch ?? "";
-    const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
     // Persist-before-push invariant: pass a persistBeforePush callback so the
     // checkpoint/finalize commit OID is written to the synthesizedCommits ledger
@@ -786,7 +871,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         : undefined;
 
     await commitFinalState({
-      cwd,
+      cwd: effectiveCwd,
       branch,
       slug,
       spawnFn: this.wrappedSpawnFn,
@@ -925,15 +1010,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     branch: string,
     coordinatorName: string,
     slug: string,
-    commitPushInfra: unknown,
-    egressParams?: unknown,
+    infra: CommitPushInfra,
+    egressParams?: RoundEgressParams,
   ): Promise<void> {
-    const infra = commitPushInfra as CommitPushInfra;
-    const egress = egressParams as
-      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null; excludeWorktreePatterns?: string[] }
-      | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null, egress?.excludeWorktreePatterns);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
   }
 
   /**

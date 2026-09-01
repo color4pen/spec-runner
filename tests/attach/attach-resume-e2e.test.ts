@@ -32,12 +32,15 @@ import type { AgentRunner } from "../../src/core/port/agent-runner.js";
 import type { PipelineDeps } from "../../src/core/types.js";
 import type { JobState } from "../../src/state/schema.js";
 import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
+import type { PipelineDepsBuilder } from "../../src/core/types.js";
+import type { TerminalStateCapability } from "../../src/core/pipeline/pipeline-capability.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import type { ParsedRequest } from "../../src/parser/request-md.js";
 import type { GitHubClient } from "../../src/core/port/github-client.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import type { LocalRuntimeOptions } from "../../src/core/runtime/local.js";
 import { ResumeCommand } from "../../src/core/command/resume.js";
+import { noopRoundGitEffects } from "../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Silence stdout/stderr from pipeline internals in tests
@@ -130,10 +133,26 @@ function makeStubGithubClient(): GitHubClient {
 }
 
 // ---------------------------------------------------------------------------
-// Machine A RuntimeStrategy — real commitFinalState, no-op everything else
+// Machine A RuntimeStrategy — no-op everything
 // ---------------------------------------------------------------------------
 
-function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrategy {
+function makeMachineATerminalState(machineADir: string, slug: string): TerminalStateCapability {
+  return {
+    async commitFinalState(_cwd: string, _slug: string, state: JobState): Promise<void> {
+      // Real commitFinalState: git add -A → commit "checkpoint: <slug>" → push
+      await commitFinalState({
+        cwd: machineADir,
+        branch: state.branch ?? "",
+        slug,
+        spawnFn: spawnCommand,
+        messageLabel: "checkpoint",
+      });
+    },
+  };
+}
+
+function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrategy & PipelineDepsBuilder {
+  void slug;
   return {
     async *query() {},
     createAgentRunner(): never { throw new Error("not used"); },
@@ -145,22 +164,9 @@ function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrateg
       return gitExec(defaultSpawnFn, cwd, ["rev-parse", "HEAD"]);
     },
     async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {
-      // Timeout fires before finalization — this is never called in TC-E2E-001
-    },
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
     async validateStepOutputs() { return { violations: [] }; },
-    async commitFinalState(deps: unknown, state: unknown): Promise<void> {
-      const s = state as JobState;
-      // Real commitFinalState: git add -A → commit "checkpoint: <slug>" → push
-      await commitFinalState({
-        cwd: machineADir,
-        branch: s.branch ?? "",
-        slug,
-        spawnFn: spawnCommand,
-        messageLabel: "checkpoint",
-      });
-    },
     async bootstrapJob(): Promise<JobState> { throw new Error("not used"); },
     async persistJobState(): Promise<void> {},
     async verifyFindingRefs() { return []; },
@@ -291,6 +297,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
 
       // Build Machine A's PipelineDeps
       const machineAStrategy = makeMachineAStrategy(machineADir, SLUG);
+      const machineATerminalState = makeMachineATerminalState(machineADir, SLUG);
       const machineADeps: PipelineDeps = {
         config: MINIMAL_CONFIG,
         slug: SLUG,
@@ -302,8 +309,12 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         spawn: spawnCommand,
         storeFactory: machineAStoreFactory,
         runner: machineARunner,
-        runtimeStrategy: machineAStrategy,
+        terminalState: machineATerminalState,
+        stepArtifact: machineAStrategy as never,
+        stepIo: machineAStrategy as never,
+        changedFiles: machineAStrategy as never,
         gitTransportSpawn: defaultSpawnFn,
+        roundGitEffects: noopRoundGitEffects,
       };
 
       // Build and run the pipeline — starts at "implementer"

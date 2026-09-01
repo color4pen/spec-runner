@@ -24,7 +24,7 @@ import { buildStepContext } from "../../../src/core/step/step-context-builder.js
 import type { PushCapability } from "../../../src/git/push-capability.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
-import type { PipelineDeps } from "../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
 import type { OutputViolation } from "../../../src/core/port/output-contract.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import { WORKFLOWS_PATTERN } from "../../../src/git/push-capability.js";
@@ -200,7 +200,7 @@ describe("TC-030: buildOutputFollowUpPrompt for unpushable-path violations", () 
 function makePipelineDeps(
   overrides: Partial<PipelineDeps> = {},
 ): PipelineDeps {
-  const mockStrategy: RuntimeStrategy = {
+  const mockStrategy: RuntimeStrategy & PipelineDepsBuilder = {
     async *query() {},
     createAgentRunner() {
       return { async run() { return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }; } };
@@ -211,9 +211,8 @@ function makePipelineDeps(
     async teardown() {},
     async captureHeadSha() { return null; },
     async prepareStepArtifacts() {},
-    async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
     async validateStepInputs() {},
-    async commitFinalState() {},
     async bootstrapJob() { throw new Error("not implemented"); },
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
@@ -237,7 +236,8 @@ function makePipelineDeps(
       adr: false,
     },
     slug: "test-slug",
-    runtimeStrategy: mockStrategy,
+    stepArtifact: mockStrategy as never,
+    stepIo: mockStrategy as never,
     ...overrides,
   } as unknown as PipelineDeps;
 }
@@ -390,12 +390,12 @@ describe("TC-033 & TC-034: maxAttempts and per-attempt filtering in outputVerifi
   it("TC-011: when violations resolve, outputVerification.detect returns empty violations", async () => {
     const state = makeState();
     // Simulate: after follow-up, validateStepOutputs returns no violations
-    const strategy = makePipelineDeps({ pushCapability: declaringCapability }).runtimeStrategy!;
+    const strategy = makePipelineDeps({ pushCapability: declaringCapability }).stepIo! as unknown as import("../../../src/core/port/runtime-strategy.js").RuntimeStrategy;
     vi.spyOn(strategy, "validateStepOutputs").mockResolvedValue({ violations: [] });
 
     const deps = makePipelineDeps({
       pushCapability: declaringCapability,
-      runtimeStrategy: strategy,
+      stepIo: strategy as never,
     });
 
     const ctx = await buildStepContext(

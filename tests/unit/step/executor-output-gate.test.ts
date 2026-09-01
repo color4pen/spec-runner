@@ -17,11 +17,11 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { OutputCheckResult, OutputContract } from "../../../src/core/port/output-contract.js";
 import { ERROR_CODES } from "../../../src/errors.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -91,28 +91,20 @@ function makeSuccessRunner(): AgentRunner {
  */
 function makeRuntimeStrategy(
   validateFn: () => Promise<OutputCheckResult>,
-): { strategy: RuntimeStrategy; finalizeSpy: ReturnType<typeof vi.fn> } {
+) {
   const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const strategy: RuntimeStrategy = {
-    async *query() {},
-    createAgentRunner(): AgentRunner { return makeSuccessRunner(); },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
+  const strategy = {
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     finalizeStepArtifacts: finalizeSpy,
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
-    async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
-      return refs.map((r) => ({ path: r.path, hash: null }));
+    async verifyFindingRefs() { return [] as never; },
+    async digestArtifacts(refs: { path: string }[]) {
+      return refs.map((r) => ({ path: r.path, hash: null as null }));
     },
     validateStepOutputs: validateFn,
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
   };
   return { strategy, finalizeSpy };
 }
@@ -155,6 +147,10 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }
@@ -202,7 +198,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
 
@@ -229,7 +225,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
 
     let thrown: unknown;
     try {
-      await executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }));
+      await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
     } catch (err) {
       thrown = err;
     }
@@ -266,7 +262,7 @@ describe("TC-OG-002: follow-up violation after runner completes → STEP_OUTPUT_
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -291,7 +287,7 @@ describe("TC-OG-003: no violations → gate passes, finalizeStepArtifacts called
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }));
+    await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
 
     expect(finalizeSpy).toHaveBeenCalled();
   });
@@ -315,7 +311,7 @@ describe("TC-OG-004: no runtimeStrategy → gate skipped, step succeeds", () => 
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     // No runtimeStrategy — gate is skipped
-    const resultState = await executor.execute(step, state, makeDeps({ runtimeStrategy: undefined }));
+    const resultState = await executor.execute(step, state, makeDeps());
     const runs = resultState.steps?.["implementer"];
     expect(runs).toBeDefined();
     const lastRun = runs?.[runs.length - 1];
@@ -358,7 +354,7 @@ describe("TC-OG-005: no contracts → validateStepOutputs not called", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }));
+    await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
 
     expect(validateSpy).not.toHaveBeenCalled();
   });
@@ -389,7 +385,7 @@ describe("TC-OG-006: failed StepRun recorded in attached state on gate failure",
 
     let thrown: unknown;
     try {
-      await executor.execute(step, state, makeDeps({ runtimeStrategy: strategy }));
+      await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
     } catch (err) {
       thrown = err;
     }

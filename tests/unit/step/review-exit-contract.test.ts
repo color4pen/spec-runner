@@ -40,6 +40,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { vi } from "vitest";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -556,6 +557,10 @@ describe("TC-011: executor iteration — spec-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -618,6 +623,10 @@ describe("TC-011: executor iteration — spec-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -682,6 +691,10 @@ describe("TC-012: executor iteration — code-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutorFromDeps(events, deps);
@@ -744,6 +757,10 @@ describe("TC-012: executor iteration — code-review getRawFile returns null →
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tc011TempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     };
 
     const executor = makeExecutorFromDeps(events, deps);

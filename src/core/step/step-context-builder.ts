@@ -17,7 +17,7 @@
 import * as path from "node:path";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepExecutionDeps } from "./step-deps.js";
 import type { AgentRunContext } from "../port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { OutputContract, OutputVerificationPolicy } from "../port/output-contract.js";
@@ -62,7 +62,7 @@ export interface BuildStepContextFs {
  *
  * @param step      The agent step declaration.
  * @param state     Current job state (branch, steps, session, etc.).
- * @param deps      Pipeline dependencies (config, request, runtimeStrategy, etc.).
+ * @param deps      Pipeline dependencies (config, request, stepIo, commitInspection, etc.).
  * @param cwd       Working directory (worktree path or process.cwd()).
  * @param emitFn    Domain event emitter forwarded into ctx.emit.
  * @param fsAdapter Injectable filesystem seam (readFile + readdir).
@@ -70,7 +70,7 @@ export interface BuildStepContextFs {
 export async function buildStepContext(
   step: AgentStep,
   state: JobState,
-  deps: PipelineDeps,
+  deps: StepExecutionDeps,
   cwd: string,
   emitFn: (event: DomainEvent, payload: Record<string, unknown>) => void,
   fsAdapter: BuildStepContextFs,
@@ -125,11 +125,11 @@ export async function buildStepContext(
 
   // 5. Output verification policy (follow-up contracts only).
   let outputVerification: OutputVerificationPolicy | undefined;
-  if (deps.runtimeStrategy) {
+  if (deps.stepIo) {
     const followUpContracts: OutputContract[] = (step.outputContracts?.(state, deps) ?? [])
       .filter((c) => c.policy === "follow-up");
     if (followUpContracts.length > 0) {
-      const strategy = deps.runtimeStrategy;
+      const strategy = deps.stepIo;
       const branch = state.branch ?? null;
       // Resolve exclusion patterns once (outside closure) so they are not re-computed
       // on every detect() call. Paths matching stagingExcludePatterns will never be
@@ -197,7 +197,7 @@ export async function buildStepContext(
   let dynamicContext = deps.dynamicContext;
   if (step.prepareRoundContext && dynamicContext) {
     try {
-      const extra = await step.prepareRoundContext(state, cwd, deps.runtimeStrategy);
+      const extra = await step.prepareRoundContext(state, cwd, deps.commitInspection);
       if (extra) dynamicContext = { ...dynamicContext, ...extra };
     } catch {
       // best-effort: enrich に失敗しても step を止めない（黙って degrade）

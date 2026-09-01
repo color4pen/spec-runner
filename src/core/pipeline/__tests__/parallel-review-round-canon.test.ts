@@ -41,6 +41,7 @@ import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
 import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
 import type { ArtifactRef } from "../../../state/artifact-types.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -134,7 +135,7 @@ function makeBaseState(
 
 function makeDeps(
   store: ReturnType<typeof makeStore>,
-  runtimeStrategy?: PipelineDeps["runtimeStrategy"],
+  roundGitEffects?: unknown,
 ): PipelineDeps {
   return {
     cwd: "/tmp/test",
@@ -154,7 +155,10 @@ function makeDeps(
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
-    runtimeStrategy,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: (roundGitEffects ?? noopRoundGitEffects) as never,
   };
 }
 
@@ -215,6 +219,8 @@ function makeCanonRuntimeStrategy(opts: {
   return {
     captureHeadSha: vi.fn(async () => baselineSha),
     listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
+    listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+    commitRoundArtifacts: vi.fn(async () => {}),
     digestArtifacts: vi.fn(async (): Promise<ArtifactRef[]> => digestRefs),
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),

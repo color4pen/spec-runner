@@ -7,7 +7,7 @@
  *
  * Design:
  *   - deriveStepCompletion calls computeExtraScopeFindings (async, I/O via seam).
- *   - deriveStepCompletion calls runtimeStrategy.verifyFindingRefs (async, I/O via seam).
+ *   - deriveStepCompletion calls deps.stepIo.verifyFindingRefs (async, I/O via seam).
  *   - No store writes of any kind.
  *   - The agentResult type is extended with resultContent so the prose-parse path
  *     (CLI steps, agent steps without reportTool) is handled in one place.
@@ -15,7 +15,7 @@
 import { stderrWrite } from "../../logger/stdout.js";
 import type { Step } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
-import type { PipelineDeps } from "../types.js";
+import type { StepExecutionDeps } from "./step-deps.js";
 import type { BaseReportResult } from "../port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../port/report-result.js";
 import type { Finding, Evidence } from "../../kernel/report-result.js";
@@ -111,14 +111,14 @@ export interface StepCompletion {
  *
  * @param step            Step declaration (kind, reportTool, judgeVerdictFn, etc.).
  * @param state           Current job state (branch, decisions, steps, etc.).
- * @param deps            Pipeline dependencies (runtimeStrategy, cwd, etc.).
+ * @param deps            Pipeline dependencies (stepIo, cwd, etc.).
  * @param agentResult     Combined agent result + resultContent. undefined = CLI step.
  * @param permissionScope Declared permission scope for scope-breach synthesis.
  */
 export async function deriveStepCompletion(
   step: Step,
   state: JobState,
-  deps: PipelineDeps,
+  deps: StepExecutionDeps,
   agentResult: StepCompletionInput | undefined,
   permissionScope: PermissionScope | undefined,
 ): Promise<StepCompletion> {
@@ -240,7 +240,7 @@ export async function deriveStepCompletion(
       //     If it is found to exist, the declaration is false → override to escalation.
       //   - regular (no fileMissing): the file is EXPECTED to exist.
       //     If it is not found, it is a hallucinated ref → override to escalation (existing behavior).
-      if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
+      if (isJudgeStep || isRequestReviewStep) {
         const tr = (persistToolResult ?? effectiveToolResult) as JudgeReportResult | RequestReviewReportResult;
         const allFindings = tr.findings ?? [];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
@@ -253,7 +253,7 @@ export async function deriveStepCompletion(
 
           if (regular.length > 0) {
             const refs: FindingRef[] = regular.map((f) => ({ file: f.file, line: f.line }));
-            const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
+            const nonExistent = await deps.stepIo.verifyFindingRefs(
               refs,
               cwd,
               state.branch ?? null,
@@ -271,7 +271,7 @@ export async function deriveStepCompletion(
             } else {
               // Pass only file (no line) for missing-file declarations (D4: line has no meaning for absent files).
               const refs: FindingRef[] = missingDecl.map((f) => ({ file: f.file }));
-              const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
+              const nonExistent = await deps.stepIo.verifyFindingRefs(
                 refs,
                 cwd,
                 branch,

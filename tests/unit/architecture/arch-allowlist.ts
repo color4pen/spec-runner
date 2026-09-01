@@ -283,16 +283,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Pinned by changed-lines.test.ts.",
   },
 
-  // ── DSM: §3 全層 closure whitelist 違反 ────────────────────────────────────
-  //
-  // DSM (architecture/model.md §3): 許可された edge 以外の import は divergence。
-  // arch-closure-src-wide (#495) でスキャン確定した 21 件を grandfather していたが、
-  // burn-down 完了:
-  //   - dsm-runtime-strategy-demote (#496): domain → comp-root 5件（RuntimeStrategy/prereqs を ports へ降格）
-  //   - dsm-domain-type-demote (#497): adapters/ports → domain 16件（共有型を kernel/port/logger へ降格）
-  //
-  // DSM 実違反ゼロ達成: 全エントリ burn-down 完了。
-
   // ── CWD: process.cwd() allowlist ratchet over src/ ───────────────────────
   //
   // Seeded at repo-root-entry-resolution (T-05).
@@ -506,6 +496,20 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     invariant: "CWD",
     tracking: "CWD-verification-step-di-default",
     comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/pipeline/pipeline.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-pipeline-terminal-state-di-default",
+    comment: "di-default: commitFinalState call sites use deps.cwd ?? process.cwd() per TerminalStateCapability contract.",
+  },
+  {
+    file: "src/core/command/runner.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-runner-terminal-state-di-default",
+    comment: "di-default: commitFinalState call site uses deps.cwd ?? process.cwd() per TerminalStateCapability contract.",
   },
   {
     file: "src/core/verification/lcov.ts",

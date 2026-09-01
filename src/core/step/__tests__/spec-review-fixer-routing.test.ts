@@ -53,6 +53,7 @@ import { STEP_NAMES } from "../step-names.js";
 
 import * as canonEscalationNS from "../canon-escalation.js";
 import * as judgeVerdictNS from "../judge-verdict.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 type EffectiveFixerFn = (f: Finding) => FixTarget;
 type RoutableSelectorFn = (
@@ -170,7 +171,10 @@ function makeMinimalDeps(): PipelineDeps {
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: (() => ({})) as unknown as PipelineDeps["storeFactory"],
     runner: {} as unknown as PipelineDeps["runner"],
-    // runtimeStrategy absent → scope check, finding-ref verification skip
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as unknown as PipelineDeps;
 }
 
@@ -626,7 +630,10 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      runtimeStrategy: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);
@@ -710,7 +717,10 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
       runner: {} as never,
       resumePrompt: undefined,
       resumeContext: undefined,
-      runtimeStrategy: undefined,
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     } as PipelineDeps;
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, state, deps);

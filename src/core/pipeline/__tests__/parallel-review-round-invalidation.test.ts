@@ -20,7 +20,7 @@
  *       re-anchor occurs. approvedAtCommit stays mismatched, member is re-run
  *       (fail-closed per D6 / req 6).
  *
- * All tests use fake executor + fake runtimeStrategy. No filesystem, git, or network I/O.
+ * All tests use fake executor + fake roundGitEffects. No filesystem, git, or network I/O.
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -32,6 +32,7 @@ import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
 import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -46,6 +47,12 @@ const CHANGE_FOLDER_PATH = `specrunner/changes/${SLUG}/alpha-result-001.md`;
 
 // True source path (should remain in invalidation diff)
 const SOURCE_PATH = "src/foo.ts";
+
+// Canon hash used by tests that verify "approved member stays approved" (D6 canon binding).
+// CANON_REFS is what digestArtifacts returns; CANON_HASH_INV is computeCanonHash(CANON_REFS).
+// Format: sorted "path:hash" joined by "|". Single ref with non-null hash = "path:hash".
+const CANON_REFS = [{ path: `specrunner/changes/${SLUG}/request.md`, hash: "abc123" }];
+const CANON_HASH_INV = `specrunner/changes/${SLUG}/request.md:abc123`;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -109,8 +116,12 @@ function makeBaseState(): JobState {
   };
 }
 
-/** Make a JobState with MEMBER_A pre-approved (for invalidation re-run checks). */
-function makeApprovedState(activationPaths: string[] | undefined): JobState {
+/**
+ * Make a JobState with MEMBER_A pre-approved (for invalidation re-run checks).
+ * Pass canonHash when the test expects the member to stay approved despite
+ * a D6 canon hash check (D6: all capability methods required → digestArtifacts always called).
+ */
+function makeApprovedState(activationPaths: string[] | undefined, canonHash?: string): JobState {
   return {
     ...makeBaseState(),
     reviewerStatuses: [
@@ -120,15 +131,16 @@ function makeApprovedState(activationPaths: string[] | undefined): JobState {
         approvedAtCommit: "sha-before",
         activationPaths,
         invalidatedByCommit: null,
+        ...(canonHash !== undefined ? { canonHash } : {}),
       },
     ],
   };
 }
 
-/** Build PipelineDeps with a controlled runtimeStrategy. */
+/** Build PipelineDeps with a controlled roundGitEffects. */
 function makeDeps(
   store: ReturnType<typeof makeStore>,
-  runtimeStrategy: PipelineDeps["runtimeStrategy"],
+  roundGitEffects: unknown,
 ): PipelineDeps {
   return {
     cwd: "/tmp/test",
@@ -148,7 +160,10 @@ function makeDeps(
     repo: "repo",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
     storeFactory: () => store as never,
-    runtimeStrategy,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: roundGitEffects as never,
   };
 }
 
@@ -200,7 +215,7 @@ describe("ParallelReviewRound — approvedAtCommit is reviewed source revision (
     let currentHead = "source-sha";
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => currentHead),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
@@ -215,6 +230,9 @@ describe("ParallelReviewRound — approvedAtCommit is reviewed source revision (
         // Simulate HEAD advancing when the round's findings are committed
         currentHead = "round-commit-sha";
       }),
+      // D6: required — returns [] → computeCanonHash([]) = null → fail-closed (T-03 focuses on
+      // commit ordering, not canon-binding, so the null path is acceptable here).
+      digestArtifacts: vi.fn(async () => []),
     };
 
     // MEMBER_A declares CHANGE_FOLDER_PATH as output (so toStage is non-empty)
@@ -225,11 +243,11 @@ describe("ParallelReviewRound — approvedAtCommit is reviewed source revision (
     const { state } = await round.run(
       COORDINATOR,
       makeBaseState(),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // commitRoundArtifacts must have been called (head advanced, making the test meaningful)
-    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    expect(roundGitEffects.commitRoundArtifacts).toHaveBeenCalledTimes(1);
     expect(currentHead).toBe("round-commit-sha");
 
     // approvedAtCommit must be the PRE-commit source revision, not the round-commit revision
@@ -258,10 +276,15 @@ describe("ParallelReviewRound — pipeline-output-only diff does not invalidate 
   it("approved member with activationPaths ['specrunner/changes/**'] stays approved when only change folder paths changed", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns ONLY a change folder path
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      // D6 canon binding: non-null hash → currentCanonHash defined → guard fires → re-anchor.
+      // Member stays approved because member.canonHash matches currentCanonHash.
+      digestArtifacts: vi.fn(async () => CANON_REFS),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -273,8 +296,9 @@ describe("ParallelReviewRound — pipeline-output-only diff does not invalidate 
 
     const { outcome } = await round.run(
       COORDINATOR,
-      makeApprovedState(["specrunner/changes/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      // Pass CANON_HASH_INV so member.canonHash matches currentCanonHash → stays approved.
+      makeApprovedState(["specrunner/changes/**"], CANON_HASH_INV),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // All-approved fast path: MEMBER_A was NOT invalidated → no fan-out → executor NOT called
@@ -285,9 +309,13 @@ describe("ParallelReviewRound — pipeline-output-only diff does not invalidate 
   it("result state shows MEMBER_A still approved when change-folder-only diff with broad activation", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      // D6 canon binding: member.canonHash = CANON_HASH_INV → stays approved.
+      digestArtifacts: vi.fn(async () => CANON_REFS),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -299,8 +327,8 @@ describe("ParallelReviewRound — pipeline-output-only diff does not invalidate 
 
     const { state } = await round.run(
       COORDINATOR,
-      makeApprovedState(["specrunner/changes/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      makeApprovedState(["specrunner/changes/**"], CANON_HASH_INV),
+      makeDeps(store, roundGitEffects as never),
     );
 
     const memberStatus = state.reviewerStatuses?.find((s) => s.name === MEMBER_A);
@@ -316,9 +344,13 @@ describe("ParallelReviewRound — change-folder-only diff does not invalidate **
   it("approved member with activationPaths ['**'] stays approved when only change folder paths changed", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      // D6 canon binding: member.canonHash = CANON_HASH_INV → stays approved.
+      digestArtifacts: vi.fn(async () => CANON_REFS),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -330,8 +362,8 @@ describe("ParallelReviewRound — change-folder-only diff does not invalidate **
 
     const { outcome } = await round.run(
       COORDINATOR,
-      makeApprovedState(["**"]),
-      makeDeps(store, runtimeStrategy as never),
+      makeApprovedState(["**"], CANON_HASH_INV),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // All-approved fast path: executor NOT called
@@ -351,10 +383,13 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
   it("approved member with activationPaths ['src/**'] is re-run when src/foo.ts is in the diff", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns source path + change folder path
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [SOURCE_PATH, CHANGE_FOLDER_PATH] })),
+      digestArtifacts: vi.fn(async () => []),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -367,7 +402,7 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
     await round.run(
       COORDINATOR,
       makeApprovedState(["src/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // Member was invalidated → fan-out → executor IS called
@@ -377,9 +412,12 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
   it("member is invalidated (pending) and outcome is needs-fix after source path change", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [SOURCE_PATH, CHANGE_FOLDER_PATH] })),
+      digestArtifacts: vi.fn(async () => []),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -392,7 +430,7 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
     const { outcome } = await round.run(
       COORDINATOR,
       makeApprovedState(["src/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // Executor returns needs-fix → aggregate needs-fix
@@ -404,7 +442,7 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
 // Req 4 (legacy path — no digestArtifacts): always-activate reviewer (activationPaths
 // undefined) is always invalidated when currentCanonHash === undefined.
 //
-// In this path (runtimeStrategy.digestArtifacts absent), the canon-binding guard at
+// In this path (roundGitEffects.digestArtifacts absent), the canon-binding guard at
 // parallel-review-round.ts:175 does NOT fire because the condition requires
 // currentCanonHash !== undefined. computeInvalidations runs as before, and
 // always-activate reviewers (activationPaths=undefined) are re-run regardless of
@@ -415,14 +453,22 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
 // invalidated (skip). See "real-runtime path" describe block below for that test.
 // ---------------------------------------------------------------------------
 
-describe("ParallelReviewRound — always-activate reviewer is re-run in legacy path without digestArtifacts (T-04 Req 4)", () => {
+describe("ParallelReviewRound — always-activate reviewer is re-run when digestArtifacts returns empty (T-04 Req 4)", () => {
+  // With D6 (all capability methods required), digestArtifacts is always present.
+  // When it returns [] → computeCanonHash([]) = null → currentCanonHash = null.
+  // Guard fires (null !== undefined) but selectPendingMembers with null → fail-closed → PENDING.
+  // The fail-closed PENDING ensures always-activate reviewers are still re-run.
   it("approved always-activate reviewer (activationPaths undefined) is re-run when only change folder paths changed", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns ONLY a change folder path (sourceTouched = [] after filter)
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      // D6: required — returns [] → null canon hash → fail-closed → executor IS called
+      digestArtifacts: vi.fn(async () => []),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -436,20 +482,23 @@ describe("ParallelReviewRound — always-activate reviewer is re-run in legacy p
       COORDINATOR,
       // activationPaths: undefined → always-activate
       makeApprovedState(undefined),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
-    // Legacy path (no digestArtifacts): guard does not fire → computeInvalidations runs
-    // → always-activate triggers invalidation even with empty sourceTouched → executor IS called
+    // digestArtifacts returns [] → null canonHash → fail-closed → PENDING → executor IS called
     expect(wasCalled()).toBe(true);
   });
 
   it("always-activate reviewer outcome is needs-fix after invalidation with change-folder-only diff", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      // D6: required — returns [] → null canon hash → fail-closed → executor IS called
+      digestArtifacts: vi.fn(async () => []),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -462,7 +511,7 @@ describe("ParallelReviewRound — always-activate reviewer is re-run in legacy p
     const { outcome } = await round.run(
       COORDINATOR,
       makeApprovedState(undefined),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     expect(outcome).toBe("needs-fix");
@@ -491,17 +540,19 @@ describe("ParallelReviewRound — always-activate reviewer skips in real-runtime
   it("approved always-activate reviewer stays approved when digestArtifacts present and only pipeline outputs changed", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns ONLY a pipeline output (NOT a canonical doc)
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
-      finalizeStepArtifacts: vi.fn(async () => {}),
-      validateStepInputs: vi.fn(async () => {}),
-      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
-      // digestArtifacts present (real runtime): returns hash matching state.canonHash
+      // D6: required — returns hash matching state.canonHash
       digestArtifacts: vi.fn(async () => [
         { path: `specrunner/changes/${SLUG}/request.md`, hash: "abc123" },
       ]),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
     };
 
     // Always-activate reviewer pre-approved with canon hash bound to CANON_HASH.
@@ -528,7 +579,7 @@ describe("ParallelReviewRound — always-activate reviewer skips in real-runtime
     const { outcome } = await round.run(
       COORDINATOR,
       state,
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // Real runtime: guard fires (sourceTouched=[], currentCanonHash defined) →
@@ -560,10 +611,14 @@ describe("ParallelReviewRound — path-untouched member is re-anchored, skip mai
     const store = makeStore();
 
     // captureHeadSha returns a NEW sha different from the member's approvedAtCommit
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // Changed file is in src/other/, NOT in src/specific/ (member's activation path)
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: ["src/other/bar.ts"] })),
+      // D6 canon binding: member.canonHash = CANON_HASH_INV → stays approved after re-anchor.
+      digestArtifacts: vi.fn(async () => CANON_REFS),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -577,8 +632,9 @@ describe("ParallelReviewRound — path-untouched member is re-anchored, skip mai
     // Changed file "src/other/bar.ts" does not match ["src/specific/**"] → not invalidated
     const { outcome, state } = await round.run(
       COORDINATOR,
-      makeApprovedState(["src/specific/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      // Pass CANON_HASH_INV so member.canonHash matches currentCanonHash → stays approved.
+      makeApprovedState(["src/specific/**"], CANON_HASH_INV),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // Path not touched → not invalidated → re-anchor → all-approved fast path
@@ -610,10 +666,13 @@ describe("ParallelReviewRound — evidence unavailable: no re-anchor, member is 
   it("does not re-anchor and re-runs member when listChangedFiles returns unavailable", async () => {
     const store = makeStore();
 
-    const runtimeStrategy = {
+    const roundGitEffects = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns unavailable (git error)
       listChangedFiles: vi.fn(async () => ({ kind: "unavailable" as const, reason: "git spawn failed" })),
+      digestArtifacts: vi.fn(async () => []),
+      listWorktreeChanges: vi.fn(async () => ({ kind: "success" as const, paths: [] })),
+      commitRoundArtifacts: vi.fn(async () => {}),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -628,7 +687,7 @@ describe("ParallelReviewRound — evidence unavailable: no re-anchor, member is 
     await round.run(
       COORDINATOR,
       makeApprovedState(["src/specific/**"]),
-      makeDeps(store, runtimeStrategy as never),
+      makeDeps(store, roundGitEffects as never),
     );
 
     // Evidence unavailable → no re-anchor → fail-closed → member is re-run

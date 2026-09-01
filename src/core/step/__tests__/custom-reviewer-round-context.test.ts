@@ -8,7 +8,7 @@
  *
  * TC-003: 前周 findings が欠落しているとき block を省略する (must)
  * TC-004: commit 変更 file の導出が失敗するとき block を省略する (must)
- * TC-005: deriveCustomReviewerPriorRound — runtimeStrategy が undefined で null を返す (must)
+ * TC-005: deriveCustomReviewerPriorRound — commitInspection が undefined で null を返す (must)
  * TC-006: deriveCustomReviewerPriorRound — 前周 endedAt より後の code-fixer commit を union する (must)
  * TC-007: deriveCustomReviewerPriorRound — 複数の code-fixer commit を union する (重複除去) (must)
  * TC-008: deriveCustomReviewerPriorRound — 1 件でも listCommitChangedFiles が失敗なら null (all-or-nothing) (must)
@@ -59,7 +59,7 @@ type DeriveCustomReviewerPriorRoundFn = (params: {
   reviewerName: string;
   iteration: number;
   cwd: string;
-  runtimeStrategy: unknown;
+  commitInspection: unknown;
 }) => Promise<PriorRoundCtx | null>;
 
 type BuildCustomReviewerPriorRoundBlockFn = (ctx: PriorRoundCtx) => string;
@@ -244,7 +244,7 @@ describe("TC-003: 前周 findings が欠落しているとき block を省略す
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: makeFakeRuntimeStrategy(),
+        commitInspection: makeFakeRuntimeStrategy(),
       });
     } catch {
       threw = true;
@@ -275,7 +275,7 @@ describe("TC-004: commit 変更 file の導出が失敗するとき block を省
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: makeFakeRuntimeStrategy({ kind: "unavailable" }),
+        commitInspection: makeFakeRuntimeStrategy({ kind: "unavailable" }),
       });
     } catch {
       threw = true;
@@ -300,7 +300,7 @@ describe("TC-004: commit 変更 file の導出が失敗するとき block を省
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: makeFakeRuntimeStrategy({ shouldThrow: true }),
+        commitInspection: makeFakeRuntimeStrategy({ shouldThrow: true }),
       });
     } catch {
       threw = true;
@@ -324,18 +324,18 @@ describe("TC-004: commit 変更 file の導出が失敗するとき block を省
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: makeFakeRuntimeStrategy({ shouldThrow: true }),
+        commitInspection: makeFakeRuntimeStrategy({ shouldThrow: true }),
       }),
     ).resolves.toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-005 (must): deriveCustomReviewerPriorRound — runtimeStrategy が undefined で null を返す
+// TC-005 (must): deriveCustomReviewerPriorRound — commitInspection が undefined で null を返す
 // ---------------------------------------------------------------------------
 
-describe("TC-005: deriveCustomReviewerPriorRound — runtimeStrategy が undefined で null を返す", () => {
-  it("TC-005: returns null when runtimeStrategy is undefined (managed runtime equivalent)", async () => {
+describe("TC-005: deriveCustomReviewerPriorRound — commitInspection が undefined で null を返す", () => {
+  it("TC-005: returns null when commitInspection is undefined (managed runtime equivalent)", async () => {
     expect(deriveCustomReviewerPriorRound).toBeDefined();
 
     const state = makeStateWithPriorReviewerRun({
@@ -350,7 +350,7 @@ describe("TC-005: deriveCustomReviewerPriorRound — runtimeStrategy が undefin
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: undefined,
+        commitInspection: undefined,
       });
     } catch {
       threw = true;
@@ -424,7 +424,7 @@ describe("TC-006: deriveCustomReviewerPriorRound — 前周 endedAt より後の
       reviewerName: REVIEWER_NAME,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: strategy,
+      commitInspection: strategy,
     });
 
     expect(result).not.toBeNull();
@@ -464,7 +464,7 @@ describe("TC-007: deriveCustomReviewerPriorRound — 複数の code-fixer commit
       reviewerName: REVIEWER_NAME,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: strategy,
+      commitInspection: strategy,
     });
 
     expect(result).not.toBeNull();
@@ -511,7 +511,7 @@ describe("TC-008: deriveCustomReviewerPriorRound — 1 件でも listCommitChang
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: partialThrowStrategy,
+        commitInspection: partialThrowStrategy,
       });
     } catch {
       threw = true;
@@ -547,7 +547,7 @@ describe("TC-008: deriveCustomReviewerPriorRound — 1 件でも listCommitChang
       reviewerName: REVIEWER_NAME,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: partialUnavailableStrategy,
+      commitInspection: partialUnavailableStrategy,
     });
 
     expect(result).toBeNull();
@@ -597,7 +597,7 @@ describe("TC-009 (should): deriveCustomReviewerPriorRound — findings が空配
       reviewerName: REVIEWER_NAME,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy({ files: ["changed.ts"] }),
+      commitInspection: makeFakeRuntimeStrategy({ files: ["changed.ts"] }),
     });
 
     // Empty findings is NOT the same as "missing" — must return non-null
@@ -640,7 +640,7 @@ describe("TC-010 (should): deriveCustomReviewerPriorRound — 前周 reviewer St
         reviewerName: REVIEWER_NAME,
         iteration: 2,
         cwd: "/tmp/worktree",
-        runtimeStrategy: makeFakeRuntimeStrategy(),
+        commitInspection: makeFakeRuntimeStrategy(),
       });
     } catch {
       threw = true;
@@ -663,7 +663,7 @@ describe("TC-010 (should): deriveCustomReviewerPriorRound — 前周 reviewer St
       reviewerName: REVIEWER_NAME,
       iteration: 2,
       cwd: "/tmp/worktree",
-      runtimeStrategy: makeFakeRuntimeStrategy(),
+      commitInspection: makeFakeRuntimeStrategy(),
     });
 
     expect(result).toBeNull();

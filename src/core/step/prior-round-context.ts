@@ -5,7 +5,7 @@
  * 変更 file 集合（commit diff 由来）を reviewer に渡す。
  *
  * Design:
- *   - I/O は runtimeStrategy port 背後のみ（node:child_process / git を直接 import しない）
+ *   - I/O は commitInspection port 背後のみ（node:child_process / git を直接 import しない）
  *   - 注入は one-shot（state への永続化なし。DynamicContext に乗せて buildMessage に渡す）
  *   - 導出できない場合（OID 欠落・diff unavailable）は null を返して黙って degrade
  */
@@ -106,7 +106,7 @@ export function buildPriorRoundContextBlock(ctx: PriorRoundContext): string {
 }
 
 // ---------------------------------------------------------------------------
-// Async derivation (I/O via runtimeStrategy port)
+// Async derivation (I/O via commitInspection port)
 // ---------------------------------------------------------------------------
 
 /**
@@ -115,7 +115,7 @@ export function buildPriorRoundContextBlock(ctx: PriorRoundContext): string {
  * Returns null (injection skipped) in any of these cases:
  * - iteration < 2 (no prior round)
  * - prior spec-fixer OID not recorded in state
- * - runtimeStrategy is undefined (capability not derivable — e.g. managed runtime facade)
+ * - commitInspection is undefined (capability not derivable — e.g. managed runtime facade)
  * - listCommitChangedFiles returns { kind: "unavailable" }
  *
  * On success, returns { findings, changedFiles } where:
@@ -128,9 +128,9 @@ export async function derivePriorRoundContext(params: {
   state: JobState;
   iteration: number;
   cwd: string;
-  runtimeStrategy: CommitInspectionCapability | undefined;
+  commitInspection: CommitInspectionCapability | undefined;
 }): Promise<PriorRoundContext | null> {
-  const { state, iteration, cwd, runtimeStrategy } = params;
+  const { state, iteration, cwd, commitInspection } = params;
 
   // Guard: only inject for iteration ≥ 2
   if (iteration < 2) return null;
@@ -140,10 +140,10 @@ export async function derivePriorRoundContext(params: {
   if (!priorOid) return null;
 
   // Guard: commit-inspection capability must be injected
-  if (!runtimeStrategy) return null;
+  if (!commitInspection) return null;
 
   // Derive changed files from commit diff (machine-derived, never self-reported)
-  const result = await runtimeStrategy.listCommitChangedFiles(priorOid, cwd);
+  const result = await commitInspection.listCommitChangedFiles(priorOid, cwd);
   if (result.kind !== "success") return null;
 
   // Derive prior findings from state (prior spec-review toolResult)

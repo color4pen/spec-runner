@@ -17,6 +17,7 @@ import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { Finding } from "../../../../src/kernel/report-result.js";
 import type { JudgeReportResult } from "../../../../src/core/port/report-result.js";
+import { noopStepArtifact, noopStepIo, noopTerminalState, noopRoundGitEffects } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test constants
@@ -74,6 +75,10 @@ function makeDeps(slug = SLUG): PipelineDeps {
     repo: "r",
     spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
     storeFactory: () => ({}) as PipelineDeps["storeFactory"],
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as unknown as PipelineDeps;
 }
 

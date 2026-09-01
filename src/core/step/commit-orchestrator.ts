@@ -17,7 +17,8 @@ import * as path from "node:path";
 import type { Step, AgentStep, IoRef } from "./types.js";
 import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
-import type { PipelineDeps, StoreFactory } from "../types.js";
+import type { StoreFactory } from "../types.js";
+import type { StepExecutionDeps } from "./step-deps.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
@@ -38,7 +39,6 @@ import { buildFeatureBranchName } from "../../config/type-config.js";
 import { logVerbose } from "../../logger/stdout.js";
 import { STEP_NAMES } from "./step-names.js";
 import { recordFindingRecency } from "./finding-recency.js";
-import { deriveRevisionContentCapability } from "../port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // StepExecutionResult discriminated union
@@ -256,7 +256,7 @@ export class CommitOrchestrator {
     state: JobState,
     step: Step,
     result: StepExecutionResult & { kind: "success" },
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     preWriteIo: IoRef[],
     preReadIo: IoRef[],
   ): Promise<void> {
@@ -316,12 +316,12 @@ export class CommitOrchestrator {
     }
 
     // lineage (appendLineage — best-effort)
-    if (deps.runtimeStrategy && preWriteIo.length > 0 && deps.cwd) {
+    if (deps.stepArtifact && preWriteIo.length > 0 && deps.cwd) {
       try {
         const cwd = deps.cwd;
         const [outputRefs, inputRefs] = await Promise.all([
-          deps.runtimeStrategy.digestArtifacts(preWriteIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-          deps.runtimeStrategy.digestArtifacts(preReadIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          deps.stepArtifact.digestArtifacts(preWriteIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          deps.stepArtifact.digestArtifacts(preReadIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
         ]);
         const inputArtifactRefs = inputRefs.map((r, i) => {
           const ioRef = preReadIo[i];
@@ -342,7 +342,7 @@ export class CommitOrchestrator {
     }
 
     // finding-recency detection (spec-review only, iteration >= 2, best-effort)
-    if (step.name === STEP_NAMES.SPEC_REVIEW && deps.runtimeStrategy && deps.cwd) {
+    if (step.name === STEP_NAMES.SPEC_REVIEW && deps.revisionContent && deps.cwd) {
       const stepRuns = state.steps?.[step.name] ?? [];
       const iteration = stepRuns.length;
 
@@ -363,7 +363,7 @@ export class CommitOrchestrator {
             findings: agentFindings,
             cwd: deps.cwd,
             branch: state.branch ?? null,
-            runtimeStrategy: deriveRevisionContentCapability(deps.runtimeStrategy),
+            revisionContent: deps.revisionContent,
           });
         } catch {
           // Best-effort: finding-recency failure must not affect step completion
@@ -421,7 +421,7 @@ export class CommitOrchestrator {
   async commitSuccess(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     result: StepExecutionResult & { kind: "success" },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -546,7 +546,7 @@ export class CommitOrchestrator {
    *   recordFailedStepResult → (failed: store.fail | awaiting-resume: transitionJob + appendInterruption)
    *   → history (if halt.history set) → store.persist → attachStateAndRethrow
    */
-  async commitHalt(step: Step, state: JobState, halt: StepHalt, deps?: PipelineDeps): Promise<never> {
+  async commitHalt(step: Step, state: JobState, halt: StepHalt, deps?: StepExecutionDeps): Promise<never> {
     const store = this.getStore(state.jobId);
 
     let s = recordFailedStepResult(state, step.name, halt.error, halt.recordOpts ?? {});
@@ -671,7 +671,7 @@ export class CommitOrchestrator {
   async commitRound(params: {
     coordinatorName: string;
     base: JobState;
-    deps: PipelineDeps;
+    deps: StepExecutionDeps;
     members: ReadonlyArray<{ step: Step; startedAt: string; result: StepExecutionResult }>;
     reviewerStatuses: ReviewerStatus[];
     coordinatorRun: StepRun;
@@ -819,7 +819,7 @@ export class CommitOrchestrator {
   async apply(
     step: Step,
     state: JobState,
-    deps: PipelineDeps,
+    deps: StepExecutionDeps,
     result: StepExecutionResult,
   ): Promise<JobState> {
     if (result.kind === "success") {

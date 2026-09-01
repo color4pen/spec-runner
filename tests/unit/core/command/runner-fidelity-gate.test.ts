@@ -53,7 +53,7 @@ import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../
 import type { IssueFidelityComparator, IssueFidelityComparison } from "../../../../src/core/port/issue-fidelity-comparator.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
-import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { ERROR_CODES } from "../../../../src/errors.js";
@@ -179,7 +179,7 @@ function buildMockGithubClient(opts: {
 
 type MockGithubClient = ReturnType<typeof buildMockGithubClient>;
 
-function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-slug"): RuntimeStrategy & {
+function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-slug"): RuntimeStrategy & PipelineDepsBuilder & {
   capturedDeps: PipelineDeps;
 } {
   const storeFactory = makeStoreFactory(tempDir);
@@ -221,7 +221,7 @@ function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-s
 /** Simple subclass that exposes prepare() for testing via a pre-built PrepareResult. */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy,
+    runtime: RuntimeStrategy & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
     comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {

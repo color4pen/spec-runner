@@ -13,6 +13,7 @@ import {
   buildPipelineMockClient,
   buildMockGithubClient,
 } from "./helpers/pipeline-mock-client.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -145,6 +146,10 @@ describe("TC-01: happy path — spec-review approved, pipeline completes", () =>
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -189,6 +194,10 @@ describe("TC-02: spec-review catches insufficient spec — spec-fixer repairs, r
       repo: "repo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");

@@ -18,6 +18,7 @@ import type { AgentStep, CliStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { MainCheckoutGuardSnapshot } from "../../port/runtime-strategy.js";
+import { noopRoundGitEffects, noopStepIo, noopTerminalState } from "../noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -150,7 +151,10 @@ function makeDeps(
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    runtimeStrategy: runtimeStrategy as never,
+    stepArtifact: runtimeStrategy as never,
+    stepIo: noopStepIo,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
 }
 
@@ -280,26 +284,10 @@ describe("TC-010/TC-011: null snapshot (no-worktree / managed) skips drift detec
     expect(runtimeStrategy.snapshotMainCheckoutGuard).toHaveBeenCalledTimes(1);
   });
 
-  it("when runtimeStrategy has no snapshotMainCheckoutGuard, drift check is skipped", async () => {
-    // Strategy without the optional method
-    const runtimeStrategy = {
-      captureHeadSha: vi.fn(async () => null as string | null),
-      prepareStepArtifacts: vi.fn(async () => {}),
-      finalizeStepArtifacts: vi.fn(async () => {}),
-      validateStepInputs: vi.fn(async () => {}),
-      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
-      // no snapshotMainCheckoutGuard
-    };
-
-    const store = makeStore();
-    const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), makeRunner() as never, storeFactory);
-    const step = makeAgentStep();
-    const deps = makeDeps(storeFactory, runtimeStrategy as never);
-
-    const resultState = await executor.execute(step, makeState(), deps);
-    expect(resultState.status).toBe("running");
-  });
+  // NOTE: The former test "when runtimeStrategy has no snapshotMainCheckoutGuard, drift check
+  // is skipped" has been removed. snapshotMainCheckoutGuard is now required on the interface
+  // (R2b finding fix); capability absence via method omission is no longer a valid state.
+  // No-op / managed implementations must explicitly return null to express unavailability.
 });
 
 // ---------------------------------------------------------------------------

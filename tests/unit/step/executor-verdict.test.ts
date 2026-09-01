@@ -22,6 +22,7 @@ import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { computeFindingKey } from "../../../src/core/decision/decision-ledger.js";
 import type { Finding } from "../../../src/kernel/report-result.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -75,7 +76,7 @@ function makeJobState(jobId: string): JobState {
  */
 function makeRuntimeStrategy(
   verifyFindingRefsFn: (refs: FindingRef[], cwd: string, branch: string | null) => Promise<FindingRef[]>,
-): RuntimeStrategy {
+) {
   return {
     async *query() {},
     createAgentRunner(): AgentRunner {
@@ -86,14 +87,14 @@ function makeRuntimeStrategy(
       };
     },
     async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {}; },
+    buildDeps() { return {} as PipelineDeps; },
     registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
     async teardown() {},
     async captureHeadSha(): Promise<string | null> { return null; },
     async prepareStepArtifacts(): Promise<void> {},
     async finalizeStepArtifacts(): Promise<void> {},
+    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {},
-    async commitFinalState(): Promise<void> {},
     async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
     async persistJobState(): Promise<void> {},
     verifyFindingRefs: verifyFindingRefsFn,
@@ -180,7 +181,11 @@ function makeDeps(
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    runtimeStrategy,
+    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
+    stepIo: (runtimeStrategy ?? noopStepIo) as never,
+    changedFiles: runtimeStrategy as never,
+    terminalState: noopTerminalState,
+    roundGitEffects: noopRoundGitEffects,
     ...overrides,
   };
 }

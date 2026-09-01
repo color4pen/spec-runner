@@ -25,8 +25,8 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { ReviewerSnapshot } from "../src/core/reviewers/types.js";
-import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { vi as vitest } from "vitest";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -407,18 +407,18 @@ function buildRunner(
  * All contract/validation methods are no-ops so they do not interfere with the mock
  * agent runner's verdict flow.
  */
-function makeCommitOidStubStrategy(): RuntimeStrategy {
+function makeCommitOidStubStrategy() {
   return {
     captureHeadSha: async (): Promise<string | null> => "test-sha",
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-  } as unknown as RuntimeStrategy;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -451,6 +451,10 @@ describe("TC-040: single custom reviewer runs after code-review", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -505,6 +509,10 @@ describe("TC-041: multiple reviewers run in declaration order", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -562,6 +570,10 @@ describe("TC-044: code-fixer returns to reviewer that issued needs-fix", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -612,6 +624,10 @@ describe("TC-045: zero reviewers — existing behavior unchanged", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -661,6 +677,10 @@ describe("TC-046: per-reviewer iteration budget is independent", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Pipeline should exhaust on r1 (maxIterations=1) and transition to awaiting-resume
@@ -707,6 +727,10 @@ describe("TC-047: findings source identification — reviewer name in code-fixer
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -762,6 +786,10 @@ describe("TC-048: resume uses snapshot — definition changes don't affect runni
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -804,6 +832,10 @@ describe("custom reviewer ok=false → escalation", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // ok=false should escalate
@@ -836,9 +868,9 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       captureHeadSha: vi.fn().mockResolvedValue(null),
       prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
       finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+      snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
       verifyFindingRefs: vi.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vi.fn().mockResolvedValue([]),
-      commitFinalState: vi.fn().mockResolvedValue(undefined),
     };
 
     const result = await runPipeline(jobState, {
@@ -854,8 +886,10 @@ describe("TC-042: non-existent file ref in custom reviewer finding → escalatio
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      runtimeStrategy: mockRuntimeStrategy as any,
+      stepArtifact: mockRuntimeStrategy as never,
+      stepIo: mockRuntimeStrategy as never,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // Non-existent file ref → verdict escalation → pipeline awaiting-resume
@@ -906,7 +940,10 @@ describe("TC-RG-01: regression-gate detects regression → code-fixer → approv
       // approved → codeChangedSinceLastVerification → re-verify). Without this, the guard
       // returns false (no commitOids) and the pipeline loops back to code-review, causing
       // regression-gate to run a 3rd time.
-      runtimeStrategy: makeCommitOidStubStrategy(),
+      stepArtifact: makeCommitOidStubStrategy() as never,
+      stepIo: makeCommitOidStubStrategy() as never,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -956,6 +993,10 @@ describe("TC-RG-02: regression-gate decision-needed → escalation", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // decision-needed → escalation → awaiting-resume
@@ -995,6 +1036,10 @@ describe("TC-RG-03: regression-gate exhaustion → awaiting-resume", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     // regression-gate exhausted → awaiting-resume
@@ -1051,6 +1096,10 @@ describe("TC-050: resume skip — approved reviewer excluded from coordinator fa
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      stepArtifact: noopStepArtifact,
+      stepIo: noopStepIo,
+      terminalState: noopTerminalState,
+      roundGitEffects: noopRoundGitEffects,
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -1112,11 +1161,14 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       captureHeadSha: vitest.fn().mockResolvedValue("sha-current"),
       prepareStepArtifacts: vitest.fn().mockResolvedValue(undefined),
       finalizeStepArtifacts: vitest.fn().mockResolvedValue(undefined),
+      snapshotMainCheckoutGuard: vitest.fn().mockResolvedValue(null),
       verifyFindingRefs: vitest.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vitest.fn().mockResolvedValue([]),
-      commitFinalState: vitest.fn().mockResolvedValue(undefined),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
       listChangedFiles: vitest.fn().mockResolvedValue({ kind: "success" as const, files: ["src/feature.ts"] }),
+      // listWorktreeChanges: no uncommitted changes after invalidation (coordinator git effects)
+      listWorktreeChanges: vitest.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+      commitRoundArtifacts: vitest.fn().mockResolvedValue(undefined),
     };
 
     const deps = {
@@ -1132,8 +1184,11 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      runtimeStrategy: mockRuntimeStrategy as any,
+      stepArtifact: mockRuntimeStrategy as never,
+      stepIo: mockRuntimeStrategy as never,
+      changedFiles: mockRuntimeStrategy as never,
+      roundGitEffects: mockRuntimeStrategy as never,
+      terminalState: noopTerminalState,
     };
 
     const bus = new EventBus();
