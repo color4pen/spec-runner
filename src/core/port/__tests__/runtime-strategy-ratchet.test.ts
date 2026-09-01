@@ -118,6 +118,11 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const SRC_DIR = path.join(REPO_ROOT, "src");
 const TESTS_DIR = path.join(REPO_ROOT, "tests");
 
+// Self-exclusion: exclude this ratchet test file from all pattern searches to avoid
+// self-referential false positives. The ratchet test necessarily mentions the forbidden
+// patterns in its own string literals, comments, and findOccurrences() call sites.
+const SELF_FILE = path.join(import.meta.dirname, "runtime-strategy-ratchet.test.ts");
+
 // ---------------------------------------------------------------------------
 // TC-008: RuntimeStrategy & PipelineDepsBuilder が production ソースに存在しない
 // ---------------------------------------------------------------------------
@@ -136,7 +141,7 @@ describe("TC-008: production ソースに RuntimeStrategy & PipelineDepsBuilder 
 
 describe("TC-009: RealRuntimeStrategy が src/ 配下に存在しない", () => {
   it("TC-009: `RealRuntimeStrategy` が src/ 全ファイル（tests 含む）に 0 件", async () => {
-    const files = await collectTsFiles(SRC_DIR);
+    const files = (await collectTsFiles(SRC_DIR)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RealRuntimeStrategy");
     expect(hits, `Found RealRuntimeStrategy in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });
@@ -148,13 +153,13 @@ describe("TC-009: RealRuntimeStrategy が src/ 配下に存在しない", () => 
 
 describe("TC-010: Pick-based derive shim が src/ 配下に存在しない", () => {
   it("TC-010a: `deriveCommitInspectionCapability` が src/ 全ファイルに 0 件", async () => {
-    const files = await collectTsFiles(SRC_DIR);
+    const files = (await collectTsFiles(SRC_DIR)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "deriveCommitInspectionCapability");
     expect(hits, `Found deriveCommitInspectionCapability in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });
 
   it("TC-010b: `deriveRevisionContentCapability` が src/ 全ファイルに 0 件", async () => {
-    const files = await collectTsFiles(SRC_DIR);
+    const files = (await collectTsFiles(SRC_DIR)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "deriveRevisionContentCapability");
     expect(hits, `Found deriveRevisionContentCapability in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });
@@ -178,7 +183,7 @@ describe("TC-011: Pick<RuntimeStrategy が src/ 配下に存在しない", () =>
 
 describe("TC-012: as unknown as RuntimeStrategy がテストファイルに存在しない", () => {
   it("TC-012: `as unknown as RuntimeStrategy` が tests/ および src/__tests__/ に 0 件", async () => {
-    const testFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
+    const testFiles = (await collectTestFiles(SRC_DIR, TESTS_DIR)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(testFiles, "as unknown as RuntimeStrategy");
     expect(hits, `Found "as unknown as RuntimeStrategy" in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });

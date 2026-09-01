@@ -928,67 +928,10 @@ describe("B-10: host↔token 束縛 — composition-root の全呼び出しで h
   });
 });
 
-// ─── B-11: RealRuntimeStrategy 不在 pin (R2c 以降) ───────────────────────────
-
-describe("B-11 (arch pin): src/core/runtime/ 具象クラスは bare implements RuntimeStrategy を使わない", () => {
-  /**
-   * B-11 (updated for R2c — runtime-strategy-convergence):
-   *
-   * Previously this test required concrete runtime classes to use
-   * `implements RealRuntimeStrategy` (not bare RuntimeStrategy). After R2c,
-   * RealRuntimeStrategy is DELETED and all 10 previously-optional methods are now
-   * required on RuntimeStrategy itself. The correct form for concrete classes is now
-   * `implements RuntimeStrategy` directly.
-   *
-   * This test is updated to verify the post-R2c invariant:
-   *   - `RealRuntimeStrategy` must NOT appear anywhere in src/core/runtime/
-   *   - (Positive check: `implements RuntimeStrategy` is now the correct form)
-   *
-   * Note: runtime-strategy-ratchet.test.ts TC-009/TC-031 separately enforce that
-   * RealRuntimeStrategy is absent from ALL of src/ and tests/.
-   */
-  it("src/core/runtime/ に bare 'implements RuntimeStrategy' が存在しない (RealRuntimeStrategy のみ許容)", () => {
-    // R2c: RealRuntimeStrategy is deleted. Concrete classes now use `implements RuntimeStrategy`
-    // directly. Verify that RealRuntimeStrategy does NOT appear in src/core/runtime/.
-    const raw = grepE(`"RealRuntimeStrategy"`, "src/core/runtime");
-    const matches = parseGrepOutput(raw);
-    const nonComment = matches.filter((m) => !isCommentLine(m.content));
-    // No RealRuntimeStrategy should exist in src/core/runtime/
-    expect(violationLines(nonComment)).toEqual([]);
-  });
-
-  it("B-11 regression guard: RealRuntimeStrategy in src/core/runtime/ is detected", () => {
-    // Simulate a file that incorrectly uses the deleted RealRuntimeStrategy
-    const injectedMatches: GrepMatch[] = [
-      {
-        file: "src/core/runtime/some-new-runtime.ts",
-        line: 10,
-        content: "export class SomeNewRuntime implements RealRuntimeStrategy {",
-      },
-    ];
-    // Contains RealRuntimeStrategy → should be detected as a violation
-    const violations = injectedMatches.filter(
-      (m) => !isCommentLine(m.content) && m.content.includes("RealRuntimeStrategy"),
-    );
-    expect(violations).toHaveLength(1);
-  });
-
-  it("B-11: implements RuntimeStrategy (the correct R2c form) is not detected as violation", () => {
-    // After R2c, implements RuntimeStrategy IS the correct form for concrete classes.
-    const injectedMatches: GrepMatch[] = [
-      {
-        file: "src/core/runtime/local.ts",
-        line: 123,
-        content: "export class LocalRuntime implements RuntimeStrategy, MaterializerHost {",
-      },
-    ];
-    // Does NOT contain RealRuntimeStrategy → correctly NOT flagged
-    const violations = injectedMatches.filter(
-      (m) => !isCommentLine(m.content) && m.content.includes("RealRuntimeStrategy"),
-    );
-    expect(violations).toHaveLength(0);
-  });
-});
+// ─── B-11: deleted class absence pin (R2c 以降) ──────────────────────────────
+// NOTE: B-11 was removed after R2c. The invariant (the deleted class is absent
+// from all files) is now enforced by the broader ratchet tests in
+// src/core/port/__tests__/runtime-strategy-ratchet.test.ts (TC-009 / TC-031).
 
 // ─── B-13: StepExecutor は store 永続化 API を直接呼ばない ──────────────────────
 

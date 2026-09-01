@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T04:49:50.537Z",
+  "updatedAt": "2026-09-01T04:55:38.095Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -87,7 +87,9 @@
     "52dff5b49d4846a168b7b4ee36c89049f9da9f31",
     "59f954c5594680f173fae08495cd5322440e7603",
     "4433dee569f729efec62a991ba14fb8e2b6434ba",
-    "09eece14a8c72dbca09816ca590033c54d236149"
+    "09eece14a8c72dbca09816ca590033c54d236149",
+    "43f0b0fa4908d6e82673ccef997c32f6cf998bb1",
+    "a0dd3f54f78f6feeed23edb65b39f252e60ac50a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,9 +121,11 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/verification/changed-line-coverage.ts",
-      "src/core/verification/type-only.ts",
-      "src/core/port/command-runtime.ts"
+      "tests/unit/core/command/runner.test.ts",
+      "src/core/port/command-runtime.ts",
+      "src/core/types.ts",
+      "src/core/command/runner.ts",
+      "src/core/port/runtime-strategy.ts"
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
@@ -203,15 +207,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 103,
+    "historyCount": 111,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 3,
-      "verification": 4,
+      "implementer": 4,
+      "verification": 5,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
