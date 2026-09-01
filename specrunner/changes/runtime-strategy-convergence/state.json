@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T09:00:35.073Z",
+  "updatedAt": "2026-09-01T09:10:14.858Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -95,7 +95,9 @@
     "61dd87e441e21e2e1137426790e9bc4101a590cf",
     "afad42832105f9ebcae2a45dd7adce4274887051",
     "60acc25a212397db978b9dbf69c5c4ebb59b9be7",
-    "90948f89d19cce7a1a95445788f6e92872431a3e"
+    "90948f89d19cce7a1a95445788f6e92872431a3e",
+    "1feed5e3f00bda5e6e09816f77a99ec736290ab5",
+    "4b11aeb71f0cd0254dda6233d102cd0a21eedee9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -167,22 +169,16 @@
     "conformance": [
       "src/core/port/command-runtime.ts",
       "src/core/command/runner.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/port/runtime-strategy.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
       "src/core/command/resume.ts",
       "src/core/runtime/factory.ts",
       "src/cli/bootstrap.ts",
-      "src/core/step/executor.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/step/scope-check.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "tests/pipeline-sole-committer-e2e.test.ts",
-      "tests/unit/core/command/runner.test.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/managed.ts"
+      "src/core/step/executor.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"
     ]
   },
   "resumePoint": null,
@@ -217,8 +213,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1107",
+    "number": 1107,
+    "createdAt": "2026-09-01T09:10:13.968Z"
+  },
   "_journal": {
-    "historyCount": 145,
+    "historyCount": 159,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -226,14 +227,16 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 6,
-      "verification": 7,
+      "verification": 8,
       "code-review": 4,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 2
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
