@@ -244,4 +244,14 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
       `Found RuntimeStrategy & PipelineDepsBuilder in provider-readiness-gate.test.ts:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
+
+  it("TC-032c: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/runtime/ に 0 件", async () => {
+    const runtimeTestDir = path.join(TESTS_DIR, "unit", "core", "runtime");
+    const files = (await collectTsFiles(runtimeTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in Runtime test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
 });

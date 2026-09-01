@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T11:38:52.425Z",
+  "updatedAt": "2026-09-01T11:45:14.428Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -99,7 +99,8 @@
     "1feed5e3f00bda5e6e09816f77a99ec736290ab5",
     "4b11aeb71f0cd0254dda6233d102cd0a21eedee9",
     "75501c276548a3fd21b1b92c625ffc760e624d18",
-    "633550c964ae4ec742708ac6461b9ceff718a54c"
+    "633550c964ae4ec742708ac6461b9ceff718a54c",
+    "0f84270c5d116debe6da11c319a763eaa7bb6203"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,20 +163,13 @@
       "src/core/port/command-runtime.ts",
       "src/core/port/runtime-strategy.ts",
       "src/core/command/runner.ts",
+      "src/core/runtime-facade.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/command/resume.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
       "src/core/runtime/factory.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/cli/bootstrap.ts",
-      "tests/pipeline-sole-committer-e2e.test.ts",
-      "src/core/runtime/local.ts",
-      "src/core/port/provider-readiness.ts",
-      "tests/unit/core/command/runner.test.ts",
-      "src/core/runtime/managed.ts",
-      "src/core/step/scope-check.ts",
-      "src/core/step/executor.ts",
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
@@ -250,7 +244,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 171,
+    "historyCount": 175,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -259,7 +253,7 @@
       "spec-fixer": 2,
       "implementer": 7,
       "verification": 9,
-      "code-review": 4,
+      "code-review": 5,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
