@@ -208,3 +208,6 @@
 {"type":"transition","ts":"2026-09-01T06:00:58.448Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
 {"type":"transition","ts":"2026-09-01T06:00:58.454Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
 {"type":"transition","ts":"2026-09-01T06:00:58.456Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"transition","ts":"2026-09-01T09:00:34.638Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-09-01T09:00:35.070Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-01T09:00:35.072Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
