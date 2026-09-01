@@ -16,9 +16,21 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type {
+  ProviderReadinessCapability,
+  WorkspaceLifecycleCapability,
+  JobStatePersistenceCapability,
+} from "../../../../src/core/port/command-runtime.js";
+import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
+
+/** Narrow runtime type required by CommandRunner. */
+type CommandRunnerRuntime = ProviderReadinessCapability
+  & WorkspaceLifecycleCapability
+  & JobStatePersistenceCapability
+  & PipelineDepsBuilder;
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { closeVerboseLog, setLogLevel } from "../../../../src/logger/stdout.js";
@@ -112,7 +124,7 @@ const NOOP_WORKSPACE: WorkspaceContext = { cwd: "/worktree" };
 /** Deps object returned by the mock runtime.buildDeps(). Same reference is mutated by execute(). */
 let capturedDeps: PipelineDeps;
 
-function buildMockRuntime(): RuntimeStrategy & PipelineDepsBuilder {
+function buildMockRuntime(): CommandRunnerRuntime {
   capturedDeps = {
     request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", adr: false },
     slug: "test-slug",
@@ -126,24 +138,14 @@ function buildMockRuntime(): RuntimeStrategy & PipelineDepsBuilder {
   } as unknown as PipelineDeps;
 
   return {
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue(NOOP_WORKSPACE),
-    buildDeps: vi.fn().mockReturnValue(capturedDeps),
     registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented in test")),
+    // JobStatePersistenceCapability
     persistJobState: vi.fn().mockResolvedValue(undefined),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
-    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
     reloadJobState: vi.fn().mockImplementation(async () => {
       // In resume tests, workspaceOpts.existingWorktreePath is set, so this is not called.
       // Return a generic state as a fallback.
@@ -165,19 +167,14 @@ function buildMockRuntime(): RuntimeStrategy & PipelineDepsBuilder {
         updatedAt: "2026-01-01T00:00:00.000Z",
       };
     }),
-    canDeriveChangedFiles: () => false,
-    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
-    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
-    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
-    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue(capturedDeps),
   };
 }
 
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: CommandRunnerRuntime,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());
@@ -291,37 +288,28 @@ class TestableResumeCommand extends ResumeCommand {
 }
 
 /**
- * Build a minimal RuntimeStrategy mock for TC-011.
+ * Build a minimal RuntimeFacade mock for TC-011.
  * (ResumeCommand.prepare() does not call setupWorkspace — that happens in execute().)
  */
-function buildResumeTestRuntime(): RuntimeStrategy & PipelineDepsBuilder {
+function buildResumeTestRuntime(): RuntimeFacade {
   return {
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // JobBootstrapCapability
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/worktree" } as WorkspaceContext),
-    buildDeps: vi.fn().mockReturnValue({}),
     registerCleanup: vi.fn().mockReturnValue({} as CleanupHandle),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
+    // JobStatePersistenceCapability
     persistJobState: vi.fn().mockResolvedValue(undefined),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
-    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
     reloadJobState: vi.fn().mockResolvedValue(undefined),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue({}),
+    // ChangedFilesCapability
     canDeriveChangedFiles: () => false,
-    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
-    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
-    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
-    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 

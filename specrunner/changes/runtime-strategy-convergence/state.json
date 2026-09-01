@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T09:10:14.858Z",
+  "updatedAt": "2026-09-01T10:58:46.516Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -218,8 +218,15 @@
     "number": 1107,
     "createdAt": "2026-09-01T09:10:13.968Z"
   },
+  "operatorAdjudications": [
+    {
+      "text": "PR #1107 のオーナーレビュー (https://github.com/color4pen/spec-runner/pull/1107#issuecomment-5492388304) で blocking 2 件が指摘された。マージ前に以下を修正すること。\n\n1. [blocking] 新規 DSM allowlist entry `R2c-command-runtime-dsm` を削除し、ports→domain の新規逆依存を解消する。\n- `src/core/port/command-runtime.ts` が domain の `../types.js` (`PipelineDepsBuilder`) を import している。capability interface は port に残してよいが、`PipelineDepsBuilder` を含む aggregate を port に置かないこと。\n- 分離例 (レビュアー提案): Command 層が consumer ごとの明示的 capability intersection を所有する。`CommandRunner` = readiness / workspace lifecycle / state persistence / deps builder のみ。`PipelineRunCommand` = 上記 + job bootstrap + changed-files derivability。`ResumeCommand` = `CommandRunner` に必要な契約のみ。factory/bootstrap 用 aggregate が必要なら composition-root 側に置く。\n- `tests/unit/architecture/arch-allowlist.ts` の `R2c-command-runtime-dsm` entry を削除する (allowlist GOVERNANCE は既存 entry からの縮小のみ許可)。`PipelineDepsBuilder` を ports に戻す案は R2b で解消した ports→domain 依存の再導入になるため採用禁止。\n\n2. [blocking] test fake を narrow contract に収束させる。\n- optional→required 化で少なくとも 18 ファイルの test fake に未使用メソッドが機械的に追加されている (例: tests/core/provider-readiness-gate.test.ts の full `RuntimeStrategy & PipelineDepsBuilder` fake)。少なくとも今回変更した Command 系テストは、production constructor が要求する narrow contract に合わせた typed builder/helper に置き換え、テストのために full `RuntimeStrategy` を実装させる状態を残さないこと。\n- ratchet (`src/core/port/__tests__/runtime-strategy-ratchet.test.ts`) を production だけでなく Command 系 test fake への whole-port 再導入も検知できる形に拡張する。\n\n[completion] 指摘 (PR 本文への before/after 実測値追記) は operator 側で対応するため、この resume の対象外。",
+      "step": "implementer",
+      "recordedAt": "2026-09-01T10:58:46.241Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 159,
+    "historyCount": 162,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

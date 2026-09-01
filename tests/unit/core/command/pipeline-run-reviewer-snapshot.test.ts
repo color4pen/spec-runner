@@ -19,8 +19,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { PipelineRunCommand } from "../../../../src/core/command/pipeline-run.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
+import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -100,47 +100,35 @@ function makeFakePreflightResult(pipelineId?: string): PreflightResult {
 }
 
 /**
- * Build a fake RuntimeStrategy with bootstrapJob returning a fresh initial state.
- * Note (R2c): "absent" case removed — canDeriveChangedFiles is now required.
+ * Build a fake runtime with bootstrapJob returning a fresh initial state.
  */
 function makeFakeRuntime(
   canDerive: boolean,
-): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } {
+): RuntimeFacade {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
     // No reviewers param → reviewers field absent on initial state
   });
 
-  const bootstrapJobSpy = vi.fn().mockResolvedValue(initialState);
-
   return {
-    bootstrapJob: bootstrapJobSpy,
-    persistJobState: vi.fn().mockResolvedValue(undefined),
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // JobBootstrapCapability
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    bootstrapJob: vi.fn().mockResolvedValue(initialState),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: tempDir } as WorkspaceContext),
-    buildDeps: vi.fn().mockReturnValue({}),
     registerCleanup: vi.fn().mockReturnValue({} as CleanupHandle),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-    canDeriveChangedFiles: () => canDerive,
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
-    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+    // JobStatePersistenceCapability
+    persistJobState: vi.fn().mockResolvedValue(undefined),
     reloadJobState: vi.fn().mockResolvedValue(undefined),
-    listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
-    listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
-    snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
-    readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
-    lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue({}),
+    // ChangedFilesCapability
+    canDeriveChangedFiles: () => canDerive,
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 
@@ -153,7 +141,7 @@ class TestablePipelineRunCommand extends PipelineRunCommand {
 
 function makeCommand(
   preflightResult: PreflightResult,
-  runtime: RuntimeStrategy & PipelineDepsBuilder,
+  runtime: RuntimeFacade,
 ): TestablePipelineRunCommand {
   return new TestablePipelineRunCommand(
     runtime,

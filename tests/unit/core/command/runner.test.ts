@@ -16,7 +16,7 @@ import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
-import type { RuntimeFacade } from "../../../../src/core/port/command-runtime.js";
+import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";

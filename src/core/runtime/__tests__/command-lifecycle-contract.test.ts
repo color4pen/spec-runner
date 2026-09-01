@@ -15,7 +15,7 @@ import { ManagedRuntime } from "../managed.js";
 import type { GitHubClient } from "../../port/github-client.js";
 import type { SessionClient } from "../../port/session-client.js";
 import type { OriginInfo } from "../../../git/remote.js";
-import type { RuntimeFacade } from "../../port/command-runtime.js";
+import type { RuntimeFacade } from "../../runtime-facade.js";
 import type { WorkspaceContext } from "../../port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------

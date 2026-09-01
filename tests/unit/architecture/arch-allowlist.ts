@@ -602,24 +602,4 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "di-default: --from-issue handler resolves repoRoot from ctx injection; process.cwd() is the fallback when no context is provided.",
   },
 
-  // ── DSM: ports → domain grandfather (R2c: runtime-strategy-convergence) ──────
-  //
-  // command-runtime.ts (ports layer) imports PipelineDepsBuilder from core/types.ts
-  // (domain layer) to form the RuntimeFacade type alias used by factory.ts and the
-  // concrete runtime classes.  This is a temporary cross-layer reference introduced
-  // by R2c; burn-down tracked via R2c-command-runtime-dsm.
-  //
-  // Burn-down option: move PipelineDepsBuilder to src/core/port/command-runtime.ts
-  // and re-export from core/types.ts to preserve downstream compatibility.
-  {
-    file: "src/core/port/command-runtime.ts",
-    pattern: "from \"../types.js\"",
-    invariant: "DSM",
-    tracking: "R2c-command-runtime-dsm",
-    comment:
-      "command-runtime.ts (ports) imports PipelineDepsBuilder from core/types.ts (domain). " +
-      "Introduced by R2c (runtime-strategy-convergence). Burn-down: move PipelineDepsBuilder " +
-      "to ports layer.",
-  },
-
 ];

@@ -20,8 +20,13 @@ import * as os from "node:os";
 import { EventBus } from "../../src/core/event/event-bus.js";
 import { CommandRunner } from "../../src/core/command/runner.js";
 import type { PrepareResult } from "../../src/core/command/runner.js";
-import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
+import type { CleanupHandle } from "../../src/core/port/runtime-strategy.js";
 import type { PipelineDeps, PipelineDepsBuilder } from "../../src/core/types.js";
+import type {
+  ProviderReadinessCapability,
+  WorkspaceLifecycleCapability,
+  JobStatePersistenceCapability,
+} from "../../src/core/port/command-runtime.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../src/core/port/provider-readiness.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../src/core/runtime/managed.js";
@@ -71,46 +76,28 @@ function countingProbe(result: ProviderReadinessResult) {
 // Helpers: minimal RuntimeStrategy fake for gate tests
 // ---------------------------------------------------------------------------
 
+/** Narrow runtime type required by CommandRunner. */
+type CommandRunnerRuntime = ProviderReadinessCapability
+  & WorkspaceLifecycleCapability
+  & JobStatePersistenceCapability
+  & PipelineDepsBuilder;
+
 /**
- * Build a minimal RuntimeStrategy fake that tracks side-effect calls.
- * `setupWorkspace` and `prepare` are tracked so tests can assert they are/aren't called.
- * Note (R2c): assertProviderReadiness is now required. When no probe is provided, it is a no-op.
+ * Build a minimal runtime fake that tracks side-effect calls.
+ * Typed as the narrow CommandRunner contract — only the 7 methods required by
+ * CommandRunner.execute() are present (R2c: whole-port RuntimeStrategy removed).
  */
 function makeMinimalRuntime(opts?: {
   providerReadinessProbe?: ProviderReadinessProbe;
 }): {
-  runtime: RuntimeStrategy & PipelineDepsBuilder;
+  runtime: CommandRunnerRuntime;
   sideEffects: { setupWorkspaceCalled: boolean; prepareCalled: boolean };
 } {
   const sideEffects = { setupWorkspaceCalled: false, prepareCalled: false };
   const probe = opts?.providerReadinessProbe;
 
-  const runtime: RuntimeStrategy & PipelineDepsBuilder = {
-    async bootstrapJob() { throw new Error("not implemented in fake"); },
-    async persistJobState() { sideEffects.setupWorkspaceCalled = true; },
-    async setupWorkspace() {
-      sideEffects.setupWorkspaceCalled = true;
-      return { cwd: tempDir };
-    },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async *query() {},
-    createAgentRunner() {
-      return {
-        async run() {
-          return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async captureHeadSha() { return null; },
-    async prepareStepArtifacts() {},
-    async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async digestArtifacts() { return []; },
-    async listChangedFiles() { return { kind: "unavailable" as const, reason: "fake" }; },
-    async verifyFindingRefs() { return []; },
-    // assertProviderReadiness is now required (R2c). Use probe if provided, else no-op (always ready).
+  const runtime: CommandRunnerRuntime = {
+    // ProviderReadinessCapability
     async assertProviderReadiness(env: Record<string, string | undefined>) {
       if (probe !== undefined) {
         const { classifyProviderReadiness } = await import("../../src/core/runtime/provider-readiness.js");
@@ -119,16 +106,18 @@ function makeMinimalRuntime(opts?: {
         if (err) throw err;
       }
     },
-    // R2c: other previously optional methods, now required on RuntimeStrategy
-    async assertNoDuplicateLiveJob() {},
+    // WorkspaceLifecycleCapability
+    async setupWorkspace() {
+      sideEffects.setupWorkspaceCalled = true;
+      return { cwd: tempDir };
+    },
+    registerCleanup() { return {} as CleanupHandle; },
+    async teardown() {},
+    // JobStatePersistenceCapability
+    async persistJobState() { sideEffects.setupWorkspaceCalled = true; },
     async reloadJobState() { throw new Error("not implemented in fake"); },
-    canDeriveChangedFiles: () => false,
-    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
-    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
-    async snapshotMainCheckoutGuard() { return null; },
-    async readRevisionContent() { return { current: null, prior: null }; },
-    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
+    // PipelineDepsBuilder
+    buildDeps() { return {} as PipelineDeps; },
   };
 
   return { runtime, sideEffects };
@@ -147,7 +136,7 @@ class MinimalCommandRunner extends CommandRunner {
   private readonly onPrepare: () => Promise<PrepareResult>;
 
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: CommandRunnerRuntime,
     events: EventBus,
     onPrepare: () => Promise<PrepareResult>,
   ) {

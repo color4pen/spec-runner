@@ -16,7 +16,7 @@ import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createRuntime } from "../core/runtime/index.js";
 import type { OriginInfo } from "../git/remote.js";
-import type { RuntimeFacade } from "../core/port/command-runtime.js";
+import type { RuntimeFacade } from "../core/runtime-facade.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 

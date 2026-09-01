@@ -213,3 +213,35 @@ describe("TC-031: RealRuntimeStrategy がテストファイルを含む全ファ
     expect(hits, `Found RealRuntimeStrategy in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-032: Command テストが RuntimeStrategy & PipelineDepsBuilder を再導入しない
+//
+// Blocking Issue 2 (PR #1107): Command-related test fakes must be narrowed to the
+// production constructor's required narrow contract instead of reimplementing the
+// full RuntimeStrategy & PipelineDepsBuilder whole-port type. This ratchet prevents
+// re-introduction in:
+//   - tests/unit/core/command/  (runner, runner-fidelity-gate, pipeline-run-*, resume)
+//   - tests/core/provider-readiness-gate.test.ts
+// ---------------------------------------------------------------------------
+
+describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が存在しない", () => {
+  it("TC-032: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/command/ に 0 件", async () => {
+    const commandTestDir = path.join(TESTS_DIR, "unit", "core", "command");
+    const files = (await collectTsFiles(commandTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in Command test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  it("TC-032b: `RuntimeStrategy & PipelineDepsBuilder` が tests/core/provider-readiness-gate.test.ts に 0 件", async () => {
+    const gateTestFile = path.join(TESTS_DIR, "core", "provider-readiness-gate.test.ts");
+    const hits = await findOccurrences([gateTestFile], "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in provider-readiness-gate.test.ts:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+});

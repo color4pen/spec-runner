@@ -8,7 +8,7 @@
 import type { PreflightResult } from "../preflight.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeFacade } from "../port/command-runtime.js";
+import type { RuntimeFacade } from "../runtime-facade.js";
 import type { EventBus } from "../event/event-bus.js";
 import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";

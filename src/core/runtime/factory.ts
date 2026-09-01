@@ -11,10 +11,12 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { OriginInfo } from "../../git/remote.js";
 import type { SessionClient } from "../port/session-client.js";
-import type { RuntimeFacade } from "../port/command-runtime.js";
+import type { RuntimeFacade } from "../runtime-facade.js";
 import { LocalRuntime } from "./local.js";
 import { ManagedRuntime } from "./managed.js";
 import { spawnBackground } from "../../util/spawn.js";
+
+export type { RuntimeFacade };
 
 /**
  * Create the appropriate RuntimeFacade for the given config.

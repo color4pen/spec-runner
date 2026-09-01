@@ -5,19 +5,19 @@
  * (formerly the RuntimeStrategy + PipelineDepsBuilder intersection) in CommandRunner,
  * PipelineRunCommand, and ResumeCommand.
  *
- * Design D1: 4 named lifecycle capability interfaces + RuntimeFacade intersection.
+ * Design D1: 4 named lifecycle capability interfaces.
  * - ProviderReadinessCapability: pre-side-effect provider readiness check
  * - JobBootstrapCapability: duplicate guard + job bootstrap
  * - WorkspaceLifecycleCapability: workspace setup / cleanup registration / teardown
  * - JobStatePersistenceCapability: persist + reload job state
  *
- * RuntimeFacade is the intersection type for composition-root consumers (factory.ts,
- * bootstrap.ts, PipelineRunCommand, ResumeCommand). LocalRuntime and ManagedRuntime
- * satisfy RuntimeFacade structurally via TypeScript structural subtyping.
+ * RuntimeFacade (the full composition-root aggregate that includes PipelineDepsBuilder
+ * and ChangedFilesCapability) is defined in src/core/runtime/factory.ts to avoid a
+ * ports→domain import edge (command-runtime.ts cannot import from ../types.js).
+ * Consumers import RuntimeFacade from factory.ts or runtime/index.ts.
  */
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
-import type { WorkspaceOptions, WorkspaceContext, CleanupHandle, ChangedFilesCapability } from "./runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../types.js";
+import type { WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // ProviderReadinessCapability
@@ -120,27 +120,4 @@ export interface JobStatePersistenceCapability {
   ): Promise<JobState>;
 }
 
-// ---------------------------------------------------------------------------
-// RuntimeFacade
-// ---------------------------------------------------------------------------
 
-/**
- * Composition-root type for CommandRunner and its subclasses.
- *
- * Replaces the former intersection type as the type for factory.ts,
- * bootstrap.ts, PipelineRunCommand, and ResumeCommand. Each component is a
- * named required capability interface, making the lifecycle contract explicit.
- *
- * `ChangedFilesCapability` is included because PipelineRunCommand.prepare() calls
- * assertRuntimeSupportsScope() which requires canDeriveChangedFiles() before any
- * workspace or job state is created.
- *
- * LocalRuntime and ManagedRuntime satisfy RuntimeFacade structurally.
- * Contract compliance is verified at compile time in command-lifecycle-contract.test.ts.
- */
-export type RuntimeFacade = ProviderReadinessCapability
-  & JobBootstrapCapability
-  & WorkspaceLifecycleCapability
-  & JobStatePersistenceCapability
-  & PipelineDepsBuilder
-  & ChangedFilesCapability;
