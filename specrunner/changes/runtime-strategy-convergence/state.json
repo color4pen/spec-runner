@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T01:32:30.440Z",
+  "updatedAt": "2026-09-01T01:35:10.455Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -63,10 +63,24 @@
   "issueNumber": 1106,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "76e706ba0eba6bf94102e68778e8add9e4d0d97a"
+    "76e706ba0eba6bf94102e68778e8add9e4d0d97a",
+    "09c04370e1167a998074f376a9c44c8a33b68b13"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/command/resume.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/pipeline/runtime-capability-gate.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
