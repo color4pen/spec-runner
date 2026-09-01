@@ -114,7 +114,7 @@ async function findOccurrences(
 
 // The ratchet test itself is at src/core/port/__tests__/runtime-strategy-ratchet.test.ts
 // Repo root is 4 levels up from __tests__: src/core/port/__tests__ → src/core/port → src/core → src → repo root
-const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
 const SRC_DIR = path.join(REPO_ROOT, "src");
 const TESTS_DIR = path.join(REPO_ROOT, "tests");
 

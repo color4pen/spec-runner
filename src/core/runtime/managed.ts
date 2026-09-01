@@ -603,9 +603,8 @@ export class ManagedRuntime implements RuntimeStrategy {
    *
    * fail-closed: throws to prevent pipeline start until managed runtime store safety
    * is confirmed in a separate request (D3 / T-03 choice).
-   * The optional-chaining call in runner.ts uses `?.`, so if this method were absent
-   * the fallback would be used — but RealRuntimeStrategy requires it, so it must be
-   * present. The safest production behavior for managed is to throw.
+   * reloadJobState is required on JobStatePersistenceCapability; the safest production
+   * behavior for managed runtime is to throw rather than silently skip.
    */
   async reloadJobState(_jobId: string, _slug: string, _workspace: import("../port/runtime-strategy.js").WorkspaceContext): Promise<JobState> {
     throw new Error("reloadJobState not implemented for managed runtime");
@@ -624,7 +623,7 @@ export class ManagedRuntime implements RuntimeStrategy {
   /**
    * Managed runtime performs no local provider readiness probe.
    * Managed readiness / preflight is unchanged by this change (T-05, T-06, T-08).
-   * No-op — mirrors assertNoDuplicateLiveJob convention.
+   * No-op: managed readiness is handled by existing preflight / session creation.
    */
   async assertProviderReadiness(_env: Record<string, string | undefined>): Promise<void> {
     // no-op: managed runtime readiness is handled by existing preflight / session creation

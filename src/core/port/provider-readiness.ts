@@ -2,7 +2,7 @@
  * Port types for provider readiness verification.
  *
  * Pure port layer: no imports from adapter/ or core/runtime/ (no back-edges).
- * Consumed by RuntimeStrategy (optional on base, required on RealRuntimeStrategy)
+ * Consumed by ProviderReadinessCapability (required) in command-runtime.ts
  * and by core/runtime/provider-readiness.ts (classifier).
  */
 

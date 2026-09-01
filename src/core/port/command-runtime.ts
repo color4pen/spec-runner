@@ -47,7 +47,8 @@ export interface ProviderReadinessCapability {
  *
  * - local:   assertNoDuplicateLiveJob scans slug occupancy (throws SLUG_OCCUPIED on conflict).
  *            bootstrapJob creates in-memory JobState; persistence deferred to setupWorkspace.
- * - managed: assertNoDuplicateLiveJob is no-op. bootstrapJob creates in-memory JobState.
+ * - managed: assertNoDuplicateLiveJob also delegates to assertSlugUnoccupied (same guard as local).
+ *            bootstrapJob creates in-memory JobState.
  */
 export interface JobBootstrapCapability {
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;

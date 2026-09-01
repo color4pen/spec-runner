@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T03:41:36.118Z",
+  "updatedAt": "2026-09-01T03:50:51.497Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -76,7 +76,8 @@
     "5204cafdf57be8ccbb894553726712152f74ad7f",
     "bafb10b4476c2a96f4df27df9e28d16abc821413",
     "1da23e88ee5ad8fa56bdea261480c355cb1561c6",
-    "95720327838172b65a150a096f26306925ae6548"
+    "95720327838172b65a150a096f26306925ae6548",
+    "b21983291c3d3c22d74b3871e49c7783a0ff0e38"
   ],
   "touchedFiles": {
     "request-review": [
@@ -111,10 +112,30 @@
       "src/core/verification/changed-line-coverage.ts",
       "src/core/verification/type-only.ts",
       "src/core/port/command-runtime.ts"
+    ],
+    "code-review": [
+      "src/core/port/command-runtime.ts",
+      "src/core/command/runner.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/runtime/factory.ts",
+      "src/core/command/resume.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/runtime/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/runtime/local.ts",
+      "src/core/port/provider-readiness.ts",
+      "tests/unit/core/command/runner-fidelity-gate.test.ts",
+      "tests/core/provider-readiness-gate.test.ts",
+      "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
+      "tests/unit/core/command/runner.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -122,7 +143,8 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 3,
-      "verification": 3
+      "verification": 3,
+      "code-review": 1
     }
   }
 }
