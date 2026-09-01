@@ -1,8 +1,9 @@
 /**
  * Command lifecycle capability interfaces.
  *
- * R2c: Command-layer contracts that replace the whole-port RuntimeStrategy & PipelineDepsBuilder
- * dependency in CommandRunner, PipelineRunCommand, and ResumeCommand.
+ * R2c: Command-layer contracts that replace the monolithic whole-port runtime dependency
+ * (formerly the RuntimeStrategy + PipelineDepsBuilder intersection) in CommandRunner,
+ * PipelineRunCommand, and ResumeCommand.
  *
  * Design D1: 4 named lifecycle capability interfaces + RuntimeFacade intersection.
  * - ProviderReadinessCapability: pre-side-effect provider readiness check
@@ -126,7 +127,7 @@ export interface JobStatePersistenceCapability {
 /**
  * Composition-root type for CommandRunner and its subclasses.
  *
- * Replaces `RuntimeStrategy & PipelineDepsBuilder` as the type for factory.ts,
+ * Replaces the former intersection type as the type for factory.ts,
  * bootstrap.ts, PipelineRunCommand, and ResumeCommand. Each component is a
  * named required capability interface, making the lifecycle contract explicit.
  *

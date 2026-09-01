@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T04:30:49.619Z",
+  "updatedAt": "2026-09-01T04:39:44.981Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -83,7 +83,8 @@
     "60abae2f0f7f6d589001c6941d457f12d1f421bd",
     "787090f30a34c4ce730507d8b7ba0fc3cd77429d",
     "af724e10d87c9f907d1b5d632d9546b3a8f6dfb1",
-    "18b38c25aad04093ef787814e24c8f0e8487677a"
+    "18b38c25aad04093ef787814e24c8f0e8487677a",
+    "52dff5b49d4846a168b7b4ee36c89049f9da9f31"
   ],
   "touchedFiles": {
     "request-review": [
@@ -145,6 +146,20 @@
       "src/core/port/runtime-strategy.ts",
       "src/core/port/provider-readiness.ts",
       "tests/unit/core/command/runner.test.ts"
+    ],
+    "conformance": [
+      "src/core/port/command-runtime.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/command/resume.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/scope-check.ts"
     ]
   },
   "resumePoint": null,
@@ -180,7 +195,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 86,
+    "historyCount": 90,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -194,7 +209,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
