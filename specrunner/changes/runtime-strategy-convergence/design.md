@@ -177,8 +177,8 @@ const stepIoImpl: StepIoValidationCapability = {
 ## Risks / Trade-offs
 
 **[Risk] ManagedRuntime.reloadJobState は throw を維持する**
-`reloadJobState` を required にするが、ManagedRuntime の実装は引き続き `throw new Error("not implemented for managed runtime")` である。CommandRunner のスキップ条件 `workspaceOpts.existingWorktreePath === undefined` は維持されるため（resume path では呼ばれない）、実行時に throw する経路はない。ただし将来の managed resume 実装時に確認が必要。
-*Mitigation*: ratchet test に「managed reloadJobState は呼ばれない経路が維持されている」旨のコメントを残す。Contract test でも managed path を検証する。
+`reloadJobState` を required にするが、ManagedRuntime の実装は引き続き `throw new Error("not implemented for managed runtime")` である。runner.ts の条件 `workspaceOpts.existingWorktreePath === undefined` は **新規 run** の条件（resume 時は `existingWorktreePath !== undefined`）であり、managed 新規 run では `reloadJobState` が実装済み（throw する）かつ `existingWorktreePath === undefined` が true になるため、現行コードでは既に throw が発生する経路が存在する。この throw は catch ブロックで捕捉され RELOAD_FAILED で job が失敗する。T-04 の変更はこの挙動に対して behavior-preserving である（`this.runtime.reloadJobState &&` の存在確認ガードを除去するだけで、スキップ条件 `workspaceOpts.existingWorktreePath === undefined` は維持される）。なお従来の Risk 節の根拠「resume path では呼ばれない」は逆であり誤りだった。
+*Mitigation*: managed runtime での新規 run は reloadJobState throw → RELOAD_FAILED となる挙動を contract test (T-12) で明示する。managed resume の実装時に reloadJobState の managed 対応（store から読み込む実装）も必要。
 
 **[Risk] 広い surface 変更**
 CommandRunner / PipelineRunCommand / ResumeCommand / factory / bootstrap / local / managed / runtime-strategy / e2e test を同時に変更する。型エラーが連鎖しやすい。

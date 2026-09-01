@@ -200,7 +200,7 @@
 - [ ] ManagedRuntime が `RuntimeFacade` を構造的に満たすことを同様に検証する
 - [ ] `assertProviderReadiness`: LocalRuntime はプローブを呼ぶ / ManagedRuntime は no-op であることを単体テストで確認する
 - [ ] `assertNoDuplicateLiveJob`: LocalRuntime は slug 占有チェックをする / ManagedRuntime は no-op であることを確認する
-- [ ] `reloadJobState`: LocalRuntime はストアから読み込む / ManagedRuntime は throw することを確認する（ManagedRuntime は呼ばれない想定だが、実装が throw であることを正と記録する）
+- [ ] `reloadJobState`: LocalRuntime はストアから読み込む / ManagedRuntime は throw することを確認する（managed 新規 run では `existingWorktreePath === undefined` が true のため reloadJobState が呼ばれ throw → RELOAD_FAILED となる。この挙動を正として記録する。managed resume 実装時には reloadJobState の managed 対応が別途必要）
 - [ ] `canDeriveChangedFiles()`: LocalRuntime は boolean を返す / ManagedRuntime は false を返すことを確認する
 - [ ] `bun run test src/core/runtime/__tests__/command-lifecycle-contract.test.ts` を実行してすべて通ることを確認する
 
