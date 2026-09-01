@@ -10,7 +10,7 @@
  * These tests are compile-time in nature — if TypeScript type assignments below fail,
  * the test file will not compile (typecheck will fail). No runtime assertions needed.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it } from "vitest";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 import type {

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T02:04:07.319Z",
+  "updatedAt": "2026-09-01T03:28:45.562Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -70,7 +70,9 @@
     "e3fa6dd31eb42cd367cf3958038f6cd77165be08",
     "27c2289c65320073f04e190768645a92c61c83b0",
     "36dba2f7babbd9d7dab8dc630d163ba1e81a8bed",
-    "2e1ceb1f0eb1beb75cf3db6ac3252cd7eda0d415"
+    "2e1ceb1f0eb1beb75cf3db6ac3252cd7eda0d415",
+    "cb2d995a24799d1490acb18ef567104396ebef30",
+    "da6dde948418a5b4e43149c4c96057cd37fd38cd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -100,16 +102,72 @@
       "src/core/port/runtime-strategy.ts",
       "src/core/pipeline/runtime-capability-gate.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/command/resume.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/types.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "tests/pipeline-sole-committer-e2e.test.ts",
+      "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
+      "src/core/step/scope-check.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-capability.ts",
+      "src/core/pipeline/pipeline-capability.ts",
+      "src/core/runtime/__tests__/local-runtime-capabilities.test.ts",
+      "src/core/port/command-runtime.ts",
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
+      "src/core/occupancy/guard.ts",
+      "src/core/occupancy/scan.ts",
+      "src/core/port/provider-readiness.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "tests/unit/step/executor-resume-context.test.ts",
+      "tests/unit/core/step/executor-cli-entry-oid.test.ts",
+      "tests/unit/core/runtime/capability-contracts.test.ts",
+      "tests/unit/core/pipeline/runtime-capability-gate.test.ts",
+      "tests/unit/core/step/capability-consumers.test.ts",
+      "tests/unit/core/command/runner.test.ts",
+      "tests/unit/core/command/runner-fidelity-gate.test.ts",
+      "tests/unit/core/command/resume.test.ts",
+      "tests/unit/core/command/pipeline-run.test.ts",
+      "tests/unit/core/command/pipeline-run-duplicate-guard.test.ts",
+      "tests/unit/core/command/pipeline-run-gate.test.ts",
+      "tests/unit/core/command/pipeline-run-inbox-origin.test.ts",
+      "tests/unit/core/command/pipeline-run-input-completeness.test.ts",
+      "tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts",
+      "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
+      "tests/unit/core/step/verification-phase-outcome-executor.test.ts",
+      "tests/unit/step/executor-input-validation.test.ts",
+      "tests/unit/step/executor-verdict.test.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/attach/attach-resume-e2e.test.ts",
+      "tests/core/provider-readiness-gate.test.ts",
+      "tests/unit/step/executor-activation.test.ts",
+      "tests/unit/core/step/scope-escalation.test.ts",
+      "src/core/command/__tests__/resume-wontfix.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/reviewers/activation.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/custom-reviewers-e2e.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 35,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
