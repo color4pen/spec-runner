@@ -335,7 +335,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `src/core/runtime/__tests__/command-lifecycle-contract.test.ts` が作成されている
 **WHEN** `assertNoDuplicateLiveJob` の振る舞いを Local / Managed それぞれで実行する
-**THEN** LocalRuntime は slug 占有チェックを行う振る舞いを検証し、ManagedRuntime は no-op を検証するテストが含まれている
+**THEN** LocalRuntime / ManagedRuntime とも `assertSlugUnoccupied` へ委譲して slug 占有チェックを行う振る舞いを検証するテストが含まれている
 
 ---
 
