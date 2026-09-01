@@ -255,3 +255,12 @@
 {"type":"transition","ts":"2026-09-01T11:45:14.425Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-09-01T11:45:14.426Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-09-01T11:45:14.428Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-09-01T11:51:18.940Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"b11b8592-e35b-429d-9e17-4cef756d22db","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":1,"outputRepair":0}},"startedAt":"2026-09-01T11:45:14.464Z","endedAt":"2026-09-01T11:51:17.399Z","commitOid":"ac892fa4d0e3c5ece2eade83658bea9e5ab5a8e9"}
+{"type":"lineage","step":"code-fixer","ts":"2026-09-01T11:51:17.399Z","outputs":[{"path":"specrunner/changes/runtime-strategy-convergence","hash":null}],"inputs":[{"path":"specrunner/changes/runtime-strategy-convergence/review-feedback-005.md","hash":"sha256:959841ae8d7f77a929354dcae6cd83baeee44b616e037148a51daa1dc79512af"}]}
+{"type":"transition","ts":"2026-09-01T11:51:18.945Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"transition","ts":"2026-09-01T11:51:18.946Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CODEX_SDK_ERROR","message":"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again.","hint":""},"transientRetryAttempts":0},"startedAt":"2026-09-01T11:51:19.000Z","endedAt":"2026-09-01T11:51:21.267Z"}
+{"type":"step-attempt","step":"custom-reviewers","sessionId":null,"outcome":{"verdict":"escalation","findingsPath":null,"error":null},"startedAt":"2026-09-01T11:51:18.954Z","endedAt":"2026-09-01T11:51:21.306Z"}
+{"type":"transition","ts":"2026-09-01T11:51:21.309Z","step":"custom-reviewers","status":"error","message":"custom-reviewers iteration 1 completed with verdict: escalation"}
+{"type":"transition","ts":"2026-09-01T11:51:21.310Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: custom-reviewers escalated"}
