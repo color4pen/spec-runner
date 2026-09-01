@@ -136,10 +136,9 @@ export interface JobStatePersistenceCapability {
  * LocalRuntime and ManagedRuntime satisfy RuntimeFacade structurally.
  * Contract compliance is verified at compile time in command-lifecycle-contract.test.ts.
  */
-export type RuntimeFacade =
-  ProviderReadinessCapability &
-  JobBootstrapCapability &
-  WorkspaceLifecycleCapability &
-  JobStatePersistenceCapability &
-  PipelineDepsBuilder &
-  ChangedFilesCapability;
+export type RuntimeFacade = ProviderReadinessCapability
+  & JobBootstrapCapability
+  & WorkspaceLifecycleCapability
+  & JobStatePersistenceCapability
+  & PipelineDepsBuilder
+  & ChangedFilesCapability;
