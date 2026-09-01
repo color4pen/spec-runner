@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T05:41:59.932Z",
+  "updatedAt": "2026-09-01T05:50:46.447Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -91,7 +91,9 @@
     "43f0b0fa4908d6e82673ccef997c32f6cf998bb1",
     "a0dd3f54f78f6feeed23edb65b39f252e60ac50a",
     "5bfe08a58a7ab8a8d753b8d3f3d3c3c3968338b8",
-    "f3102a5ef9fc5baaf2de87c7ea4763c5f0558136"
+    "f3102a5ef9fc5baaf2de87c7ea4763c5f0558136",
+    "61dd87e441e21e2e1137426790e9bc4101a590cf",
+    "afad42832105f9ebcae2a45dd7adce4274887051"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,7 +125,9 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "tests/unit/architecture/invariant-catalog-parity.test.ts",
+      "architecture/model.md",
+      "architecture/conformance.md",
       "tests/unit/architecture/core-invariants.test.ts"
     ],
     "code-review": [
@@ -206,15 +210,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 120,
+    "historyCount": 129,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 5,
-      "verification": 6,
+      "implementer": 6,
+      "verification": 7,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
