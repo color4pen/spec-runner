@@ -21,7 +21,7 @@
  * T-18: buildDeps() has been moved to the domain-owned PipelineDepsBuilder interface
  * (src/core/types.ts). This removes the ports→domain import that was required for
  * the PipelineDeps return type. Composition-root types (CommandRunner, factory.ts)
- * use the intersection RuntimeStrategy & PipelineDepsBuilder.
+ * use the unified RuntimeFacade interface defined in this file.
  */
 import type { AgentRunner } from "./agent-runner.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";

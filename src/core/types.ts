@@ -163,7 +163,7 @@ export interface PipelineDeps extends StepContext {
  * runtime-strategy.ts no longer needs to import from types.ts (DSM §3 closure).
  * Concrete runtimes (LocalRuntime, ManagedRuntime) implement this alongside
  * RuntimeStrategy. Composition-root types (CommandRunner, factory.ts) use the
- * intersection RuntimeStrategy & PipelineDepsBuilder.
+ * unified RuntimeFacade interface (see src/core/port/runtime-strategy.ts).
  */
 export interface PipelineDepsBuilder {
   /**
