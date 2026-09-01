@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T05:02:57.742Z",
+  "updatedAt": "2026-09-01T05:41:59.932Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "verification",
-  "status": "awaiting-resume",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
-  "error": {
-    "code": "VERIFICATION_RETRIES_EXHAUSTED",
-    "message": "verification did not pass after 2 iterations",
-    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -177,12 +173,7 @@
       "src/core/runtime/managed.ts"
     ]
   },
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "verification did not pass after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -215,7 +206,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 118,
+    "historyCount": 120,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
