@@ -216,12 +216,13 @@
 `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` を新規作成する:
 
 - [ ] `src/` 配下のすべての `.ts` ファイルを再帰的に読み込むユーティリティを実装する（fs.readdir + readFile）
-- [ ] 以下の各パターンが production ソース（`src/`）に 0 件であることを assert する:
+- [ ] 以下の各パターンが production ソース（`src/` 配下、`__tests__/` ディレクトリは除外）に 0 件であることを assert する:
   - `RuntimeStrategy & PipelineDepsBuilder`
   - `RealRuntimeStrategy`
   - `Pick<RuntimeStrategy`
   - `deriveCommitInspectionCapability`（import および呼び出し）
   - `deriveRevisionContentCapability`（import および呼び出し）
+  - `canDeriveChangedFiles?.`（scope-check / executor / runtime-capability-gate の `?.` 再導入を防ぐ。TypeScript 型システムは外側 `?.` の存在により内側 `?.` を型エラーにしないため ratchet で明示禁止する）
 - [ ] 以下が test ファイル（`src/**/__tests__/` および `tests/`）に 0 件であることを assert する:
   - `as unknown as RuntimeStrategy`
 - [ ] LocalRuntime と ManagedRuntime が `RuntimeFacade` を満たすコンパイル時型アサーションを test ファイルに含める（T-12 で書いたものと重複する場合は参照するか共通化する）

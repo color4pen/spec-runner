@@ -167,7 +167,8 @@ const stepIoImpl: StepIoValidationCapability = {
 3. `src/` 配下に `Pick<RuntimeStrategy` が 0 件
 4. `tests/` および `src/` の `__tests__/` 配下に `as unknown as RuntimeStrategy` が 0 件
 5. `src/` 配下に `deriveCommitInspectionCapability|deriveRevisionContentCapability` の import/call が 0 件
-6. LocalRuntime と ManagedRuntime が `RuntimeFacade` を構造的に満たすこと（コンパイル時型検査として型代入 assertion を記述）
+6. `src/` 配下の production ファイル（`__tests__/` 除外）に `canDeriveChangedFiles?.` が 0 件（TypeScript 型システムは外側 `?.` により内側 `?.` を型エラーにしないため、ratchet で明示的に禁止する必要がある）
+7. LocalRuntime と ManagedRuntime が `RuntimeFacade` を構造的に満たすこと（コンパイル時型検査として型代入 assertion を記述）
 
 **Rationale**: structural refactoring は時間経過で回帰しやすい。ratchet があれば CI が防衛線になる。  
 **Alternatives considered**: ESLint custom rule → 導入コストが高い。ソースを読む vitest テストの方が軽量で実行可能。
