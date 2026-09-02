@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:42:15.565Z",
+  "updatedAt": "2026-09-02T00:50:08.509Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -119,7 +119,9 @@
     "32d73f2ffa53e4a12d668a428bcece8014786af3",
     "0e9824f0d8366952f3b898ed85af6c4b3bda7361",
     "1b8d4ee37e7e7cdeb2f19104bc8684f029779df5",
-    "2a0f6aa2318393046383e4af2175e4c8807a3a3b"
+    "2a0f6aa2318393046383e4af2175e4c8807a3a3b",
+    "99a242ffa843b5e3e0d3605e1ac2b8e4c2ad4b51",
+    "703a7ac1386c2f087f90b3c9f616750f16e83874"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,8 +175,11 @@
       "src/core/port/provider-readiness.ts"
     ],
     "code-fixer": [
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/runtime-facade.ts"
+      "tests/unit/core/step/executor-cli-entry-oid.test.ts",
+      "tests/unit/core/step/verification-phase-outcome-executor.test.ts",
+      "tests/attach/attach-resume-e2e.test.ts",
+      "src/core/command/runner.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts"
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
@@ -212,7 +217,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "8f60427f24d5298e1cf7f4fd5cad86144d0e9b4d",
+      "approvedAtCommit": "99a242ffa843b5e3e0d3605e1ac2b8e4c2ad4b51",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -251,7 +256,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 265,
+    "historyCount": 274,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -261,10 +266,10 @@
       "implementer": 9,
       "verification": 13,
       "code-review": 8,
-      "code-fixer": 6,
-      "cross-boundary-invariants": 4,
+      "code-fixer": 7,
+      "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 5,
+      "custom-reviewers": 6,
       "regression-gate": 5,
       "conformance": 5,
       "adr-gen": 1,
