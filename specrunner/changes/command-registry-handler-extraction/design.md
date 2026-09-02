@@ -118,7 +118,7 @@ export { ARCHIVE_USAGE } from "./archive.js";
 
 2. **ソーステキストの process.exit チェック**: `command-registry.ts` のソースを読み込み、ラインコメント（`//`）とブロックコメント（`/* */`）を正規表現で除去した後、`process.exit` が 0 件であることを確認する
 
-3. **Import graph cycle チェック**: `@typescript-eslint/parser`（既存 devDep）で各 handler モジュールの import 宣言を解析し、`command-registry` への value import が 0 件であることを確認する
+3. **Import graph cycle チェック**: `@typescript-eslint/parser`（既存 devDep）で `src/cli/` 配下の全 `.ts` ファイルを動的に列挙（`fs.readdirSync` 等）し、`command-registry.ts` 自身を除外した全ファイルの import 宣言を解析する。`command-registry` を参照する `ImportDeclaration`（type-only でないもの）が 0 件であることを確認する。ハードコードリストに依存しないことで、将来 `src/cli/` に新規ハンドラモジュールが追加されても自動的に検査対象に含まれる。
 
 4. **並行 CLI 契約正本チェック**: `src/cli/` 配下のファイルを列挙し、`COMMANDS` という変数を export するファイルが `command-registry.ts` のみであることを確認する
 

@@ -305,8 +305,10 @@ T-16 完了後に architecture ratchet test を追加し、回帰を機械的に
   - ラインコメント（`// ...`）とブロックコメント（`/* ... */`）を正規表現で除去する
   - 残りのテキストに `process.exit` が含まれないことを `expect` する
 - [ ] **チェック 3: handler → registry value import cycle ゼロ検証**
-  - `@typescript-eslint/parser` を使って handler モジュール（T-03〜T-15 で作成・変更した各 `src/cli/*.ts`）の import 宣言を解析する
+  - `src/cli/` 配下の全 `.ts` ファイルを `fs.readdirSync` 等で動的に列挙し、`command-registry.ts` 自身を除外する（ハードコードリストを使わない）
+  - `@typescript-eslint/parser` を使って列挙した全ファイルの import 宣言を解析する
   - `command-registry` を参照する `ImportDeclaration`（type-only でないもの）がゼロであることを確認する
+  - 動的列挙にすることで、将来 `src/cli/` に新規ハンドラモジュールが追加された場合も自動的に検査対象に含まれる
 - [ ] **チェック 4: 並行 CLI 契約正本ゼロ検証**
   - `src/cli/` 配下の全 `.ts` ファイルを列挙する
   - `export const COMMANDS` または `export const COMMANDS:` を持つファイルが `command-registry.ts` のみであることを確認する（コメント除去後のソーステキストで判定）
