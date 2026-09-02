@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:03:49.801Z",
+  "updatedAt": "2026-09-02T00:13:25.331Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -109,7 +109,9 @@
     "b91416b64ccd9f2de993e3b6cd1a2ce77dcffa00",
     "721366b1f769c761a74f9dda809689fda7205bf3",
     "8b13324949cab1d969495bba2d15dda656a4e876",
-    "40d27beadabdc688ed31adcf5f07e07d3153090b"
+    "40d27beadabdc688ed31adcf5f07e07d3153090b",
+    "8f60427f24d5298e1cf7f4fd5cad86144d0e9b4d",
+    "a90759eb9e6128f87985cd01f8b152f75de332cf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -152,14 +154,16 @@
       "tests/unit/step/unpushable-path-contract.test.ts"
     ],
     "code-fixer": [
-      "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "tests/unit/core/pipeline/resolve-scope.test.ts",
-      "tests/unit/core/runtime/runner-reload-after-setup.test.ts",
-      "src/core/command/runner.ts",
-      "src/core/port/command-runtime.ts",
-      "src/core/port/runtime-strategy.ts"
+      "src/core/port/runtime-strategy.ts",
+      "src/core/types.ts",
+      "src/core/step/step-capability.ts",
+      "src/core/step/noop-capabilities.ts",
+      "src/core/step/step-context-builder.ts",
+      "tests/unit/step/executor-input-validation.test.ts",
+      "tests/unit/step/executor-lifecycle-ordering.test.ts"
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
@@ -195,7 +199,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "bbd7daffe32f3687014a686ba1d966dc4e5de4f0",
+      "approvedAtCommit": "8f60427f24d5298e1cf7f4fd5cad86144d0e9b4d",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -206,7 +210,7 @@
         "src/core/verification/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/runtime-strategy-convergence/design.md:sha256:7869ee4fbc218e0b20d3e0ea666b1cd37292d809a984996a8814b728a13a17bc|specrunner/changes/runtime-strategy-convergence/request.md:sha256:2b73ef4612d79012f47dc1cc72a7e95579ae95ab389cc3353f186dce5dd15c17|specrunner/changes/runtime-strategy-convergence/spec.md:sha256:d076a9b579c9919641f37513600677e8e8619486482bfe6fb3bbf3211649e697|specrunner/changes/runtime-strategy-convergence/tasks.md:sha256:1c23075ae75e61798f757553b45e07c2ffd6dfe82ff5bcbd4556e1191f346aed|specrunner/changes/runtime-strategy-convergence/test-cases.md:sha256:0f2c37a98d97b40ce0fb067003a12177a1c78dfacce7ef1c3533bb124473bce8"
+      "canonHash": "specrunner/changes/runtime-strategy-convergence/design.md:sha256:c09d3f00f5d450e2914178e132c485216bbc6c01ba672cda76a324fbb342fd6f|specrunner/changes/runtime-strategy-convergence/request.md:sha256:2b73ef4612d79012f47dc1cc72a7e95579ae95ab389cc3353f186dce5dd15c17|specrunner/changes/runtime-strategy-convergence/spec.md:sha256:a6d7fab5cb3841559c531a082ccb2c1c5d26597d576b02f2e624cdf9d1d2038a|specrunner/changes/runtime-strategy-convergence/tasks.md:sha256:14d974a9bab5f3b7f4aac00f6702896f18daa9226def2e2b9a80547dca68f2d1|specrunner/changes/runtime-strategy-convergence/test-cases.md:sha256:3286f0cead07bff2d8e7c561d2beac7cced831607ae6b565dd1d76d69461cbbd"
     },
     {
       "name": "scale-tolerance",
@@ -234,7 +238,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 221,
+    "historyCount": 230,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -244,10 +248,10 @@
       "implementer": 8,
       "verification": 11,
       "code-review": 7,
-      "code-fixer": 4,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 4,
+      "custom-reviewers": 5,
       "regression-gate": 3,
       "conformance": 4,
       "adr-gen": 1,
