@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T11:43:20.475Z",
+  "updatedAt": "2026-09-02T11:53:57.548Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -159,7 +159,9 @@
     "bbee35c55ab64af063cbd2306e9d074edb979386",
     "0b93a2f1fda2cd8d7b78124b0d3db87ef4926153",
     "1243a89c86bdee906873065edc449859bf42d9c4",
-    "51a574db07a84b65d6883059d105cb2af9c1ac1c"
+    "51a574db07a84b65d6883059d105cb2af9c1ac1c",
+    "5e3b98f8c76f6c9f889972da19e080d0f0ed4569",
+    "d3e9c1e39dfe758886d2eed9bf93f8c0b72386da"
   ],
   "touchedFiles": {
     "request-review": [
@@ -251,19 +253,17 @@
     "conformance": [
       "src/core/port/command-runtime.ts",
       "src/core/command/runner.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime-facade.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/command/resume.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/step/executor.ts",
-      "src/core/runtime-facade.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/runtime/factory.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/step/scope-check.ts",
-      "tests/pipeline-integration.test.ts",
-      "src/core/step/noop-capabilities.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/step/executor.ts",
       "tests/unit/step/executor-activation.test.ts",
-      "tests/unit/step/executor-lifecycle-ordering.test.ts"
+      "src/cli/bootstrap.ts"
     ]
   },
   "resumePoint": null,
@@ -301,7 +301,7 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/1107",
     "number": 1107,
-    "createdAt": "2026-09-02T08:44:15.846Z"
+    "createdAt": "2026-09-02T11:53:56.571Z"
   },
   "operatorAdjudications": [
     {
@@ -321,7 +321,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 466,
+    "historyCount": 480,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -329,16 +329,16 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 14,
-      "verification": 22,
+      "verification": 23,
       "code-review": 12,
       "code-fixer": 14,
       "cross-boundary-invariants": 8,
       "scale-tolerance": 1,
       "custom-reviewers": 10,
       "regression-gate": 12,
-      "conformance": 9,
-      "adr-gen": 3,
-      "pr-create": 3
+      "conformance": 10,
+      "adr-gen": 4,
+      "pr-create": 4
     }
   }
 }
