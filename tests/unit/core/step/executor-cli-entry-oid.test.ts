@@ -23,7 +23,6 @@ import type { CliStep } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
-import type { ChangedFilesCapability } from "../../../../src/core/port/runtime-strategy.js";
 import type { StepArtifactLifecycleCapability } from "../../../../src/core/step/step-capability.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
@@ -97,12 +96,6 @@ function makeStepArtifact(
     digestArtifacts: async (refs) => refs.map((r) => ({ path: r.path, hash: null })),
   };
 }
-
-/** Minimal ChangedFilesCapability for tests that do not exercise file derivation. */
-const noopChangedFiles: ChangedFilesCapability = {
-  canDeriveChangedFiles: () => false,
-  listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
-};
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
