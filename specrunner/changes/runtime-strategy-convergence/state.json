@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T08:20:28.419Z",
+  "updatedAt": "2026-09-02T08:25:26.896Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -147,7 +147,8 @@
     "57ffcf063a5bb4b8caa0a650e3b74102a636e093",
     "ab4f4aedc141257bcffdefac66a3a0715137713e",
     "8c9c467f27f2a21dffa546ffb97639815331e694",
-    "5b77ddc7315f07791cad4e11bb14f6d5046eb76f"
+    "5b77ddc7315f07791cad4e11bb14f6d5046eb76f",
+    "ab67c8b9a7fa4578912cdef023c8ece4e8923d14"
   ],
   "touchedFiles": {
     "request-review": [
@@ -206,19 +207,20 @@
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
-      "src/core/port/runtime-strategy.ts",
       "src/core/command/runner.ts",
       "src/core/runtime-facade.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/command/resume.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/runtime/factory.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/managed.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "tests/pipeline-sole-committer-e2e.test.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/command/resume.ts",
+      "src/core/runtime/factory.ts",
       "src/cli/bootstrap.ts",
-      "tests/pipeline-sole-committer-e2e.test.ts"
+      "tests/unit/step/executor-activation.test.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/scope-check.ts"
     ],
     "code-fixer": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts"
@@ -297,7 +299,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 404,
+    "historyCount": 408,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -306,7 +308,7 @@
       "spec-fixer": 2,
       "implementer": 13,
       "verification": 20,
-      "code-review": 10,
+      "code-review": 11,
       "code-fixer": 12,
       "cross-boundary-invariants": 6,
       "scale-tolerance": 1,

@@ -379,7 +379,7 @@ describe("TC-037: whole-port test fakes eliminated", () => {
     const allTestFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
     const ALLOWED_FILES = new Set([
       path.join(REPO_ROOT, "src/core/port/__tests__/runtime-strategy-ratchet.test.ts"),
-      path.join(REPO_ROOT, "tests/core/command-lifecycle-contract.test.ts"),
+      path.join(REPO_ROOT, "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"),
     ]);
     const candidateFiles = allTestFiles.filter((f) => !ALLOWED_FILES.has(f));
     // Match: `import ... { RuntimeStrategy ...` (named import, possibly with aliases or other names)
