@@ -415,3 +415,117 @@ describe("TC-037: whole-port test fakes eliminated", () => {
     ).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-039: Command 層テストが広い facade 依存と as-never 注入を再導入しない
+//
+// TC-039a: tests/**  および src/**/__tests__/** (command-lifecycle-contract.test.ts を除く) で
+//          RuntimeFacade を named import する import 文が 0 件
+//
+// TC-039b: tests/**  および src/**/__tests__/** で、
+//          new ResumeCommand( / new PipelineRunCommand( /
+//          テスト内で定義された CommandRunner subclass の new X(
+//          の第 1 引数 (runtime) に対する as never キャストが 0 件。
+//          複数行にまたがる呼び出しも対象。
+// ---------------------------------------------------------------------------
+
+/**
+ * Scan content for constructor calls matching any of the given names,
+ * and count how many have `as never` in their first argument.
+ *
+ * Handles multiline calls. Uses paren-depth tracking to find the first arg boundary.
+ */
+function countConstructorFirstArgAsNever(content: string, constructorNames: string[]): number {
+  if (constructorNames.length === 0) return 0;
+  const namePattern = constructorNames.join("|");
+  const openRe = new RegExp(`new\\s+(${namePattern})\\s*\\(`, "g");
+  let count = 0;
+  let match;
+  while ((match = openRe.exec(content)) !== null) {
+    const startIdx = match.index + match[0].length;
+    // Scan forward to find the first arg boundary:
+    // stop at the first `,` or `)` at paren-depth 0.
+    let depth = 0;
+    let i = startIdx;
+    while (i < content.length) {
+      const ch = content[i];
+      if (ch === "(") {
+        depth++;
+      } else if (ch === ")") {
+        if (depth === 0) break; // closing the constructor call (empty args)
+        depth--;
+      } else if (ch === "," && depth === 0) {
+        break; // end of first argument
+      }
+      i++;
+    }
+    const firstArg = content.slice(startIdx, i).trim();
+    if (/\bas never\b/.test(firstArg)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+describe("TC-039: Command 層テストの facade 依存と runtime 引数 as never を検知する", () => {
+  // TC-039a: RuntimeFacade named imports absent from all test files
+  // Exception: command-lifecycle-contract.test.ts (which verifies structural compliance)
+  it("TC-039a: RuntimeFacade named imports absent from test files (except command-lifecycle-contract)", async () => {
+    const allTestFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
+    const ALLOWED_FILES = new Set([
+      SELF_FILE,
+      path.join(REPO_ROOT, "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"),
+    ]);
+    const candidateFiles = allTestFiles.filter((f) => !ALLOWED_FILES.has(f));
+    // Match: `import ... { ... RuntimeFacade ... }` (named import)
+    const hits = await findOccurrencesRegex(
+      candidateFiles,
+      /import[^;]*\{\s*[^}]*\bRuntimeFacade\b/,
+    );
+    expect(
+      hits,
+      `Found RuntimeFacade named imports in test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  // TC-039b: No `as never` in the first (runtime) argument of:
+  //   - new ResumeCommand(
+  //   - new PipelineRunCommand(
+  //   - new <X>( where class X extends CommandRunner is defined in the same test file
+  // Handles multiline constructor calls via paren-depth scanning.
+  it("TC-039b: runtime argument as never absent from ResumeCommand/PipelineRunCommand/subclass constructors in test files", async () => {
+    const allTestFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
+    const EXCLUDED = new Set([SELF_FILE]);
+    const candidateFiles = allTestFiles.filter((f) => !EXCLUDED.has(f));
+
+    const violations: { file: string; count: number }[] = [];
+
+    for (const file of candidateFiles) {
+      let content: string;
+      try {
+        content = await fs.readFile(file, "utf-8");
+      } catch {
+        continue;
+      }
+
+      // Find CommandRunner subclass names defined in this test file
+      const subclassNames: string[] = [];
+      const subclassRe = /class\s+(\w+)\s+extends\s+CommandRunner\b/g;
+      let sm;
+      while ((sm = subclassRe.exec(content)) !== null) {
+        if (sm[1]) subclassNames.push(sm[1]);
+      }
+
+      const constructorNames = ["ResumeCommand", "PipelineRunCommand", ...subclassNames];
+      const count = countConstructorFirstArgAsNever(content, constructorNames);
+      if (count > 0) {
+        violations.push({ file, count });
+      }
+    }
+
+    expect(
+      violations,
+      `Found "as never" in runtime (1st) argument of constructor calls in test files:\n${violations.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+});

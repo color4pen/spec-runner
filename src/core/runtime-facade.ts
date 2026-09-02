@@ -1,16 +1,20 @@
 /**
- * RuntimeFacade: composition-root aggregate type for CommandRunner subclasses.
+ * RuntimeFacade: composition-root aggregate type for the runtime factory and bootstrap.
  *
  * Defined in the domain layer (src/core/) rather than:
  * - src/core/port/command-runtime.ts (ports): would require a ports→domain import
  *   edge for PipelineDepsBuilder, which is forbidden by the §3 DSM matrix.
- * - src/core/runtime/factory.ts (composition-root): PipelineRunCommand and
- *   ResumeCommand (domain) cannot import from composition-root.
+ * - src/core/runtime/factory.ts (composition-root): this file is consumed by
+ *   composition-root and must not live there to avoid circular dependencies.
  *
  * This file is importable by:
- * - domain layer: src/core/command/pipeline-run.ts, src/core/command/resume.ts
  * - composition-root: src/core/runtime/factory.ts, src/cli/bootstrap.ts
  *   (composition-root may import from domain per §3 whitelist)
+ * - test: src/core/runtime/__tests__/command-lifecycle-contract.test.ts
+ *
+ * PipelineRunCommand and ResumeCommand use their own narrower types:
+ * - PipelineRunRuntime (exported from pipeline-run.ts)
+ * - CommandRunnerRuntime (exported from runner.ts)
  *
  * LocalRuntime and ManagedRuntime satisfy RuntimeFacade structurally.
  * Contract compliance is verified at compile time in command-lifecycle-contract.test.ts.

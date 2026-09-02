@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T08:44:16.809Z",
+  "updatedAt": "2026-09-02T10:57:25.906Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -308,10 +308,15 @@
       "text": "PR #1107 のオーナー再レビュー (https://github.com/color4pen/spec-runner/pull/1107#issuecomment-5505630274) で blocking 2 件が指摘された。canon (design.md D2/D6/D7, spec.md, tasks.md T-06/T-15/T-16, test-cases.md TC-020/TC-021/TC-036/TC-037) は operator が commit 728cd1ee で更新済み。canon に従って以下を修正すること。canon ファイル (request/spec/design/tasks/test-cases.md) は編集しないこと。\n\n1. [blocking] ResumeCommand が未使用 capability を含む RuntimeFacade に依存している。\n- src/core/command/runner.ts に `export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を定義し、CommandRunner のコンストラクタ引数型にする。\n- src/core/command/resume.ts のコンストラクタ引数型を RuntimeFacade から CommandRunnerRuntime に変更し、RuntimeFacade の import を削除する。\n- src/core/command/pipeline-run.ts に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability` を定義し、コンストラクタ引数と pipelineRuntime フィールドの型を RuntimeFacade から PipelineRunRuntime に変更する。PipelineRunCommand は ChangedFilesCapability を直接呼ばないため含めない (オーナー案と異なる点。canon design D2 に明記済み)。\n- RuntimeFacade は composition root (src/core/runtime/factory.ts, src/cli/bootstrap.ts) と contract/ratchet test のみが使う状態にする。tests/unit/core/command/ 配下の test fake も新しい narrow 型 (CommandRunnerRuntime / PipelineRunRuntime) に合わせて typed builder/helper で構築する。\n\n2. [blocking] whole-port test fake が残り、ratchet で検知できない。\n- tests/unit/step/executor-activation.test.ts (any で受けた同一 object を as never で stepArtifact / stepIo / changedFiles に注入)、executor-resume-context.test.ts、executor-verdict.test.ts、executor-no-op.test.ts、executor-drift-detection.test.ts (RuntimeStrategy を import した全メソッド fake を as never で注入) を、slot ごとに StepArtifactLifecycleCapability / StepIoValidationCapability / ChangedFilesCapability 型の typed object に分離する。テストが使わない command lifecycle / commit inspection / revision content 系メソッドは fake に持たせない。重複は tests/unit/step/ 配下の typed builder/helper に集約してよい (production src には置かない)。\n- tests/pipeline-integration.test.ts の `import type { RuntimeStrategy }` (ReturnType<RuntimeStrategy[\"registerCleanup\"]> の型参照のみ) を capability interface 由来の型に置き換え、whole-port import を削除する。\n- src/core/port/__tests__/runtime-strategy-ratchet.test.ts に TC-037 を追加する: (a) tests/** および src/**/__tests__/** (ratchet test 自身と command-lifecycle-contract.test.ts を除く) で RuntimeStrategy を named import する import 文が 0 件、(b) tests/unit/step/ 配下で capability slot (stepArtifact, stepIo, changedFiles, roundGitEffects, terminalState, commitInspection, revisionContent) への `<identifier> as never` 注入が 0 件。(b) は tests/unit/step/ の他のファイル (executor-lifecycle-ordering, executor-output-gate, unpushable-path-escalation, severity-fixability-split, executor-commit-mutex, executor-skip-when 等) にも該当箇所があるため、それらも typed object に置き換えて ratchet を green にする。\n\n3. [metrics] PR 本文の Capability Consumer Table 更新は operator 側で対応済み・完走後に再計測するため、この resume の対象外。\n\n完了条件: bun run typecheck / test / lint が green、TC-020 / TC-021 / TC-036 / TC-037 を満たす、canon ファイルを変更しない。",
       "step": "implementer",
       "recordedAt": "2026-09-02T07:28:55.436Z"
+    },
+    {
+      "text": "PR #1107 のオーナー再々レビュー（2026-09-02 10:36 UTC）対応。canon は operator-apply commit 1028e98a で更新済み（tasks.md T-17 / T-18、design.md D6 段落追加・D7 item 10-11・D2 JSDoc 方針、spec.md Scenario 3 件、test-cases.md TC-038 / TC-039）。T-01〜T-16 は完了済みなので再実装しないこと。\n\n実装対象:\n\n1. T-17: Command 層テストの fake を consumer-owned contract に揃える。\n   - tests/unit/core/command/runner.test.ts: buildMockRuntime() の戻り値型と TestCommand コンストラクタ引数型を RuntimeFacade から src/core/command/runner.ts の export `CommandRunnerRuntime` に変更し、fake から assertNoDuplicateLiveJob / bootstrapJob / canDeriveChangedFiles / listChangedFiles を削除する。\n   - tests/unit/core/command/resume.test.ts: ローカルの `type CommandRunnerRuntime = ...` 再定義を削除して production export を import し、buildResumeTestRuntime() を CommandRunnerRuntime 型にして bootstrap / changed-files メソッドを削除する。\n   - src/core/command/__tests__/resume-wontfix.test.ts: buildMockRuntime() を CommandRunnerRuntime 型で構築し、commit inspection / revision content / changed-files / bootstrap 系メソッドを削除、`new ResumeCommand(buildMockRuntime() as never, ...)` の as never を除去する。\n   - src/core/command/__tests__/resume-operator-guidance.test.ts / reopen-command.test.ts など、ResumeCommand の第 1 引数に `{} as never` を渡している箇所すべてを CommandRunnerRuntime 型の最小 fake に置き換える（共通 helper に集約してよいが production src には置かない）。`grep -rn 'as never' src/core/command/__tests__ tests/unit/core/command` で runtime 引数に該当する箇所を洗い出すこと。\n   - tests/unit/core/command/pipeline-run*.test.ts（6 ファイル）の RuntimeFacade import を src/core/command/pipeline-run.ts の export `PipelineRunRuntime` に置き換える。\n   - src/core/runtime-facade.ts の JSDoc を現在の依存関係に合わせて更新する（import 元は src/core/runtime/factory.ts, src/cli/bootstrap.ts, src/core/runtime/__tests__/command-lifecycle-contract.test.ts のみ。PipelineRunCommand / ResumeCommand は import しない）。ファイルは移動しない。\n   - 結果として、tests/** と src/**/__tests__/** で RuntimeFacade を import するファイルは command-lifecycle-contract.test.ts のみになること。\n\n2. T-18: src/core/port/__tests__/runtime-strategy-ratchet.test.ts に TC-039 を追加する。\n   - (a) tests/** および src/**/__tests__/**（command-lifecycle-contract.test.ts を除く）で RuntimeFacade を named import する import 文が 0 件。\n   - (b) tests/** および src/**/__tests__/** で、`new ResumeCommand(` / `new PipelineRunCommand(` およびテスト内で `class X extends CommandRunner` として定義された subclass の `new X(` の第 1 引数（runtime）に対する `as never` キャストが 0 件。呼び出しは複数行にまたがるので、ファイル全体を対象に改行を許容する正規表現（例: /new (ResumeCommand|PipelineRunCommand|<subclass names>)\\(\\s*[^,()]*\\bas never\\b/）で検出すること。既存の TC-037a/b の実装スタイルに合わせる。\n\n制約: production の振る舞いは変えない。RuntimeFacade / CommandRunnerRuntime / PipelineRunRuntime の定義や配置は変えない。specrunner/changes/runtime-strategy-convergence/ 配下の canon は編集しない。完了後に bun run typecheck / bun run lint / bun run test が green であること。",
+      "step": "implementer",
+      "recordedAt": "2026-09-02T10:57:25.792Z"
     }
   ],
   "_journal": {
-    "historyCount": 436,
+    "historyCount": 439,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

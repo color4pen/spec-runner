@@ -123,6 +123,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
+import type { CommandRunnerRuntime } from "../runner.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
@@ -195,6 +196,22 @@ function makeRunningState(overrides: Partial<JobState> = {}): JobState {
 }
 
 /** Access the protected prepare() via type cast. */
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
@@ -262,7 +279,7 @@ describe("TC-004: flag-less resume halts with guidance when protected canon is d
   it("TC-004: prepare() throws when protected canon is dirty and --apply-canon is not given", async () => {
     // GIVEN: ResumeCommand WITHOUT --apply-canon (applyCanon not set = false)
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -274,7 +291,7 @@ describe("TC-004: flag-less resume halts with guidance when protected canon is d
 
   it("TC-004: throws with exitCode 1 (PrepareError — user-correctable)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -294,7 +311,7 @@ describe("TC-004: flag-less resume halts with guidance when protected canon is d
 
   it("TC-004: stderr contains a reference to --apply-canon as the remediation", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -317,7 +334,7 @@ describe("TC-004: flag-less resume halts with guidance when protected canon is d
 
   it("TC-004: error message or stderr contains the dirty canon path name", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -341,7 +358,7 @@ describe("TC-004: flag-less resume halts with guidance when protected canon is d
     // The throw from prepare() prevents execute() from running the pipeline.
     // Verification: detect that prepare() threw (pipeline would not start if it throws).
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -369,7 +386,7 @@ describe("TC-005 (should): flag-less resume succeeds when worktree is clean (reg
 
   it("TC-005: prepare() resolves without --apply-canon when no canon paths are dirty", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -383,7 +400,7 @@ describe("TC-005 (should): flag-less resume succeeds when worktree is clean (reg
 
   it("TC-005: commitOperatorCanon is NOT called when worktree is clean", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -419,7 +436,7 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
     //        and no liveness sidecar exists at the mock path)
     // GIVEN: --apply-canon flag is specified
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       {
@@ -436,7 +453,7 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
   it("TC-016: warning is written to stderr when --apply-canon is given with no worktree", async () => {
     // GIVEN: --no-worktree mode + --apply-canon
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       {
@@ -461,7 +478,7 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
 
   it("TC-016: detectCanonDirtyPaths is NOT called when resolvedWorktreePath is null (no-worktree mode)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       {
@@ -527,7 +544,7 @@ describe("TC-019: exit-128 carve-out — prepare() treats non-git-dir as clean",
     mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git exited with exit 128"));
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no applyCanon
@@ -542,7 +559,7 @@ describe("TC-019: exit-128 carve-out — prepare() treats non-git-dir as clean",
     mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git status failed with exit 1"));
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no applyCanon
@@ -557,7 +574,7 @@ describe("TC-019: exit-128 carve-out — prepare() treats non-git-dir as clean",
     mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git exited with exit 128"));
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true },
@@ -597,7 +614,7 @@ describe("TC-018: destruction confirmation — fail-closed guard is load-bearing
     setupDirtyCanonScenario();
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no applyCanon

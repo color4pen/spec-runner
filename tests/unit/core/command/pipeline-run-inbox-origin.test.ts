@@ -13,7 +13,7 @@ import * as os from "node:os";
 import { PipelineRunCommand } from "../../../../src/core/command/pipeline-run.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
-import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
+import type { PipelineRunRuntime } from "../../../../src/core/command/pipeline-run.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -65,7 +65,7 @@ function makeFakePreflightResult(): PreflightResult {
   };
 }
 
-function makeFakeRuntime(): RuntimeFacade {
+function makeFakeRuntime(): PipelineRunRuntime {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature", slug: "test-slug" },
     repository: { owner: "testowner", name: "testrepo" },

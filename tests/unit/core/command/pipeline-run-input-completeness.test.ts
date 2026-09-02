@@ -22,7 +22,7 @@ import {
 } from "../../../../src/core/pipeline/descriptor-input-completeness.js";
 import type { PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
 import type { CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
-import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
+import type { PipelineRunRuntime } from "../../../../src/core/command/pipeline-run.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -145,13 +145,13 @@ afterEach(async () => {
 // Runtime + command helpers
 // ---------------------------------------------------------------------------
 
-function makeFakeRuntime(): RuntimeFacade {
+function makeFakeRuntime(): PipelineRunRuntime {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
   });
 
-  const runtime: RuntimeFacade = {
+  const runtime: PipelineRunRuntime = {
     // ProviderReadinessCapability
     assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
     // JobBootstrapCapability
@@ -202,7 +202,7 @@ class TestablePipelineRunCommand extends PipelineRunCommand {
 
 function makeCommand(
   preflightResult: PreflightResult,
-  runtime: RuntimeFacade,
+  runtime: PipelineRunRuntime,
 ): TestablePipelineRunCommand {
   return new TestablePipelineRunCommand(
     runtime,

@@ -16,7 +16,7 @@ import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
-import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
+import type { CommandRunnerRuntime } from "../../../../src/core/command/runner.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
@@ -91,7 +91,7 @@ function buildMockRuntime(opts: {
   setupThrow?: Error;
   /** When set, the mock buildDeps will include a real storeFactory pointing to this dir. */
   storeRootDir?: string;
-} = {}): RuntimeFacade {
+} = {}): CommandRunnerRuntime {
   const _finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
   return {
@@ -118,25 +118,19 @@ function buildMockRuntime(opts: {
         ? makeStoreFactory(opts.storeRootDir)
         : undefined,
     } as unknown as PipelineDeps),
-    // JobBootstrapCapability
-    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
-    bootstrapJob: vi.fn().mockResolvedValue(buildJobState()),
     // JobStatePersistenceCapability
     persistJobState: vi.fn().mockResolvedValue(undefined),
     // Preserve jobId so storeFactory lookups match the correct disk file.
     reloadJobState: vi.fn().mockImplementation(async (jobId: string) => buildJobState({ jobId })),
     // ProviderReadinessCapability
     assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
-    // ChangedFilesCapability
-    canDeriveChangedFiles: () => false,
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 
 // Concrete subclass for testing
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeFacade,
+    runtime: CommandRunnerRuntime,
     private readonly prepareResult: PrepareResult,
     private readonly prepareShouldThrow?: Error,
   ) {

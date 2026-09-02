@@ -18,19 +18,8 @@ import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
 import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
-import type {
-  ProviderReadinessCapability,
-  WorkspaceLifecycleCapability,
-  JobStatePersistenceCapability,
-} from "../../../../src/core/port/command-runtime.js";
-import type { RuntimeFacade } from "../../../../src/core/runtime-facade.js";
-
-/** Narrow runtime type required by CommandRunner. */
-type CommandRunnerRuntime = ProviderReadinessCapability
-  & WorkspaceLifecycleCapability
-  & JobStatePersistenceCapability
-  & PipelineDepsBuilder;
+import type { PipelineDeps } from "../../../../src/core/types.js";
+import type { CommandRunnerRuntime } from "../../../../src/core/command/runner.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { closeVerboseLog, setLogLevel } from "../../../../src/logger/stdout.js";
@@ -288,16 +277,13 @@ class TestableResumeCommand extends ResumeCommand {
 }
 
 /**
- * Build a minimal RuntimeFacade mock for TC-011.
+ * Build a minimal CommandRunnerRuntime mock for TC-011.
  * (ResumeCommand.prepare() does not call setupWorkspace — that happens in execute().)
  */
-function buildResumeTestRuntime(): RuntimeFacade {
+function buildResumeTestRuntime(): CommandRunnerRuntime {
   return {
     // ProviderReadinessCapability
     assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
-    // JobBootstrapCapability
-    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
-    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
     // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/worktree" } as WorkspaceContext),
     registerCleanup: vi.fn().mockReturnValue({} as CleanupHandle),
@@ -307,9 +293,6 @@ function buildResumeTestRuntime(): RuntimeFacade {
     reloadJobState: vi.fn().mockResolvedValue(undefined),
     // PipelineDepsBuilder
     buildDeps: vi.fn().mockReturnValue({}),
-    // ChangedFilesCapability
-    canDeriveChangedFiles: () => false,
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 
