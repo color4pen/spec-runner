@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:16:53.315Z",
+  "updatedAt": "2026-09-02T00:18:01.013Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -112,7 +112,8 @@
     "40d27beadabdc688ed31adcf5f07e07d3153090b",
     "8f60427f24d5298e1cf7f4fd5cad86144d0e9b4d",
     "a90759eb9e6128f87985cd01f8b152f75de332cf",
-    "88ee5a7d694675001a2d672ca7139ed7242f60bd"
+    "88ee5a7d694675001a2d672ca7139ed7242f60bd",
+    "7ec7376cd26a9bbaca56cd165031b7c911337801"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,16 +156,8 @@
       "tests/unit/step/unpushable-path-contract.test.ts"
     ],
     "code-fixer": [
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/types.ts",
-      "src/core/step/step-capability.ts",
-      "src/core/step/noop-capabilities.ts",
-      "src/core/step/step-context-builder.ts",
-      "tests/unit/step/executor-input-validation.test.ts",
-      "tests/unit/step/executor-lifecycle-ordering.test.ts"
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/runtime-facade.ts"
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
@@ -240,7 +233,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 234,
+    "historyCount": 238,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -250,7 +243,7 @@
       "implementer": 8,
       "verification": 11,
       "code-review": 7,
-      "code-fixer": 5,
+      "code-fixer": 6,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 5,
