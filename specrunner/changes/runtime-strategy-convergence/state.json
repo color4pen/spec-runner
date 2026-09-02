@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T08:25:26.896Z",
+  "updatedAt": "2026-09-02T08:27:49.165Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -148,7 +148,9 @@
     "ab4f4aedc141257bcffdefac66a3a0715137713e",
     "8c9c467f27f2a21dffa546ffb97639815331e694",
     "5b77ddc7315f07791cad4e11bb14f6d5046eb76f",
-    "ab67c8b9a7fa4578912cdef023c8ece4e8923d14"
+    "ab67c8b9a7fa4578912cdef023c8ece4e8923d14",
+    "999285b99a0ac26d42193dc7665b176ca71073d6",
+    "c1b92354fd2cd30ddfbf4257c4659bd04d65b41e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -255,7 +257,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "67dcfb8544baded7eda3829a7c4cb1e2ab0ff240",
+      "approvedAtCommit": "999285b99a0ac26d42193dc7665b176ca71073d6",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -266,7 +268,7 @@
         "src/core/verification/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/runtime-strategy-convergence/design.md:sha256:c09d3f00f5d450e2914178e132c485216bbc6c01ba672cda76a324fbb342fd6f|specrunner/changes/runtime-strategy-convergence/request.md:sha256:2b73ef4612d79012f47dc1cc72a7e95579ae95ab389cc3353f186dce5dd15c17|specrunner/changes/runtime-strategy-convergence/spec.md:sha256:a6d7fab5cb3841559c531a082ccb2c1c5d26597d576b02f2e624cdf9d1d2038a|specrunner/changes/runtime-strategy-convergence/tasks.md:sha256:14d974a9bab5f3b7f4aac00f6702896f18daa9226def2e2b9a80547dca68f2d1|specrunner/changes/runtime-strategy-convergence/test-cases.md:sha256:27e151bfb6cb86952bc56646164281e5e82a69973c94e23aabcf35ec335d229a"
+      "canonHash": "specrunner/changes/runtime-strategy-convergence/design.md:sha256:ea829aea53dd8dec91da25f51e2723c45242e011d61fedc98e5240731b88b84b|specrunner/changes/runtime-strategy-convergence/request.md:sha256:2b73ef4612d79012f47dc1cc72a7e95579ae95ab389cc3353f186dce5dd15c17|specrunner/changes/runtime-strategy-convergence/spec.md:sha256:e6df80d8e997e590bd57b2bc7a049a014304abac43b88fd2dff07847005b23e2|specrunner/changes/runtime-strategy-convergence/tasks.md:sha256:257c07f643cbb9fd90ff649b4b6a2d23e6130594724da7850ba163625fc3fb43|specrunner/changes/runtime-strategy-convergence/test-cases.md:sha256:8fd98c4a25602da8328cbf76efe22a378368fc9098ddeac5d794833e8c9035af"
     },
     {
       "name": "scale-tolerance",
@@ -299,7 +301,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 408,
+    "historyCount": 417,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -309,10 +311,10 @@
       "implementer": 13,
       "verification": 20,
       "code-review": 11,
-      "code-fixer": 12,
-      "cross-boundary-invariants": 6,
+      "code-fixer": 13,
+      "cross-boundary-invariants": 7,
       "scale-tolerance": 1,
-      "custom-reviewers": 8,
+      "custom-reviewers": 9,
       "regression-gate": 10,
       "conformance": 8,
       "adr-gen": 2,
