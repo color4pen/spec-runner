@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T01:31:14.378Z",
+  "updatedAt": "2026-09-02T04:43:27.106Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
-  "error": {
-    "code": "CONFORMANCE_RETRIES_EXHAUSTED",
-    "message": "conformance did not approve after 2 iterations",
-    "hint": "Review conformance-result-006.md and fix the implementation manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -220,12 +216,7 @@
       "src/core/step/executor.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-exhausted"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -270,7 +261,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 335,
+    "historyCount": 338,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
