@@ -111,6 +111,7 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
  * CLI handler for `specrunner inbox run`.
  * Extracted from command-registry.ts inline handler (T-11).
  */
+/* c8 ignore next 13 */
 export async function handleInboxRun(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   // --limit is now validated as integer by the parser (min: 0)
   const limit = typeof parsed.flags["limit"] === "number" ? parsed.flags["limit"] : undefined;

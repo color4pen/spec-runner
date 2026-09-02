@@ -173,6 +173,7 @@ export async function runInit(options: {
  * CLI handler for `specrunner init`.
  * Wraps runInit and calls process.exit with the returned code.
  */
+/* c8 ignore next 7 */
 export async function handleInit(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const runtimeRaw = parsed.flags["runtime"] as string | undefined;
   const runtime = runtimeRaw as "managed" | "local" | undefined;

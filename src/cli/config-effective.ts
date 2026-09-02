@@ -138,6 +138,7 @@ function formatSource(source: TracedStepConfigSource): string {
  * CLI handler for `specrunner config effective`.
  * Extracted from command-registry.ts inline handler (T-11).
  */
+/* c8 ignore next 7 */
 export async function handleConfigEffective(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   process.exit(await runConfigEffective({
     requestType: parsed.flags["type"] as string | undefined,

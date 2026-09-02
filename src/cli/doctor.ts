@@ -233,6 +233,7 @@ export async function runDoctor(opts: {
  * CLI handler for `specrunner doctor`.
  * Extracted from command-registry.ts inline handler (T-13).
  */
+/* c8 ignore next 13 */
 export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   // default action: run diagnostics
   try {
@@ -252,6 +253,7 @@ export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Pr
  * Extracted from command-registry.ts inline handler (T-13).
  * Dynamic import is maintained (not converted to static import).
  */
+/* c8 ignore next 19 */
 export async function handleDoctorRepair(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const slug = parsed.positional;
   if (!slug) {

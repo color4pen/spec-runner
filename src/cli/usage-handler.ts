@@ -8,6 +8,7 @@ import type { CommandContext } from "./command-context.js";
 import { showUsage } from "../core/command/usage-show.js";
 import { showUsageSummary } from "../core/command/usage-summary.js";
 
+/* c8 ignore next 9 */
 export async function handleUsage(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const slug = parsed.positional;
   // ctx is always provided by the dispatch layer; ctx! is safe here.

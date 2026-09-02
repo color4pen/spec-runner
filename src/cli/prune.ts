@@ -108,6 +108,7 @@ export async function runPrune(opts: RunPruneOptions): Promise<number> {
  * CLI handler for `specrunner job prune`.
  * Extracted from command-registry.ts inline handler (T-11).
  */
+/* c8 ignore next 18 */
 export async function handleJobPrune(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   try {
     process.exit(

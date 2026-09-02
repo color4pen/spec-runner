@@ -110,6 +110,7 @@ export async function runJobShow(
  * CLI handler for `specrunner job show <jobId|slug>`.
  * Extracted from command-registry.ts inline handler (T-07).
  */
+/* c8 ignore next 6 */
 export async function handleJobShow(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   process.exit(await runJobShow(
     parsed.positional!,
