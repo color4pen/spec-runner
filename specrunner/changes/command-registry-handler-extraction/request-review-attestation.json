@@ -1,0 +1,10 @@
+{
+  "requestHash": "sha256:53775415c496db7986736f81fd688c2b177edcd6c48ed8263bf1dbda86d878bc",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts: 1696 lines",
+    "src/cli/command-registry.ts: 29 inline `handler: async` occurrences",
+    "src/cli/command-registry.ts: 67 `process.exit` occurrences"
+  ],
+  "sourceRevision": "483c75f715e2f6429684b5d52d711239559f4cea"
+}
