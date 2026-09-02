@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:18:01.013Z",
+  "updatedAt": "2026-09-02T00:20:45.724Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -113,7 +113,8 @@
     "8f60427f24d5298e1cf7f4fd5cad86144d0e9b4d",
     "a90759eb9e6128f87985cd01f8b152f75de332cf",
     "88ee5a7d694675001a2d672ca7139ed7242f60bd",
-    "7ec7376cd26a9bbaca56cd165031b7c911337801"
+    "7ec7376cd26a9bbaca56cd165031b7c911337801",
+    "be1ba72dedafd254e38fa2302ee1969a1ced4951"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,13 +165,15 @@
       "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
       "src/core/port/provider-readiness.ts",
+      "tests/unit/core/command/runner.test.ts",
       "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
-      "tests/unit/core/command/runner.test.ts",
       "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
-      "tests/unit/core/pipeline/resolve-scope.test.ts",
+      "tests/unit/core/runtime/runner-reload-after-setup.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
+      "tests/unit/core/pipeline/resolve-scope.test.ts",
       "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/unit/step/executor-input-validation.test.ts",
       "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts"
     ],
     "conformance": [
@@ -233,7 +236,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 238,
+    "historyCount": 243,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -247,7 +250,7 @@
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 5,
-      "regression-gate": 4,
+      "regression-gate": 5,
       "conformance": 4,
       "adr-gen": 1,
       "pr-create": 1

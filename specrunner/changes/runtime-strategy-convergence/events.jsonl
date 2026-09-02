@@ -348,3 +348,10 @@
 {"type":"transition","ts":"2026-09-02T00:18:01.010Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-09-02T00:18:01.012Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-09-02T00:18:01.013Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-09-02T00:20:45.713Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"ff65a4f2-1468-4525-af55-79b9965eea22","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/runtime-strategy-convergence/regression-gate-result-005.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":19,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-09-02T00:18:01.050Z","endedAt":"2026-09-02T00:20:44.301Z","commitOid":"be1ba72dedafd254e38fa2302ee1969a1ced4951"}
+{"type":"lineage","step":"regression-gate","ts":"2026-09-02T00:20:44.301Z","outputs":[{"path":"specrunner/changes/runtime-strategy-convergence/regression-gate-result-005.md","hash":"sha256:045cefe5781033f60e7ac84a5ae604a2e3413a11e021df47d2c581130b26d0a6"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-09-02T00:20:45.721Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-09-02T00:20:45.721Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-09-02T00:20:45.723Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-02T00:20:45.724Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
