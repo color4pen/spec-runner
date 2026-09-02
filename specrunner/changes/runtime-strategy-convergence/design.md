@@ -87,12 +87,17 @@ PipelineDepsBuilder
 
 `PipelineRunCommand` はさらに `JobBootstrapCapability` が必要（`bootstrapJob`, `assertNoDuplicateLiveJob` を呼ぶ）。
 
-`ResumeCommand` は `CommandRunner` と同じ（prepare() 内で bootstrap 呼び出しなし）。
+`ResumeCommand` は `CommandRunner` と同じ（prepare() 内で bootstrap 呼び出しなし）。`RuntimeFacade` は受け取らない（未使用の `JobBootstrapCapability` / `ChangedFilesCapability` まで露出するため）。
+
+consumer ごとの契約は Command 層が named composition として所有する:
+
+- `CommandRunnerRuntime`（`src/core/command/runner.ts` で export）= `ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`。`CommandRunner` と `ResumeCommand` のコンストラクタはこれを受け取る。
+- `PipelineRunRuntime`（`src/core/command/pipeline-run.ts` で export）= `CommandRunnerRuntime & JobBootstrapCapability`。`PipelineRunCommand` のコンストラクタはこれを受け取る。`PipelineRunCommand` は `ChangedFilesCapability` を直接呼ばないため含めない。
 
 composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 lifecycle capability + PipelineDepsBuilder + ChangedFilesCapability の intersection とする（定義場所は domain 層の `src/core/runtime-facade.ts`）。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。
 
 **Rationale**: orchestrator が複数 capability を合成して受け取ること自体は許容（要件§2）。各部分は目的が明確で小規模。  
-**Alternatives considered**: `CommandRunnerRuntime` / `PipelineRunRuntime` を個別に alias 定義 → 型の増殖を避けるため RuntimeFacade で統一。
+**Alternatives considered**: consumer 側も `RuntimeFacade` で統一 → `ResumeCommand` が未使用 capability を含む型に依存し、issue の「未使用メソッドまで露出する巨大 port に戻さない」に反する（PR #1107 再レビュー blocking 1）。`RuntimeFacade` は composition root（factory / bootstrap）の戻り値・保持型に限定する。
 
 ### D3: `RuntimeStrategy` の optional メソッドをすべて required にする
 
@@ -158,6 +163,8 @@ const stepIoImpl: StepIoValidationCapability = {
 **Rationale**: テスト fakeは capability interface に対して直接構築すべき（要件§6）。  
 **Alternatives considered**: fake builder helper を共通化 → 現時点では 2 箇所のみのため inline typed object で十分。規模が増えたら共通 builder を導入する（R3 以降）。
 
+同型の whole-port fake は step executor テストにも残る（PR #1107 再レビュー blocking 2）。`tests/unit/step/executor-activation.test.ts`（`any` で受けた同一 object を `as never` で `stepArtifact` / `stepIo` / `changedFiles` に注入）、`executor-resume-context.test.ts`、`executor-verdict.test.ts`、`executor-no-op.test.ts`、`executor-drift-detection.test.ts`（`RuntimeStrategy` を import して全メソッドを実装した fake を `as never` で slot に注入）が対象。これらも slot ごとに `StepArtifactLifecycleCapability` / `StepIoValidationCapability` / `ChangedFilesCapability` 型の typed object へ分離し、テストが使わない command lifecycle / commit inspection / revision content 系メソッドを fake に持たせない。5 ファイルで重複する fake は `tests/unit/step/` 配下の typed builder/helper に集約してよい（production src には置かない）。`tests/pipeline-integration.test.ts` の `RuntimeStrategy` import（`ReturnType<RuntimeStrategy["registerCleanup"]>` の型参照のみ）は capability interface 由来の型に置き換え、whole-port import を残さない。
+
 ### D7: Architecture ratchet test を追加する
 
 `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` に以下を assert するテストを追加する:
@@ -169,6 +176,11 @@ const stepIoImpl: StepIoValidationCapability = {
 5. `src/` 配下に `deriveCommitInspectionCapability|deriveRevisionContentCapability` の import/call が 0 件
 6. `src/` 配下の production ファイル（`__tests__/` 除外）に `canDeriveChangedFiles?.` が 0 件（TypeScript 型システムは外側 `?.` により内側 `?.` を型エラーにしないため、ratchet で明示的に禁止する必要がある）
 7. LocalRuntime と ManagedRuntime が `RuntimeFacade` を構造的に満たすこと（コンパイル時型検査として型代入 assertion を記述）
+
+リテラル `RuntimeStrategy & PipelineDepsBuilder` の検出だけでは、`RuntimeStrategy` 単体 import・`any`・`as never` で構築した実質的な whole-port fake を検知できない（PR #1107 再レビュー blocking 2）。以下を追加する:
+
+8. テストファイル全体（`tests/**` および `src/**/__tests__/**`。ratchet test 自身と `command-lifecycle-contract.test.ts` は除外）で、`RuntimeStrategy` を named import する `import type { ... RuntimeStrategy ... }` / `import { ... RuntimeStrategy ... }` が 0 件
+9. `tests/unit/step/` 配下で、`PipelineDeps` / `StepDeps` の capability slot（`stepArtifact`, `stepIo`, `changedFiles`, `roundGitEffects`, `terminalState`, `commitInspection`, `revisionContent`）への `<identifier> as never` 注入が 0 件
 
 **Rationale**: structural refactoring は時間経過で回帰しやすい。ratchet があれば CI が防衛線になる。  
 **Alternatives considered**: ESLint custom rule → 導入コストが高い。ソースを読む vitest テストの方が軽量で実行可能。

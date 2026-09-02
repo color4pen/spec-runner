@@ -126,6 +126,18 @@ Test fakes injected into `PipelineDeps` capability slots MUST be typed directly 
 **When** `as unknown as RuntimeStrategy` を grep する
 **Then** 一致が 0 件である
 
+#### Scenario: step executor テストが slot ごとの typed object を注入する
+
+**Given** `tests/unit/step/executor-activation.test.ts`、`executor-resume-context.test.ts`、`executor-verdict.test.ts`、`executor-no-op.test.ts`、`executor-drift-detection.test.ts` を検査する
+**When** `stepArtifact` / `stepIo` / `changedFiles` slot への注入方法を確認する
+**Then** 各 slot に `StepArtifactLifecycleCapability` / `StepIoValidationCapability` / `ChangedFilesCapability` 型として構築された typed object が注入されており、`RuntimeStrategy` の import、`any` 型の runtime 引数、slot への `as never` キャストが存在しない
+
+#### Scenario: テストファイルに whole-port RuntimeStrategy import が存在しない
+
+**Given** `tests/` および `src/**/__tests__/` 配下の TypeScript ファイルをすべてスキャンする（ratchet test 自身と `command-lifecycle-contract.test.ts` を除く）
+**When** `RuntimeStrategy` を named import する import 文を検索する
+**Then** 一致が 0 件である
+
 ---
 
 ### Requirement: LocalRuntime と ManagedRuntime は `RuntimeFacade` を構造的に満たす
@@ -148,11 +160,17 @@ Test fakes injected into `PipelineDeps` capability slots MUST be typed directly 
 
 ### Requirement: architecture ratchet が禁止パターンの再導入を防ぐ
 
-An architecture ratchet test SHALL exist at `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` and MUST run in CI. It SHALL assert zero occurrences of all forbidden patterns (whole-port reference, `RealRuntimeStrategy`, Pick-based shims, double casts) so that any regression causes an immediate CI failure.
+An architecture ratchet test SHALL exist at `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` and MUST run in CI. It SHALL assert zero occurrences of all forbidden patterns (whole-port reference, `RealRuntimeStrategy`, Pick-based shims, double casts) so that any regression causes an immediate CI failure. It SHALL also assert zero whole-port `RuntimeStrategy` named imports in test files and zero `as never` injections into capability slots under `tests/unit/step/`, so that a whole-port fake cannot be re-introduced via a bare `RuntimeStrategy` import, `any`, or `as never`.
 
 #### Scenario: ratchet test が禁止パターンの再導入を検出する
 
 **Given** `src/` 配下に `RuntimeStrategy & PipelineDepsBuilder` が再び記述された production ファイルが存在する
+**When** `bun run test` を実行する
+**Then** ratchet test が失敗し、CI が赤になる
+
+#### Scenario: ratchet test が test fake への whole-port 再導入を検出する
+
+**Given** `tests/unit/step/` 配下に `RuntimeStrategy` を import した fake を `stepArtifact: fake as never` で注入するテストファイルが追加される
 **When** `bun run test` を実行する
 **Then** ratchet test が失敗し、CI が赤になる
 

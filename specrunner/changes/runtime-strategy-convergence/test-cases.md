@@ -189,6 +189,30 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-036: step executor テストが slot ごとの typed capability object を注入する
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > Decisions > D6: `as unknown as RuntimeStrategy` を typed capability object で置換する / spec.md > Requirement: テスト fake の double cast が typed capability object で置換される / tasks.md > T-15
+
+**GIVEN** `tests/unit/step/executor-activation.test.ts`、`executor-resume-context.test.ts`、`executor-verdict.test.ts`、`executor-no-op.test.ts`、`executor-drift-detection.test.ts` を検査する
+**WHEN** `stepArtifact` / `stepIo` / `changedFiles` slot への注入方法と import 文を確認する
+**THEN** 各 slot に `StepArtifactLifecycleCapability` / `StepIoValidationCapability` / `ChangedFilesCapability` 型として構築された typed object が注入されており、`RuntimeStrategy` の import、`any` 型の runtime 引数、slot への `as never` キャストが存在せず、fake がテストの使わない command lifecycle / commit inspection / revision content 系メソッドを持たず、テストが正常に実行される
+
+---
+
+### TC-037: ratchet がテスト fake への whole-port 再導入を検知する
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > Decisions > D7: Architecture ratchet test を追加する / spec.md > Requirement: architecture ratchet が禁止パターンの再導入を防ぐ / tasks.md > T-16
+
+**GIVEN** `tests/**` および `src/**/__tests__/**` 配下の TypeScript テストファイルを検査する（ratchet test 自身と `command-lifecycle-contract.test.ts` を除く）
+**WHEN** (a) `RuntimeStrategy` を named import する import 文、(b) `tests/unit/step/` 配下で capability slot（`stepArtifact`, `stepIo`, `changedFiles`, `roundGitEffects`, `terminalState`, `commitInspection`, `revisionContent`）へ `<identifier> as never` で注入する箇所を検索する
+**THEN** (a) (b) ともに 0 件であり、ratchet test がこの 2 条件を assert している
+
+---
+
 ## Group 5: Behavioral Invariants
 
 ### TC-016: ユーザー向け挙動に差分がない
@@ -245,19 +269,19 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `PipelineRunCommand` のコンストラクタシグネチャを TypeScript コンパイラが評価する
 **WHEN** `assertNoDuplicateLiveJob` を欠いたオブジェクトを `runtime` 引数として渡そうとする
-**THEN** TypeScript コンパイルエラーが発生し、`pipeline-run.ts` に `RuntimeStrategy` の import が存在しない
+**THEN** TypeScript コンパイルエラーが発生し、`pipeline-run.ts` に `RuntimeStrategy` の import が存在せず、コンストラクタ引数型が `PipelineRunRuntime`（= `CommandRunnerRuntime & JobBootstrapCapability`）である
 
 ---
 
-### TC-021: ResumeCommand コンストラクタから RuntimeStrategy 依存が除去されている
+### TC-021: ResumeCommand コンストラクタが CommandRunnerRuntime のみを要求する
 
 **Category**: unit
-**Priority**: should
-**Source**: tasks.md > T-06
+**Priority**: must
+**Source**: design.md > Decisions > D2: CommandRunner とサブクラスが受け取る型を intersection に変更する / tasks.md > T-06
 
 **GIVEN** `src/core/command/resume.ts` を検査する
 **WHEN** コンストラクタ引数の型定義と import 文を確認する
-**THEN** `RuntimeStrategy` の import が存在せず、コンストラクタ引数は明示的な capability composition または `RuntimeFacade` 型で定義されている
+**THEN** `RuntimeStrategy` および `RuntimeFacade` の import が存在せず、コンストラクタ引数型が `CommandRunnerRuntime`（= `ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`、`src/core/command/runner.ts` で export）であり、`JobBootstrapCapability` / `ChangedFilesCapability` を含まない
 
 ---
 
@@ -425,11 +449,11 @@ Result section MUST appear at the very end as a YAML code block:
 
 ```yaml
 result: completed
-total: 35
-automated: 34
+total: 37
+automated: 36
 manual: 1
-must: 23
-should: 11
+must: 26
+should: 10
 could: 1
 blocked_reasons: []
 ```
