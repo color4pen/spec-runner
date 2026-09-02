@@ -25,7 +25,7 @@ vi.mock("../../../src/cli/resume.js", async () => {
 
   const runResume = vi.fn().mockResolvedValue(undefined);
 
-  const handleJobResume = vi.fn(async (parsed: any, ctx?: any) => {
+  const handleJobResume = vi.fn(async (parsed: { flags: Record<string, unknown>; positionals: string[]; positional?: string }, ctx?: { repoRoot: string | null; invokerCwd: string }) => {
     // Lazy import at call time ensures same FlagParseError instance as bin/specrunner.ts
     const { FlagParseError } = await import("../../../src/cli/flag-parser.js");
 

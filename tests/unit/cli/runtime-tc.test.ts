@@ -38,7 +38,7 @@ vi.mock("../../../src/cli/managed.js", () => ({
   runManagedReset: mockRunManagedReset,
   handleRuntimeSetup: vi.fn(async () => { process.exit(await mockRunManagedSetup()); }),
   handleRuntimeStatus: vi.fn(async () => { process.exit(await mockRunManagedStatus()); }),
-  handleRuntimeReset: vi.fn(async (parsed: any) => { process.exit(await mockRunManagedReset({ force: !!parsed?.flags?.["force"] })); }),
+  handleRuntimeReset: vi.fn(async (parsed: { flags: Record<string, unknown>; positionals: string[]; positional?: string }) => { process.exit(await mockRunManagedReset({ force: !!parsed?.flags?.["force"] })); }),
 }));
 
 let originalArgv: string[];

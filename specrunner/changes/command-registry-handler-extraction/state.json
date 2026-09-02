@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T13:39:28.752Z",
+  "updatedAt": "2026-09-02T16:06:58.912Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -68,7 +68,9 @@
     "1a6a1ecae9013cf783fe333a8d613bb62093ff04",
     "d033aa156be6c1f34050c42d6fbbba9b59df81c3",
     "4808f641979c728b36b90e1eb02c2f559107061e",
-    "94f828c8594bd945519166cbfd4094e8ca6e6218"
+    "94f828c8594bd945519166cbfd4094e8ca6e6218",
+    "674ed8396e8c32ba01bfb3d5d195e6bc77f3f792",
+    "6e857a6612867c35fd18386e885659b8e24bed8e"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -81,16 +83,75 @@
     "spec-review": [
       "src/cli/command-registry.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/cli/command-registry.ts",
+      "src/cli/init.ts",
+      "src/cli/run.ts",
+      "src/cli/login.ts",
+      "src/cli/credentials.ts",
+      "src/cli/ps.ts",
+      "src/cli/resume.ts",
+      "src/cli/archive.ts",
+      "src/cli/managed.ts",
+      "src/cli/doctor.ts",
+      "src/cli/cancel.ts",
+      "src/cli/reopen.ts",
+      "src/cli/attach.ts",
+      "src/cli/prune.ts",
+      "src/cli/job-show.ts",
+      "src/cli/job-wait.ts",
+      "src/cli/inbox.ts",
+      "src/cli/config-effective.ts",
+      "src/cli/command-context.ts",
+      "src/cli/command-handler.ts",
+      "src/cli/request-handlers.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/guide-handler.ts",
+      "src/cli/usage-handler.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "tests/unit/cli/specrunner-resume-dispatch.test.ts",
+      "bin/specrunner.ts",
+      "tests/unit/cli/version-flag.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/runtime-tc.test.ts",
+      "tests/unit/cli/run-json-flag.test.ts",
+      "tests/unit/cli/doctor-help.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/cli/__tests__/command-registry-adopt-commits.test.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "tests/unit/cli/repo-root-exactly-once.test.ts",
+      "tests/unit/cli/request-new-repo-root.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "tests/dead-code-adapter-cli.test.ts",
+      "tests/dedup-verified-safe.test.ts",
+      "tests/unit/cli/job-stats-repo-root.test.ts",
+      "tests/unit/cli/command-spec-api.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/cli/__tests__/command-registry-apply-canon.test.ts",
+      "src/errors.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }

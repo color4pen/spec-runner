@@ -45,7 +45,7 @@ vi.mock("../../../src/cli/doctor.js", () => ({
   runDoctor: vi.fn().mockResolvedValue(0),
   handleDoctor: vi.fn(),
   buildExecFile: vi.fn(),
-  handleDoctorRepair: vi.fn(async (parsed: any, ctx?: any) => {
+  handleDoctorRepair: vi.fn(async (parsed: ParsedArgs, ctx?: { repoRoot: string | null; invokerCwd: string }) => {
     const slug = parsed.positional;
     if (!slug) {
       process.stderr.write("Error: specrunner doctor repair requires a <slug> argument\n");
