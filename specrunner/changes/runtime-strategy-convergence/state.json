@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:58:10.256Z",
+  "updatedAt": "2026-09-02T01:03:25.675Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -124,7 +124,9 @@
     "703a7ac1386c2f087f90b3c9f616750f16e83874",
     "8188c538965f9eeb679b6faeefb970153dfba8c4",
     "df06e7ee182cdb7e02acc632b72df4959b07a2c4",
-    "a19c1aea3ace3b54dd63419558cf3df8549639db"
+    "a19c1aea3ace3b54dd63419558cf3df8549639db",
+    "12945917e78b68b2538385313af6d464ad2fc90e",
+    "770091d7ad93e7921f2fe3cb6c39a92ffd951145"
   ],
   "touchedFiles": {
     "request-review": [
@@ -197,17 +199,16 @@
       "tests/unit/core/runtime/runner-reload-after-setup.test.ts"
     ],
     "conformance": [
-      "src/core/port/runtime-strategy.ts",
       "src/core/command/runner.ts",
-      "src/core/port/command-runtime.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/command/resume.ts",
-      "src/core/runtime/factory.ts",
       "src/core/runtime-facade.ts",
+      "src/core/port/command-runtime.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/cli/bootstrap.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/step/scope-check.ts",
+      "src/core/step/executor.ts"
     ]
   },
   "resumePoint": null,
@@ -255,7 +256,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 287,
+    "historyCount": 296,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -263,14 +264,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 9,
-      "verification": 13,
+      "verification": 14,
       "code-review": 8,
       "code-fixer": 8,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 6,
       "regression-gate": 7,
-      "conformance": 5,
+      "conformance": 6,
       "adr-gen": 1,
       "pr-create": 1
     }
