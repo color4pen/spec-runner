@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T05:29:06.042Z",
+  "updatedAt": "2026-09-02T05:32:17.516Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -142,7 +142,8 @@
     "1184facd5f3c3a00eb3d557b1bce8cce854f95a0",
     "42dfeeff6680d3859a2d0f6bdd7bb1248d699406",
     "67dcfb8544baded7eda3829a7c4cb1e2ab0ff240",
-    "78b9db8e79f1bf2cf25d95cf8276f92b356dda8e"
+    "78b9db8e79f1bf2cf25d95cf8276f92b356dda8e",
+    "db542408ca7bdbe5c2d1c4a033eb24e9a6ef83fa"
   ],
   "touchedFiles": {
     "request-review": [
@@ -202,15 +203,9 @@
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
-      "src/core/port/provider-readiness.ts",
       "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
-      "tests/unit/core/command/runner.test.ts",
       "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "tests/unit/core/pipeline/resolve-scope.test.ts",
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
       "src/core/command/runner.ts"
     ],
     "conformance": [
@@ -267,7 +262,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 373,
+    "historyCount": 378,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -281,7 +276,7 @@
       "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
       "custom-reviewers": 8,
-      "regression-gate": 9,
+      "regression-gate": 10,
       "conformance": 7,
       "adr-gen": 1,
       "pr-create": 1
