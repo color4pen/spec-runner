@@ -102,9 +102,15 @@ vi.mock("../../core/runtime/local.js", () => ({
   }),
 }));
 
-vi.mock("../archive.js", () => ({
-  runArchive: vi.fn().mockResolvedValue(0),
-}));
+// importOriginal for archive.js: ARCHIVE_USAGE (re-exported via command-registry.ts) must be real.
+// handleJobArchive is the real handler; runArchive is mocked to prevent real archive operations.
+vi.mock("../archive.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../archive.js")>();
+  return {
+    ...actual,
+    runArchive: vi.fn().mockResolvedValue(0),
+  };
+});
 
 vi.mock("../../core/archive/job-context.js", () => ({
   resolveArchivedSlugByJobId: vi.fn().mockResolvedValue(null),

@@ -9,7 +9,9 @@
  */
 import * as nodeFsSync from "node:fs";
 import * as nodeFsPromises from "node:fs/promises";
-import { SpecRunnerError } from "../errors.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
+import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
@@ -100,6 +102,29 @@ export async function runPrune(opts: RunPruneOptions): Promise<number> {
 
   // Combine exit codes: return 1 if either runner failed
   return worktreeResult.exitCode || sidecarResult.exitCode;
+}
+
+/**
+ * CLI handler for `specrunner job prune`.
+ * Extracted from command-registry.ts inline handler (T-11).
+ */
+export async function handleJobPrune(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  try {
+    process.exit(
+      await runPrune({
+        force: !!parsed.flags["force"],
+        repoRoot: ctx!.repoRoot!,
+      }),
+    );
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) {
+      stderrWrite(`Error: ${err.message}`);
+      stderrWrite(`Hint: ${err.hint}`);
+      process.exit(err.exitCode);
+    }
+    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(EXIT_CODE.GENERAL_ERROR);
+  }
 }
 
 /**

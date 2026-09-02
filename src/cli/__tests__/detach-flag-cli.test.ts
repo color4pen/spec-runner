@@ -13,14 +13,25 @@ import type { FlagDef } from "../flag-parser.js";
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock("../run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
-  runRunCore: vi.fn().mockResolvedValue(0),
-}));
+// importOriginal for run.js so the real handleJobStart (registered in COMMANDS) is used.
+// Tests invoke handlers directly to check --detach + --json guard and slug validation.
+vi.mock("../run.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../run.js")>();
+  return {
+    ...actual,
+    runRun: vi.fn().mockResolvedValue(undefined),
+    runRunCore: vi.fn().mockResolvedValue(0),
+  };
+});
 
-vi.mock("../resume.js", () => ({
-  runResume: vi.fn().mockResolvedValue(undefined),
-}));
+// importOriginal for resume.js so the real handleJobResume (registered in COMMANDS) is used.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
+  return {
+    ...actual,
+    runResume: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 vi.mock("../../logger/stdout.js", () => ({
   stderrWrite: vi.fn(),
@@ -40,10 +51,15 @@ vi.mock("../../core/command/detach.js", () => ({
   detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
-// Mock job-wait to prevent real filesystem access when the handler is called
-vi.mock("../job-wait.js", () => ({
-  runJobWait: vi.fn().mockResolvedValue(2),
-}));
+// Use importOriginal for job-wait.js so the real handleJobWait (with its slug-missing guard) is used.
+// Only runJobWait is stubbed to prevent real filesystem access.
+vi.mock("../job-wait.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../job-wait.js")>();
+  return {
+    ...actual,
+    runJobWait: vi.fn().mockResolvedValue(2),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Imports after mocks

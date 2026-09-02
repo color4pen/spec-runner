@@ -359,9 +359,10 @@ describe("TC-021: --issue positive integer parsed as number", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-022: request validate handler skips slug validation when file exists", () => {
-  it("command-registry.ts: validate handler checks fs.existsSync before SLUG_REGEX", async () => {
-    const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
-    const content = await fs.readFile(registryPath, "utf-8");
+  it("request-handlers.ts: validate handler checks fs.existsSync before SLUG_REGEX", async () => {
+    // After handler extraction (T-07): handleRequestValidate lives in request-handlers.ts.
+    const handlersPath = path.join(SRC_DIR, "cli", "request-handlers.ts");
+    const content = await fs.readFile(handlersPath, "utf-8");
     // The handler must do: if (!fs.existsSync(filePath)) { if (!SLUG_REGEX.test(input)) ... }
     // Use negated forms which are unique to the validate handler
     const existsIdx = content.indexOf("!fs.existsSync(filePath)");
@@ -383,19 +384,31 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 }));
 
 const mockRunCancel = vi.hoisted(() => vi.fn());
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: mockRunCancel }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0) }));
+// TC-023 needs handleJobCancel to propagate SpecRunnerError from runCancel to the dispatch catch block.
+// The stub calls mockRunCancel (which has mockRejectedValueOnce set) so the SpecRunnerError propagates.
+vi.mock("../../../src/cli/cancel.js", () => ({
+  runCancel: mockRunCancel,
+  VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/,
+  handleJobCancel: vi.fn().mockImplementation(async () => {
+    // Delegate to mockRunCancel so mockRejectedValueOnce / mockResolvedValueOnce apply.
+    await mockRunCancel({});
+  }),
+}));
+vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "Archive the completed change folder" }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0), handleJobShow: vi.fn() }));
 vi.mock("../../../src/cli/managed.js", () => ({
   runManagedSetup: vi.fn(),
   runManagedStatus: vi.fn(),
   runManagedReset: vi.fn(),
+  handleRuntimeSetup: vi.fn(),
+  handleRuntimeStatus: vi.fn(),
+  handleRuntimeReset: vi.fn(),
 }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn(),

@@ -35,10 +35,100 @@ vi.mock("../../core/command/detach.js", () => ({
   detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
-vi.mock("../run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
-  runRunCore: vi.fn().mockResolvedValue(0),
-}));
+// Synthetic mock for run.js:
+// - runRun and runRunCore are vi.fn() so tests can assert on calls
+// - handleJobStart is a lightweight stub that mirrors the real guard checks and routing logic
+//   from handleJobStart in run.ts, but uses the mocked runRunCore (not the internal binding).
+// Using importOriginal is NOT viable: the real handleJobStart closes over the internal runRunCore,
+// so the exported vi.fn() for runRunCore is never called.
+vi.mock("../run.js", async () => {
+  const { logError, resolveLogLevel } = await import("../../logger/stdout.js");
+  const mockRunRun = vi.fn().mockResolvedValue(undefined);
+  const mockRunRunCore = vi.fn().mockResolvedValue(0);
+
+  return {
+    runRun: mockRunRun,
+    runRunCore: mockRunRunCore,
+    handlePostPipelineState: vi.fn(),
+    handleJobStart: vi.fn().mockImplementation(
+      async (parsed: { flags: Record<string, unknown>; positional?: string; positionals?: string[] }, ctx?: { repoRoot: string | null; invokerCwd: string }) => {
+        const { loadConfigWithOverlay } = await import("../load-config-with-overlay.js");
+        const { resolveGitHubHost, resolveGitHubApiBaseUrl } = await import("../../config/github-host.js");
+        const { resolveGitHubToken } = await import("../../core/credentials/github.js");
+        const { getOriginInfo } = await import("../../git/remote.js");
+        const { createGitHubClient } = await import("../../adapter/github/github-client.js");
+        const { startWithIssueLink } = await import("../../core/issue-target/start.js");
+        const { runFromIssue } = await import("../from-issue.js");
+
+        const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
+        const hasPositional = parsed.positional !== undefined;
+
+        // Guard: need at least one of positional or from-issue
+        if (fromIssue === undefined && !hasPositional) {
+          logError("Usage error: 'job start' requires a <slug|file> positional or --from-issue <n>");
+          process.exit(2);
+          return;
+        }
+        // Guard: from-issue + positional are mutually exclusive
+        if (fromIssue !== undefined && hasPositional) {
+          logError("Usage error: --from-issue and positional <slug|file> are mutually exclusive");
+          process.exit(2);
+          return;
+        }
+        // Guard: from-issue + issue are mutually exclusive
+        if (fromIssue !== undefined && parsed.flags["issue"] !== undefined) {
+          logError("Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)");
+          process.exit(2);
+          return;
+        }
+        // Guard: detach + json are mutually exclusive
+        if (parsed.flags["detach"] && parsed.flags["json"]) {
+          logError("--detach and --json are mutually exclusive");
+          process.exit(2);
+          return;
+        }
+
+        const logLevel = resolveLogLevel({ quiet: !!parsed.flags["quiet"], verbose: !!parsed.flags["verbose"], debug: !!parsed.flags["debug"] });
+
+        // --from-issue path (lazy import mirrors real impl)
+        if (fromIssue !== undefined) {
+          const code = await runFromIssue(fromIssue, { detach: !!parsed.flags["detach"], logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }, ctx);
+          process.exit(code);
+          return;
+        }
+
+        const requestMdPath = parsed.positional!;
+        const issue = typeof parsed.flags["issue"] === "number" ? parsed.flags["issue"] : undefined;
+
+        // Positional + --issue path
+        if (issue !== undefined) {
+          const repoRoot = ctx?.repoRoot ?? process.cwd();
+          const config = await loadConfigWithOverlay(repoRoot, repoRoot);
+          const githubHost = resolveGitHubHost(config.github);
+          const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+          const { token: githubToken } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+          const { owner, name: repo } = await getOriginInfo(repoRoot, githubHost);
+          const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
+          const code = await startWithIssueLink({
+            repoRoot,
+            requestMdPath,
+            issueNumber: issue,
+            githubClient,
+            owner,
+            repo,
+            startPrimitive: (p: string, opts: Record<string, unknown>) =>
+              mockRunRunCore(p, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
+          });
+          process.exit(code);
+          return;
+        }
+
+        // Simple positional path
+        await mockRunRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
+      },
+    ),
+  };
+});
 
 vi.mock("../load-config-with-overlay.js", () => ({
   loadConfigWithOverlay: vi.fn().mockResolvedValue({

@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
@@ -16,6 +18,11 @@ import {
 import type { ViewEntry } from "../core/job-list/operations-view.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { worktreeGuardError } from "../errors.js";
+import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
+import { resolveGitHubToken } from "../core/credentials/github.js";
+import { createGitHubClient } from "../adapter/github/github-client.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
+import { runJobStats } from "../core/command/job-stats.js";
 
 
 /**
@@ -138,4 +145,45 @@ export async function runPs(
   }
 
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner job ls`.
+ * Extracted from command-registry.ts inline handler (T-06).
+ */
+export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  let githubClient = null;
+  try {
+    let githubHost = "github.com";
+    let githubApiBaseUrl = "https://api.github.com";
+    try {
+      const cfg = await loadConfigWithOverlay();
+      githubHost = resolveGitHubHost(cfg.github);
+      githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
+    } catch {
+      // Config not available — use defaults
+    }
+    const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+    githubClient = createGitHubClient(fetch, token, githubApiBaseUrl);
+  } catch {
+    // No token available — PR merge check will be skipped
+  }
+  process.exit(await runPs(
+    {
+      active: !!parsed.flags["active"],
+      all: !!parsed.flags["all"],
+      status: parsed.flags["status"] as string | undefined,
+      json: !!parsed.flags["json"],
+      repoRoot: ctx!.repoRoot ?? ctx!.invokerCwd,
+    },
+    githubClient,
+  ));
+}
+
+/**
+ * CLI handler for `specrunner job stats`.
+ * Extracted from command-registry.ts inline handler (T-06).
+ */
+export async function handleJobStats(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  process.exit(await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] }));
 }

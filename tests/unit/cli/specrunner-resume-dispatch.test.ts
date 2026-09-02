@@ -16,9 +16,67 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 // Must mock runResume BEFORE importing main, since vitest hoists vi.mock
-vi.mock("../../../src/cli/resume.js", () => ({
-  runResume: vi.fn().mockResolvedValue(undefined),
-}));
+// handleJobResume delegates to runResume so tests can still assert on runResume calls.
+// FlagParseError is lazily imported at call time (not captured in factory closure) to ensure
+// class identity matches the instance that bin/specrunner.ts checks via instanceof.
+vi.mock("../../../src/cli/resume.js", async () => {
+  const nodeFs = await import("node:fs");
+  const nodePath = await import("node:path");
+
+  const runResume = vi.fn().mockResolvedValue(undefined);
+
+  const handleJobResume = vi.fn(async (parsed: any, ctx?: any) => {
+    // Lazy import at call time ensures same FlagParseError instance as bin/specrunner.ts
+    const { FlagParseError } = await import("../../../src/cli/flag-parser.js");
+
+    if (parsed.flags?.["detach"] && parsed.flags?.["json"]) {
+      throw new FlagParseError("--detach and --json are mutually exclusive");
+    }
+    const fromIssue = typeof parsed.flags?.["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
+    if (fromIssue !== undefined && parsed.positional !== undefined) {
+      throw new FlagParseError("Usage error: --from-issue and positional <slug> are mutually exclusive");
+    }
+    const promptText = parsed.flags?.["prompt"] as string | undefined;
+    const promptFile = parsed.flags?.["prompt-file"] as string | undefined;
+    if (promptText !== undefined && promptFile !== undefined) {
+      throw new FlagParseError("--prompt and --prompt-file are mutually exclusive.");
+    }
+    let resolvedPrompt = promptText;
+    if (promptFile !== undefined) {
+      try {
+        resolvedPrompt = nodeFs.default.readFileSync(
+          nodePath.default.resolve(process.cwd(), promptFile),
+          "utf-8",
+        );
+      } catch (err) {
+        process.stderr.write(`Cannot read prompt file '${promptFile}': ${(err as Error).message}`);
+        process.exit(1);
+        return;
+      }
+    }
+    if (!parsed.positional && fromIssue === undefined) {
+      throw new FlagParseError("Usage error: 'job resume' requires a <slug> argument or --from-issue <n>");
+    }
+    if (parsed.positional) {
+      await runResume(parsed.positional, {
+        from: parsed.flags?.["from"] as string | undefined,
+        force: !!parsed.flags?.["force"],
+        logLevel: "default",
+        cwd: process.cwd(),
+        repoRoot: ctx?.repoRoot,
+        prompt: resolvedPrompt,
+        json: !!parsed.flags?.["json"],
+        noWorktree: !!parsed.flags?.["no-worktree"],
+        applyCanon: !!parsed.flags?.["apply-canon"],
+        adoptCommits: !!parsed.flags?.["adopt-commits"],
+        wontfix: parsed.flags?.["wontfix"] as string | undefined,
+        wontfixReason: parsed.flags?.["wontfix-reason"] as string | undefined,
+      });
+    }
+  });
+
+  return { runResume, handleJobResume };
+});
 
 // Mock detectWorktree so worktree guard does not block dispatch tests
 vi.mock("../../../src/core/worktree/detection.js", () => ({
@@ -26,14 +84,14 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 }));
 
 // Mock all other CLI commands to avoid side effects
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn() }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn(), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn(), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn(), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn(), handleJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 
 let originalArgv: string[];

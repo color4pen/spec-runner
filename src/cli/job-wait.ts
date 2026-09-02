@@ -20,9 +20,11 @@ import { isProcessAlive as realIsProcessAlive, isStaleRunning as realIsStaleRunn
 import { resolveJobPid, type SidecarContent } from "../core/liveness/resolve-pid.js";
 import { livenessJsonPath } from "../util/paths.js";
 import { logResult, stderrWrite, logError } from "../logger/stdout.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
+import { EXIT_CODE, worktreeGuardError } from "../errors.js";
 import { getDetachLogPath } from "../util/xdg.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
-import { worktreeGuardError } from "../errors.js";
 
 // ---------------------------------------------------------------------------
 // Dependency-injection seam
@@ -273,4 +275,18 @@ export async function runJobWait(
   // Job disappeared mid-wait — report as an anomaly.
   stderrWrite(`Warning: job ${slug} disappeared during wait.`);
   return 1;
+}
+
+/**
+ * CLI handler for `specrunner job wait <slug>`.
+ * Extracted from command-registry.ts inline handler (T-07).
+ */
+export async function handleJobWait(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const slug = parsed.positional;
+  if (!slug) {
+    stderrWrite("Error: 'job wait' requires a <slug> argument.");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+  const repoRoot = ctx?.repoRoot ?? process.cwd();
+  process.exit(await runJobWait(slug, { repoRoot }));
 }

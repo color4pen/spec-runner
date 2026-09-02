@@ -35,15 +35,28 @@ vi.mock("../../../src/util/repo-root.js", () => ({
 }));
 
 // Mock doctor and other heavy CLI modules that are not under test
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
-vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn(), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "Archive the completed change folder" }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0), handleJobShow: vi.fn() }));
+vi.mock("../../../src/cli/managed.js", () => ({
+  runManagedSetup: vi.fn(),
+  runManagedStatus: vi.fn(),
+  runManagedReset: vi.fn(),
+  handleRuntimeSetup: vi.fn(),
+  handleRuntimeStatus: vi.fn(),
+  handleRuntimeReset: vi.fn(),
+}));
+vi.mock("../../../src/cli/credentials.js", () => ({
+  runCredentialsSet: vi.fn().mockResolvedValue(0),
+  CREDENTIALS_SET_USAGE: "Usage: specrunner credentials set <name>\n",
+  handleCredentialsSet: vi.fn(),
+}));
 vi.mock("../../../src/core/command/job-stats.js", () => ({ runJobStats: vi.fn().mockResolvedValue(0) }));
 
 // ---------------------------------------------------------------------------

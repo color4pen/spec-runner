@@ -1,5 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 import * as readline from "node:readline";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { getConfigPath } from "../util/xdg.js";
@@ -165,4 +167,16 @@ export async function runInit(options: {
   stdoutWrite("---\n");
 
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner init`.
+ * Wraps runInit and calls process.exit with the returned code.
+ */
+export async function handleInit(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const runtimeRaw = parsed.flags["runtime"] as string | undefined;
+  const runtime = runtimeRaw as "managed" | "local" | undefined;
+  const providerRaw = parsed.flags["provider"] as string | undefined;
+  const provider = providerRaw as "anthropic" | "openai" | undefined;
+  process.exit(await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! }));
 }

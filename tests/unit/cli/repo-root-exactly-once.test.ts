@@ -893,12 +893,12 @@ describe("TC-023: job ls production dispatch never triggers ps.ts internal resol
    *   resolveRepoRoot is called internally → spy records call → assertion fails.
    * GREEN after implementation: registry passes ctx.repoRoot ?? ctx.invokerCwd to runPs.
    */
-  it("TC-023: COMMANDS.job.subcommands.ls handler calls runPs with a non-null repoRoot", async () => {
-    // We verify this by checking the registry source directly
-    // After conversion: the ls handler passes repoRoot to runPs
-    const registryPath = path.join(ROOT, "src/cli/command-registry.ts");
+  it("TC-023: handleJobLs in ps.ts calls runPs with a non-null repoRoot", async () => {
+    // After handler extraction (T-04): handleJobLs lives in ps.ts, not command-registry.ts.
+    // The registry imports handleJobLs from ps.ts; the repoRoot plumbing is inside ps.ts.
+    const psPath = path.join(ROOT, "src/cli/ps.ts");
     // Check that the ls handler passes repoRoot to runPs
-    const result = grepFile("repoRoot", registryPath);
+    const result = grepFile("repoRoot", psPath);
     const lsHandlerLines = result
       .split("\n")
       .filter(Boolean)
@@ -907,7 +907,7 @@ describe("TC-023: job ls production dispatch never triggers ps.ts internal resol
         const content = line.split(":").slice(2).join(":");
         return content.includes("runPs") || content.includes("repoRoot");
       });
-    // After conversion: there are lines where ls handler sets repoRoot for runPs
+    // After handler extraction: there are lines where handleJobLs passes repoRoot to runPs
     // This is a documentation check; the behavioral check is in TC-002
     expect(lsHandlerLines.length).toBeGreaterThan(0);
   });

@@ -24,7 +24,10 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { resolveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
-import { stdoutWrite } from "../logger/stdout.js";
+import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
+import { EXIT_CODE } from "../errors.js";
 
 const execFileAsync = promisify(childProcess.execFile);
 
@@ -224,4 +227,47 @@ export async function runDoctor(opts: {
   // Return exit code: 1 if any fail, 0 otherwise
   const hasFail = results.some((r) => r.status === "fail");
   return hasFail ? 1 : 0;
+}
+
+/**
+ * CLI handler for `specrunner doctor`.
+ * Extracted from command-registry.ts inline handler (T-13).
+ */
+export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  // default action: run diagnostics
+  try {
+    process.exit(await runDoctor({
+      json: !!parsed.flags["json"],
+      repoRoot: ctx?.repoRoot,
+      invokerCwd: ctx?.invokerCwd,
+    }));
+  } catch (err: unknown) {
+    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(EXIT_CODE.GENERAL_ERROR);
+  }
+}
+
+/**
+ * CLI handler for `specrunner doctor repair <slug>`.
+ * Extracted from command-registry.ts inline handler (T-13).
+ * Dynamic import is maintained (not converted to static import).
+ */
+export async function handleDoctorRepair(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const slug = parsed.positional;
+  if (!slug) {
+    stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
+    stderrWrite("Usage: specrunner doctor repair <slug>\n");
+    process.exit(2);
+    return;
+  }
+  const repoRoot = ctx?.repoRoot ?? process.cwd();
+  try {
+    const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
+    const result = await repairSlugOccupancySidecar(repoRoot, slug);
+    stderrWrite(result.message + "\n");
+    process.exit(0);
+  } catch (err: unknown) {
+    stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+    process.exit(EXIT_CODE.GENERAL_ERROR);
+  }
 }

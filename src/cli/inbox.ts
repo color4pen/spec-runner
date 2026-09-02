@@ -12,6 +12,8 @@ import { resolveInboxConfig } from "../config/schema.js";
 import { runInboxOrchestrator } from "../core/inbox/run-inbox.js";
 import { logError, stderrWrite } from "../logger/stdout.js";
 import { EXIT_CODE } from "../errors.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 
 export interface InboxRunCliOptions {
   dryRun?: boolean;
@@ -103,4 +105,23 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
     logError(`inbox run failed: ${(err as Error).message}`);
     return EXIT_CODE.GENERAL_ERROR;
   }
+}
+
+/**
+ * CLI handler for `specrunner inbox run`.
+ * Extracted from command-registry.ts inline handler (T-11).
+ */
+export async function handleInboxRun(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  // --limit is now validated as integer by the parser (min: 0)
+  const limit = typeof parsed.flags["limit"] === "number" ? parsed.flags["limit"] : undefined;
+  process.exit(
+    await runInboxRun({
+      dryRun: !!parsed.flags["dry-run"],
+      limit,
+      json: !!parsed.flags["json"],
+      verbose: !!parsed.flags["verbose"],
+      quiet: !!parsed.flags["quiet"],
+      repoRoot: ctx!.repoRoot!,
+    }),
+  );
 }

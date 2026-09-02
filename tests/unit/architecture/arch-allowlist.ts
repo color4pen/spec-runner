@@ -348,20 +348,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   // ── Permanent-legit — role (b): user-supplied relative-path base ─────────
 
   {
-    file: "src/cli/command-registry.ts",
-    pattern: "path.resolve(process.cwd(), input)",
-    invariant: "CWD",
-    tracking: "CWD-registry-validate-relative",
-    comment: "role-b: resolve a user-supplied relative file path against the invoker cwd (standard CLI behaviour).",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "path.resolve(process.cwd(), promptFile)",
-    invariant: "CWD",
-    tracking: "CWD-registry-prompt-file-relative",
-    comment: "role-b: resolve --prompt-file relative path against the invoker cwd.",
-  },
-  {
     file: "src/core/command/request.ts",
     pattern: "opts?.cwd ?? process.cwd()",
     invariant: "CWD",
@@ -532,55 +518,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   // been converted. They are tracked here and may be removed when converted.
 
   {
-    file: "src/cli/command-registry.ts",
-    pattern: "cwd: process.cwd(),",
-    invariant: "CWD",
-    tracking: "CWD-registry-generate-resume-attach-archive-debt",
-    comment: "debt: generate/resume/attach/archive handlers pass process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "executeList(process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-registry-list-debt",
-    comment: "debt: request ls passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "storeResolve(process.cwd(), input)",
-    invariant: "CWD",
-    tracking: "CWD-registry-store-resolve-debt",
-    comment: "debt: validate slug-path resolution passes process.cwd(). Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "executeRulesNew(stepName, ruleSlug, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-registry-rules-new-debt",
-    comment: "debt: rules new passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "executeReviewersNew(name, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-registry-reviewers-new-debt",
-    comment: "debt: reviewers new passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "showUsage(slug, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-registry-show-usage-debt",
-    comment: "debt: usage show passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/command-registry.ts",
-    pattern: "showUsageSummary(process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-registry-show-usage-summary-debt",
-    comment: "debt: usage summary passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
     file: "src/config/store.ts",
     pattern: "path.join(process.cwd(), \".specrunner\", \"config.json\")",
     invariant: "CWD",
@@ -588,18 +525,93 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "debt: config store derives project-local config path from process.cwd(). Follow-up burn-down.",
   },
   {
-    file: "src/cli/command-registry.ts",
-    pattern: "ctx?.repoRoot ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-registry-doctor-repair-reporoot-fallback",
-    comment: "role-a: doctor repair uses ctx.repoRoot with process.cwd() fallback when repoRoot is unavailable (outside a repo).",
-  },
-  {
     file: "src/cli/from-issue.ts",
     pattern: "ctx?.repoRoot ?? process.cwd()",
     invariant: "CWD",
     tracking: "CWD-from-issue-reporoot-di-default",
     comment: "di-default: --from-issue handler resolves repoRoot from ctx injection; process.cwd() is the fallback when no context is provided.",
+  },
+
+  // ── Handler extraction: process.cwd() moved from command-registry.ts to per-command modules ──
+  // These entries cover sites that were previously inline handlers in command-registry.ts.
+  // They are classified as debt (to be converted) or permanent-legit (role-a/role-b).
+
+  {
+    file: "src/cli/job-wait.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-job-wait-handler-reporoot-fallback",
+    comment: "role-a: handleJobWait uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
+  },
+  {
+    file: "src/cli/resume.ts",
+    pattern: "path.resolve(process.cwd(), promptFile)",
+    invariant: "CWD",
+    tracking: "CWD-resume-handler-prompt-file-relative",
+    comment: "role-b: resolve --prompt-file relative path against the invoker cwd (moved from command-registry.ts).",
+  },
+  {
+    file: "src/cli/resume.ts",
+    pattern: "cwd: process.cwd(),",
+    invariant: "CWD",
+    tracking: "CWD-resume-handler-cwd-debt",
+    comment: "debt: handleJobResume passes process.cwd() as cwd base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/resume.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-resume-handler-reporoot-fallback",
+    comment: "role-a: handleJobResume uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
+  },
+  {
+    file: "src/cli/run.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-run-handler-reporoot-fallback",
+    comment: "role-a: handleJobStart uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
+  },
+  {
+    file: "src/cli/archive.ts",
+    pattern: "cwd: process.cwd(),",
+    invariant: "CWD",
+    tracking: "CWD-archive-handler-cwd-debt",
+    comment: "debt: handleJobArchive passes process.cwd() as cwd base (moved from command-registry.ts). Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/archive.ts",
+    pattern: "cwd: process.cwd() }",
+    invariant: "CWD",
+    tracking: "CWD-archive-from-issue-cwd-debt",
+    comment: "debt: handleJobArchive passes process.cwd() to runArchiveFromIssue (moved from command-registry.ts). Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/request-handlers.ts",
+    pattern: "executeList(process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-request-handlers-list-debt",
+    comment: "debt: handleRequestLs passes process.cwd() as repo base (moved from command-registry.ts). Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/request-handlers.ts",
+    pattern: "path.resolve(process.cwd(), input)",
+    invariant: "CWD",
+    tracking: "CWD-request-handlers-validate-relative",
+    comment: "role-b: resolve user-supplied relative file path against invoker cwd (moved from command-registry.ts).",
+  },
+  {
+    file: "src/cli/request-handlers.ts",
+    pattern: "storeResolve(process.cwd(), input)",
+    invariant: "CWD",
+    tracking: "CWD-request-handlers-store-resolve-debt",
+    comment: "debt: slug-path resolution passes process.cwd() (moved from command-registry.ts). Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/doctor.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-doctor-handler-reporoot-fallback",
+    comment: "role-a: handleDoctorRepair uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
   },
 
 ];

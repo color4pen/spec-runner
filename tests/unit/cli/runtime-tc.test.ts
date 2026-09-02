@@ -9,15 +9,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
 }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(undefined), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn(), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn(), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined), handleJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn(),
@@ -36,6 +36,9 @@ vi.mock("../../../src/cli/managed.js", () => ({
   runManagedSetup: mockRunManagedSetup,
   runManagedStatus: mockRunManagedStatus,
   runManagedReset: mockRunManagedReset,
+  handleRuntimeSetup: vi.fn(async () => { process.exit(await mockRunManagedSetup()); }),
+  handleRuntimeStatus: vi.fn(async () => { process.exit(await mockRunManagedStatus()); }),
+  handleRuntimeReset: vi.fn(async (parsed: any) => { process.exit(await mockRunManagedReset({ force: !!parsed?.flags?.["force"] })); }),
 }));
 
 let originalArgv: string[];

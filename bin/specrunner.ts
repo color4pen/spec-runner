@@ -11,6 +11,25 @@ import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } fro
 import { getVersion } from "../src/cli/version.js";
 import { buildCommandContext } from "../src/cli/command-context.js";
 
+/**
+ * Duck-type guard for FlagParseError.
+ * Falls back to name check to handle cross-module-context cases (e.g. Vitest resetModules).
+ */
+function isFlagParseError(e: unknown): e is FlagParseError {
+  return e instanceof FlagParseError || (e instanceof Error && e.name === "FlagParseError");
+}
+
+/**
+ * Duck-type guard for SpecRunnerError.
+ * Falls back to name check to handle cross-module-context cases (e.g. Vitest resetModules).
+ */
+function isSpecRunnerError(e: unknown): e is SpecRunnerError {
+  return (
+    e instanceof SpecRunnerError ||
+    (e instanceof Error && e.name === "SpecRunnerError" && "exitCode" in e)
+  );
+}
+
 
 function emitHelp(usage: string | undefined): never {
   process.stdout.write(usage ?? NO_DETAILED_HELP_USAGE);
@@ -95,7 +114,7 @@ export async function main(): Promise<void> {
   try {
     parsed = parseFlags(restArgs, spec.flags ?? {}, positionalDef);
   } catch (e) {
-    if (e instanceof FlagParseError) {
+    if (isFlagParseError(e)) {
       process.stderr.write(e.message + "\n");
       process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
@@ -117,12 +136,12 @@ export async function main(): Promise<void> {
   try {
     await spec.handler!(parsed, ctx);
   } catch (e) {
-    if (e instanceof FlagParseError) {
+    if (isFlagParseError(e)) {
       process.stderr.write(e.message + "\n");
       process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
     }
-    if (e instanceof SpecRunnerError) {
+    if (isSpecRunnerError(e)) {
       process.stderr.write(`Error: ${e.message}\n`);
       process.stderr.write(`Hint: ${e.hint}\n`);
       process.exit(e.exitCode);

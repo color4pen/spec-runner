@@ -16,6 +16,8 @@ import { ConformanceStep } from "../core/step/conformance.js";
 import { AdrGenStep } from "../core/step/adr-gen.js";
 import { EXIT_CODE, SpecRunnerError } from "../errors.js";
 import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 
 export interface RunConfigEffectiveOptions {
   requestType?: string;
@@ -129,4 +131,17 @@ function formatSource(source: TracedStepConfigSource): string {
   if (source.layer === "stepdef") return "stepdef";
   if (source.layer === "sdk") return "sdk";
   return `${source.layer} ${source.level} ${source.path}`;
+}
+
+
+/**
+ * CLI handler for `specrunner config effective`.
+ * Extracted from command-registry.ts inline handler (T-11).
+ */
+export async function handleConfigEffective(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  process.exit(await runConfigEffective({
+    requestType: parsed.flags["type"] as string | undefined,
+    json: !!parsed.flags["json"],
+    repoRoot: ctx?.repoRoot,
+  }));
 }

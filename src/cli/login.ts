@@ -1,4 +1,5 @@
 import * as fs from "node:fs/promises";
+import type { ParsedArgs } from "./flag-parser.js";
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { loadCredentials, saveCredentials, resolveGitHubToken } from "../core/credentials/github.js";
@@ -146,6 +147,14 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
 
   logSuccess("GitHub authentication complete. Token saved to credentials file.");
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner login`.
+ * Wraps runLogin and calls process.exit with the returned code.
+ */
+export async function handleLogin(parsed: ParsedArgs): Promise<void> {
+  process.exit(await runLogin({ force: !!parsed.flags["force"] }));
 }
 
 /**

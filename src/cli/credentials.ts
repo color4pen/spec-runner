@@ -8,6 +8,7 @@
  * Input is read without echoing (TTY: raw mode; non-TTY: stdin pipe).
  * The secret value is never written to stdout/stderr.
  */
+import type { ParsedArgs } from "./flag-parser.js";
 import { logError, logInfo } from "../logger/stdout.js";
 import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
 import { saveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
@@ -88,4 +89,12 @@ export async function runCredentialsSet(name: string, opts?: CredentialsSetOpts)
   }
 
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner credentials set <name>`.
+ * Wraps runCredentialsSet and calls process.exit with the returned code.
+ */
+export async function handleCredentialsSet(parsed: ParsedArgs): Promise<void> {
+  process.exit(await runCredentialsSet(parsed.positional!));
 }

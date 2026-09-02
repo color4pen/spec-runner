@@ -18,10 +18,38 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock runResume to prevent actual job execution and capture call args
-vi.mock("../resume.js", () => ({
-  runResume: vi.fn().mockResolvedValue(undefined),
-}));
+// Synthetic mock for resume.js:
+// - runResume is a vi.fn() so tests can assert on its call args
+// - handleJobResume is a lightweight stub that maps CLI flags → runResume options
+//   (mirrors the real forwarding logic in resume.ts without the heavy detach/process-exit paths)
+// Using importOriginal is NOT viable here: the real handleJobResume calls runResume via its
+// module-internal binding (not the exported one), so the mock runResume would not be called.
+vi.mock("../resume.js", () => {
+  const mockRunResume = vi.fn().mockResolvedValue(undefined);
+  return {
+    runResume: mockRunResume,
+    handleJobResume: vi.fn().mockImplementation(
+      async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
+        const flags = parsed.flags;
+        await mockRunResume(parsed.positional, {
+          detach: !!flags["detach"],
+          from: flags["from"] as string | undefined,
+          force: !!flags["force"],
+          applyCanon: !!flags["apply-canon"],
+          adoptCommits: !!flags["adopt-commits"],
+          wontfix: flags["wontfix"] as string | undefined,
+          wontfixReason: flags["wontfix-reason"] as string | undefined,
+          noWorktree: !!flags["no-worktree"],
+          json: !!flags["json"],
+          logLevel: "normal",
+          cwd: process.cwd(),
+          repoRoot: undefined,
+          prompt: flags["prompt"] as string | undefined,
+        });
+      },
+    ),
+  };
+});
 
 // Mock logger to prevent stderr output
 vi.mock("../../logger/stdout.js", () => ({
