@@ -12,9 +12,9 @@
  * - JobStatePersistenceCapability: persist + reload job state
  *
  * RuntimeFacade (the full composition-root aggregate that includes PipelineDepsBuilder
- * and ChangedFilesCapability) is defined in src/core/runtime/factory.ts to avoid a
+ * and ChangedFilesCapability) is defined in src/core/runtime-facade.ts to avoid a
  * ports→domain import edge (command-runtime.ts cannot import from ../types.js).
- * Consumers import RuntimeFacade from factory.ts or runtime/index.ts.
+ * Consumers import RuntimeFacade from runtime-facade.ts or runtime/index.ts.
  */
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import type { WorkspaceOptions, WorkspaceContext, CleanupHandle } from "./runtime-strategy.js";

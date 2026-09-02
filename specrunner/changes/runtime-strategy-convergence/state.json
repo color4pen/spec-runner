@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T01:12:53.594Z",
+  "updatedAt": "2026-09-02T01:17:32.271Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -130,7 +130,8 @@
     "9e09f85bc0d9e3009f588a573679ccbbaca903f7",
     "b5dadd5d4c9dfdbcfa325e490c818a9c8739cdb4",
     "71f6859981946d178314bbeb069ca0411c123f9e",
-    "5e06b2225ae29a47150cca3d9b47db61f73914d8"
+    "5e06b2225ae29a47150cca3d9b47db61f73914d8",
+    "29af2cb3bfc91503221deabbc87d1c15eddb5e42"
   ],
   "touchedFiles": {
     "request-review": [
@@ -170,15 +171,15 @@
       "src/core/runtime-facade.ts",
       "src/core/port/runtime-strategy.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
       "src/core/command/pipeline-run.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/runtime/factory.ts",
-      "src/core/command/resume.ts",
-      "src/cli/bootstrap.ts",
-      "tests/pipeline-sole-committer-e2e.test.ts",
       "src/core/runtime/managed.ts",
-      "src/core/port/provider-readiness.ts"
+      "src/core/command/resume.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/step/scope-check.ts",
+      "src/core/step/executor.ts"
     ],
     "code-fixer": [
       "src/core/pipeline/runtime-capability-gate.ts"
@@ -257,7 +258,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 313,
+    "historyCount": 317,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -266,7 +267,7 @@
       "spec-fixer": 2,
       "implementer": 11,
       "verification": 16,
-      "code-review": 8,
+      "code-review": 9,
       "code-fixer": 8,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,

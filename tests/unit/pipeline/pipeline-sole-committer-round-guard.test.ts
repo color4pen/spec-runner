@@ -34,7 +34,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { StepExecutor } from "../../../src/core/step/executor.js";
 import type { StepExecutionResult } from "../../../src/core/step/commit-orchestrator.js";
 import type { ParallelReviewConfig } from "../../../src/core/pipeline/types.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { RoundGitEffectsCapability } from "../../../src/core/pipeline/pipeline-capability.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
@@ -171,7 +171,7 @@ function makeRuntimeStrategyMock(opts: {
   listWorktreeChanges?: () => Promise<{ kind: "success"; paths: string[] } | { kind: "unavailable"; reason: string }>;
   listChangedFiles?: () => Promise<{ kind: "unavailable"; reason: string }>;
   digestArtifacts?: () => Promise<Array<{ path: string; hash: string | null }>>;
-}): RuntimeStrategy {
+}): RoundGitEffectsCapability {
   let captureCallCount = 0;
   const responses = opts.captureHeadShaResponses;
 
@@ -187,12 +187,12 @@ function makeRuntimeStrategyMock(opts: {
     listChangedFiles:
       opts.listChangedFiles ?? vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
     digestArtifacts: opts.digestArtifacts ?? vi.fn().mockResolvedValue([]),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any as RuntimeStrategy;
+    commitRoundArtifacts: vi.fn().mockResolvedValue(undefined),
+  };
 }
 
 function makeDeps(
-  runtimeStrategy: RuntimeStrategy,
+  runtimeStrategy: RoundGitEffectsCapability,
   overrides: Partial<PipelineDeps> = {},
 ): PipelineDeps {
   return {
@@ -230,7 +230,7 @@ function makeDeps(
     owner: "user",
     repo: "repo",
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-    roundGitEffects: runtimeStrategy as never,
+    roundGitEffects: runtimeStrategy,
     storeFactory: makeStoreFactory(tempDir),
     stepArtifact: noopStepArtifact,
     stepIo: noopStepIo,

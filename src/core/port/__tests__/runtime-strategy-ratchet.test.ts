@@ -187,6 +187,14 @@ describe("TC-012: as unknown as RuntimeStrategy がテストファイルに存�
     const hits = await findOccurrences(testFiles, "as unknown as RuntimeStrategy");
     expect(hits, `Found "as unknown as RuntimeStrategy" in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
   });
+
+  // TC-012b: `as any as RuntimeStrategy` は `as unknown as RuntimeStrategy` と同じ
+  // 型安全破壊パターン。TC-012 は unknown 限定だったため tests/unit/pipeline/ で見逃した。
+  it("TC-012b: `as any as RuntimeStrategy` が tests/ および src/__tests__/ に 0 件", async () => {
+    const testFiles = (await collectTestFiles(SRC_DIR, TESTS_DIR)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(testFiles, "as any as RuntimeStrategy");
+    expect(hits, `Found "as any as RuntimeStrategy" in:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -293,6 +301,19 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     expect(
       hits,
       `Found RuntimeStrategy & PipelineDepsBuilder in tests/attach/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  // TC-032g: tests/unit/pipeline/ は pipeline 層テストのディレクトリ。
+  // pipeline-sole-committer-round-guard.test.ts の makeRuntimeStrategyMock が
+  // RuntimeStrategy から RoundGitEffectsCapability へ置き換えられたため、ここもガード対象とする。
+  it("TC-032g: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/pipeline/ に 0 件", async () => {
+    const pipelineTestDir = path.join(TESTS_DIR, "unit", "pipeline");
+    const files = (await collectTsFiles(pipelineTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in tests/unit/pipeline/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
 });
