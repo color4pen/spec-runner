@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-01T15:27:16.821Z",
+  "updatedAt": "2026-09-02T00:01:42.694Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-strategy-convergence/test-cases.md, title: \"TC-018 の RuntimeFacade 記述が `ChangedFilesCapability` を含まない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -200,11 +196,7 @@
       "src/core/step/executor.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runtime-strategy-convergence/test-cases.md, title: \"TC-018 の RuntimeFacade 記述が `ChangedFilesCapability` を含まない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -249,7 +241,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 214,
+    "historyCount": 217,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
