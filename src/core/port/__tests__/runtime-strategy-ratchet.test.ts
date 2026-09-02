@@ -404,10 +404,10 @@ describe("TC-037: whole-port test fakes eliminated", () => {
     const stepTestFiles = entries
       .filter((e) => e.endsWith(".ts"))
       .map((e) => path.join(STEP_UNIT_DIR, e));
-    // Match: `(stepArtifact|stepIo|changedFiles): ... as never`
+    // Match: `(<capability slot>): ... as never` for all 7 PipelineDeps capability slots (D7 item 9 / T-16)
     const hits = await findOccurrencesRegex(
       stepTestFiles,
-      /\b(stepArtifact|stepIo|changedFiles)\s*:\s*[^,\n]* as never/,
+      /\b(stepArtifact|stepIo|changedFiles|roundGitEffects|terminalState|commitInspection|revisionContent)\s*:\s*[^,\n]* as never/,
     );
     expect(
       hits,

@@ -92,7 +92,7 @@ PipelineDepsBuilder
 consumer ごとの契約は Command 層が named composition として所有する:
 
 - `CommandRunnerRuntime`（`src/core/command/runner.ts` で export）= `ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`。`CommandRunner` と `ResumeCommand` のコンストラクタはこれを受け取る。
-- `PipelineRunRuntime`（`src/core/command/pipeline-run.ts` で export）= `CommandRunnerRuntime & JobBootstrapCapability`。`PipelineRunCommand` のコンストラクタはこれを受け取る。`PipelineRunCommand` は `ChangedFilesCapability` を直接呼ばないため含めない。
+- `PipelineRunRuntime`（`src/core/command/pipeline-run.ts` で export）= `CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability`。`PipelineRunCommand` のコンストラクタはこれを受け取る。`PipelineRunCommand` は `canDeriveChangedFiles()` を直接呼ばないが、`prepare()` が runtime を `assertRuntimeSupportsScope(descriptor, runtime)` に渡し、その gate が `ChangedFilesCapability` を要求するため含める。
 
 composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 lifecycle capability + PipelineDepsBuilder + ChangedFilesCapability の intersection とする（定義場所は domain 層の `src/core/runtime-facade.ts`）。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。
 

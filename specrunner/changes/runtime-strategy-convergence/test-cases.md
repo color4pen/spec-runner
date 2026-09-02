@@ -269,7 +269,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `PipelineRunCommand` のコンストラクタシグネチャを TypeScript コンパイラが評価する
 **WHEN** `assertNoDuplicateLiveJob` を欠いたオブジェクトを `runtime` 引数として渡そうとする
-**THEN** TypeScript コンパイルエラーが発生し、`pipeline-run.ts` に `RuntimeStrategy` の import が存在せず、コンストラクタ引数型が `PipelineRunRuntime`（= `CommandRunnerRuntime & JobBootstrapCapability`）である
+**THEN** TypeScript コンパイルエラーが発生し、`pipeline-run.ts` に `RuntimeStrategy` の import が存在せず、コンストラクタ引数型が `PipelineRunRuntime`（= `CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability`）である
 
 ---
 

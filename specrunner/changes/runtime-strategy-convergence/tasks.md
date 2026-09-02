@@ -92,7 +92,7 @@
 - [x] `RuntimeStrategy` の import を削除し、新 interface/alias に差し替える
 - [x] `src/core/command/runner.ts` に `export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を定義し、`CommandRunner` のコンストラクタ引数型をこれに置き換える
 - [x] `src/core/command/resume.ts` のコンストラクタ引数 `runtime` の型を `RuntimeFacade` から `CommandRunnerRuntime` に変更し、`RuntimeFacade` の import を削除する
-- [x] `src/core/command/pipeline-run.ts` に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability` を定義し、コンストラクタ引数と `pipelineRuntime` フィールドの型を `RuntimeFacade` から `PipelineRunRuntime` に変更する（`ChangedFilesCapability` は直接呼ばないため含めない）
+- [x] `src/core/command/pipeline-run.ts` に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability` を定義し、コンストラクタ引数と `pipelineRuntime` フィールドの型を `RuntimeFacade` から `PipelineRunRuntime` に変更する（`ChangedFilesCapability` は `assertRuntimeSupportsScope(descriptor, runtime)` に渡すために必要）
 - [x] `RuntimeFacade` の production consumer が composition root（`src/core/runtime/factory.ts`, `src/cli/bootstrap.ts`）のみになっていることを確認する
 - [x] `bun run typecheck` を実行してエラーがないことを確認する
 
