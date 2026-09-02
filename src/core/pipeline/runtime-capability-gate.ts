@@ -62,17 +62,13 @@ export class UnsupportedRuntimeCapabilityError extends Error {
  * Judgement is derived from descriptor.permissionScope presence — NOT from descriptor.id value.
  * No "if id === 'fast'" or similar profile-name branches exist here.
  *
- * The parameter type is narrowed to only the predicate the gate actually consults.
- * Any object satisfying ChangedFilesCapability (which includes canDeriveChangedFiles)
- * is structurally assignable here.
- *
  * @param descriptor - resolved PipelineDescriptor for the selected pipeline
- * @param runtime    - object with canDeriveChangedFiles predicate (subset of ChangedFilesCapability)
+ * @param runtime    - ChangedFilesCapability (canDeriveChangedFiles is consulted)
  * @throws UnsupportedRuntimeCapabilityError when scope is declared and runtime cannot derive changed files
  */
 export function assertRuntimeSupportsScope(
   descriptor: PipelineDescriptor,
-  runtime: Pick<ChangedFilesCapability, "canDeriveChangedFiles">,
+  runtime: ChangedFilesCapability,
 ): void {
   if (descriptor.permissionScope === undefined) {
     // No scope declared — no capability requirement — pass.

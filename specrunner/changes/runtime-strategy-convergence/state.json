@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:50:08.509Z",
+  "updatedAt": "2026-09-02T00:54:42.552Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -121,7 +121,8 @@
     "1b8d4ee37e7e7cdeb2f19104bc8684f029779df5",
     "2a0f6aa2318393046383e4af2175e4c8807a3a3b",
     "99a242ffa843b5e3e0d3605e1ac2b8e4c2ad4b51",
-    "703a7ac1386c2f087f90b3c9f616750f16e83874"
+    "703a7ac1386c2f087f90b3c9f616750f16e83874",
+    "8188c538965f9eeb679b6faeefb970153dfba8c4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -183,19 +184,15 @@
     ],
     "regression-gate": [
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/port/command-runtime.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
       "src/core/runtime/managed.ts",
-      "src/core/port/provider-readiness.ts",
-      "tests/unit/core/command/runner.test.ts",
+      "src/core/port/command-runtime.ts",
       "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
-      "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
-      "tests/unit/core/runtime/runner-reload-after-setup.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
       "tests/unit/core/pipeline/resolve-scope.test.ts",
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "tests/unit/step/executor-input-validation.test.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts"
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
+      "src/core/command/runner.ts"
     ],
     "conformance": [
       "src/core/port/runtime-strategy.ts",
@@ -256,7 +253,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 274,
+    "historyCount": 278,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -270,7 +267,7 @@
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 6,
-      "regression-gate": 5,
+      "regression-gate": 6,
       "conformance": 5,
       "adr-gen": 1,
       "pr-create": 1
