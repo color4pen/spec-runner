@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T16:14:20.713Z",
+  "updatedAt": "2026-09-02T16:31:38.067Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -72,7 +72,9 @@
     "674ed8396e8c32ba01bfb3d5d195e6bc77f3f792",
     "6e857a6612867c35fd18386e885659b8e24bed8e",
     "a73a4bb4c7e2dd9b9ac85a8c320410ad277cd747",
-    "e939a80f668f05b2b78059702ec69abecbcfbba0"
+    "e939a80f668f05b2b78059702ec69abecbcfbba0",
+    "982292803bb05818cb7cced9ea3f1a9430693411",
+    "1410715aec4cca280d7454813c68617fd18ce00e"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -87,21 +89,32 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "tests/unit/cli/doctor-repair.test.ts",
       "tests/unit/cli/runtime-tc.test.ts",
-      "tests/unit/cli/specrunner-resume-dispatch.test.ts"
+      ".specrunner/config.json",
+      "src/core/verification/changed-line-coverage.ts",
+      "src/cli/config-effective.ts",
+      "src/cli/credentials.ts",
+      "src/cli/doctor.ts",
+      "src/cli/inbox.ts",
+      "src/cli/init.ts",
+      "src/cli/job-show.ts",
+      "src/cli/login.ts",
+      "src/cli/managed.ts",
+      "src/cli/prune.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/usage-handler.ts"
     ]
   },
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 2,
-      "verification": 2
+      "implementer": 3,
+      "verification": 3
     }
   }
 }
