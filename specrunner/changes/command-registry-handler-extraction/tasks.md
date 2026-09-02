@@ -241,8 +241,9 @@
 
 - [x] `src/cli/scaffold-handlers.ts` を新規作成する
 - [x] 以下の関数を追加・export する:
-  - `handleRulesNew(parsed: ParsedArgs): Promise<void>` → `process.exit(await executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, process.cwd()))`
-  - `handleReviewersNew(parsed: ParsedArgs): Promise<void>` → `process.exit(await executeReviewersNew(parsed.positional!, process.cwd()))`
+  - `handleRulesNew(parsed: ParsedArgs, ctx?: CommandContext): Promise<void>` → `process.exit(await executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, ctx!.invokerCwd))`
+  - `handleReviewersNew(parsed: ParsedArgs, ctx?: CommandContext): Promise<void>` → `process.exit(await executeReviewersNew(parsed.positional!, ctx!.invokerCwd))`
+  - cwd は `process.cwd()` を直接呼ばず `ctx!.invokerCwd` を渡す（`buildCommandContext` が dispatch 時に `process.cwd()` を capture した値であり同値。operator 裁定: code-review iter 1 Finding 2）
 - [x] `executeRulesNew` は `../core/command/rules-new.js`、`executeReviewersNew` は `../core/command/reviewers-new.js` から import する
 - [x] `command-registry.ts` の対応 handler を置換し、`executeRulesNew`・`executeReviewersNew` の import を削除する
 
@@ -259,6 +260,7 @@
   - `runGuide` を `../core/command/guide.js` から import する
 - [x] `src/cli/usage-handler.ts` を新規作成し、`handleUsage(parsed: ParsedArgs): Promise<void>` を export する
   - `slug` 有無による分岐（`showUsage` / `showUsageSummary`）と `process.exit` を維持する
+  - cwd は `process.cwd()` を直接呼ばず `ctx!.invokerCwd` を渡す（T-14 と同じ operator 裁定）
   - `showUsage`・`showUsageSummary` を各 core module から import する
 - [x] `command-registry.ts` の `guide.handler` と `usage.handler` を各 named handler に置換する
 - [x] `command-registry.ts` から `showUsage`・`showUsageSummary`・`runGuide` の import を削除する

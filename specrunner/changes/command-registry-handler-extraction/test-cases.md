@@ -319,8 +319,9 @@ AND `bun run typecheck` がエラーなく通る
 **GIVEN** `src/cli/scaffold-handlers.ts` が新規作成されている
 **WHEN** `src/cli/scaffold-handlers.ts` の export と実装を確認する
 **THEN** `handleRulesNew` と `handleReviewersNew` が named export されている
-AND `handleRulesNew` は `executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, process.cwd())` を呼び出し結果を `process.exit` に渡す
-AND `handleReviewersNew` は `executeReviewersNew(parsed.positional!, process.cwd())` を呼び出し結果を `process.exit` に渡す
+AND `handleRulesNew` は `executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, ctx!.invokerCwd)` を呼び出し結果を `process.exit` に渡す
+AND `handleReviewersNew` は `executeReviewersNew(parsed.positional!, ctx!.invokerCwd)` を呼び出し結果を `process.exit` に渡す
+AND `ctx.invokerCwd` は `buildCommandContext` が dispatch 時に `process.cwd()` を capture した値であり、抽出前の `process.cwd()` 直接呼び出しと同値である（operator 裁定: code-review iter 1 Finding 2）
 AND `command-registry.ts` から `executeRulesNew`・`executeReviewersNew` の import が削除されている
 
 ---

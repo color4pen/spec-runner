@@ -135,6 +135,10 @@ export { ARCHIVE_USAGE } from "./archive.js";
 
 refactoring 前にスナップショットを生成・コミットし、抽出後も同一スナップショットと一致することで CLI 契約の同一性を保証する。
 
+### D6: bin/specrunner.ts の duck-type error guard（抽出に伴う companion fix）
+
+`bin/specrunner.ts` に `isFlagParseError` / `isSpecRunnerError` の duck-type guard を追加し、`main()` の 3 箇所の `instanceof FlagParseError` / `instanceof SpecRunnerError` を置換する。handler を `command-registry.ts` から別モジュールへ抽出したことで、`main()` を `vi.resetModules()` 付きで呼ぶ既存テスト（`tests/unit/cli/*.test.ts`、10 本）では handler が throw する error のクラスと `bin/specrunner.ts` が import するクラスが module reset 境界を跨いで別インスタンスになり、`instanceof` が false になる。guard は `instanceof` を先に試し、失敗時のみ `e instanceof Error && e.name === "FlagParseError"`（`SpecRunnerError` は加えて `"exitCode" in e`）へ fallback するため、production では従来どおり `instanceof` で判定され挙動は不変。R3a の「純粋な移動」スコープ外だが、抽出によって顕在化した test isolation の問題への companion fix として本 change に含める（operator 裁定: code-review iter 1 Finding 3）。
+
 ## Risks / Trade-offs
 
 - **[Risk] 17 モジュールへの変更分散によるレビュー負荷増加** → Mitigation: 各モジュールへの変更は `handleXxx` 関数の追加のみで既存ロジックへの変更はゼロ。テスト対象は handler 関数の入出力であり、既存テストへの影響はない。
