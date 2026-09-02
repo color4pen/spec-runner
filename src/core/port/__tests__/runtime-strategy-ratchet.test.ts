@@ -259,7 +259,6 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
   // Previously this directory was outside TC-032 scope; the monolithic fakes in
   // unpushable-path-contract.test.ts and executor-input-validation.test.ts have been
   // replaced with narrow capability stubs (StepIoValidationCapability / noopStepArtifact).
-  // tests/attach/ remains outside scope (E2E tests — tracked as a known ratchet gap).
   it("TC-032d: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/step/ に 0 件", async () => {
     const stepTestDir = path.join(TESTS_DIR, "unit", "step");
     const files = (await collectTsFiles(stepTestDir)).filter((f) => f !== SELF_FILE);
@@ -267,6 +266,33 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     expect(
       hits,
       `Found RuntimeStrategy & PipelineDepsBuilder in step-layer test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  // TC-032e: tests/unit/core/step/ is now guarded; monolithic fakes in
+  // executor-cli-entry-oid.test.ts and verification-phase-outcome-executor.test.ts
+  // have been replaced with narrow StepArtifactLifecycleCapability /
+  // StepIoValidationCapability / ChangedFilesCapability stubs.
+  it("TC-032e: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/step/ に 0 件", async () => {
+    const coreStepTestDir = path.join(TESTS_DIR, "unit", "core", "step");
+    const files = (await collectTsFiles(coreStepTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in tests/unit/core/step/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  // TC-032f: tests/attach/ is now guarded; the monolithic fake in
+  // attach-resume-e2e.test.ts has been replaced with narrow capability stubs
+  // (makeMachineAStepArtifact / machineAStepIo / machineAChangedFiles).
+  it("TC-032f: `RuntimeStrategy & PipelineDepsBuilder` が tests/attach/ に 0 件", async () => {
+    const attachTestDir = path.join(TESTS_DIR, "attach");
+    const files = (await collectTsFiles(attachTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in tests/attach/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
 });

@@ -5,6 +5,7 @@
  * Subclasses override prepare() only — all other steps are final.
  *
  * Execution sequence:
+ *   0. assertProviderReadiness() — before prepare(); readiness failures have no side effects
  *   1. prepare()               — subclass override (only override point)
  *   2. runtime.setupWorkspace()
  *   3. runtime.buildDeps()
@@ -14,6 +15,7 @@
  *   7. runtime.teardown()
  *
  * Error handling:
+ *   - assertProviderReadiness() failure → return 1 (no job state created)
  *   - prepare() failure → return 1 immediately (no workspace/cleanup needed)
  *   - setupWorkspace() failure → return 1 (no cleanup handle yet)
  *   - pipeline throw → outputPipelineThrowError + teardown("error") + return 1

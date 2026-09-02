@@ -31,8 +31,9 @@ import type { AgentRunContext, AgentRunResult } from "../../src/core/port/agent-
 import type { AgentRunner } from "../../src/core/port/agent-runner.js";
 import type { PipelineDeps } from "../../src/core/types.js";
 import type { JobState } from "../../src/state/schema.js";
-import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../../src/core/types.js";
+import type { ChangedFilesCapability } from "../../src/core/port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability } from "../../src/core/step/step-capability.js";
+import type { StepIoValidationCapability } from "../../src/core/step/step-capability.js";
 import type { TerminalStateCapability } from "../../src/core/pipeline/pipeline-capability.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import type { ParsedRequest } from "../../src/parser/request-md.js";
@@ -151,41 +152,33 @@ function makeMachineATerminalState(machineADir: string, slug: string): TerminalS
   };
 }
 
-function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrategy & PipelineDepsBuilder {
-  void slug;
+/** StepArtifactLifecycleCapability for Machine A: captureHeadSha uses real git. */
+function makeMachineAStepArtifact(): StepArtifactLifecycleCapability {
   return {
-    async *query() {},
-    createAgentRunner(): never { throw new Error("not used"); },
-    async setupWorkspace() { return { cwd: machineADir }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
     async captureHeadSha(cwd: string): Promise<string | null> {
       return gitExec(defaultSpawnFn, cwd, ["rev-parse", "HEAD"]);
     },
     async prepareStepArtifacts(): Promise<void> {},
+    async finalizeStepArtifacts(): Promise<void> {},
     async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async bootstrapJob(): Promise<JobState> { throw new Error("not used"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    async assertProviderReadiness() {},
-    async assertNoDuplicateLiveJob() {},
-    async reloadJobState(): Promise<JobState> { throw new Error("not implemented"); },
-    canDeriveChangedFiles: () => false,
-    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
-    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readRevisionContent() { return { current: null, prior: null }; },
-    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
   };
 }
+
+/** StepIoValidationCapability for Machine A: all no-ops (validation not exercised by E2E). */
+const machineAStepIo: StepIoValidationCapability = {
+  async validateStepInputs(): Promise<void> {},
+  async validateStepOutputs() { return { violations: [] }; },
+  async verifyFindingRefs() { return []; },
+};
+
+/** ChangedFilesCapability for Machine A: incapable (no scope derivation needed in E2E). */
+const machineAChangedFiles: ChangedFilesCapability = {
+  canDeriveChangedFiles: () => false,
+  async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+};
 
 // ---------------------------------------------------------------------------
 // Setup / teardown
@@ -306,7 +299,6 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
       };
 
       // Build Machine A's PipelineDeps
-      const machineAStrategy = makeMachineAStrategy(machineADir, SLUG);
       const machineATerminalState = makeMachineATerminalState(machineADir, SLUG);
       const machineADeps: PipelineDeps = {
         config: MINIMAL_CONFIG,
@@ -320,9 +312,9 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         storeFactory: machineAStoreFactory,
         runner: machineARunner,
         terminalState: machineATerminalState,
-        stepArtifact: machineAStrategy as never,
-        stepIo: machineAStrategy as never,
-        changedFiles: machineAStrategy as never,
+        stepArtifact: makeMachineAStepArtifact(),
+        stepIo: machineAStepIo,
+        changedFiles: machineAChangedFiles,
         gitTransportSpawn: defaultSpawnFn,
         roundGitEffects: noopRoundGitEffects,
       };

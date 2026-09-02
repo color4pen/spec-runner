@@ -21,9 +21,10 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { CliStep } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy, FindingRef } from "../../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../../src/core/port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability } from "../../../../src/core/step/step-capability.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
@@ -80,39 +81,28 @@ function makeJobState(jobId: string): JobState {
   };
 }
 
-function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy & PipelineDepsBuilder> = {}): RuntimeStrategy & PipelineDepsBuilder {
+/**
+ * Build a narrow StepArtifactLifecycleCapability for tests.
+ * Only captureHeadSha is exercised by these tests (TC-005/TC-006).
+ * Pass a captureHeadShaFn override to control what HEAD SHA is returned.
+ */
+function makeStepArtifact(
+  captureHeadShaFn?: () => Promise<string | null>,
+): StepArtifactLifecycleCapability {
   return {
-    async *query() {},
-    createAgentRunner(): AgentRunner { return noopRunner; },
-    async setupWorkspace() { return { cwd: tempDir }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    verifyFindingRefs: async (_refs: FindingRef[], _cwd: string, _branch: string | null) => [],
-    async digestArtifacts(refs: { path: string }[], _cwd: string, _branch: string | null) {
-      return refs.map((r) => ({ path: r.path, hash: null }));
-    },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async validateStepOutputs() { return { violations: [] }; },
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    async assertProviderReadiness() {},
-    async assertNoDuplicateLiveJob() {},
-    async reloadJobState(): Promise<JobState> { throw new Error("not implemented"); },
-    canDeriveChangedFiles: () => false,
-    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
-    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
-    async snapshotMainCheckoutGuard() { return null; },
-    async readRevisionContent() { return { current: null, prior: null }; },
-    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
-    ...overrides,
+    captureHeadSha: async (_cwd: string) => captureHeadShaFn ? captureHeadShaFn() : null,
+    prepareStepArtifacts: async () => {},
+    finalizeStepArtifacts: async () => {},
+    snapshotMainCheckoutGuard: async () => null,
+    digestArtifacts: async (refs) => refs.map((r) => ({ path: r.path, hash: null })),
   };
 }
+
+/** Minimal ChangedFilesCapability for tests that do not exercise file derivation. */
+const noopChangedFiles: ChangedFilesCapability = {
+  canDeriveChangedFiles: () => false,
+  listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
+};
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
@@ -189,9 +179,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
     // T-01 must call captureHeadSha BEFORE step.run() → must capture "entry-sha".
     let headSha = "entry-sha";
 
-    const runtimeStrategy = makeRuntimeStrategy({
-      captureHeadSha: async () => headSha,
-    });
+    const stepArtifact = makeStepArtifact(async () => headSha);
 
     // The CLI step simulates propagateVerificationResult advancing HEAD during run().
     const verificationStep: CliStep = {
@@ -210,7 +198,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ stepArtifact: runtimeStrategy as never }),
+      makeDeps({ stepArtifact }),
     );
 
     const runs = resultState.steps?.["verification"];
@@ -231,9 +219,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
 
     // captureHeadSha always returns "sha-c" — but T-01 must call it BEFORE step.run()
     // so the value doesn't change. The key is it's captured, not that it differs.
-    const runtimeStrategy = makeRuntimeStrategy({
-      captureHeadSha: async () => "sha-c",
-    });
+    const stepArtifact = makeStepArtifact(async () => "sha-c");
 
     const verificationStep: CliStep = {
       kind: "cli",
@@ -248,7 +234,7 @@ describe("TC-005: verification CLI step records entry HEAD commitOid (must)", ()
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ stepArtifact: runtimeStrategy as never }),
+      makeDeps({ stepArtifact }),
     );
 
     const runs = resultState.steps?.["verification"];
@@ -300,9 +286,7 @@ describe("TC-006: no runtimeStrategy → commitOid undefined (should)", () => {
     const state = makeJobState(jobId);
 
     // captureHeadSha returns null (e.g. managed runtime, git not available)
-    const runtimeStrategy = makeRuntimeStrategy({
-      captureHeadSha: async () => null,
-    });
+    const stepArtifact = makeStepArtifact(async () => null);
 
     const verificationStep: CliStep = {
       kind: "cli",
@@ -317,7 +301,7 @@ describe("TC-006: no runtimeStrategy → commitOid undefined (should)", () => {
     const resultState = await executor.execute(
       verificationStep,
       state,
-      makeDeps({ stepArtifact: runtimeStrategy as never }),
+      makeDeps({ stepArtifact }),
     );
 
     const runs = resultState.steps?.["verification"];
