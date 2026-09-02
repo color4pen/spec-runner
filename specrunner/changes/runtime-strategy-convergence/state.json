@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T05:32:17.516Z",
+  "updatedAt": "2026-09-02T05:40:47.354Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -143,7 +143,9 @@
     "42dfeeff6680d3859a2d0f6bdd7bb1248d699406",
     "67dcfb8544baded7eda3829a7c4cb1e2ab0ff240",
     "78b9db8e79f1bf2cf25d95cf8276f92b356dda8e",
-    "db542408ca7bdbe5c2d1c4a033eb24e9a6ef83fa"
+    "db542408ca7bdbe5c2d1c4a033eb24e9a6ef83fa",
+    "57ffcf063a5bb4b8caa0a650e3b74102a636e093",
+    "ab4f4aedc141257bcffdefac66a3a0715137713e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -209,12 +211,18 @@
       "src/core/command/runner.ts"
     ],
     "conformance": [
-      "src/core/step/executor.ts",
+      "src/core/port/command-runtime.ts",
+      "src/core/runtime-facade.ts",
       "src/core/command/runner.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/command/resume.ts",
       "src/core/port/runtime-strategy.ts",
-      "src/core/runtime-facade.ts"
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "src/core/step/executor.ts"
     ]
   },
   "resumePoint": null,
@@ -252,7 +260,7 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/1107",
     "number": 1107,
-    "createdAt": "2026-09-01T09:10:13.968Z"
+    "createdAt": "2026-09-02T05:40:46.530Z"
   },
   "operatorAdjudications": [
     {
@@ -262,7 +270,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 378,
+    "historyCount": 392,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -270,16 +278,16 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 12,
-      "verification": 18,
+      "verification": 19,
       "code-review": 10,
       "code-fixer": 12,
       "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
       "custom-reviewers": 8,
       "regression-gate": 10,
-      "conformance": 7,
-      "adr-gen": 1,
-      "pr-create": 1
+      "conformance": 8,
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
