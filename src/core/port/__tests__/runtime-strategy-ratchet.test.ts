@@ -223,7 +223,7 @@ describe("TC-031: RealRuntimeStrategy がテストファイルを含む全ファ
 });
 
 // ---------------------------------------------------------------------------
-// TC-032: Command テストが RuntimeStrategy & PipelineDepsBuilder を再導入しない
+// TC-035: Command テストが RuntimeStrategy & PipelineDepsBuilder を再導入しない
 //
 // Blocking Issue 2 (PR #1107): Command-related test fakes must be narrowed to the
 // production constructor's required narrow contract instead of reimplementing the
@@ -233,8 +233,8 @@ describe("TC-031: RealRuntimeStrategy がテストファイルを含む全ファ
 //   - tests/core/provider-readiness-gate.test.ts
 // ---------------------------------------------------------------------------
 
-describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が存在しない", () => {
-  it("TC-032: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/command/ に 0 件", async () => {
+describe("TC-035: Command テストに RuntimeStrategy & PipelineDepsBuilder が存在しない", () => {
+  it("TC-035: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/command/ に 0 件", async () => {
     const commandTestDir = path.join(TESTS_DIR, "unit", "core", "command");
     const files = (await collectTsFiles(commandTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
@@ -244,7 +244,7 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  it("TC-032b: `RuntimeStrategy & PipelineDepsBuilder` が tests/core/provider-readiness-gate.test.ts に 0 件", async () => {
+  it("TC-035b: `RuntimeStrategy & PipelineDepsBuilder` が tests/core/provider-readiness-gate.test.ts に 0 件", async () => {
     const gateTestFile = path.join(TESTS_DIR, "core", "provider-readiness-gate.test.ts");
     const hits = await findOccurrences([gateTestFile], "RuntimeStrategy & PipelineDepsBuilder");
     expect(
@@ -253,7 +253,7 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  it("TC-032c: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/runtime/ に 0 件", async () => {
+  it("TC-035c: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/runtime/ に 0 件", async () => {
     const runtimeTestDir = path.join(TESTS_DIR, "unit", "core", "runtime");
     const files = (await collectTsFiles(runtimeTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
@@ -263,11 +263,11 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  // TC-032d: step-layer tests (tests/unit/step/) are now guarded after R2c narrowing.
-  // Previously this directory was outside TC-032 scope; the monolithic fakes in
+  // TC-035d: step-layer tests (tests/unit/step/) are now guarded after R2c narrowing.
+  // Previously this directory was outside TC-035 scope; the monolithic fakes in
   // unpushable-path-contract.test.ts and executor-input-validation.test.ts have been
   // replaced with narrow capability stubs (StepIoValidationCapability / noopStepArtifact).
-  it("TC-032d: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/step/ に 0 件", async () => {
+  it("TC-035d: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/step/ に 0 件", async () => {
     const stepTestDir = path.join(TESTS_DIR, "unit", "step");
     const files = (await collectTsFiles(stepTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
@@ -277,11 +277,11 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  // TC-032e: tests/unit/core/step/ is now guarded; monolithic fakes in
+  // TC-035e: tests/unit/core/step/ is now guarded; monolithic fakes in
   // executor-cli-entry-oid.test.ts and verification-phase-outcome-executor.test.ts
   // have been replaced with narrow StepArtifactLifecycleCapability /
   // StepIoValidationCapability / ChangedFilesCapability stubs.
-  it("TC-032e: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/step/ に 0 件", async () => {
+  it("TC-035e: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/core/step/ に 0 件", async () => {
     const coreStepTestDir = path.join(TESTS_DIR, "unit", "core", "step");
     const files = (await collectTsFiles(coreStepTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
@@ -291,10 +291,10 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  // TC-032f: tests/attach/ is now guarded; the monolithic fake in
+  // TC-035f: tests/attach/ is now guarded; the monolithic fake in
   // attach-resume-e2e.test.ts has been replaced with narrow capability stubs
   // (makeMachineAStepArtifact / machineAStepIo / machineAChangedFiles).
-  it("TC-032f: `RuntimeStrategy & PipelineDepsBuilder` が tests/attach/ に 0 件", async () => {
+  it("TC-035f: `RuntimeStrategy & PipelineDepsBuilder` が tests/attach/ に 0 件", async () => {
     const attachTestDir = path.join(TESTS_DIR, "attach");
     const files = (await collectTsFiles(attachTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
@@ -304,10 +304,10 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     ).toHaveLength(0);
   });
 
-  // TC-032g: tests/unit/pipeline/ は pipeline 層テストのディレクトリ。
+  // TC-035g: tests/unit/pipeline/ は pipeline 層テストのディレクトリ。
   // pipeline-sole-committer-round-guard.test.ts の makeRuntimeStrategyMock が
   // RuntimeStrategy から RoundGitEffectsCapability へ置き換えられたため、ここもガード対象とする。
-  it("TC-032g: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/pipeline/ に 0 件", async () => {
+  it("TC-035g: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/pipeline/ に 0 件", async () => {
     const pipelineTestDir = path.join(TESTS_DIR, "unit", "pipeline");
     const files = (await collectTsFiles(pipelineTestDir)).filter((f) => f !== SELF_FILE);
     const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");

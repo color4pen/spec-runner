@@ -177,6 +177,18 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-035: Command / step / runtime / attach / pipeline テストに RuntimeStrategy & PipelineDepsBuilder が存在しない
+
+**Category**: unit
+**Priority**: must
+**Source**: request.md > 受け入れ基準 > test fake は typed builder/helper で必要 contract を満たす / spec.md > Requirement: architecture ratchet が禁止パターンの再導入を防ぐ
+
+**GIVEN** `tests/unit/core/command/`, `tests/core/provider-readiness-gate.test.ts`, `tests/unit/core/runtime/`, `tests/unit/step/`, `tests/unit/core/step/`, `tests/attach/`, `tests/unit/pipeline/` 配下の TypeScript テストファイルを検査する
+**WHEN** `RuntimeStrategy & PipelineDepsBuilder` というテキストを grep する
+**THEN** 一致が 0 件であり、テスト fake が whole-port intersection ではなく Command 層の narrow capability contract（`ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` など）で構築されている
+
+---
+
 ## Group 5: Behavioral Invariants
 
 ### TC-016: ユーザー向け挙動に差分がない
@@ -413,10 +425,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ```yaml
 result: completed
-total: 34
-automated: 33
+total: 35
+automated: 34
 manual: 1
-must: 22
+must: 23
 should: 11
 could: 1
 blocked_reasons: []
