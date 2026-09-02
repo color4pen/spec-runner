@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:28:45.829Z",
+  "updatedAt": "2026-09-02T00:35:53.654Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -116,7 +116,9 @@
     "7ec7376cd26a9bbaca56cd165031b7c911337801",
     "be1ba72dedafd254e38fa2302ee1969a1ced4951",
     "d05cbb5c26192ebaf5c5ea2ad82de1a285bb0c14",
-    "32d73f2ffa53e4a12d668a428bcece8014786af3"
+    "32d73f2ffa53e4a12d668a428bcece8014786af3",
+    "0e9824f0d8366952f3b898ed85af6c4b3bda7361",
+    "1b8d4ee37e7e7cdeb2f19104bc8684f029779df5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -149,8 +151,8 @@
     "spec-fixer": [],
     "implementer": [
       "tests/unit/core/pipeline/runtime-capability-gate.test.ts",
-      "tests/unit/core/pipeline/registry-invariants.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
+      "tests/unit/core/pipeline/registry-invariants.test.ts",
       "src/core/port/runtime-strategy.ts"
     ],
     "code-review": [
@@ -237,15 +239,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 252,
+    "historyCount": 261,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 8,
-      "verification": 12,
+      "implementer": 9,
+      "verification": 13,
       "code-review": 7,
       "code-fixer": 6,
       "cross-boundary-invariants": 4,
