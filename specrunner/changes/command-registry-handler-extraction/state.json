@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T16:38:43.634Z",
+  "updatedAt": "2026-09-02T23:46:49.914Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -122,13 +122,17 @@
       "src/cli/doctor.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "Operator 裁定（code-review iter 1 の 3 findings に対して）:\n\nFinding 3（bin/specrunner.ts の duck-type guard isFlagParseError / isSpecRunnerError、decision-needed）: 受け入れる。handler を別モジュールに抽出したことで、main() を vi.resetModules() 付きで呼ぶ既存テスト（tests/unit/cli/*.test.ts、10 本）で module 境界を跨ぐ error の instanceof が落ちるのを回避する companion fix として R3a に含める。production の挙動は不変。差し戻し不要。ただし design.md に「抽出に伴う companion fix」として 1 段落で記録すること。\n\nFinding 1（architecture-ratchet Check 3 が regex 実装、medium）: 修正する。design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査し、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import も検出できることを確認するテストケースを追加する。\n\nFinding 2（scaffold-handlers.ts / usage-handler.ts の ctx!.invokerCwd、low）: 実装側を採用する。process.cwd() には戻さず、tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx.invokerCwd（dispatch 時に process.cwd() を capture、同値）に更新して整合させる。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない。",
+      "step": "code-review",
+      "recordedAt": "2026-09-02T23:46:49.602Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
