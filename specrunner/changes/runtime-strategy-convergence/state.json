@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T01:27:26.829Z",
+  "updatedAt": "2026-09-02T01:31:14.378Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
-  "error": null,
+  "error": {
+    "code": "CONFORMANCE_RETRIES_EXHAUSTED",
+    "message": "conformance did not approve after 2 iterations",
+    "hint": "Review conformance-result-006.md and fix the implementation manually."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -134,7 +138,8 @@
     "29af2cb3bfc91503221deabbc87d1c15eddb5e42",
     "05c57e96753537aad5ba56d8eb295204ca73969e",
     "94c28c477d16d2cd674610d6b1a73d4d79ebe1b9",
-    "450c5c29faf0eb5bd10abfb568b66be2e9b6511e"
+    "450c5c29faf0eb5bd10abfb568b66be2e9b6511e",
+    "28946839ba40635b0efdb1991cd65a2a9900bd60"
   ],
   "touchedFiles": {
     "request-review": [
@@ -191,16 +196,16 @@
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
+      "src/core/port/provider-readiness.ts",
       "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
-      "src/core/command/runner.ts",
-      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
       "tests/unit/core/command/runner.test.ts",
       "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
       "tests/unit/core/pipeline/resolve-scope.test.ts",
       "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/core/port/provider-readiness.ts"
+      "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts",
+      "src/core/command/runner.ts"
     ],
     "conformance": [
       "src/core/command/runner.ts",
@@ -215,7 +220,12 @@
       "src/core/step/executor.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "conformance did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-exhausted"
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -260,7 +270,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 332,
+    "historyCount": 335,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -274,7 +284,7 @@
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 7,
-      "regression-gate": 8,
+      "regression-gate": 9,
       "conformance": 6,
       "adr-gen": 1,
       "pr-create": 1
