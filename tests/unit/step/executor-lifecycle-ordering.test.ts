@@ -26,6 +26,7 @@ import { buildInitialJobState } from "../../../src/store/job-state-store.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 
 let tempDir: string;
 
@@ -138,27 +139,25 @@ describe("T-15: Step finalize lifecycle ordering", () => {
 
     const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
 
-    const stepArtifact = {
-      async captureHeadSha(): Promise<string | null> { return null; },
-      async prepareStepArtifacts(): Promise<void> {},
+    const stepArtifact: StepArtifactLifecycleCapability = {
+      async captureHeadSha() { return null; },
+      async prepareStepArtifacts() {},
       finalizeStepArtifacts: finalizeSpy,
-      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-      async digestArtifacts(refs: { path: string }[]) {
-        return refs.map((r) => ({ path: r.path, hash: null as null }));
-      },
+      async snapshotMainCheckoutGuard() { return null; },
+      async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
     };
 
-    const stepIo = {
-      async validateStepInputs(): Promise<void> {},
-      async validateStepOutputs() { return { violations: [] as never[] }; },
-      async verifyFindingRefs(refs: { file: string }[]) { return refs; },
+    const stepIo: StepIoValidationCapability = {
+      async validateStepInputs() {},
+      async validateStepOutputs() { return { violations: [] }; },
+      async verifyFindingRefs(refs) { return refs; },
     };
 
     const deps = makeBaseDeps({
       cwd: tempDir,
       slug: "test-slug",
-      stepArtifact: stepArtifact as never,
-      stepIo: stepIo as never,
+      stepArtifact,
+      stepIo,
     });
 
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
@@ -181,27 +180,25 @@ describe("T-15: Step finalize lifecycle ordering", () => {
 
     const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
 
-    const stepArtifact = {
-      async captureHeadSha(): Promise<string | null> { return null; },
-      async prepareStepArtifacts(): Promise<void> {},
+    const stepArtifact: StepArtifactLifecycleCapability = {
+      async captureHeadSha() { return null; },
+      async prepareStepArtifacts() {},
       finalizeStepArtifacts: finalizeSpy,
-      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-      async digestArtifacts(refs: { path: string }[]) {
-        return refs.map((r) => ({ path: r.path, hash: null as null }));
-      },
+      async snapshotMainCheckoutGuard() { return null; },
+      async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
     };
 
-    const stepIo = {
-      async validateStepInputs(): Promise<void> {},
-      async validateStepOutputs() { return { violations: [] as never[] }; },
-      async verifyFindingRefs(refs: { file: string }[]) { return refs; },
+    const stepIo: StepIoValidationCapability = {
+      async validateStepInputs() {},
+      async validateStepOutputs() { return { violations: [] }; },
+      async verifyFindingRefs(refs) { return refs; },
     };
 
     const deps = makeBaseDeps({
       cwd: tempDir,
       slug: "test-slug",
-      stepArtifact: stepArtifact as never,
-      stepIo: stepIo as never,
+      stepArtifact,
+      stepIo,
       roundOwnsGitEffects: true,
     });
 
@@ -250,27 +247,25 @@ describe("T-15: Step finalize lifecycle ordering", () => {
 
     const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
 
-    const stepArtifact = {
-      async captureHeadSha(): Promise<string | null> { return null; },
+    const stepArtifact: StepArtifactLifecycleCapability = {
+      async captureHeadSha() { return null; },
       prepareStepArtifacts: prepareArtifactsSpy,
       finalizeStepArtifacts: finalizeSpy,
-      async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-      async digestArtifacts(refs: { path: string }[]) {
-        return refs.map((r) => ({ path: r.path, hash: null as null }));
-      },
+      async snapshotMainCheckoutGuard() { return null; },
+      async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
     };
 
-    const stepIo = {
-      async validateStepInputs(): Promise<void> {},
-      async validateStepOutputs() { return { violations: [] as never[] }; },
-      async verifyFindingRefs(refs: { file: string }[]) { return refs; },
+    const stepIo: StepIoValidationCapability = {
+      async validateStepInputs() {},
+      async validateStepOutputs() { return { violations: [] }; },
+      async verifyFindingRefs(refs) { return refs; },
     };
 
     const deps = makeBaseDeps({
       cwd: tempDir,
       slug: "test-slug",
-      stepArtifact: stepArtifact as never,
-      stepIo: stepIo as never,
+      stepArtifact,
+      stepIo,
     });
 
     const executor = new StepExecutor(events, runnerWithOrder, makeStoreFactory(tempDir));

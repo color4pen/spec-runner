@@ -7,8 +7,9 @@
  */
 import type { PreflightResult } from "../preflight.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
-import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeFacade } from "../runtime-facade.js";
+import { CommandRunner, type PrepareResult, type CommandRunnerRuntime } from "./runner.js";
+import type { JobBootstrapCapability } from "../port/command-runtime.js";
+import type { ChangedFilesCapability } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
@@ -57,16 +58,33 @@ const CANONICAL_PATTERN = /^.*\/specrunner\/drafts\/([^/]+)\/request\.md$/;
 // Legacy pattern: specrunner/drafts/<slug>.md (backward compatibility)
 const CANONICAL_PATTERN_LEGACY = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
 
+// ---------------------------------------------------------------------------
+// PipelineRunRuntime: the capability intersection PipelineRunCommand requires
+// ---------------------------------------------------------------------------
+
+/**
+ * Capability type for PipelineRunCommand.
+ *
+ * Design D2 (canon): Extends CommandRunnerRuntime with:
+ * - JobBootstrapCapability: assertNoDuplicateLiveJob + bootstrapJob
+ * - ChangedFilesCapability: passed to assertRuntimeSupportsScope (scope gate)
+ *
+ * PipelineRunCommand does not call canDeriveChangedFiles or listChangedFiles
+ * directly — ChangedFilesCapability is included because the runtime is passed
+ * to assertRuntimeSupportsScope() which requires it.
+ */
+export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability;
+
 /**
  * CommandRunner for `specrunner run`.
  * prepare() creates job state and returns PrepareResult.
  * Preflight must be done by the caller before constructing this class.
  */
 export class PipelineRunCommand extends CommandRunner {
-  private readonly pipelineRuntime: RuntimeFacade;
+  private readonly pipelineRuntime: PipelineRunRuntime;
 
   constructor(
-    runtime: RuntimeFacade,
+    runtime: PipelineRunRuntime,
     events: EventBus,
     private readonly absolutePath: string,
     private readonly preflightResult: PreflightResult,

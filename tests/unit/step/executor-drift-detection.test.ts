@@ -16,7 +16,8 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy, MainCheckoutGuardSnapshot } from "../../../src/core/port/runtime-strategy.js";
+import type { MainCheckoutGuardSnapshot } from "../../../src/core/port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability } from "../../../src/core/step/step-capability.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
@@ -90,38 +91,25 @@ function makeConfig(): SpecRunnerConfig {
 }
 
 /**
- * Build a minimal RuntimeStrategy with injectable snapshotMainCheckoutGuard.
+ * Build a StepArtifactLifecycleCapability with injectable snapshotMainCheckoutGuard.
  */
-function makeStrategy(opts: {
+function makeStepArtifact(opts: {
   snapshotBefore: MainCheckoutGuardSnapshot | null;
   snapshotAfter: MainCheckoutGuardSnapshot | null;
-}) {
+}): StepArtifactLifecycleCapability {
   let callCount = 0;
   return {
-    async *query() {},
-    createAgentRunner: () => makeSuccessRunner(),
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
-    async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async snapshotMainCheckoutGuard(_cwd: string, _config: unknown): Promise<MainCheckoutGuardSnapshot | null> {
+    async captureHeadSha() { return null; },
+    async prepareStepArtifacts() {},
+    async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() {
       return callCount++ === 0 ? opts.snapshotBefore : opts.snapshotAfter;
     },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeDeps(runtimeStrategy?: any): PipelineDeps {
+function makeDeps(stepArtifact?: StepArtifactLifecycleCapability): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -158,8 +146,7 @@ function makeDeps(runtimeStrategy?: any): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
-    changedFiles: runtimeStrategy as never,
+    stepArtifact: stepArtifact ?? noopStepArtifact,
     stepIo: noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
@@ -188,10 +175,10 @@ describe("TC-DD-001: no drift → step succeeds", () => {
     await seedJobState(jobId, state);
 
     const snapshot: MainCheckoutGuardSnapshot = { entries: [{ path: ".specrunner/config.json", hash: "abc123" }] };
-    const strategy = makeStrategy({ snapshotBefore: snapshot, snapshotAfter: snapshot });
+    const stepArtifactCap = makeStepArtifact({ snapshotBefore: snapshot, snapshotAfter: snapshot });
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
-    const result = await executor.execute(makeStep(), state, makeDeps(strategy));
+    const result = await executor.execute(makeStep(), state, makeDeps(stepArtifactCap));
     expect(result.status).toBe("running");
   });
 });
@@ -208,13 +195,13 @@ describe("TC-DD-002: drift detected → awaiting-resume", () => {
 
     const before: MainCheckoutGuardSnapshot = { entries: [{ path: ".specrunner/config.json", hash: "hash-a" }] };
     const after: MainCheckoutGuardSnapshot = { entries: [{ path: ".specrunner/config.json", hash: "hash-b" }] };
-    const strategy = makeStrategy({ snapshotBefore: before, snapshotAfter: after });
+    const stepArtifactCap = makeStepArtifact({ snapshotBefore: before, snapshotAfter: after });
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
 
     let caughtErr: Error & { state?: JobState } | undefined;
     try {
-      await executor.execute(makeStep(), state, makeDeps(strategy));
+      await executor.execute(makeStep(), state, makeDeps(stepArtifactCap));
     } catch (err) {
       caughtErr = err as Error & { state?: JobState };
     }
@@ -243,7 +230,7 @@ describe("TC-DD-003: no runtimeStrategy → drift check skipped", () => {
     await seedJobState(jobId, state);
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
-    const result = await executor.execute(makeStep(), state, makeDeps(undefined));
+    const result = await executor.execute(makeStep(), state, makeDeps());
     expect(result.status).toBe("running");
   });
 });
@@ -261,13 +248,13 @@ describe("TC-DD-004: drift halt state has expected fields", () => {
     const before: MainCheckoutGuardSnapshot = { entries: [] };
     // After: one new entry → "created" drift
     const after: MainCheckoutGuardSnapshot = { entries: [{ path: ".specrunner/config.json", hash: "new-hash" }] };
-    const strategy = makeStrategy({ snapshotBefore: before, snapshotAfter: after });
+    const stepArtifactCap = makeStepArtifact({ snapshotBefore: before, snapshotAfter: after });
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
 
     let caughtErr: Error & { state?: JobState } | undefined;
     try {
-      await executor.execute(makeStep(), state, makeDeps(strategy));
+      await executor.execute(makeStep(), state, makeDeps(stepArtifactCap));
     } catch (err) {
       caughtErr = err as Error & { state?: JobState };
     }

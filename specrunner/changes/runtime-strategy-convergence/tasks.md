@@ -90,11 +90,11 @@
 ## T-06: `ResumeCommand` を更新する
 
 - [x] `RuntimeStrategy` の import を削除し、新 interface/alias に差し替える
-- [ ] `src/core/command/runner.ts` に `export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を定義し、`CommandRunner` のコンストラクタ引数型をこれに置き換える
-- [ ] `src/core/command/resume.ts` のコンストラクタ引数 `runtime` の型を `RuntimeFacade` から `CommandRunnerRuntime` に変更し、`RuntimeFacade` の import を削除する
-- [ ] `src/core/command/pipeline-run.ts` に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability` を定義し、コンストラクタ引数と `pipelineRuntime` フィールドの型を `RuntimeFacade` から `PipelineRunRuntime` に変更する（`ChangedFilesCapability` は直接呼ばないため含めない）
-- [ ] `RuntimeFacade` の production consumer が composition root（`src/core/runtime/factory.ts`, `src/cli/bootstrap.ts`）のみになっていることを確認する
-- [ ] `bun run typecheck` を実行してエラーがないことを確認する
+- [x] `src/core/command/runner.ts` に `export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を定義し、`CommandRunner` のコンストラクタ引数型をこれに置き換える
+- [x] `src/core/command/resume.ts` のコンストラクタ引数 `runtime` の型を `RuntimeFacade` から `CommandRunnerRuntime` に変更し、`RuntimeFacade` の import を削除する
+- [x] `src/core/command/pipeline-run.ts` に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability` を定義し、コンストラクタ引数と `pipelineRuntime` フィールドの型を `RuntimeFacade` から `PipelineRunRuntime` に変更する（`ChangedFilesCapability` は直接呼ばないため含めない）
+- [x] `RuntimeFacade` の production consumer が composition root（`src/core/runtime/factory.ts`, `src/cli/bootstrap.ts`）のみになっていることを確認する
+- [x] `bun run typecheck` を実行してエラーがないことを確認する
 
 **Acceptance Criteria**:
 - `resume.ts` に `RuntimeStrategy` / `RuntimeFacade` の import が存在せず、コンストラクタ引数型が `CommandRunnerRuntime` である
@@ -266,11 +266,11 @@
 
 対象: `tests/unit/step/executor-activation.test.ts`, `executor-resume-context.test.ts`, `executor-verdict.test.ts`, `executor-no-op.test.ts`, `executor-drift-detection.test.ts`
 
-- [ ] 各テストの `makeRuntimeStrategy()` / `any` 型の runtime 引数を廃止し、`stepArtifact` 用 `StepArtifactLifecycleCapability`、`stepIo` 用 `StepIoValidationCapability`、`changedFiles` 用 `ChangedFilesCapability` の typed object をそれぞれ構築する（テストが使わないメソッドは `vi.fn()` / noop で最小実装し、command lifecycle / commit inspection / revision content 系メソッドは持たせない）
-- [ ] `stepArtifact: x as never` / `stepIo: x as never` / `changedFiles: x as never` を typed 変数の直接代入に置き換える
-- [ ] 5 ファイルで重複する fake は `tests/unit/step/` 配下の typed builder/helper に集約してよい（production src には置かない）
-- [ ] `tests/pipeline-integration.test.ts` の `import type { RuntimeStrategy }` を capability interface 由来の型参照に置き換え、whole-port import を削除する
-- [ ] `bun run test tests/unit/step tests/pipeline-integration.test.ts` が通ることを確認する
+- [x] 各テストの `makeRuntimeStrategy()` / `any` 型の runtime 引数を廃止し、`stepArtifact` 用 `StepArtifactLifecycleCapability`、`stepIo` 用 `StepIoValidationCapability`、`changedFiles` 用 `ChangedFilesCapability` の typed object をそれぞれ構築する（テストが使わないメソッドは `vi.fn()` / noop で最小実装し、command lifecycle / commit inspection / revision content 系メソッドは持たせない）
+- [x] `stepArtifact: x as never` / `stepIo: x as never` / `changedFiles: x as never` を typed 変数の直接代入に置き換える
+- [x] 5 ファイルで重複する fake は `tests/unit/step/` 配下の typed builder/helper に集約してよい（production src には置かない）
+- [x] `tests/pipeline-integration.test.ts` の `import type { RuntimeStrategy }` を capability interface 由来の型参照に置き換え、whole-port import を削除する
+- [x] `bun run test tests/unit/step tests/pipeline-integration.test.ts` が通ることを確認する
 
 **Acceptance Criteria**:
 - 対象 5 ファイルに `RuntimeStrategy` の import、`any` 型の runtime 引数、capability slot への `as never` が存在しない
@@ -283,10 +283,10 @@
 
 `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` に追加する:
 
-- [ ] `tests/**` および `src/**/__tests__/**`（ratchet test 自身と `command-lifecycle-contract.test.ts` を除く）で、`RuntimeStrategy` を named import する `import type { ... RuntimeStrategy ... }` / `import { ... RuntimeStrategy ... }` が 0 件であることを assert する（`RuntimeStrategy &` リテラルではなく import 文を対象にする）
-- [ ] `tests/unit/step/` 配下で、capability slot（`stepArtifact`, `stepIo`, `changedFiles`, `roundGitEffects`, `terminalState`, `commitInspection`, `revisionContent`）への `<identifier> as never` 注入が 0 件であることを assert する
-- [ ] `tests/unit/step/` 配下の既存テストで上記に該当する箇所（T-15 対象外のファイルを含む）を typed object に置き換え、ratchet が green になることを確認する
-- [ ] `bun run test src/core/port/__tests__/runtime-strategy-ratchet.test.ts` が通ることを確認する
+- [x] `tests/**` および `src/**/__tests__/**`（ratchet test 自身と `command-lifecycle-contract.test.ts` を除く）で、`RuntimeStrategy` を named import する `import type { ... RuntimeStrategy ... }` / `import { ... RuntimeStrategy ... }` が 0 件であることを assert する（`RuntimeStrategy &` リテラルではなく import 文を対象にする）
+- [x] `tests/unit/step/` 配下で、capability slot（`stepArtifact`, `stepIo`, `changedFiles`, `roundGitEffects`, `terminalState`, `commitInspection`, `revisionContent`）への `<identifier> as never` 注入が 0 件であることを assert する
+- [x] `tests/unit/step/` 配下の既存テストで上記に該当する箇所（T-15 対象外のファイルを含む）を typed object に置き換え、ratchet が green になることを確認する
+- [x] `bun run test src/core/port/__tests__/runtime-strategy-ratchet.test.ts` が通ることを確認する
 
 **Acceptance Criteria**:
 - ratchet が whole-port `RuntimeStrategy` import と slot への `as never` 注入の再導入で fail する

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T05:40:47.354Z",
+  "updatedAt": "2026-09-02T07:28:55.909Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
   "pipelineId": "standard",
@@ -267,10 +267,15 @@
       "text": "PR #1107 のオーナーレビュー (https://github.com/color4pen/spec-runner/pull/1107#issuecomment-5492388304) で blocking 2 件が指摘された。マージ前に以下を修正すること。\n\n1. [blocking] 新規 DSM allowlist entry `R2c-command-runtime-dsm` を削除し、ports→domain の新規逆依存を解消する。\n- `src/core/port/command-runtime.ts` が domain の `../types.js` (`PipelineDepsBuilder`) を import している。capability interface は port に残してよいが、`PipelineDepsBuilder` を含む aggregate を port に置かないこと。\n- 分離例 (レビュアー提案): Command 層が consumer ごとの明示的 capability intersection を所有する。`CommandRunner` = readiness / workspace lifecycle / state persistence / deps builder のみ。`PipelineRunCommand` = 上記 + job bootstrap + changed-files derivability。`ResumeCommand` = `CommandRunner` に必要な契約のみ。factory/bootstrap 用 aggregate が必要なら composition-root 側に置く。\n- `tests/unit/architecture/arch-allowlist.ts` の `R2c-command-runtime-dsm` entry を削除する (allowlist GOVERNANCE は既存 entry からの縮小のみ許可)。`PipelineDepsBuilder` を ports に戻す案は R2b で解消した ports→domain 依存の再導入になるため採用禁止。\n\n2. [blocking] test fake を narrow contract に収束させる。\n- optional→required 化で少なくとも 18 ファイルの test fake に未使用メソッドが機械的に追加されている (例: tests/core/provider-readiness-gate.test.ts の full `RuntimeStrategy & PipelineDepsBuilder` fake)。少なくとも今回変更した Command 系テストは、production constructor が要求する narrow contract に合わせた typed builder/helper に置き換え、テストのために full `RuntimeStrategy` を実装させる状態を残さないこと。\n- ratchet (`src/core/port/__tests__/runtime-strategy-ratchet.test.ts`) を production だけでなく Command 系 test fake への whole-port 再導入も検知できる形に拡張する。\n\n[completion] 指摘 (PR 本文への before/after 実測値追記) は operator 側で対応するため、この resume の対象外。",
       "step": "implementer",
       "recordedAt": "2026-09-01T10:58:46.241Z"
+    },
+    {
+      "text": "PR #1107 のオーナー再レビュー (https://github.com/color4pen/spec-runner/pull/1107#issuecomment-5505630274) で blocking 2 件が指摘された。canon (design.md D2/D6/D7, spec.md, tasks.md T-06/T-15/T-16, test-cases.md TC-020/TC-021/TC-036/TC-037) は operator が commit 728cd1ee で更新済み。canon に従って以下を修正すること。canon ファイル (request/spec/design/tasks/test-cases.md) は編集しないこと。\n\n1. [blocking] ResumeCommand が未使用 capability を含む RuntimeFacade に依存している。\n- src/core/command/runner.ts に `export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を定義し、CommandRunner のコンストラクタ引数型にする。\n- src/core/command/resume.ts のコンストラクタ引数型を RuntimeFacade から CommandRunnerRuntime に変更し、RuntimeFacade の import を削除する。\n- src/core/command/pipeline-run.ts に `export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability` を定義し、コンストラクタ引数と pipelineRuntime フィールドの型を RuntimeFacade から PipelineRunRuntime に変更する。PipelineRunCommand は ChangedFilesCapability を直接呼ばないため含めない (オーナー案と異なる点。canon design D2 に明記済み)。\n- RuntimeFacade は composition root (src/core/runtime/factory.ts, src/cli/bootstrap.ts) と contract/ratchet test のみが使う状態にする。tests/unit/core/command/ 配下の test fake も新しい narrow 型 (CommandRunnerRuntime / PipelineRunRuntime) に合わせて typed builder/helper で構築する。\n\n2. [blocking] whole-port test fake が残り、ratchet で検知できない。\n- tests/unit/step/executor-activation.test.ts (any で受けた同一 object を as never で stepArtifact / stepIo / changedFiles に注入)、executor-resume-context.test.ts、executor-verdict.test.ts、executor-no-op.test.ts、executor-drift-detection.test.ts (RuntimeStrategy を import した全メソッド fake を as never で注入) を、slot ごとに StepArtifactLifecycleCapability / StepIoValidationCapability / ChangedFilesCapability 型の typed object に分離する。テストが使わない command lifecycle / commit inspection / revision content 系メソッドは fake に持たせない。重複は tests/unit/step/ 配下の typed builder/helper に集約してよい (production src には置かない)。\n- tests/pipeline-integration.test.ts の `import type { RuntimeStrategy }` (ReturnType<RuntimeStrategy[\"registerCleanup\"]> の型参照のみ) を capability interface 由来の型に置き換え、whole-port import を削除する。\n- src/core/port/__tests__/runtime-strategy-ratchet.test.ts に TC-037 を追加する: (a) tests/** および src/**/__tests__/** (ratchet test 自身と command-lifecycle-contract.test.ts を除く) で RuntimeStrategy を named import する import 文が 0 件、(b) tests/unit/step/ 配下で capability slot (stepArtifact, stepIo, changedFiles, roundGitEffects, terminalState, commitInspection, revisionContent) への `<identifier> as never` 注入が 0 件。(b) は tests/unit/step/ の他のファイル (executor-lifecycle-ordering, executor-output-gate, unpushable-path-escalation, severity-fixability-split, executor-commit-mutex, executor-skip-when 等) にも該当箇所があるため、それらも typed object に置き換えて ratchet を green にする。\n\n3. [metrics] PR 本文の Capability Consumer Table 更新は operator 側で対応済み・完走後に再計測するため、この resume の対象外。\n\n完了条件: bun run typecheck / test / lint が green、TC-020 / TC-021 / TC-036 / TC-037 を満たす、canon ファイルを変更しない。",
+      "step": "implementer",
+      "recordedAt": "2026-09-02T07:28:55.436Z"
     }
   ],
   "_journal": {
-    "historyCount": 392,
+    "historyCount": 395,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

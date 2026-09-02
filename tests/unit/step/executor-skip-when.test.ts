@@ -20,7 +20,7 @@ import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopTerminalState, noopStepArtifact, noopStepIo } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -67,7 +67,7 @@ function makeConfig(): SpecRunnerConfig {
   return { version: 1, runtime: "local", agents: {} };
 }
 
-function makeMinimalDeps(runtimeStrategy: ReturnType<typeof makeMinimalRuntimeStrategy>): PipelineDeps {
+function makeMinimalDeps(): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -85,34 +85,10 @@ function makeMinimalDeps(runtimeStrategy: ReturnType<typeof makeMinimalRuntimeSt
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    stepArtifact: runtimeStrategy as never,
-    stepIo: runtimeStrategy as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
-  };
-}
-
-function makeMinimalRuntimeStrategy() {
-  return {
-    async *query() {},
-    createAgentRunner() {
-      return { async run() { return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }; } };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as never; },
-    registerCleanup() { return {} as never; },
-    async teardown() {},
-    async captureHeadSha() { return null; },
-    async prepareStepArtifacts() {},
-    async finalizeStepArtifacts() {},
-    async snapshotMainCheckoutGuard() { return null; },
-    async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState() {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 
@@ -147,8 +123,6 @@ describe("skipWhen gate — skip when predicate returns non-null", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -159,7 +133,7 @@ describe("skipWhen gate — skip when predicate returns non-null", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+    const result = await executor.execute(step, state, makeMinimalDeps());
 
     // Agent should NOT have been called
     expect(runMock).not.toHaveBeenCalled();
@@ -178,8 +152,6 @@ describe("skipWhen gate — skip when predicate returns non-null", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -191,7 +163,7 @@ describe("skipWhen gate — skip when predicate returns non-null", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+    const result = await executor.execute(step, state, makeMinimalDeps());
 
     const run = result.steps?.["test-step"]?.[0];
     expect(run?.outcome.skipReason).toBe(customReason);
@@ -211,8 +183,6 @@ describe("skipWhen gate — proceed when predicate returns null", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -223,7 +193,7 @@ describe("skipWhen gate — proceed when predicate returns null", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    await executor.execute(step, state, makeMinimalDeps(strategy));
+    await executor.execute(step, state, makeMinimalDeps());
 
     expect(runMock).toHaveBeenCalledOnce();
   });
@@ -236,8 +206,6 @@ describe("skipWhen gate — proceed when predicate returns null", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -245,7 +213,7 @@ describe("skipWhen gate — proceed when predicate returns null", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+    const result = await executor.execute(step, state, makeMinimalDeps());
 
     const run = result.steps?.["test-step"]?.[0];
     expect(run?.outcome.verdict).not.toBe("skipped");
@@ -265,8 +233,6 @@ describe("skipWhen gate — no-op for steps without skipWhen", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -275,7 +241,7 @@ describe("skipWhen gate — no-op for steps without skipWhen", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    await executor.execute(step, state, makeMinimalDeps(strategy));
+    await executor.execute(step, state, makeMinimalDeps());
 
     expect(runMock).toHaveBeenCalledOnce();
   });
@@ -294,8 +260,6 @@ describe("skipWhen gate — state and deps are passed correctly", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeMinimalRuntimeStrategy();
-
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
 
@@ -313,7 +277,7 @@ describe("skipWhen gate — state and deps are passed correctly", () => {
     const state = makeMinimalState();
     await makeStoreFactory(tempDir)(state.jobId).persist(state);
 
-    await executor.execute(step, state, makeMinimalDeps(strategy));
+    await executor.execute(step, state, makeMinimalDeps());
 
     expect(capturedState).toBeDefined();
     expect(capturedDepsAdr).toBe(false); // makeMinimalDeps passes adr: false

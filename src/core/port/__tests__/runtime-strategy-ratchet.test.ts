@@ -108,6 +108,27 @@ async function findOccurrences(
   return results;
 }
 
+async function findOccurrencesRegex(
+  files: string[],
+  pattern: RegExp,
+): Promise<{ file: string; count: number }[]> {
+  const results: { file: string; count: number }[] = [];
+  for (const file of files) {
+    let content: string;
+    try {
+      content = await fs.readFile(file, "utf-8");
+    } catch {
+      continue;
+    }
+    const matches = content.match(new RegExp(pattern.source, "g" + (pattern.flags.replace("g", ""))));
+    const count = matches ? matches.length : 0;
+    if (count > 0) {
+      results.push({ file, count });
+    }
+  }
+  return results;
+}
+
 // ---------------------------------------------------------------------------
 // Repo root resolution
 // ---------------------------------------------------------------------------
@@ -343,6 +364,54 @@ describe("TC-035: Command テストに RuntimeStrategy & PipelineDepsBuilder が
     expect(
       hits,
       `Found RuntimeStrategy & PipelineDepsBuilder in root-level tests/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: No whole-port RuntimeStrategy fakes remain in test files
+// ---------------------------------------------------------------------------
+
+describe("TC-037: whole-port test fakes eliminated", () => {
+  // TC-037a: 0 `import type { RuntimeStrategy }` (or similar named import) in test files
+  // Exceptions: ratchet file itself, and command-lifecycle-contract.test.ts
+  it("TC-037a: RuntimeStrategy named imports absent from test files", async () => {
+    const allTestFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
+    const ALLOWED_FILES = new Set([
+      path.join(REPO_ROOT, "src/core/port/__tests__/runtime-strategy-ratchet.test.ts"),
+      path.join(REPO_ROOT, "tests/core/command-lifecycle-contract.test.ts"),
+    ]);
+    const candidateFiles = allTestFiles.filter((f) => !ALLOWED_FILES.has(f));
+    // Match: `import ... { RuntimeStrategy ...` (named import, possibly with aliases or other names)
+    const hits = await findOccurrencesRegex(candidateFiles, /import[^;]*\{\s*[^}]*\bRuntimeStrategy\b/);
+    expect(
+      hits,
+      `Found RuntimeStrategy named imports in test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
+
+  // TC-037b: 0 `as never` slot injections in tests/unit/step/
+  // These were used to bypass TypeScript when assigning monolith fakes to typed slots.
+  // Pattern: stepArtifact: x as never, stepIo: x as never, changedFiles: x as never
+  it("TC-037b: `as never` slot injections absent from tests/unit/step/", async () => {
+    const STEP_UNIT_DIR = path.join(TESTS_DIR, "unit/step");
+    let entries: string[];
+    try {
+      entries = await fs.readdir(STEP_UNIT_DIR);
+    } catch {
+      entries = [];
+    }
+    const stepTestFiles = entries
+      .filter((e) => e.endsWith(".ts"))
+      .map((e) => path.join(STEP_UNIT_DIR, e));
+    // Match: `(stepArtifact|stepIo|changedFiles): ... as never`
+    const hits = await findOccurrencesRegex(
+      stepTestFiles,
+      /\b(stepArtifact|stepIo|changedFiles)\s*:\s*[^,\n]* as never/,
+    );
+    expect(
+      hits,
+      `Found "as never" slot injections in tests/unit/step/:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
 });

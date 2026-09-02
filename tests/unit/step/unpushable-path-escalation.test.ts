@@ -46,6 +46,7 @@ import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { WORKFLOWS_PATTERN } from "../../../src/git/push-capability.js";
 import type { PushCapability } from "../../../src/git/push-capability.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 
 // ---------------------------------------------------------------------------
 // Test state
@@ -114,31 +115,25 @@ const declaringCapability: PushCapability = {
 };
 
 /**
- * Build a RuntimeStrategy mock that returns the given violations from validateStepOutputs.
+ * Build typed capability objects that return the given violations from validateStepOutputs.
  */
-function makeRuntimeStrategy(
+function makeCapabilities(
   validateFn: () => Promise<OutputCheckResult>,
-): { strategy: ReturnType<typeof _makeRuntimeStrategyObj>; finalizeSpy: ReturnType<typeof vi.fn> } {
+): { stepArtifact: StepArtifactLifecycleCapability; stepIo: StepIoValidationCapability; finalizeSpy: ReturnType<typeof vi.fn> } {
   const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const strategy = _makeRuntimeStrategyObj(validateFn, finalizeSpy);
-  return { strategy, finalizeSpy };
-}
-
-function _makeRuntimeStrategyObj(
-  validateFn: () => Promise<OutputCheckResult>,
-  finalizeSpy: ReturnType<typeof vi.fn>,
-) {
-  return {
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
+  const stepArtifact: StepArtifactLifecycleCapability = {
+    async captureHeadSha() { return null; },
+    async prepareStepArtifacts() {},
     finalizeStepArtifacts: finalizeSpy,
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async verifyFindingRefs() { return [] as never[]; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    validateStepOutputs: validateFn,
-    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
+    async snapshotMainCheckoutGuard() { return null; },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
   };
+  const stepIo: StepIoValidationCapability = {
+    async validateStepInputs() {},
+    async verifyFindingRefs() { return []; },
+    validateStepOutputs: validateFn,
+  };
+  return { stepArtifact, stepIo, finalizeSpy };
 }
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
@@ -231,7 +226,7 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
 
     // validateStepOutputs would return a violation if called for unpushable-path contracts,
     // but the gate filters them out before calling validateStepOutputs.
-    const { strategy, finalizeSpy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo, finalizeSpy } = makeCapabilities(async () => ({
       violations: [
         {
           kind: "unpushable-path",
@@ -256,8 +251,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
 
     // Gate does NOT halt — it passes through to finalizeStepArtifacts (Layer 2).
     await executor.execute(step, state, makeDeps({
-      stepArtifact: strategy as never,
-      stepIo: strategy as never,
+      stepArtifact,
+      stepIo,
       pushCapability: declaringCapability,
     }));
 
@@ -272,8 +267,7 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
 
     const validateSpy = vi.fn<() => Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult>>()
       .mockResolvedValue({ violations: [] });
-    const { strategy } = makeRuntimeStrategy(validateSpy);
-    strategy.validateStepOutputs = validateSpy;
+    const { stepArtifact, stepIo } = makeCapabilities(validateSpy);
 
     const step = makeStepWithContracts([
       {
@@ -288,8 +282,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     await executor.execute(step, state, makeDeps({
-      stepArtifact: strategy as never,
-      stepIo: strategy as never,
+      stepArtifact,
+      stepIo,
       pushCapability: declaringCapability,
     }));
 
@@ -302,7 +296,7 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         { kind: "unpushable-path", path: "", policy: "follow-up", detail: [".github/workflows/ci.yml"] },
       ],
@@ -316,8 +310,8 @@ describe("TC-014: unpushable-path violations are excluded from the executor gate
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
     const resultState = await executor.execute(step, state, makeDeps({
-      stepArtifact: strategy as never,
-      stepIo: strategy as never,
+      stepArtifact,
+      stepIo,
       pushCapability: declaringCapability,
     }));
 
@@ -339,7 +333,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         {
           kind: "produced",
@@ -357,7 +351,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact, stepIo }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -367,7 +361,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         {
           kind: "tasks-complete",
@@ -385,7 +379,7 @@ describe("TC-035: non-unpushable-path halt violation → STEP_OUTPUT_MISSING fai
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact, stepIo }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });

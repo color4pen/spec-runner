@@ -42,6 +42,27 @@ import type { ProviderReadinessCapability, WorkspaceLifecycleCapability, JobStat
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
+
+// ---------------------------------------------------------------------------
+// CommandRunnerRuntime: the minimal capability intersection CommandRunner requires
+// ---------------------------------------------------------------------------
+
+/**
+ * Capability type for CommandRunner (base) and ResumeCommand.
+ *
+ * Design D2: CommandRunner requires the intersection of capabilities it
+ * directly uses in execute(). PipelineRunCommand extends this with
+ * JobBootstrapCapability (and ChangedFilesCapability for the scope gate).
+ *
+ * - ProviderReadinessCapability: assertProviderReadiness before prepare()
+ * - WorkspaceLifecycleCapability: setupWorkspace / registerCleanup / teardown
+ * - JobStatePersistenceCapability: persistJobState / reloadJobState
+ * - PipelineDepsBuilder: buildDeps after setupWorkspace
+ *
+ * ResumeCommand does not add JobBootstrapCapability (no assertNoDuplicateLiveJob
+ * or bootstrapJob on the resume path).
+ */
+export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder;
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
@@ -90,7 +111,7 @@ export interface PrepareResult {
  */
 export abstract class CommandRunner {
   constructor(
-    protected readonly runtime: ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder,
+    protected readonly runtime: CommandRunnerRuntime,
     protected readonly events: EventBus,
     /**
      * Optional factory for the entrance fidelity gate's IssueFidelityComparator.

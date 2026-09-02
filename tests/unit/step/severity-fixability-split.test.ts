@@ -45,7 +45,9 @@ import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopTerminalState, noopStepIo } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability } from "../../../src/core/step/step-capability.js";
+import type { ChangedFilesCapability } from "../../../src/core/port/runtime-strategy.js";
 
 // ===========================================================================
 // Shared helpers
@@ -136,15 +138,20 @@ function makeStore() {
   };
 }
 
-function makeRuntimeStrategy(changedFiles: string[]) {
+function makeStepArtifact(): StepArtifactLifecycleCapability {
   return {
     captureHeadSha: vi.fn(async () => "abc123head" as string | null),
     prepareStepArtifacts: vi.fn(async () => {}),
     finalizeStepArtifacts: vi.fn(async () => {}),
-    snapshotMainCheckoutGuard: vi.fn(async () => null),
-    validateStepInputs: vi.fn(async () => {}),
-    validateStepOutputs: vi.fn(async () => [] as never[]),
-    listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
+    snapshotMainCheckoutGuard: vi.fn(async () => null as null),
+    digestArtifacts: vi.fn(async (refs: { path: string }[]) => refs.map((r) => ({ path: r.path, hash: null }))),
+  };
+}
+
+function makeChangedFiles(changedFilesList: string[]): ChangedFilesCapability {
+  return {
+    canDeriveChangedFiles: () => true,
+    listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFilesList })),
   };
 }
 
@@ -177,7 +184,10 @@ function makeNoOpStep(): AgentStep {
   };
 }
 
-function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): PipelineDeps {
+function makeDeps(
+  stepArtifact: StepArtifactLifecycleCapability,
+  changedFiles: ChangedFilesCapability,
+): PipelineDeps {
   const store = makeStore();
   return {
     cwd: "/tmp/worktree",
@@ -201,9 +211,9 @@ function makeDeps(runtimeStrategy: ReturnType<typeof makeRuntimeStrategy>): Pipe
     runner: {} as never,
     resumePrompt: undefined,
     resumeContext: undefined,
-    stepArtifact: runtimeStrategy as never,
-    stepIo: runtimeStrategy as never,
-    changedFiles: runtimeStrategy as never,
+    stepArtifact,
+    stepIo: noopStepIo,
+    changedFiles,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
   } as PipelineDeps;
@@ -528,7 +538,8 @@ describe("TC-011: approved findings-routing no-op overrides verdict to needs-fix
   it("TC-011: code-review approved + fixable finding + only artifact files changed → needs-fix", async () => {
     const runner = makeRunner();
     // Only artifact files changed (no source files)
-    const runtimeStrategy = makeRuntimeStrategy([
+    const stepArtifactCap = makeStepArtifact();
+    const changedFilesCap = makeChangedFiles([
       "specrunner/changes/example/state.json",
       "specrunner/changes/example/events.jsonl",
     ]);
@@ -555,7 +566,7 @@ describe("TC-011: approved findings-routing no-op overrides verdict to needs-fix
         ],
       } as unknown as JobState["steps"],
     };
-    const deps = makeDeps(runtimeStrategy);
+    const deps = makeDeps(stepArtifactCap, changedFilesCap);
     deps.storeFactory = storeFactory;
 
     const resultState = await executor.execute(step, state, deps);
@@ -583,7 +594,8 @@ describe("TC-012: finding-named document change counts as work (no no-op overrid
 
     const runner = makeRunner();
     // Only the finding-named change folder doc changed (artifact prefix, but named by finding)
-    const runtimeStrategy = makeRuntimeStrategy([changeDoc]);
+    const stepArtifactCap = makeStepArtifact();
+    const changedFilesCap = makeChangedFiles([changeDoc]);
     const store = makeStore();
     const storeFactory = () => store as never;
     const executor = new StepExecutor(
@@ -609,7 +621,7 @@ describe("TC-012: finding-named document change counts as work (no no-op overrid
         ],
       } as unknown as JobState["steps"],
     };
-    const deps = makeDeps(runtimeStrategy);
+    const deps = makeDeps(stepArtifactCap, changedFilesCap);
     deps.storeFactory = storeFactory;
 
     const resultState = await executor.execute(step, state, deps);

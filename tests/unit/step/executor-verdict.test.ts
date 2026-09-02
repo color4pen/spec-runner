@@ -16,7 +16,8 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy, FindingRef } from "../../../src/core/port/runtime-strategy.js";
+import type { FindingRef } from "../../../src/core/port/runtime-strategy.js";
+import type { StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
@@ -72,47 +73,15 @@ function makeJobState(jobId: string): JobState {
 }
 
 /**
- * Make a RuntimeStrategy fake with injectable verifyFindingRefs behavior.
+ * Make a StepIoValidationCapability fake with injectable verifyFindingRefs behavior.
  */
-function makeRuntimeStrategy(
+function makeStepIo(
   verifyFindingRefsFn: (refs: FindingRef[], cwd: string, branch: string | null) => Promise<FindingRef[]>,
-) {
+): StepIoValidationCapability {
   return {
-    async *query() {},
-    createAgentRunner(): AgentRunner {
-      return {
-        async run(): Promise<AgentRunResult> {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
+    async validateStepInputs() {},
+    async validateStepOutputs() { return { violations: [] }; },
     verifyFindingRefs: verifyFindingRefsFn,
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async validateStepOutputs(): Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult> {
-      return { violations: [] };
-    },
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    async assertProviderReadiness() {},
-    async assertNoDuplicateLiveJob() {},
-    async reloadJobState(): Promise<JobState> { throw new Error("not implemented"); },
-    canDeriveChangedFiles: () => false,
-    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
-    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readRevisionContent() { return { current: null, prior: null }; },
-    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
   };
 }
 
@@ -153,7 +122,7 @@ function makeRunnerWithToolResult(toolResult: unknown): AgentRunner {
 
 function makeDeps(
   overrides: Partial<PipelineDeps> = {},
-  runtimeStrategy?: RuntimeStrategy,
+  stepIoOverride?: StepIoValidationCapability,
 ): PipelineDeps {
   return {
     config: { version: 1, agents: {} },
@@ -191,9 +160,8 @@ function makeDeps(
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
-    stepIo: (runtimeStrategy ?? noopStepIo) as never,
-    changedFiles: runtimeStrategy as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: stepIoOverride ?? noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...overrides,
@@ -263,7 +231,7 @@ describe("TC-VD-003: non-existent finding refs → verdict escalated to escalati
     await seedJobState(jobId, state);
 
     const nonExistentRef: FindingRef = { file: "src/does-not-exist.ts" };
-    const runtimeStrategy = makeRuntimeStrategy(
+    const stepIoCapability = makeStepIo(
       async (_refs, _cwd, _branch) => [nonExistentRef],
     );
 
@@ -283,7 +251,7 @@ describe("TC-VD-003: non-existent finding refs → verdict escalated to escalati
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -303,7 +271,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
     await seedJobState(jobId, state);
 
     // All refs exist → verifyFindingRefs returns empty array
-    const runtimeStrategy = makeRuntimeStrategy(
+    const stepIoCapability = makeStepIo(
       async (_refs, _cwd, _branch) => [],
     );
 
@@ -323,7 +291,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -335,7 +303,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
 
     const runner = makeRunnerWithToolResult({
       ok: true,
@@ -345,7 +313,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -357,7 +325,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
     const state = { ...makeJobState(jobId), step: "code-review" };
     await seedJobState(jobId, state);
 
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
 
     const runner = makeRunnerWithToolResult({
       ok: true,
@@ -378,7 +346,7 @@ describe("TC-VD-004: all finding refs exist → verdict is derived correctly", (
       ...makeJudgeStep(CODE_REVIEW_REPORT_TOOL),
       name: "code-review",
     };
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["code-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -433,7 +401,7 @@ describe("TC-VD-006: decided decision-needed finding → approved (not escalated
     };
     await seedJobState(jobId, state);
 
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
     const runner = makeRunnerWithToolResult({
       ok: true,
       findings: [finding],
@@ -442,7 +410,7 @@ describe("TC-VD-006: decided decision-needed finding → approved (not escalated
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -494,7 +462,7 @@ describe("TC-VD-007: undecided decision-needed finding → still escalates", () 
     };
     await seedJobState(jobId, state);
 
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
     const runner = makeRunnerWithToolResult({
       ok: true,
       findings: [undecidedFinding], // undecided finding is still returned
@@ -503,7 +471,7 @@ describe("TC-VD-007: undecided decision-needed finding → still escalates", () 
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -556,7 +524,7 @@ describe("TC-VD-008: fixable finding still routes to needs-fix even when ledger 
     };
     await seedJobState(jobId, state);
 
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
     const runner = makeRunnerWithToolResult({
       ok: true,
       findings: [decidedFinding, fixableFinding],
@@ -565,7 +533,7 @@ describe("TC-VD-008: fixable finding still routes to needs-fix even when ledger 
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
@@ -581,7 +549,7 @@ describe("TC-VD-005: decision-needed finding → verdict escalated to escalation
     await seedJobState(jobId, state);
 
     // All refs exist (verifyFindingRefs returns []) — verdict escalation comes from decision-needed
-    const runtimeStrategy = makeRuntimeStrategy(async () => []);
+    const stepIoCapability = makeStepIo(async () => []);
 
     const runner = makeRunnerWithToolResult({
       ok: true,
@@ -599,7 +567,7 @@ describe("TC-VD-005: decision-needed finding → verdict escalated to escalation
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
     const step = makeJudgeStep();
-    const resultState = await executor.execute(step, state, makeDeps({}, runtimeStrategy));
+    const resultState = await executor.execute(step, state, makeDeps({}, stepIoCapability));
 
     const runs = resultState.steps?.["spec-review"];
     const lastRun = runs?.[runs.length - 1];
