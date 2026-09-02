@@ -15,8 +15,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { CommandRunnerRuntime } from "../../../../src/core/command/runner.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
@@ -91,16 +91,18 @@ function buildMockRuntime(opts: {
   setupThrow?: Error;
   /** When set, the mock buildDeps will include a real storeFactory pointing to this dir. */
   storeRootDir?: string;
-} = {}): RuntimeStrategy & PipelineDepsBuilder {
+} = {}): CommandRunnerRuntime {
   const _finalJobState = buildJobState(opts.finalState ?? { status: "awaiting-archive", branch: "feat/test" });
 
   return {
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockImplementation(async () => {
       if (opts.setupThrow) throw opts.setupThrow;
       return NOOP_WORKSPACE;
     }),
+    registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    // PipelineDepsBuilder
     buildDeps: vi.fn().mockReturnValue({
       client: undefined,
       request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "test", adr: false },
@@ -116,24 +118,19 @@ function buildMockRuntime(opts: {
         ? makeStoreFactory(opts.storeRootDir)
         : undefined,
     } as unknown as PipelineDeps),
-    registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
-    teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    bootstrapJob: vi.fn().mockResolvedValue(buildJobState()),
+    // JobStatePersistenceCapability
     persistJobState: vi.fn().mockResolvedValue(undefined),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    // Preserve jobId so storeFactory lookups match the correct disk file.
+    reloadJobState: vi.fn().mockImplementation(async (jobId: string) => buildJobState({ jobId })),
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
   };
 }
 
 // Concrete subclass for testing
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: CommandRunnerRuntime,
     private readonly prepareResult: PrepareResult,
     private readonly prepareShouldThrow?: Error,
   ) {
@@ -677,6 +674,8 @@ describe("TC-SW-RUNNER-001: fast + forbidden empty config → scope warning in s
     });
 
     const runtime = buildMockRuntime();
+    // R2c: reloadJobState must return the prepare's state so pipelineId="fast" is preserved.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(fastJobState);
     const command = new TestCommand(runtime, prepareResult);
     await command.execute();
 
@@ -698,6 +697,8 @@ describe("TC-SW-RUNNER-001: fast + forbidden empty config → scope warning in s
     });
 
     const runtime = buildMockRuntime();
+    // R2c: reloadJobState must return the prepare's state so pipelineId="fast" is preserved.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(fastJobState);
     const command = new TestCommand(runtime, prepareResult);
     await command.execute();
 

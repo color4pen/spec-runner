@@ -31,6 +31,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import type { CommandRunnerRuntime } from "../../src/core/command/runner.js";
 
 // ---------------------------------------------------------------------------
 // TC-NW-001, TC-NW-002: state schema
@@ -54,6 +55,22 @@ function makeMinimalRawState(extra: Record<string, unknown> = {}): Record<string
     history: [],
     error: null,
     ...extra,
+  };
+}
+
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
   };
 }
 
@@ -521,7 +538,7 @@ describe("TC-NW-012: ResumeCommand.prepare() no-worktree — sidecar absent, run
     const events = new EventBus();
     // runtime is not invoked by prepare(), pass a stub
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       events,
       slug,
       { noWorktree: true, cwd: tempDir },
@@ -567,7 +584,7 @@ describe("TC-NW-013: exit-guard → awaiting-resume → ResumeCommand.prepare() 
     // Now ResumeCommand.prepare() with noWorktree: true must resolve that resumePoint
     const events = new EventBus();
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       events,
       slug,
       { noWorktree: true, cwd: tempDir },
@@ -602,7 +619,7 @@ describe("resume snapshot propagation respects resolved startStep", () => {
 
     const events = new EventBus();
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       events,
       slug,
       { noWorktree: true, cwd: tempDir },
@@ -631,7 +648,7 @@ describe("resume snapshot propagation respects resolved startStep", () => {
 
     const events = new EventBus();
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       events,
       slug,
       { noWorktree: true, cwd: tempDir, from: "design" },
@@ -660,7 +677,7 @@ describe("resume snapshot propagation respects resolved startStep", () => {
 
     const events = new EventBus();
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       events,
       slug,
       { noWorktree: true, cwd: tempDir, from: "spec-review", prompt: "human note" },

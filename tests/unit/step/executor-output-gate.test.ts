@@ -22,6 +22,7 @@ import { ERROR_CODES } from "../../../src/errors.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -85,29 +86,29 @@ function makeSuccessRunner(): AgentRunner {
 }
 
 /**
- * Build a RuntimeStrategy where:
- * - validateStepOutputs returns the injected result
- * - finalizeStepArtifacts is a spy (so we can assert it was/was not called)
+ * Build typed capability objects where:
+ * - stepIo.validateStepOutputs returns the injected result
+ * - stepArtifact.finalizeStepArtifacts is a spy (so we can assert it was/was not called)
  */
-function makeRuntimeStrategy(
+function makeCapabilities(
   validateFn: () => Promise<OutputCheckResult>,
-) {
+): { stepArtifact: StepArtifactLifecycleCapability; stepIo: StepIoValidationCapability; finalizeSpy: ReturnType<typeof vi.fn> } {
   const finalizeSpy = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const strategy = {
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
+  const stepArtifact: StepArtifactLifecycleCapability = {
+    async captureHeadSha() { return null; },
+    async prepareStepArtifacts() {},
     finalizeStepArtifacts: finalizeSpy,
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async verifyFindingRefs() { return [] as never; },
-    async digestArtifacts(refs: { path: string }[]) {
-      return refs.map((r) => ({ path: r.path, hash: null as null }));
-    },
-    validateStepOutputs: validateFn,
-    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
+    async snapshotMainCheckoutGuard() { return null; },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
   };
-  return { strategy, finalizeSpy };
+  const stepIo: StepIoValidationCapability = {
+    async validateStepInputs() {},
+    async verifyFindingRefs() { return []; },
+    validateStepOutputs: validateFn,
+  };
+  return { stepArtifact, stepIo, finalizeSpy };
 }
+
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -185,7 +186,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy, finalizeSpy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo, finalizeSpy } = makeCapabilities(async () => ({
       violations: [
         { kind: "produced", path: "specrunner/changes/test-slug/spec.md", policy: "halt", detail: [] },
       ],
@@ -198,7 +199,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact, stepIo }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
 
@@ -210,7 +211,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         { kind: "produced", path: "specrunner/changes/test-slug/design.md", policy: "halt", detail: [] },
       ],
@@ -225,7 +226,7 @@ describe("TC-OG-001: halt violation → STEP_OUTPUT_MISSING, finalize not called
 
     let thrown: unknown;
     try {
-      await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
+      await executor.execute(step, state, makeDeps({ stepArtifact, stepIo }));
     } catch (err) {
       thrown = err;
     }
@@ -244,7 +245,7 @@ describe("TC-OG-002: follow-up violation after runner completes → STEP_OUTPUT_
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         {
           kind: "tasks-complete",
@@ -262,7 +263,7 @@ describe("TC-OG-002: follow-up violation after runner completes → STEP_OUTPUT_
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await expect(executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }))).rejects.toMatchObject({
+    await expect(executor.execute(step, state, makeDeps({ stepArtifact, stepIo }))).rejects.toMatchObject({
       code: ERROR_CODES.STEP_OUTPUT_MISSING,
     });
   });
@@ -278,7 +279,7 @@ describe("TC-OG-003: no violations → gate passes, finalizeStepArtifacts called
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy, finalizeSpy } = makeRuntimeStrategy(async () => ({ violations: [] }));
+    const { stepArtifact, stepIo, finalizeSpy } = makeCapabilities(async () => ({ violations: [] }));
 
     const step = makeStepWithContracts([
       { kind: "produced", path: "specrunner/changes/test-slug/spec.md", policy: "halt" },
@@ -287,7 +288,7 @@ describe("TC-OG-003: no violations → gate passes, finalizeStepArtifacts called
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
+    await executor.execute(step, state, makeDeps({ stepArtifact, stepIo }));
 
     expect(finalizeSpy).toHaveBeenCalled();
   });
@@ -330,9 +331,7 @@ describe("TC-OG-005: no contracts → validateStepOutputs not called", () => {
     await seedJobState(jobId, state);
 
     const validateSpy = vi.fn<() => Promise<OutputCheckResult>>().mockResolvedValue({ violations: [] });
-    const { strategy } = makeRuntimeStrategy(validateSpy);
-    // Override the validateStepOutputs spy on the strategy
-    strategy.validateStepOutputs = validateSpy;
+    const { stepArtifact, stepIo } = makeCapabilities(validateSpy);
 
     const step: AgentStep = {
       kind: "agent",
@@ -354,7 +353,7 @@ describe("TC-OG-005: no contracts → validateStepOutputs not called", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, makeSuccessRunner(), makeStoreFactory(tempDir));
 
-    await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
+    await executor.execute(step, state, makeDeps({ stepArtifact, stepIo }));
 
     expect(validateSpy).not.toHaveBeenCalled();
   });
@@ -370,7 +369,7 @@ describe("TC-OG-006: failed StepRun recorded in attached state on gate failure",
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { strategy } = makeRuntimeStrategy(async () => ({
+    const { stepArtifact, stepIo } = makeCapabilities(async () => ({
       violations: [
         { kind: "produced", path: "specrunner/changes/test-slug/spec.md", policy: "halt", detail: [] },
       ],
@@ -385,7 +384,7 @@ describe("TC-OG-006: failed StepRun recorded in attached state on gate failure",
 
     let thrown: unknown;
     try {
-      await executor.execute(step, state, makeDeps({ stepArtifact: strategy as never, stepIo: strategy as never }));
+      await executor.execute(step, state, makeDeps({ stepArtifact, stepIo }));
     } catch (err) {
       thrown = err;
     }

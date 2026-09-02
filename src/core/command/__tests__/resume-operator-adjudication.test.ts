@@ -118,6 +118,7 @@ vi.mock("../../resume/reconcile-worktree.js", () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
+import type { CommandRunnerRuntime } from "../runner.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { transitionJob } from "../../../state/lifecycle.js";
@@ -185,6 +186,22 @@ function makeRunningState(overrides: Partial<JobState> = {}): JobState {
 }
 
 /** Call the protected prepare() via type cast. */
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
@@ -217,7 +234,7 @@ describe("TC-024: --prompt 付き resume で裁定記録が state に追加さ�
     const ADJUDICATION_TEXT = "do not revert auth module changes";
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", prompt: ADJUDICATION_TEXT },
@@ -243,7 +260,7 @@ describe("TC-024: --prompt 付き resume で裁定記録が state に追加さ�
 
   it("TC-024: persisted adjudication has the correct step (startStep)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", prompt: "operator decision text" },
@@ -264,7 +281,7 @@ describe("TC-024: --prompt 付き resume で裁定記録が state に追加さ�
 
   it("TC-024: persisted adjudication has a recordedAt ISO timestamp", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", prompt: "my decision" },
@@ -289,7 +306,7 @@ describe("TC-024: --prompt 付き resume で裁定記録が state に追加さ�
     const PROMPT = "keep the auth change";
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", prompt: PROMPT },
@@ -317,7 +334,7 @@ describe("TC-025: --prompt 無しの resume では裁定記録を追加しない
 
   it("TC-025: persist is called without operatorAdjudications when no prompt given", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no prompt
@@ -342,7 +359,7 @@ describe("TC-025: --prompt 無しの resume では裁定記録を追加しない
 
   it("TC-025: empty string prompt does not add adjudication record", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", prompt: "" }, // empty string
@@ -366,7 +383,7 @@ describe("TC-025: --prompt 無しの resume では裁定記録を追加しない
 
   it("TC-025: resumePrompt is undefined when no prompt given", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no prompt

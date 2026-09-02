@@ -42,6 +42,7 @@ import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 
 let tempDir: string;
 let originalXdgDataHome: string | undefined;
@@ -92,8 +93,8 @@ function makeJobState(jobId: string, branch = "feat/test-slug"): JobState {
   };
 }
 
-/** Minimal step-artifact capability mock that uses the test's git spawnFn for artifact lifecycle. */
-function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
+/** StepArtifactLifecycleCapability that uses the test's git spawnFn for artifact lifecycle. */
+function makeTestStepArtifact(spawnFn: SpawnFn): StepArtifactLifecycleCapability {
   return {
     async captureHeadSha(cwd: string): Promise<string | null> {
       return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
@@ -111,15 +112,18 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
       await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
     async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async verifyFindingRefs() { return [] as never[]; },
-    async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
+    async digestArtifacts(refs: { path: string }[]) {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
-    async validateStepOutputs(): Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult> {
-      return { violations: [] };
-    },
+  };
+}
+
+/** Noop StepIoValidationCapability for commit-and-push tests. */
+function makeTestStepIo(): StepIoValidationCapability {
+  return {
+    async validateStepInputs() {},
+    async verifyFindingRefs() { return []; },
+    async validateStepOutputs() { return { violations: [] }; },
   };
 }
 
@@ -163,8 +167,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
-    stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepArtifact,
-    stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepIo,
+    stepArtifact: gitSpawnFn ? makeTestStepArtifact(gitSpawnFn) : noopStepArtifact,
+    stepIo: gitSpawnFn ? makeTestStepIo() : noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...overrides,

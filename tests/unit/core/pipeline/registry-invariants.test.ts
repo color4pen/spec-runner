@@ -52,7 +52,10 @@ describe("T-06-2: Meta 経由 design-only は gate を通過する（permissionS
   it("assertRuntimeSupportsScope does not throw for design-only + canDerive=false fake", () => {
     // Even with a runtime that cannot derive changed files,
     // design-only passes because it declares no permissionScope.
-    const fakeRuntime = { canDeriveChangedFiles: () => false as const };
+    const fakeRuntime = {
+      canDeriveChangedFiles: () => false as const,
+      listChangedFiles: () => Promise.reject(new Error("not called in gate tests")),
+    };
 
     expect(() =>
       assertRuntimeSupportsScope(DESIGN_ONLY_DESCRIPTOR, fakeRuntime),
@@ -118,7 +121,10 @@ describe("T-06-4: STANDARD_DESCRIPTOR.permissionScope が undefined（gate は p
   });
 
   it("assertRuntimeSupportsScope does not throw for standard + canDerive=false fake", () => {
-    const fakeRuntime = { canDeriveChangedFiles: () => false as const };
+    const fakeRuntime = {
+      canDeriveChangedFiles: () => false as const,
+      listChangedFiles: () => Promise.reject(new Error("not called in gate tests")),
+    };
 
     expect(() =>
       assertRuntimeSupportsScope(STANDARD_DESCRIPTOR, fakeRuntime),

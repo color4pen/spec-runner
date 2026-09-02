@@ -13,11 +13,10 @@ import type { DynamicContext } from "../src/git/dynamic-context.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { gitExec } from "../src/util/git-exec.js";
 import type { SpawnFn as GitSpawnFn } from "../src/util/git-exec.js";
-import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../src/core/step/step-capability.js";
 import type { AgentStep } from "../src/core/step/types.js";
 import type { JobState } from "../src/state/schema.js";
 import type { PipelineDeps } from "../src/core/types.js";
-import type { AgentRunner } from "../src/core/port/agent-runner.js";
 import { commitAndPush } from "../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../src/core/artifact/copy-artifacts.js";
@@ -113,24 +112,12 @@ afterEach(async () => {
 });
 
 /**
- * Build a minimal RuntimeStrategy that delegates git operations to the test's
+ * Build a StepArtifactLifecycleCapability that delegates git operations to the test's
  * gitSpawnFn (synchronous ChildProcess-based, from git-exec.ts). Mirrors
  * LocalRuntime semantics without requiring a real worktree.
  */
-function makeTestRuntimeStrategy(spawnFn: GitSpawnFn) {
+function makeTestStepArtifact(spawnFn: GitSpawnFn): StepArtifactLifecycleCapability {
   return {
-    async *query() {},
-    createAgentRunner(): AgentRunner {
-      return {
-        async run() {
-          return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
     async captureHeadSha(cwd: string): Promise<string | null> {
       return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
     },
@@ -147,17 +134,18 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn) {
       await cleanupOutputTemplates(cwd, slug, step.name, state);
       await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<import("../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs(): Promise<import("../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
-    async digestArtifacts(refs: { path: string }[]): Promise<import("../src/store/event-journal.js").ArtifactRef[]> {
+    async digestArtifacts(refs: { path: string }[]) {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> {
-      return { violations: [] };
-    },
+  };
+}
+
+/** Noop StepIoValidationCapability for pipeline-integration tests using makeTestStepArtifact. */
+function makeTestStepIo(): StepIoValidationCapability {
+  return {
+    async validateStepInputs() {},
+    async verifyFindingRefs() { return []; },
+    async validateStepOutputs() { return { violations: [] }; },
   };
 }
 
@@ -184,24 +172,25 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn) {
  *   standard pipeline steps have no activation, and headBeforeStep=null (due to
  *   makeFailingGitSpawnFn) skips no-op detection entirely.
  */
-function makeCommitOidStubStrategy() {
-  return {
+function makeCommitOidStubStrategy(): { stepArtifact: StepArtifactLifecycleCapability; stepIo: StepIoValidationCapability } {
+  const stepArtifact: StepArtifactLifecycleCapability = {
     captureHeadSha: async (): Promise<string | null> => "test-sha",
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
     finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
     snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+    // digestArtifacts: not reached via the stub paths, but included for completeness.
+    digestArtifacts: vi.fn().mockResolvedValue([]),
+  };
+  const stepIo: StepIoValidationCapability = {
+    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     // validateStepInputs: called for every step with reads() — must resolve to avoid
     // TypeError → makeInputMissingHalt → pipeline halt → "awaiting-resume".
     validateStepInputs: vi.fn().mockResolvedValue(undefined),
     // verifyFindingRefs: called by step-completion for judge steps with high-severity
     // findings. Must return [] so no non-existent refs are reported (verdict unaffected).
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    // digestArtifacts and listChangedFiles: not reached via the stub paths above, but
-    // included to prevent TypeError if called unexpectedly.
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
+  return { stepArtifact, stepIo };
 }
 
 /**
@@ -811,8 +800,7 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       // returns a fixed SHA for all step runs. This ensures conformance.commitOid ===
       // verification.commitOid = "test-sha", making conformanceApprovedForVerifiedRevision
       // return true after re-verification (code-fixer ran after initial verification).
-      stepArtifact: makeCommitOidStubStrategy() as never,
-      stepIo: makeCommitOidStubStrategy() as never,
+      ...makeCommitOidStubStrategy(),
       terminalState: noopTerminalState,
       roundGitEffects: noopRoundGitEffects,
       // gitTransportSpawn returning exitCode 1 → gitExec returns null → headBeforeStep = null
@@ -953,8 +941,7 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       storeFactory: makeStoreFactory(tempDir),
       // T-05 (approval-revision-binding): same as TC-060 — runtimeStrategy provides commitOid
       // so conformanceApprovedForVerifiedRevision returns true after re-verification.
-      stepArtifact: makeCommitOidStubStrategy() as never,
-      stepIo: makeCommitOidStubStrategy() as never,
+      ...makeCommitOidStubStrategy(),
       terminalState: noopTerminalState,
       roundGitEffects: noopRoundGitEffects,
       gitTransportSpawn: makeFailingGitSpawnFn(),
@@ -1615,8 +1602,8 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
-      stepArtifact: makeTestRuntimeStrategy(gitSpawnFn) as never,
-      stepIo: makeTestRuntimeStrategy(gitSpawnFn) as never,
+      stepArtifact: makeTestStepArtifact(gitSpawnFn),
+      stepIo: makeTestStepIo(),
       terminalState: noopTerminalState,
       roundGitEffects: noopRoundGitEffects,
     });

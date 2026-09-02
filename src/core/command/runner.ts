@@ -5,6 +5,7 @@
  * Subclasses override prepare() only — all other steps are final.
  *
  * Execution sequence:
+ *   0. assertProviderReadiness() — before prepare(); readiness failures have no side effects
  *   1. prepare()               — subclass override (only override point)
  *   2. runtime.setupWorkspace()
  *   3. runtime.buildDeps()
@@ -14,6 +15,7 @@
  *   7. runtime.teardown()
  *
  * Error handling:
+ *   - assertProviderReadiness() failure → return 1 (no job state created)
  *   - prepare() failure → return 1 immediately (no workspace/cleanup needed)
  *   - setupWorkspace() failure → return 1 (no cleanup handle yet)
  *   - pipeline throw → outputPipelineThrowError + teardown("error") + return 1
@@ -35,10 +37,32 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { buildPipelineForJob } from "../pipeline/index.js";
 import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
-import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
+import type { CleanupHandle, WorkspaceOptions } from "../port/runtime-strategy.js";
+import type { ProviderReadinessCapability, WorkspaceLifecycleCapability, JobStatePersistenceCapability } from "../port/command-runtime.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
+
+// ---------------------------------------------------------------------------
+// CommandRunnerRuntime: the minimal capability intersection CommandRunner requires
+// ---------------------------------------------------------------------------
+
+/**
+ * Capability type for CommandRunner (base) and ResumeCommand.
+ *
+ * Design D2: CommandRunner requires the intersection of capabilities it
+ * directly uses in execute(). PipelineRunCommand extends this with
+ * JobBootstrapCapability (and ChangedFilesCapability for the scope gate).
+ *
+ * - ProviderReadinessCapability: assertProviderReadiness before prepare()
+ * - WorkspaceLifecycleCapability: setupWorkspace / registerCleanup / teardown
+ * - JobStatePersistenceCapability: persistJobState / reloadJobState
+ * - PipelineDepsBuilder: buildDeps after setupWorkspace
+ *
+ * ResumeCommand does not add JobBootstrapCapability (no assertNoDuplicateLiveJob
+ * or bootstrapJob on the resume path).
+ */
+export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder;
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
 import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
@@ -87,7 +111,7 @@ export interface PrepareResult {
  */
 export abstract class CommandRunner {
   constructor(
-    protected readonly runtime: RuntimeStrategy & PipelineDepsBuilder,
+    protected readonly runtime: CommandRunnerRuntime,
     protected readonly events: EventBus,
     /**
      * Optional factory for the entrance fidelity gate's IssueFidelityComparator.
@@ -105,23 +129,20 @@ export abstract class CommandRunner {
   async execute(): Promise<number> {
     // Step 0: provider readiness gate — must fire before prepare() so that readiness
     // failures surface prior to any persistent side effects (job record / worktree /
-    // branch / journal). Uses optional call (`?.`) so test fakes without the method
-    // are unaffected (backward-compatible with RuntimeStrategy-typed fakes).
-    if (this.runtime.assertProviderReadiness) {
-      try {
-        await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>);
-      } catch (err) {
-        if (err instanceof SpecRunnerError) {
-          logError(err.message);
-          if (err.hint) {
-            stderrWrite(`Hint: ${err.hint}`);
-          }
-        } else {
-          logError((err as Error).message ?? String(err));
+    // branch / journal).
+    try {
+      await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>);
+    } catch (err) {
+      if (err instanceof SpecRunnerError) {
+        logError(err.message);
+        if (err.hint) {
+          stderrWrite(`Hint: ${err.hint}`);
         }
-        // Do NOT emit RunResultContract JSON here — no job exists yet.
-        return 1;
+      } else {
+        logError((err as Error).message ?? String(err));
       }
+      // Do NOT emit RunResultContract JSON here — no job exists yet.
+      return 1;
     }
 
     // Step 1: prepare — subclass override
@@ -192,7 +213,7 @@ export abstract class CommandRunner {
       // Skip reload on the resume path (existingWorktreePath !== undefined): the
       // resume prepare() already loaded the full state, and setupWorkspace() in the
       // resume/recreate branch does not write synthesizedCommits to the store.
-      if (this.runtime.reloadJobState && workspaceOpts.existingWorktreePath === undefined) {
+      if (workspaceOpts.existingWorktreePath === undefined) {
         try {
           jobState = await this.runtime.reloadJobState(jobState.jobId, slug, workspace);
         } catch (err) {

@@ -1164,6 +1164,9 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       snapshotMainCheckoutGuard: vitest.fn().mockResolvedValue(null),
       verifyFindingRefs: vitest.fn().mockImplementation(async (refs: { file: string }[]) => refs),
       digestArtifacts: vitest.fn().mockResolvedValue([]),
+      // R2c: canDeriveChangedFiles is now required. Return true so listChangedFiles is consulted
+      // (old "absent" behaviour was canDeriveChangedFiles?.() → undefined → !== false → true).
+      canDeriveChangedFiles: vitest.fn().mockReturnValue(true),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
       listChangedFiles: vitest.fn().mockResolvedValue({ kind: "success" as const, files: ["src/feature.ts"] }),
       // listWorktreeChanges: no uncommitted changes after invalidation (coordinator git effects)

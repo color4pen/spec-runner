@@ -25,12 +25,12 @@ import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { CliStep } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { AgentRunner, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy, FindingRef } from "../../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -84,28 +84,11 @@ function makeJobState(jobId: string): JobState {
   };
 }
 
-function makeRuntimeStrategy(overrides: Partial<RuntimeStrategy & PipelineDepsBuilder> = {}): RuntimeStrategy & PipelineDepsBuilder {
-  return {
-    async *query() {},
-    createAgentRunner(): AgentRunner { return noopRunner; },
-    async setupWorkspace() { return { cwd: tempDir }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    verifyFindingRefs: async (_refs: FindingRef[], _cwd: string, _branch: string | null) => [],
-    async digestArtifacts(refs: { path: string }[], _cwd: string, _branch: string | null) {
-      return refs.map((r) => ({ path: r.path, hash: null }));
-    },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async validateStepOutputs() { return { violations: [] }; },
-    ...overrides,
-  };
-}
+/** Minimal ChangedFilesCapability for tests that do not exercise file derivation. */
+const noopChangedFiles: ChangedFilesCapability = {
+  canDeriveChangedFiles: () => false,
+  listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
+};
 
 function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
@@ -157,9 +140,9 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: makeRuntimeStrategy() as never,
-    stepIo: makeRuntimeStrategy() as never,
-    changedFiles: makeRuntimeStrategy() as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    changedFiles: noopChangedFiles,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...overrides,

@@ -38,7 +38,7 @@
 | DSM domain→comp-root (5) | `dsm-runtime-strategy-demote`（`RuntimeStrategy`/prereqs を ports 降格）|
 | DSM adapter/ports→domain (16) | `dsm-domain-type-demote`（共有型を `src/kernel/` 等へ降格）|
 | permissionScope / scope breach 機械導出（第2 escalation 源）| `scope-exceeded-escalation` |
-| B-11 concrete runtime の能力 interface（歯＋`RealRuntimeStrategy`）| `scope-unevaluable-fail-closed` |
+| B-11 concrete runtime の能力 interface（歯＋`RealRuntimeStrategy`。R2c `runtime-strategy-convergence` で退役・欠番 — port required member 化＋ratchet へ移管）| `scope-unevaluable-fail-closed` |
 | B-12 subprocess seam 限定（`node:child_process` 直 import 封じ込め）| `subprocess-credential-seam` |
 | B-13 StepExecutor 単一書き込み禁止（`CommitOrchestrator` が唯一の state committer）| `sequential-single-writer` |
 | B-14 StepHalt 適用オーナー集約（`transitionJob` / `attachStateAndRethrow` を CommitOrchestrator に集約）| `sequential-single-writer` |

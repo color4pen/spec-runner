@@ -64,7 +64,8 @@ import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { ProviderReadinessCapability, WorkspaceLifecycleCapability, JobStatePersistenceCapability } from "../../../../src/core/port/command-runtime.js";
 import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../../src/state/schema.js";
@@ -291,7 +292,7 @@ describe("TC-013 / TC-001: E2E — bootstrap → reload → in-memory synthesize
  */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());
@@ -382,9 +383,19 @@ describe("TC-014 / TC-013b: Runner 経路の封鎖 — pipeline に渡る state 
         digestArtifacts: vi.fn().mockResolvedValue([]),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      } as RuntimeStrategy & PipelineDepsBuilder;
+        // R2c: previously optional methods, now required on RuntimeStrategy
+        assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+        assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
+        canDeriveChangedFiles: () => false,
+        listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
+        listCommitChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+        readFileAtCommit: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+        snapshotMainCheckoutGuard: vi.fn().mockResolvedValue(null),
+        readRevisionContent: vi.fn().mockResolvedValue({ current: null, prior: null }),
+        lastCommitTouchingPath: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
+      } as ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder;
 
-      const command = new TestCommand(runtime as RuntimeStrategy & PipelineDepsBuilder, buildPrepareResultForTC014());
+      const command = new TestCommand(runtime as ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder, buildPrepareResultForTC014());
 
       // Capture the state passed to pipeline.run()
       let capturedJobState: JobState | undefined;

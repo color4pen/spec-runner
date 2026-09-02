@@ -86,6 +86,7 @@ vi.mock("../../worktree/detection.js", () => ({
 
 import { ReopenCommand } from "../reopen.js";
 import { ResumeCommand } from "../resume.js";
+import type { CommandRunnerRuntime } from "../runner.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { transitionJob, canTransition } from "../../../state/lifecycle.js";
 import { resolveStateStoreByJobId } from "../../job-access/resolve-state-store.js";
@@ -112,6 +113,22 @@ const MOCK_GITHUB_CLIENT = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only invoke prepare() directly.
+ * The runtime methods are not called in prepare(); only state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
 
 function makeJobState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -582,7 +599,7 @@ describe("TC-015: ResumeCommand.prepare() rejects awaiting-archive → running",
     const awaitingState = makeJobState({ status: "awaiting-archive" });
     vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
 
-    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    const cmd = new ResumeCommand(makeMinimalRuntime(), {} as never, "test-slug", { cwd: "/repo" });
 
     // Should throw — exit code 1
     const prepare = (cmd as unknown as { prepare(): Promise<unknown> }).prepare;

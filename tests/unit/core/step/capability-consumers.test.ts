@@ -53,6 +53,7 @@ function makeMinimalJobState() {
 describe("TC-004: detectNoOp accepts ChangedFilesCapability narrow type", () => {
   it("can be called with a ChangedFilesCapability object (no RuntimeStrategy needed)", async () => {
     const narrow: ChangedFilesCapability = {
+      canDeriveChangedFiles: () => true,
       listChangedFiles: vi.fn().mockResolvedValue({ kind: "success", files: [] }),
     };
 
@@ -82,6 +83,7 @@ describe("TC-004: detectNoOp accepts ChangedFilesCapability narrow type", () => 
 describe("TC-005 / TC-020: detectNoOp — listChangedFiles unavailable → 変更ファイルは空として扱われる", () => {
   it("listChangedFiles returns { kind: 'unavailable' } → changedFiles treated as empty → no-op detected", async () => {
     const narrow: ChangedFilesCapability = {
+      canDeriveChangedFiles: () => true,
       listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable", reason: "managed runtime" }),
     };
 
@@ -108,6 +110,7 @@ describe("TC-005 / TC-020: detectNoOp — listChangedFiles unavailable → 変�
 
   it("listChangedFiles returns { kind: 'success', files: ['src/a.ts'] } → source file present → no no-op", async () => {
     const narrow: ChangedFilesCapability = {
+      canDeriveChangedFiles: () => true,
       listChangedFiles: vi.fn().mockResolvedValue({ kind: "success", files: ["src/a.ts"] }),
     };
 
@@ -372,6 +375,7 @@ describe("TC-011: deriveCustomReviewerPriorRound accepts CommitInspectionCapabil
 describe("TC-012: computeExtraScopeFindings accepts minimal deps type", () => {
   it("can be called with minimal deps containing ChangedFilesCapability (no PipelineDeps needed)", async () => {
     const narrow: ChangedFilesCapability = {
+      canDeriveChangedFiles: () => true,
       listChangedFiles: vi.fn().mockResolvedValue({ kind: "success", files: [] }),
     };
 

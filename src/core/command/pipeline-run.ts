@@ -7,9 +7,9 @@
  */
 import type { PreflightResult } from "../preflight.js";
 import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
-import { CommandRunner, type PrepareResult } from "./runner.js";
-import type { RuntimeStrategy } from "../port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../types.js";
+import { CommandRunner, type PrepareResult, type CommandRunnerRuntime } from "./runner.js";
+import type { JobBootstrapCapability } from "../port/command-runtime.js";
+import type { ChangedFilesCapability } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
@@ -58,14 +58,33 @@ const CANONICAL_PATTERN = /^.*\/specrunner\/drafts\/([^/]+)\/request\.md$/;
 // Legacy pattern: specrunner/drafts/<slug>.md (backward compatibility)
 const CANONICAL_PATTERN_LEGACY = /^.*\/specrunner\/drafts\/([^/]+)\.md$/;
 
+// ---------------------------------------------------------------------------
+// PipelineRunRuntime: the capability intersection PipelineRunCommand requires
+// ---------------------------------------------------------------------------
+
+/**
+ * Capability type for PipelineRunCommand.
+ *
+ * Design D2 (canon): Extends CommandRunnerRuntime with:
+ * - JobBootstrapCapability: assertNoDuplicateLiveJob + bootstrapJob
+ * - ChangedFilesCapability: passed to assertRuntimeSupportsScope (scope gate)
+ *
+ * PipelineRunCommand does not call canDeriveChangedFiles or listChangedFiles
+ * directly — ChangedFilesCapability is included because the runtime is passed
+ * to assertRuntimeSupportsScope() which requires it.
+ */
+export type PipelineRunRuntime = CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability;
+
 /**
  * CommandRunner for `specrunner run`.
  * prepare() creates job state and returns PrepareResult.
  * Preflight must be done by the caller before constructing this class.
  */
 export class PipelineRunCommand extends CommandRunner {
+  private readonly pipelineRuntime: PipelineRunRuntime;
+
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: PipelineRunRuntime,
     events: EventBus,
     private readonly absolutePath: string,
     private readonly preflightResult: PreflightResult,
@@ -73,6 +92,7 @@ export class PipelineRunCommand extends CommandRunner {
     comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {
     super(runtime, events, comparatorFactory);
+    this.pipelineRuntime = runtime;
   }
 
   protected async prepare(): Promise<PrepareResult> {
@@ -112,7 +132,7 @@ export class PipelineRunCommand extends CommandRunner {
     // Both halt before any state is created (same position as validateReviewerDefinitions above).
     const pipelineId = request.pipeline ?? STANDARD_PIPELINE_ID;
     const descriptor = getPipelineDescriptor(pipelineId);
-    assertRuntimeSupportsScope(descriptor, this.runtime);
+    assertRuntimeSupportsScope(descriptor, this.pipelineRuntime);
 
     // Compose the actual runtime descriptor (base + custom reviewers) and validate
     // input-completeness BEFORE bootstrapping the job. This catches authoring errors
@@ -136,12 +156,11 @@ export class PipelineRunCommand extends CommandRunner {
     }
 
     // Reject a second run while a live job already holds this slug. Placed before
-    // bootstrapJob so a rejected run creates no job state. Optional on the port
-    // (test fakes may omit it); real runtimes always implement it.
-    await this.runtime.assertNoDuplicateLiveJob?.(cwd, slug);
+    // bootstrapJob so a rejected run creates no job state.
+    await this.pipelineRuntime.assertNoDuplicateLiveJob(cwd, slug);
 
     // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
-    const jobState = await this.runtime.bootstrapJob(cwd, {
+    const jobState = await this.pipelineRuntime.bootstrapJob(cwd, {
       request: {
         path: this.absolutePath,
         title: request.title,

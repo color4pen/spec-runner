@@ -61,7 +61,8 @@ import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { ProviderReadinessCapability, WorkspaceLifecycleCapability, JobStatePersistenceCapability } from "../../../../src/core/port/command-runtime.js";
 import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../../src/state/schema.js";
@@ -185,14 +186,16 @@ function buildRuntimeWithRejectingReload(reloadError = new Error("store unreadab
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
     // TC-011: reloadJobState rejects — fail-closed path
     reloadJobState: vi.fn().mockRejectedValue(reloadError),
+    // Required by CommandRunner.execute() Step 0 provider readiness gate
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
   };
-  return runtime as RuntimeStrategy & PipelineDepsBuilder;
+  return runtime as ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder;
 }
 
 /** Minimal CommandRunner subclass for testing. */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder,
     private readonly prepareResult: PrepareResult,
   ) {
     super(runtime, new EventBus());

@@ -5,10 +5,12 @@
  *
  * - scope 宣言 + canDerive=false → throw UnsupportedRuntimeCapabilityError
  * - scope 宣言 + canDerive=true  → 通過（throw なし）
- * - scope 宣言 + canDerive absent → 通過（throw なし）
  * - scope 非宣言 + canDerive=false → 通過（permissionScope 不在は gate を skip）
  * - error message が能力ベース（「changed-files を導出できる runtime が必要」旨）、「local」種別名依存なし
  * - gate 挙動が descriptor.id の値に依存しない（複数 id で一様）
+ *
+ * Note (R2c): canDeriveChangedFiles is now required on ChangedFilesCapability.
+ * The "absent" test case (T-04-3) has been removed because the method is no longer optional.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -21,7 +23,7 @@ import {
   FAST_DESCRIPTOR,
 } from "../../../../src/core/pipeline/registry.js";
 import type { PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../../src/core/port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -40,17 +42,15 @@ function makeFixtureWithScope(id: string): PipelineDescriptor {
 }
 
 /**
- * Build a minimal fake RuntimeStrategy with a given canDeriveChangedFiles predicate.
- * absent: canDeriveChangedFiles property is omitted from the object.
+ * Build a minimal fake runtime with a given canDeriveChangedFiles predicate.
+ * canDeriveChangedFiles is required (R2c: made required on ChangedFilesCapability).
+ * listChangedFiles is also required on ChangedFilesCapability but is never called
+ * by assertRuntimeSupportsScope — it is provided as a stub here for type correctness.
  */
-function makeFakeRuntime(
-  canDerive: boolean | "absent",
-): Pick<RuntimeStrategy, "canDeriveChangedFiles"> {
-  if (canDerive === "absent") {
-    return {};
-  }
+function makeFakeRuntime(canDerive: boolean): ChangedFilesCapability {
   return {
     canDeriveChangedFiles: () => canDerive,
+    listChangedFiles: () => Promise.reject(new Error("not called in gate tests")),
   };
 }
 
@@ -150,19 +150,6 @@ describe("T-04-2: scope 宣言 + canDerive=true → throw しない", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-04-3: scope 宣言あり + canDeriveChangedFiles absent → 通過
-// ---------------------------------------------------------------------------
-
-describe("T-04-3: scope 宣言 + canDeriveChangedFiles absent → throw しない", () => {
-  it("does not throw when canDeriveChangedFiles is not implemented (absent)", () => {
-    const fixture = makeFixtureWithScope("fixture-no-predicate");
-    const runtime = makeFakeRuntime("absent");
-
-    expect(() => assertRuntimeSupportsScope(fixture, runtime)).not.toThrow();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // T-04-4: scope 非宣言 → canDerive=false でも throw しない
 // ---------------------------------------------------------------------------
 
@@ -239,9 +226,11 @@ describe("T-06-1: assertRuntimeSupportsScope(FAST_DESCRIPTOR, ...) — gate 継�
     expect(() => assertRuntimeSupportsScope(FAST_DESCRIPTOR, runtime)).not.toThrow();
   });
 
-  it("FAST_DESCRIPTOR + canDerive absent → throw しない", () => {
-    const runtime = makeFakeRuntime("absent");
-    expect(() => assertRuntimeSupportsScope(FAST_DESCRIPTOR, runtime)).not.toThrow();
+  it("FAST_DESCRIPTOR + canDerive=false → UnsupportedRuntimeCapabilityError を throw", () => {
+    const runtime = makeFakeRuntime(false);
+    expect(() => assertRuntimeSupportsScope(FAST_DESCRIPTOR, runtime)).toThrow(
+      UnsupportedRuntimeCapabilityError,
+    );
   });
 });
 

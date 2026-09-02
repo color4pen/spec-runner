@@ -48,12 +48,13 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
-import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { PrepareResult, CommandRunnerRuntime } from "../../../../src/core/command/runner.js";
+import type { WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import type { IssueFidelityComparator, IssueFidelityComparison } from "../../../../src/core/port/issue-fidelity-comparator.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { PipelineDeps } from "../../../../src/core/types.js";
+
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { ERROR_CODES } from "../../../../src/errors.js";
@@ -179,7 +180,7 @@ function buildMockGithubClient(opts: {
 
 type MockGithubClient = ReturnType<typeof buildMockGithubClient>;
 
-function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-slug"): RuntimeStrategy & PipelineDepsBuilder & {
+function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-slug"): CommandRunnerRuntime & {
   capturedDeps: PipelineDeps;
 } {
   const storeFactory = makeStoreFactory(tempDir);
@@ -196,23 +197,38 @@ function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-s
   } as unknown as PipelineDeps;
 
   const runtime = {
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: tempDir } as WorkspaceContext),
-    buildDeps: vi.fn().mockReturnValue(capturedDeps),
     registerCleanup: vi.fn().mockReturnValue(NOOP_HANDLE),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    commitFinalState: vi.fn().mockResolvedValue(undefined),
-    bootstrapJob: vi.fn().mockRejectedValue(new Error("not implemented")),
-    persistJobState: vi.fn().mockResolvedValue(undefined),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    // JobStatePersistenceCapability
+    // R2c: persistJobState must write to disk so TC-029/030/031/032 can read back
+    // the persisted state (gate-halt path calls persistJobState, tests then call store.load()).
+    persistJobState: vi.fn().mockImplementation(
+      async (jobId: string, _slug: string, _workspace: unknown, state: JobState) => {
+        await storeFactory(jobId).persist(state);
+      }
+    ),
+    // R2c: reloadJobState must preserve the caller-supplied jobId. If state exists on
+    // disk (written by a prior persistJobState call), read it; otherwise create a fresh
+    // state using the same jobId. This ensures downstream persistJobState calls write
+    // to the same path that tests read from.
+    reloadJobState: vi.fn().mockImplementation(async (jobId: string) => {
+      try {
+        return await storeFactory(jobId).load();
+      } catch {
+        // State not on disk yet — return a fresh state with the same jobId.
+        const fresh = buildInitialJobState({
+          request: { path: path.join(tempDir, "specrunner", "changes", slug, "request.md"), title: "Test", type: "new-feature", slug },
+          repository: { owner: "testowner", name: "testrepo" },
+        });
+        return { ...fresh, jobId };
+      }
+    }),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue(capturedDeps),
     capturedDeps,
   };
   return runtime;
@@ -221,7 +237,7 @@ function buildMockRuntime(githubClient: MockGithubClient, slug: string = "test-s
 /** Simple subclass that exposes prepare() for testing via a pre-built PrepareResult. */
 class TestCommand extends CommandRunner {
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: CommandRunnerRuntime,
     private readonly prepareResult: PrepareResult,
     comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {
@@ -682,6 +698,11 @@ describe("TC-027: halt 時に linked issue へ escalation comment が書かれ�
     const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn().mockResolvedValue({ undeclaredDrops: ["missing req"] } satisfies IssueFidelityComparison) });
 
     const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    // R2c: reloadJobState must return the prepared state so that jobState.issueNumber (875)
+    // is visible in the gate-halt path → notifyJobTerminal → createIssueComment.
+    // Without this, reloadJobState returns a fresh state without issueNumber and
+    // the `if (jobState.issueNumber)` guard skips the comment.
+    (runtime.reloadJobState as ReturnType<typeof vi.fn>).mockResolvedValue(prepared.jobState);
     const command = new TestCommand(runtime, prepared, comparatorFactory);
 
     await command.execute();

@@ -12,8 +12,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { PipelineRunCommand } from "../../../../src/core/command/pipeline-run.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineRunRuntime } from "../../../../src/core/command/pipeline-run.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -65,29 +65,30 @@ function makeFakePreflightResult(): PreflightResult {
   };
 }
 
-function makeFakeRuntime(): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } {
+function makeFakeRuntime(): PipelineRunRuntime {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature", slug: "test-slug" },
     repository: { owner: "testowner", name: "testrepo" },
   });
 
   return {
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // JobBootstrapCapability
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: vi.fn().mockResolvedValue(initialState),
-    persistJobState: vi.fn().mockResolvedValue(undefined),
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: tempDir } as WorkspaceContext),
-    buildDeps: vi.fn().mockReturnValue({}),
     registerCleanup: vi.fn().mockReturnValue({} as CleanupHandle),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+    // JobStatePersistenceCapability
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue({}),
+    // ChangedFilesCapability
     canDeriveChangedFiles: () => true,
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 

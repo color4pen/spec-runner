@@ -287,6 +287,6 @@ describe("TC-028: ManagedRuntime.buildDeps injects all R2b capability fields", (
     const request = { type: "new-feature" as const, title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
 
     const deps = runtime.buildDeps(config, request, "test-slug", { cwd: "/repo" });
-    expect(deps.changedFiles?.canDeriveChangedFiles?.()).toBe(false);
+    expect(deps.changedFiles?.canDeriveChangedFiles()).toBe(false);
   });
 });

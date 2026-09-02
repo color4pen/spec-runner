@@ -146,6 +146,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // ---------------------------------------------------------------------------
 
 import { ResumeCommand } from "../resume.js";
+import type { CommandRunnerRuntime } from "../runner.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../errors.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
@@ -279,6 +280,22 @@ async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
 
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * Runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 function allStderrOutput(): string {
   return vi.mocked(stderrWrite).mock.calls.map(([msg]) => String(msg)).join("\n");
 }
@@ -340,7 +357,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
 
   it("TC-001: prepare() throws (pipeline does not start)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -352,7 +369,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
     // TC-001: In RED state, resume.ts does NOT call buildAdoptionHaltMessage → fails.
     // In GREEN state, resume.ts calls it with both detections → passes.
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -371,7 +388,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
   it("TC-001: buildAdoptionHaltMessage is called with both dirtyCanonPaths and unadoptedCommits", async () => {
     // TC-001: both detections must be forwarded to the builder
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -397,7 +414,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
   it("TC-001: stderrWrite is called with the unified halt message", async () => {
     // TC-001: the combined message must reach stderr so the operator sees it
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -417,7 +434,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
   it("TC-001: the unified message output contains --apply-canon --adopt-commits", async () => {
     // TC-001: the message already contains the full command (from the mock); verify plumbing
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -434,7 +451,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
 
   it("TC-001: the unified message output contains the dirty canon path", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -450,7 +467,7 @@ describe("TC-001: dirty canon と未知 commit の併存で 1 回の統合 halt"
 
   it("TC-001: the unified message output contains the unadopted commit shortSha", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -480,7 +497,7 @@ describe("TC-002: dirty canon のみで --apply-canon のみの完全コマン�
 
   it("TC-002: prepare() throws (pipeline does not start)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -491,7 +508,7 @@ describe("TC-002: dirty canon のみで --apply-canon のみの完全コマン�
   it("TC-002: buildAdoptionHaltMessage is called with empty unadoptedCommits", async () => {
     // TC-002: dirty canon only → builder called with no unadopted commits
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -511,7 +528,7 @@ describe("TC-002: dirty canon のみで --apply-canon のみの完全コマン�
     // TC-002: the complete command (with real slug) must be present so the operator can copy it
     // In RED state: old hint is "Hint: Use --apply-canon to commit these changes..." — no full command
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -530,7 +547,7 @@ describe("TC-002: dirty canon のみで --apply-canon のみの完全コマン�
 
   it("TC-002: output does NOT contain --adopt-commits (dirty canon only scenario)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -567,7 +584,7 @@ describe("TC-003: 未知 commit のみで --adopt-commits のみの完全コマ�
 
   it("TC-003: prepare() throws (pipeline does not start)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -578,7 +595,7 @@ describe("TC-003: 未知 commit のみで --adopt-commits のみの完全コマ�
   it("TC-003: output contains 'specrunner job resume test-slug --adopt-commits'", async () => {
     // TC-003: Gate 2 must provide the complete --adopt-commits command
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -595,7 +612,7 @@ describe("TC-003: 未知 commit のみで --adopt-commits のみの完全コマ�
   it("TC-003: output does NOT contain --apply-canon (commits-only path)", async () => {
     // TC-003: --apply-canon must NOT appear when only unadopted commits detected (no dirty canon)
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -615,7 +632,7 @@ describe("TC-003: 未知 commit のみで --adopt-commits のみの完全コマ�
   it("TC-003: buildAdoptionHaltMessage is NOT called (Gate 2 uses existing builder)", async () => {
     // TC-003: Gate 2 is unchanged; the new builder is only for Gate 1 halt paths
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -650,7 +667,7 @@ describe("TC-004: 統合 halt に代替案（discard / push / revert）が含ま
     // TC-004: operator must be told how to discard dirty canon changes
     // In RED state: old hint doesn't mention push/revert alternatives for commits
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -671,7 +688,7 @@ describe("TC-004: 統合 halt に代替案（discard / push / revert）が含ま
     // TC-004: operator must be told how to resolve unadopted commits without --adopt-commits
     // In RED state: Gate 1 halt has no push/revert for commits → fails
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -722,7 +739,7 @@ describe("TC-005: halt 前後で synthesizedCommits が不変（副作用なし�
   it("TC-005: commitOperatorCanon is NOT called (no new git commit created)", async () => {
     // TC-005: preflight is read-only; must not create commits
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -741,7 +758,7 @@ describe("TC-005: halt 前後で synthesizedCommits が不変（副作用なし�
   it("TC-005: all MOCK_STORE.persist calls preserved initial synthesizedCommits", async () => {
     // TC-005: ledger (synthesizedCommits) must not grow during preflight halt
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -780,7 +797,7 @@ describe("TC-006: 未知 commit 検出失敗時（非 exit 128）の fail-closed
 
   it("TC-006: prepare() throws (pipeline does not start)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -792,7 +809,7 @@ describe("TC-006: 未知 commit 検出失敗時（非 exit 128）の fail-closed
     // TC-006: detection failure must be propagated to the builder so operator is informed
     // In RED state: detectUnadoptedCommits is never called in Gate 1 path → fails
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -814,7 +831,7 @@ describe("TC-006: 未知 commit 検出失敗時（非 exit 128）の fail-closed
   it("TC-006: output contains detection failure indication", async () => {
     // TC-006: operator must know commit detection was incomplete
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -834,7 +851,7 @@ describe("TC-006: 未知 commit 検出失敗時（非 exit 128）の fail-closed
   it("TC-006: output does NOT recommend --adopt-commits (detection was incomplete)", async () => {
     // TC-006: must not recommend adopting commits that could not be verified
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -883,13 +900,13 @@ describe("TC-010: preflight exit 128 の adopt 検出は空扱い（非 git 環�
   });
 
   it("TC-010: prepare() throws (pipeline does not start)", async () => {
-    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    const cmd = new ResumeCommand(makeMinimalRuntime(), {} as never, "test-slug", { cwd: "/repo" });
     await expect(callPrepare(cmd)).rejects.toThrow();
   });
 
   it("TC-010: buildAdoptionHaltMessage is called with commitDetectionFailed: false (exit 128 = empty range)", async () => {
     // exit 128 must NOT set commitDetectionFailed; it's the non-git-env carve-out
-    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    const cmd = new ResumeCommand(makeMinimalRuntime(), {} as never, "test-slug", { cwd: "/repo" });
     try {
       await callPrepare(cmd);
     } catch {
@@ -912,7 +929,7 @@ describe("TC-010: preflight exit 128 の adopt 検出は空扱い（非 git 環�
 
   it("TC-010: output does NOT contain detection-failure note", async () => {
     // exit 128 is silent (non-git env); no detection-failure message should appear
-    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    const cmd = new ResumeCommand(makeMinimalRuntime(), {} as never, "test-slug", { cwd: "/repo" });
     try {
       await callPrepare(cmd);
     } catch {
@@ -924,7 +941,7 @@ describe("TC-010: preflight exit 128 の adopt 検出は空扱い（非 git 環�
   });
 
   it("TC-010: output contains --apply-canon only (no --adopt-commits)", async () => {
-    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    const cmd = new ResumeCommand(makeMinimalRuntime(), {} as never, "test-slug", { cwd: "/repo" });
     try {
       await callPrepare(cmd);
     } catch {
@@ -958,7 +975,7 @@ describe("TC-008: 存在しない slug の resume で slug 語彙のエラーが
 
   it("TC-008: prepare() throws (exit 1 path)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "nonexistent-slug",
       { cwd: "/repo" },
@@ -972,7 +989,7 @@ describe("TC-008: 存在しない slug の resume で slug 語彙のエラーが
     //   which does NOT contain "no active job with slug or job ID prefix" → fails
     // In GREEN state: logError gets the new wrapped message → passes
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "nonexistent-slug",
       { cwd: "/repo" },
@@ -992,7 +1009,7 @@ describe("TC-008: 存在しない slug の resume で slug 語彙のエラーが
   it("TC-008: the output references the slug value that was provided", async () => {
     // TC-008: operator must see the value they used to resume so they can verify it
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "nonexistent-slug",
       { cwd: "/repo" },
@@ -1028,7 +1045,7 @@ describe("TC-008b: ambiguous job ID prefix は not-found 文言に置換され�
 
   it("TC-008b: ambiguous エラーの文言と hint がそのまま報告される", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "aa",
       { cwd: "/repo" },

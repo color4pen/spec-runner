@@ -112,6 +112,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
+import type { CommandRunnerRuntime } from "../runner.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
@@ -186,6 +187,22 @@ function makeRunningState(overrides: Partial<JobState> = {}): JobState {
 }
 
 /** Access the protected prepare() via type cast. */
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
@@ -260,7 +277,7 @@ describe("TC-014: prepare() default resume calls reconcileWorktreeArtifacts", ()
   it("TC-014: reconcileWorktreeArtifacts is called once on the default resume path", async () => {
     // GIVEN: ResumeCommand with resolved slug and worktree path, clean canon, reconcile mocked
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -278,7 +295,7 @@ describe("TC-014: prepare() default resume calls reconcileWorktreeArtifacts", ()
 
   it("TC-014: reconcileWorktreeArtifacts is called with the resolved slug and worktree path", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -294,7 +311,7 @@ describe("TC-014: prepare() default resume calls reconcileWorktreeArtifacts", ()
 
   it("TC-014: prepare() succeeds and returns a result after reconcile no-op", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -318,7 +335,7 @@ describe("TC-015: prepare() --from resume calls reconcileWorktreeArtifacts", () 
   it("TC-015: reconcileWorktreeArtifacts is called when --from <step> is specified", async () => {
     // GIVEN: ResumeCommand with --from spec-review
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", from: "spec-review" },
@@ -336,7 +353,7 @@ describe("TC-015: prepare() --from resume calls reconcileWorktreeArtifacts", () 
 
   it("TC-015: --from changes startStep but does not bypass reconcile", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", from: "spec-review" },
@@ -363,7 +380,7 @@ describe("TC-016: prepare() --apply-canon path calls reconcileWorktreeArtifacts 
   it("TC-016: reconcileWorktreeArtifacts is called after the operator-apply commit", async () => {
     // GIVEN: dirty canon + --apply-canon flag; canon commit mocked
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true },
@@ -398,7 +415,7 @@ describe("TC-016: prepare() --apply-canon path calls reconcileWorktreeArtifacts 
     });
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true },
@@ -434,7 +451,7 @@ describe("TC-017: prepare() maps reconcile throw to PrepareError(1) without star
     );
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -451,7 +468,7 @@ describe("TC-017: prepare() maps reconcile throw to PrepareError(1) without star
     );
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -474,7 +491,7 @@ describe("TC-017: prepare() maps reconcile throw to PrepareError(1) without star
     mockReconcileWorktreeArtifacts.mockRejectedValue(new Error("quarantine failed"));
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -507,7 +524,7 @@ describe("TC-018: prepare() --no-worktree mode does not call reconcileWorktreeAr
   it("TC-018: reconcileWorktreeArtifacts is NOT called when resolvedWorktreePath is null (no-worktree mode)", async () => {
     // GIVEN: --no-worktree mode (worktreePath is null in state)
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       {
@@ -532,7 +549,7 @@ describe("TC-018: prepare() --no-worktree mode does not call reconcileWorktreeAr
 
   it("TC-018: detectCanonDirtyPaths is also NOT called in no-worktree mode", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       {
@@ -565,7 +582,7 @@ describe("TC-019: prepare() dirty canon without --apply-canon stops at apply-can
   it("TC-019: prepare() throws at the apply-canon gate when canon is dirty and --apply-canon is absent", async () => {
     // GIVEN: dirty canon, NO --apply-canon flag
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -578,7 +595,7 @@ describe("TC-019: prepare() dirty canon without --apply-canon stops at apply-can
   it("TC-019: reconcileWorktreeArtifacts is NOT called when the apply-canon gate fail-closes", async () => {
     // GIVEN: dirty canon, no --apply-canon
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -599,7 +616,7 @@ describe("TC-019: prepare() dirty canon without --apply-canon stops at apply-can
 
   it("TC-019: throws with exitCode 1 (PrepareError — user correctable)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },

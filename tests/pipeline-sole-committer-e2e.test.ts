@@ -34,7 +34,8 @@ import type { StepExecutor } from "../src/core/step/executor.js";
 import type { StepExecutionResult } from "../src/core/step/commit-orchestrator.js";
 import type { ParallelReviewConfig } from "../src/core/pipeline/types.js";
 import type { SpawnFn as GitExecSpawnFn } from "../src/util/git-exec.js";
-import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
+import type { RoundGitEffectsCapability } from "../src/core/pipeline/pipeline-capability.js";
+import type { StepIoValidationCapability } from "../src/core/step/step-capability.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { noopStepArtifact, noopTerminalState } from "../src/core/step/noop-capabilities.js";
 
@@ -358,13 +359,13 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
       // 3. Build git-exec SpawnFn (ChildProcess-based, used for gitTransportSpawn in deps)
       const gitExecSpawnFn = makeGitExecSpawnFn(tempDir);
 
-      // 4. Build runtimeStrategy with real captureHeadSha and REAL worktree inspection.
+      // 4. Build typed capability objects with real captureHeadSha and REAL worktree inspection.
       // listWorktreeChanges must walk the production path: after the HEAD guard's mixed
       // reset, the reviewer's weakened request.md remains in the worktree and IS reported
       // as an offending change. F-010 regression: without first-error-wins on roundError,
       // that offending report overwrites ROUND_HEAD_ADVANCED with ROUND_NONDECLARED_CHANGE
       // (a mocked empty inspection hides this and turns the 9c assertion into a false green).
-      const runtimeStrategy = {
+      const roundGitEffectsImpl: RoundGitEffectsCapability = {
         captureHeadSha: async () => gitSync(["rev-parse", "HEAD"], tempDir),
         listWorktreeChanges: async () => {
           const out = gitSync(["status", "--porcelain"], tempDir);
@@ -377,9 +378,13 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         },
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
         digestArtifacts: vi.fn().mockResolvedValue([]),
+        commitRoundArtifacts: vi.fn().mockResolvedValue(undefined),
+      };
+      const stepIoImpl: StepIoValidationCapability = {
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      } as unknown as RuntimeStrategy;
+        verifyFindingRefs: vi.fn().mockResolvedValue([]),
+      };
 
       // 5. Executor that simulates reviewer weakening request.md and self-committing
       const selfCommitExecutor = {
@@ -475,8 +480,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        roundGitEffects: runtimeStrategy as never,
-        stepIo: runtimeStrategy as never,
+        roundGitEffects: roundGitEffectsImpl,
+        stepIo: stepIoImpl,
         stepArtifact: noopStepArtifact,
         terminalState: noopTerminalState,
         storeFactory,
@@ -531,14 +536,18 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         { recursive: true },
       );
 
-      const runtimeStrategy = {
+      const roundGitEffectsImpl: RoundGitEffectsCapability = {
         captureHeadSha: async () => gitSync(["rev-parse", "HEAD"], tempDir),
         listWorktreeChanges: vi.fn().mockResolvedValue({ kind: "success" as const, paths: [] }),
         listChangedFiles: vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "test" }),
         digestArtifacts: vi.fn().mockResolvedValue([]),
+        commitRoundArtifacts: vi.fn().mockResolvedValue(undefined),
+      };
+      const stepIoImpl: StepIoValidationCapability = {
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      } as unknown as RuntimeStrategy;
+        verifyFindingRefs: vi.fn().mockResolvedValue([]),
+      };
 
       // Executor that does NOT commit (legitimate behavior)
       const cleanExecutor = {
@@ -618,8 +627,8 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         owner: "test",
         repo: "repo",
         spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-        roundGitEffects: runtimeStrategy as never,
-        stepIo: runtimeStrategy as never,
+        roundGitEffects: roundGitEffectsImpl,
+        stepIo: stepIoImpl,
         stepArtifact: noopStepArtifact,
         terminalState: noopTerminalState,
         storeFactory,

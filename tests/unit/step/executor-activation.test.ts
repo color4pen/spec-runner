@@ -18,9 +18,10 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { ChangedFilesResult } from "../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../src/core/port/runtime-strategy.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -72,8 +73,7 @@ function makeConfig(): SpecRunnerConfig {
 }
 
 function makeMinimalDeps(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  runtimeStrategy: any,
+  changedFilesCapability: ChangedFilesCapability,
 ): PipelineDeps {
   return {
     config: makeConfig(),
@@ -92,9 +92,9 @@ function makeMinimalDeps(
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
     cwd: tempDir,
-    stepArtifact: runtimeStrategy as never,
-    stepIo: runtimeStrategy as never,
-    changedFiles: runtimeStrategy as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
+    changedFiles: changedFilesCapability,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
   };
@@ -118,33 +118,30 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
   };
 }
 
+/**
+ * Build a ChangedFilesCapability typed fake for executor-activation tests.
+ * Only includes methods needed for the changedFiles slot.
+ */
+function makeChangedFiles(
+  listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<ChangedFilesResult>,
+  // R2c: canDeriveChangedFiles is now required. Default is () => true to match the old
+  // "absent method" behaviour (absent → canDeriveChangedFiles?.() returned undefined
+  // → undefined !== false → true → structurallyDerivable).
+  // Tests that exercise the fail-closed path pass () => false explicitly.
+  canDeriveChangedFilesImpl: () => boolean = () => true,
+): ChangedFilesCapability {
+  return {
+    listChangedFiles,
+    canDeriveChangedFiles: canDeriveChangedFilesImpl,
+  };
+}
+
+/** @deprecated Use makeChangedFiles and makeMinimalDeps(changedFiles) */
 function makeRuntimeStrategy(
   listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<ChangedFilesResult>,
-  canDeriveChangedFilesImpl?: () => boolean,
-) {
-  const base = {
-    async *query() {},
-    createAgentRunner() { return { async run() { return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 }; } }; },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as never; },
-    registerCleanup() { return {} as never; },
-    async teardown() {},
-    async captureHeadSha() { return null; },
-    async prepareStepArtifacts() {},
-    async finalizeStepArtifacts() {},
-    async snapshotMainCheckoutGuard() { return null; },
-    async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState() {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
-    listChangedFiles,
-  };
-  if (canDeriveChangedFilesImpl !== undefined) {
-    return { ...base, canDeriveChangedFiles: canDeriveChangedFilesImpl };
-  }
-  return base;
+  canDeriveChangedFilesImpl: () => boolean = () => true,
+): ChangedFilesCapability {
+  return makeChangedFiles(listChangedFiles, canDeriveChangedFilesImpl);
 }
 
 // ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
 import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability, StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -69,13 +70,11 @@ afterEach(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Build a minimal RuntimeStrategy mock that delegates git operations to the
- * test's spawnFn (from git-exec.ts). This mirrors what LocalRuntime does at
- * runtime, but uses the test's injectable spawnFn so the test retains control
- * over git responses.
+ * Build a StepArtifactLifecycleCapability that delegates git operations to the
+ * test's spawnFn. This mirrors what LocalRuntime does at runtime, but lets the
+ * test retain control over git responses.
  */
-/** Step artifact capability mock that delegates git to the test's spawnFn. */
-function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
+function makeTestStepArtifact(spawnFn: SpawnFn): StepArtifactLifecycleCapability {
   return {
     async captureHeadSha(cwd: string): Promise<string | null> {
       return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
@@ -96,15 +95,18 @@ function makeTestRuntimeStrategy(spawnFn: SpawnFn) {
       await commitAndPush(step, state, { cwd, slug } as PipelineDeps, headBeforeStep, infra);
     },
     async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
-    async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
+    async digestArtifacts(refs: { path: string }[]) {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles() { return { kind: "success" as const, files: [] as never[] }; },
-    async validateStepOutputs(): Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult> {
-      return { violations: [] };
-    },
+  };
+}
+
+/** Build a StepIoValidationCapability (noop) for executor.commit tests. */
+function makeTestStepIo(): StepIoValidationCapability {
+  return {
+    async validateStepInputs() {},
+    async verifyFindingRefs() { return []; },
+    async validateStepOutputs() { return { violations: [] }; },
   };
 }
 
@@ -172,8 +174,8 @@ function makeLocalDeps(overrides: Partial<PipelineDeps> = {}, gitSpawnFn?: Spawn
     owner: "user",
     repo: "repo",
     spawn: (async () => ({ exitCode: 0, stdout: "", stderr: "" })) as PipelineSpawnFn,
-    stepArtifact: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepArtifact,
-    stepIo: gitSpawnFn ? makeTestRuntimeStrategy(gitSpawnFn) as never : noopStepIo,
+    stepArtifact: gitSpawnFn ? makeTestStepArtifact(gitSpawnFn) : noopStepArtifact,
+    stepIo: gitSpawnFn ? makeTestStepIo() : noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...overrides,
@@ -656,7 +658,7 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
     expect(result.lineage[0]!.step).toBe("implementer");
     expect(result.lineage[0]!.outputs).toHaveLength(1);
     expect(result.lineage[0]!.outputs[0]!.path).toBe("specrunner/changes/test-slug/implementer.md");
-    // digestArtifacts in makeTestRuntimeStrategy returns hash: null
+    // digestArtifacts in makeTestStepArtifact returns hash: null
     expect(result.lineage[0]!.outputs[0]!.hash).toBeNull();
     // inputs empty (step.reads not declared)
     expect(result.lineage[0]!.inputs).toHaveLength(0);

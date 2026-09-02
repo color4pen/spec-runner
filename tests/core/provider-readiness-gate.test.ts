@@ -8,7 +8,7 @@
  * TC-008: CI reproduces success and each failure kind via injection
  * TC-009: Managed gate is a no-op
  * TC-010: Port module has no import back-edges
- * TC-011: LocalRuntime and ManagedRuntime remain assignable to RealRuntimeStrategy
+ * TC-011: LocalRuntime and ManagedRuntime remain assignable to RuntimeStrategy
  * TC-016: No RunResultContract JSON emitted on readiness failure
  * TC-017: Kind-specific hint is printed to stderr on readiness failure
  */
@@ -19,9 +19,9 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { EventBus } from "../../src/core/event/event-bus.js";
 import { CommandRunner } from "../../src/core/command/runner.js";
-import type { PrepareResult } from "../../src/core/command/runner.js";
-import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../src/core/types.js";
+import type { PrepareResult, CommandRunnerRuntime } from "../../src/core/command/runner.js";
+import type { CleanupHandle } from "../../src/core/port/runtime-strategy.js";
+import type { PipelineDeps } from "../../src/core/types.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../src/core/port/provider-readiness.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../src/core/runtime/managed.js";
@@ -72,56 +72,42 @@ function countingProbe(result: ProviderReadinessResult) {
 // ---------------------------------------------------------------------------
 
 /**
- * Build a minimal RuntimeStrategy fake that tracks side-effect calls.
- * `setupWorkspace` and `prepare` are tracked so tests can assert they are/aren't called.
+ * Build a minimal runtime fake that tracks side-effect calls.
+ * Typed as the narrow CommandRunner contract — only the 7 methods required by
+ * CommandRunner.execute() are present (R2c: whole-port RuntimeStrategy removed).
  */
 function makeMinimalRuntime(opts?: {
   providerReadinessProbe?: ProviderReadinessProbe;
-  omitReadinessMethod?: boolean;
 }): {
-  runtime: RuntimeStrategy & PipelineDepsBuilder & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> };
+  runtime: CommandRunnerRuntime;
   sideEffects: { setupWorkspaceCalled: boolean; prepareCalled: boolean };
 } {
   const sideEffects = { setupWorkspaceCalled: false, prepareCalled: false };
   const probe = opts?.providerReadinessProbe;
 
-  const runtime: RuntimeStrategy & PipelineDepsBuilder & { assertProviderReadiness?: (env: Record<string, string | undefined>) => Promise<void> } = {
-    async bootstrapJob() { throw new Error("not implemented in fake"); },
-    async persistJobState() { sideEffects.setupWorkspaceCalled = true; },
+  const runtime: CommandRunnerRuntime = {
+    // ProviderReadinessCapability
+    async assertProviderReadiness(env: Record<string, string | undefined>) {
+      if (probe !== undefined) {
+        const { classifyProviderReadiness } = await import("../../src/core/runtime/provider-readiness.js");
+        const result = await probe(env);
+        const err = classifyProviderReadiness(result);
+        if (err) throw err;
+      }
+    },
+    // WorkspaceLifecycleCapability
     async setupWorkspace() {
       sideEffects.setupWorkspaceCalled = true;
       return { cwd: tempDir };
     },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    registerCleanup() { return {} as CleanupHandle; },
     async teardown() {},
-    async *query() {},
-    createAgentRunner() {
-      return {
-        async run() {
-          return { completionReason: "success" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async captureHeadSha() { return null; },
-    async prepareStepArtifacts() {},
-    async validateStepInputs() {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async digestArtifacts() { return []; },
-    async listChangedFiles() { return { kind: "unavailable" as const, reason: "fake" }; },
-    async verifyFindingRefs() { return []; },
+    // JobStatePersistenceCapability
+    async persistJobState() { sideEffects.setupWorkspaceCalled = true; },
+    async reloadJobState() { throw new Error("not implemented in fake"); },
+    // PipelineDepsBuilder
+    buildDeps() { return {} as PipelineDeps; },
   };
-
-  if (!opts?.omitReadinessMethod && probe !== undefined) {
-    runtime.assertProviderReadiness = async (env: Record<string, string | undefined>) => {
-      // Import the classifier dynamically so tests that reference future modules
-      // will fail at runtime (red) until implementation exists.
-      const { classifyProviderReadiness } = await import("../../src/core/runtime/provider-readiness.js");
-      const result = await probe(env);
-      const err = classifyProviderReadiness(result);
-      if (err) throw err;
-    };
-  }
 
   return { runtime, sideEffects };
 }
@@ -139,7 +125,7 @@ class MinimalCommandRunner extends CommandRunner {
   private readonly onPrepare: () => Promise<PrepareResult>;
 
   constructor(
-    runtime: RuntimeStrategy & PipelineDepsBuilder,
+    runtime: CommandRunnerRuntime,
     events: EventBus,
     onPrepare: () => Promise<PrepareResult>,
   ) {
@@ -285,14 +271,14 @@ describe("TC-002: readiness failure on resume — mutates nothing", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-003: gate is load-bearing — without gate, side effects occur", () => {
-  it("without assertProviderReadiness, execute() calls prepare() even when workspace would fail late", async () => {
-    // A runtime WITHOUT assertProviderReadiness (no gate).
-    // prepare() will be called (showing side effects would happen without the gate).
+  it("with assertProviderReadiness that is ready (no-op), execute() calls prepare() even when prepare fails late", async () => {
+    // A runtime with a gate that always passes (no probe = no-op assertProviderReadiness).
+    // prepare() will be called (gate does not block it).
+    // Note (R2c): assertProviderReadiness is now required. The "absent" case is gone.
+    // The equivalent contrast: a gate that always passes lets prepare() run.
     let prepareCalled = false;
 
-    const { runtime } = makeMinimalRuntime({
-      omitReadinessMethod: true, // simulates gate being absent
-    });
+    const { runtime } = makeMinimalRuntime(); // no probe → assertProviderReadiness is a no-op (ready)
 
     const events = new EventBus();
     // prepare() marks itself as called, then throws (simulating a late failure)
@@ -310,8 +296,8 @@ describe("TC-003: gate is load-bearing — without gate, side effects occur", ()
       // Expected: prepare() threw → execute() re-threw
     }
 
-    // Key assertion: without the gate, prepare() WAS reached
-    // This proves that if the gate didn't exist, side effects (from prepare/setupWorkspace) would occur
+    // Key assertion: with a ready gate, prepare() WAS reached
+    // This proves that the gate alone (when not-ready) prevents side effects
     expect(prepareCalled).toBe(true);
   });
 
@@ -373,10 +359,13 @@ describe("TC-006: probe invoked exactly once per run/resume", () => {
     expect(getCallCount()).toBe(1);
   });
 
-  it("probe is NOT called when runtime has no assertProviderReadiness method", async () => {
-    const { probe: _probe, getCallCount } = countingProbe({ kind: "ready" });
-    // runtime WITHOUT assertProviderReadiness — probe should not be invoked
-    const { runtime } = makeMinimalRuntime({ omitReadinessMethod: true });
+  it("assertProviderReadiness no-op (no probe) does not call external probe — getCallCount stays 0", async () => {
+    // R2c: assertProviderReadiness is now required. The "absent" case is gone.
+    // Equivalent: runtime with no probe has assertProviderReadiness as a no-op;
+    // an independently-tracked probe counter never gets called.
+    const { getCallCount } = countingProbe({ kind: "ready" });
+    // runtime with no probe → assertProviderReadiness is a no-op, does not call the counting probe
+    const { runtime } = makeMinimalRuntime(); // no providerReadinessProbe
     const events = new EventBus();
     const runner = new MinimalCommandRunner(runtime, events, async () => {
       throw new Error("simulated-prepare-failure");
@@ -386,10 +375,10 @@ describe("TC-006: probe invoked exactly once per run/resume", () => {
     try {
       await runner.execute();
     } catch {
-      // Expected: no gate, prepare() throws, execute() re-throws
+      // Expected: gate passes (no-op), prepare() throws, execute() re-throws
     }
 
-    // Probe was never attached to the runtime, so getCallCount must be 0
+    // The external counting probe was never wired to the runtime, so getCallCount must be 0
     expect(getCallCount()).toBe(0);
   });
 });
@@ -553,11 +542,11 @@ describe("TC-010: port module has no import back-edges", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: LocalRuntime and ManagedRuntime remain assignable to RealRuntimeStrategy
+// TC-011: LocalRuntime and ManagedRuntime remain assignable to RuntimeStrategy
 // ---------------------------------------------------------------------------
 
-describe("TC-011: LocalRuntime and ManagedRuntime remain assignable to RealRuntimeStrategy", () => {
-  it("LocalRuntime instance has assertProviderReadiness method (RealRuntimeStrategy requirement)", async () => {
+describe("TC-011: LocalRuntime and ManagedRuntime remain assignable to RuntimeStrategy", () => {
+  it("LocalRuntime instance has assertProviderReadiness method (RuntimeStrategy requirement)", async () => {
     const mockGithubClient = {} as import("../../src/core/port/github-client.js").GitHubClient;
 
     const local = new LocalRuntime({
@@ -572,7 +561,7 @@ describe("TC-011: LocalRuntime and ManagedRuntime remain assignable to RealRunti
     expect(typeof asRecord["assertProviderReadiness"]).toBe("function");
   });
 
-  it("ManagedRuntime instance has assertProviderReadiness method (RealRuntimeStrategy requirement)", async () => {
+  it("ManagedRuntime instance has assertProviderReadiness method (RuntimeStrategy requirement)", async () => {
     const mockGithubClient = {} as import("../../src/core/port/github-client.js").GitHubClient;
     const mockSessionClient = {} as import("../../src/core/port/session-client.js").SessionClient;
 

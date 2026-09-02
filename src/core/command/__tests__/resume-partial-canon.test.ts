@@ -126,6 +126,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
+import type { CommandRunnerRuntime } from "../runner.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
@@ -234,6 +235,22 @@ const COMPLETED_DESIGN_STEP_RUN: StepRun = {
 };
 
 /** Access the protected prepare() via type cast. */
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
@@ -338,7 +355,7 @@ describe("TC-001: untracked な書きかけ canon がある中断 resume は隔�
   it("TC-001: quarantinePartialCanon is called for signal-interrupted design step (untracked dirty canon)", async () => {
     // GIVEN: signal interruption, untracked design.md in worktree, no completed StepRun
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN
     await callPrepare(cmd);
@@ -352,7 +369,7 @@ describe("TC-001: untracked な書きかけ canon がある中断 resume は隔�
   it("TC-001: prepare() does NOT throw when dirty canon is auto-quarantined (no halt)", async () => {
     // GIVEN / WHEN
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // THEN: must not throw — resume continues
     await expect(callPrepare(cmd)).resolves.toBeDefined();
@@ -360,7 +377,7 @@ describe("TC-001: untracked な書きかけ canon がある中断 resume は隔�
 
   it("TC-001: quarantinePartialCanon is called with the dirty canon paths (slug, worktreePath, paths)", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     // Check that quarantinePartialCanon was called with the right slug and dirty paths
@@ -377,7 +394,7 @@ describe("TC-001: untracked な書きかけ canon がある中断 resume は隔�
      * The presence of this test passing confirms the quarantine branch is active.
      */
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     let threw = false;
     try {
@@ -405,7 +422,7 @@ describe("TC-002: tracked-modified な書きかけ canon がある中断 resume 
 
   it("TC-002: quarantinePartialCanon is called for tracked-modified dirty canon (design + tasks)", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     expect(mockQuarantinePartialCanon).toHaveBeenCalledTimes(1);
@@ -413,14 +430,14 @@ describe("TC-002: tracked-modified な書きかけ canon がある中断 resume 
 
   it("TC-002: prepare() resolves without throwing for tracked-modified dirty canon", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await expect(callPrepare(cmd)).resolves.toBeDefined();
   });
 
   it("TC-002: both tracked-modified paths are passed to quarantinePartialCanon", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     const [, , calledPaths] = mockQuarantinePartialCanon.mock.calls[0] ?? [];
@@ -442,7 +459,7 @@ describe("TC-003: 隔離後に退避先へ evidence が残る（gate 配線レ�
     // Evidence writability is tested in e2e (TC-023). At integration level:
     // verify that quarantinePartialCanon is called with slug and worktreePath
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     expect(mockQuarantinePartialCanon).toHaveBeenCalledWith(
@@ -455,7 +472,7 @@ describe("TC-003: 隔離後に退避先へ evidence が残る（gate 配線レ�
 
   it("TC-003: prepare() returns startStep='design' after successful quarantine (step re-runs from beginning)", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     const result = await callPrepare(cmd);
     // startStep must be the interrupted step (design) so it re-runs from scratch
@@ -475,7 +492,7 @@ describe("TC-004: 中断の裏づけが無い dirty canon は halt する", () =
   it("TC-004: prepare() throws when dirty canon has no interruption backing (operator edit suspected)", async () => {
     // GIVEN: resumePoint=null, isStaleRunning=false → no machine-backed interruption
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN / THEN: must throw — fail-closed (operator edit protection)
     await expect(callPrepare(cmd)).rejects.toThrow();
@@ -483,7 +500,7 @@ describe("TC-004: 中断の裏づけが無い dirty canon は halt する", () =
 
   it("TC-004: throws PrepareError with exitCode=1", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     let err: Error & { exitCode?: number } | undefined;
     try { await callPrepare(cmd); } catch (e) { err = e as never; }
@@ -492,7 +509,7 @@ describe("TC-004: 中断の裏づけが無い dirty canon は halt する", () =
 
   it("TC-004: quarantinePartialCanon is NOT called (operator edit → fail-closed, not auto-quarantine)", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     try { await callPrepare(cmd); } catch { /* expected */ }
     expect(
@@ -517,7 +534,7 @@ describe("TC-004: 中断の裏づけが無い dirty canon は halt する", () =
     mockDetectCanonDirtyPaths.mockResolvedValue(DESIGN_DIRTY_PATHS);
 
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await expect(callPrepare(cmd)).rejects.toThrow();
     expect(mockQuarantinePartialCanon).not.toHaveBeenCalled();
@@ -537,7 +554,7 @@ describe("TC-005: 中断 step の writes() 外の canon が混在する場合は
   it("TC-005: prepare() throws when dirty canon includes a path outside design's writes()", async () => {
     // GIVEN: interruption is backed but test-cases.md is not design's declared write
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN / THEN: condition 2 fails → fail-closed
     await expect(callPrepare(cmd)).rejects.toThrow();
@@ -545,7 +562,7 @@ describe("TC-005: 中断 step の writes() 外の canon が混在する場合は
 
   it("TC-005: quarantinePartialCanon is NOT called when out-of-scope canon is mixed in", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     try { await callPrepare(cmd); } catch { /* expected */ }
     expect(
@@ -567,7 +584,7 @@ describe("TC-006: 前 step が正常完了している場合は halt する", ()
   it("TC-006: prepare() throws when design has a completed StepRun (condition 4 not met)", async () => {
     // GIVEN: state.steps["design"] is non-empty → completedStepRunAbsent=false
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN / THEN: fail-closed (completed StepRun means the dirty canon is not a partial output)
     await expect(callPrepare(cmd)).rejects.toThrow();
@@ -575,7 +592,7 @@ describe("TC-006: 前 step が正常完了している場合は halt する", ()
 
   it("TC-006: quarantinePartialCanon is NOT called when design has a completed StepRun", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     try { await callPrepare(cmd); } catch { /* expected */ }
     expect(
@@ -597,7 +614,7 @@ describe("TC-007: --apply-canon 指定時は operator-apply commit を行う（�
   it("TC-007: commitOperatorCanon is called when --apply-canon is given (even if auto-quarantine would match)", async () => {
     // GIVEN: interrupted design, would normally auto-quarantine, but --apply-canon takes priority
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo", applyCanon: true },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo", applyCanon: true },
     );
     // WHEN
     await callPrepare(cmd);
@@ -610,7 +627,7 @@ describe("TC-007: --apply-canon 指定時は operator-apply commit を行う（�
 
   it("TC-007: quarantinePartialCanon is NOT called when --apply-canon is given", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo", applyCanon: true },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo", applyCanon: true },
     );
     await callPrepare(cmd);
     expect(
@@ -621,7 +638,7 @@ describe("TC-007: --apply-canon 指定時は operator-apply commit を行う（�
 
   it("TC-007: prepare() resolves successfully when --apply-canon commits the dirty canon", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo", applyCanon: true },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo", applyCanon: true },
     );
     await expect(callPrepare(cmd)).resolves.toBeDefined();
   });
@@ -643,7 +660,7 @@ describe("TC-008: 退避書き込み失敗時は何も削除せず halt する",
   it("TC-008: prepare() throws (PrepareError) when quarantinePartialCanon fails", async () => {
     // GIVEN: quarantine write fails
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN / THEN: must halt — evidence not written, nothing deleted
     await expect(callPrepare(cmd)).rejects.toThrow();
@@ -651,7 +668,7 @@ describe("TC-008: 退避書き込み失敗時は何も削除せず halt する",
 
   it("TC-008: throws PrepareError with exitCode=1 when quarantine fails", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     let err: Error & { exitCode?: number } | undefined;
     try { await callPrepare(cmd); } catch (e) { err = e as never; }
@@ -660,7 +677,7 @@ describe("TC-008: 退避書き込み失敗時は何も削除せず halt する",
 
   it("TC-008: step is NOT started when quarantine fails (prepare() throws before execute)", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     let threw = false;
     try { await callPrepare(cmd); } catch { threw = true; }
@@ -683,7 +700,7 @@ describe("TC-009: resumePoint 無しの stale 経路でも隔離判定が働く"
   it("TC-009: quarantinePartialCanon is called for stale-running path (SIGKILL/hard-crash) without resumePoint", async () => {
     // GIVEN: isStaleRunning=true, resumePoint=null, state.steps["design"] absent
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN
     await callPrepare(cmd);
@@ -696,14 +713,14 @@ describe("TC-009: resumePoint 無しの stale 経路でも隔離判定が働く"
 
   it("TC-009: prepare() resolves without throwing for stale-running path", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await expect(callPrepare(cmd)).resolves.toBeDefined();
   });
 
   it("TC-009: quarantinePartialCanon receives the correct dirty paths for stale path", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     const [, , calledPaths] = mockQuarantinePartialCanon.mock.calls[0] ?? [];
@@ -729,7 +746,7 @@ describe("TC-010: 隔離後の再 resume は dirty canon を検出しない（�
     mockDetectCanonDirtyPaths.mockResolvedValue([]); // clean after quarantine
 
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     // WHEN
     const result = await callPrepare(cmd);
@@ -756,7 +773,7 @@ describe("TC-010: 隔離後の再 resume は dirty canon を検出しない（�
     mockDetectCanonDirtyPaths.mockResolvedValue([]); // quarantine already happened
 
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG, { cwd: "/repo" },
+      makeMinimalRuntime(), {} as never, SLUG, { cwd: "/repo" },
     );
     await callPrepare(cmd);
     expect(mockQuarantinePartialCanon).not.toHaveBeenCalled();
@@ -781,7 +798,7 @@ describe("TC-027: --from で別 step へ redirect した resume は dirty canon 
      *   → "spec-review" !== "design" → fail-closed halt
      */
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG,
+      makeMinimalRuntime(), {} as never, SLUG,
       { cwd: "/repo", from: "spec-review" }, // --from redirects to different step
     );
     // WHEN / THEN: condition 1 not met → fail-closed, NOT auto-quarantine
@@ -790,7 +807,7 @@ describe("TC-027: --from で別 step へ redirect した resume は dirty canon 
 
   it("TC-027: quarantinePartialCanon is NOT called when --from redirects to a different step", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG,
+      makeMinimalRuntime(), {} as never, SLUG,
       { cwd: "/repo", from: "spec-review" },
     );
     try { await callPrepare(cmd); } catch { /* expected */ }
@@ -802,7 +819,7 @@ describe("TC-027: --from で別 step へ redirect した resume は dirty canon 
 
   it("TC-027: throws PrepareError with exitCode=1 for --from redirect with dirty canon", async () => {
     const cmd = new ResumeCommand(
-      {} as never, {} as never, SLUG,
+      makeMinimalRuntime(), {} as never, SLUG,
       { cwd: "/repo", from: "spec-review" },
     );
     let err: Error & { exitCode?: number } | undefined;

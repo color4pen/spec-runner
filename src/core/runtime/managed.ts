@@ -24,8 +24,7 @@ import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, consumeDraft, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
-import { deriveCommitInspectionCapability, deriveRevisionContentCapability } from "../port/runtime-strategy.js";
+import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
@@ -66,7 +65,7 @@ export function isGitHubDirectoryListing(value: unknown): boolean {
   );
 }
 
-export class ManagedRuntime implements RealRuntimeStrategy {
+export class ManagedRuntime implements RuntimeStrategy {
   /**
    * String index signature allowing dynamic property access (e.g., for test assertions
    * that check method presence via prototype[key]). All class members are assignable to
@@ -342,8 +341,8 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         canDeriveChangedFiles: () => this.canDeriveChangedFiles(),
         listChangedFiles: (baseBranch, cwd, branch) => this.listChangedFiles(baseBranch, cwd, branch),
       },
-      commitInspection: deriveCommitInspectionCapability(this),
-      revisionContent: deriveRevisionContentCapability(this),
+      commitInspection: { listCommitChangedFiles: this.listCommitChangedFiles.bind(this) },
+      revisionContent: { readRevisionContent: this.readRevisionContent.bind(this) },
     };
   }
 
@@ -604,9 +603,8 @@ export class ManagedRuntime implements RealRuntimeStrategy {
    *
    * fail-closed: throws to prevent pipeline start until managed runtime store safety
    * is confirmed in a separate request (D3 / T-03 choice).
-   * The optional-chaining call in runner.ts uses `?.`, so if this method were absent
-   * the fallback would be used — but RealRuntimeStrategy requires it, so it must be
-   * present. The safest production behavior for managed is to throw.
+   * reloadJobState is required on JobStatePersistenceCapability; the safest production
+   * behavior for managed runtime is to throw rather than silently skip.
    */
   async reloadJobState(_jobId: string, _slug: string, _workspace: import("../port/runtime-strategy.js").WorkspaceContext): Promise<JobState> {
     throw new Error("reloadJobState not implemented for managed runtime");
@@ -625,7 +623,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   /**
    * Managed runtime performs no local provider readiness probe.
    * Managed readiness / preflight is unchanged by this change (T-05, T-06, T-08).
-   * No-op — mirrors assertNoDuplicateLiveJob convention.
+   * No-op: managed readiness is handled by existing preflight / session creation.
    */
   async assertProviderReadiness(_env: Record<string, string | undefined>): Promise<void> {
     // no-op: managed runtime readiness is handled by existing preflight / session creation

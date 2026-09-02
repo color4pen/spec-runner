@@ -20,7 +20,8 @@ import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentStepName } from "../../../src/kernel/agent-definition.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import type { StepArtifactLifecycleCapability } from "../../../src/core/step/step-capability.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -90,27 +91,23 @@ function makeSuccessRunner(): AgentRunner {
 }
 
 /**
- * Build a step artifact capability with an injectable finalizeStepArtifacts implementation.
+ * Build a StepArtifactLifecycleCapability with an injectable finalizeStepArtifacts implementation.
  */
-function makeStrategy(opts: {
+function makeStepArtifact(opts: {
   finalizeStepArtifacts: (...args: unknown[]) => Promise<void>;
-}) {
+}): StepArtifactLifecycleCapability {
   return {
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(...args: unknown[]): Promise<void> {
+    async captureHeadSha() { return null; },
+    async prepareStepArtifacts() {},
+    async finalizeStepArtifacts(...args: unknown[]) {
       return opts.finalizeStepArtifacts(...args);
     },
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async validateStepOutputs() { return { violations: [] }; },
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async snapshotMainCheckoutGuard() { return null; },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
   };
 }
 
-function makeDeps(strategy?: ReturnType<typeof makeStrategy>): PipelineDeps {
+function makeDeps(stepArtifact?: StepArtifactLifecycleCapability): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -147,8 +144,8 @@ function makeDeps(strategy?: ReturnType<typeof makeStrategy>): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: strategy as never,
-    stepIo: strategy as never,
+    stepArtifact: stepArtifact ?? noopStepArtifact,
+    stepIo: noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
   };
@@ -178,14 +175,14 @@ describe("TC-CM-001: single step → finalizeStepArtifacts called exactly once",
     await seedJobState(jobId, state);
 
     let callCount = 0;
-    const strategy = makeStrategy({
+    const stepArtifactCap = makeStepArtifact({
       async finalizeStepArtifacts() {
         callCount++;
       },
     });
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
-    await executor.execute(makeStep("code-fixer"), state, makeDeps(strategy));
+    await executor.execute(makeStep("code-fixer"), state, makeDeps(stepArtifactCap));
 
     expect(callCount).toBe(1);
   });
@@ -208,7 +205,7 @@ describe("TC-CM-002: parallel steps → finalizeStepArtifacts serialized", () =>
     let concurrentCount = 0;
     let maxConcurrent = 0;
 
-    const strategy = makeStrategy({
+    const stepArtifactCap = makeStepArtifact({
       async finalizeStepArtifacts() {
         concurrentCount++;
         maxConcurrent = Math.max(maxConcurrent, concurrentCount);
@@ -220,7 +217,7 @@ describe("TC-CM-002: parallel steps → finalizeStepArtifacts serialized", () =>
 
     // Share a single executor instance (same commitMutex).
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
-    const deps = makeDeps(strategy);
+    const deps = makeDeps(stepArtifactCap);
 
     await Promise.all([
       executor.execute(makeStep("code-fixer"), stateA, deps),
@@ -249,7 +246,7 @@ describe("TC-CM-003: first finalize failure does not block second finalize", () 
 
     // code-fixer always throws; implementer always succeeds.
     // This is deterministic regardless of FIFO order in the mutex chain.
-    const strategy = makeStrategy({
+    const stepArtifactCap = makeStepArtifact({
       async finalizeStepArtifacts(step) {
         const name = (step as { name: string }).name;
         events.push(`enter:${name}`);
@@ -261,7 +258,7 @@ describe("TC-CM-003: first finalize failure does not block second finalize", () 
     });
 
     const executor = new StepExecutor(new EventBus(), makeSuccessRunner(), makeStoreFactory(tempDir));
-    const deps = makeDeps(strategy);
+    const deps = makeDeps(stepArtifactCap);
 
     const [resultA, resultB] = await Promise.allSettled([
       executor.execute(makeStep("code-fixer"), stateA, deps),

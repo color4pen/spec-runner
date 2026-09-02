@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:2b73ef4612d79012f47dc1cc72a7e95579ae95ab389cc3353f186dce5dd15c17",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/port/runtime-strategy.ts: RuntimeStrategy interface has 24 methods (14 required + 10 optional)",
+    "src/core/port/runtime-strategy.ts: 10 optional methods confirmed (listWorktreeChanges?, canDeriveChangedFiles?, assertNoDuplicateLiveJob?, assertProviderReadiness?, reloadJobState?, listCommitChangedFiles?, readFileAtCommit?, snapshotMainCheckoutGuard?, readRevisionContent?, lastCommitTouchingPath?)",
+    "src/core/port/runtime-strategy.ts:763: RealRuntimeStrategy intersection type closes all 10 optional holes (1 instance confirmed)",
+    "src/core/port/runtime-strategy.ts:287: deriveCommitInspectionCapability uses Pick<RuntimeStrategy, 'listCommitChangedFiles'>",
+    "src/core/port/runtime-strategy.ts:301: deriveRevisionContentCapability uses Pick<RuntimeStrategy, 'readRevisionContent'>",
+    "src/core/command/runner.ts:90: CommandRunner constructor takes runtime: RuntimeStrategy & PipelineDepsBuilder",
+    "src/core/command/runner.ts:110: assertProviderReadiness called with existence check (if this.runtime.assertProviderReadiness)",
+    "src/core/command/runner.ts:195: reloadJobState called with existence check (if this.runtime.reloadJobState)",
+    "src/core/command/pipeline-run.ts:68: PipelineRunCommand constructor takes runtime: RuntimeStrategy & PipelineDepsBuilder",
+    "src/core/command/pipeline-run.ts:141: assertNoDuplicateLiveJob called with optional chaining (?.)",
+    "src/core/runtime/factory.ts:37: createRuntime returns RuntimeStrategy & PipelineDepsBuilder",
+    "src/cli/bootstrap.ts:27: BootstrapResult.runtime typed as RuntimeStrategy & PipelineDepsBuilder",
+    "src/core/pipeline/runtime-capability-gate.ts:83: canDeriveChangedFiles called with optional chaining (?.)",
+    "tests/pipeline-sole-committer-e2e.test.ts:382: as unknown as RuntimeStrategy (double cast)",
+    "tests/pipeline-sole-committer-e2e.test.ts:541: as unknown as RuntimeStrategy (double cast)"
+  ],
+  "sourceRevision": "76490a0429eb8dec0cee6ed135d28ae28b724d08"
+}

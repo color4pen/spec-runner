@@ -19,8 +19,8 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import { UnsupportedRuntimeCapabilityError } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import type { PipelineDescriptor } from "../../../../src/core/pipeline/types.js";
-import type { RuntimeStrategy, CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
-import type { PipelineDepsBuilder } from "../../../../src/core/types.js";
+import type { CleanupHandle, WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
+import type { PipelineRunRuntime } from "../../../../src/core/command/pipeline-run.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
@@ -94,15 +94,12 @@ function makeFakePreflightResult(pipelineId?: string): PreflightResult {
 }
 
 /**
- * Build a fake RuntimeStrategy with bootstrapJob as a spy.
- * canDeriveChangedFiles is set according to canDerive:
- *   true  → () => true
- *   false → () => false
- *   "absent" → property is omitted
+ * Build a fake runtime with bootstrapJob as a spy.
+ * canDeriveChangedFiles is set according to canDerive (boolean).
  */
 function makeFakeRuntime(
-  canDerive: boolean | "absent",
-): RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } {
+  canDerive: boolean,
+): PipelineRunRuntime & { bootstrapJob: ReturnType<typeof vi.fn> } {
   const initialState = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test Request", type: "new-feature" },
     repository: { owner: "testowner", name: "testrepo" },
@@ -110,29 +107,25 @@ function makeFakeRuntime(
 
   const bootstrapJobSpy = vi.fn().mockResolvedValue(initialState);
 
-  const runtime: RuntimeStrategy & PipelineDepsBuilder & { bootstrapJob: ReturnType<typeof vi.fn> } = {
+  return {
+    // ProviderReadinessCapability
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    // JobBootstrapCapability
+    assertNoDuplicateLiveJob: vi.fn().mockResolvedValue(undefined),
     bootstrapJob: bootstrapJobSpy,
-    persistJobState: vi.fn().mockResolvedValue(undefined),
-    query: vi.fn(),
-    createAgentRunner: vi.fn().mockReturnValue({ run: vi.fn() }),
+    // WorkspaceLifecycleCapability
     setupWorkspace: vi.fn().mockResolvedValue({ cwd: tempDir } as WorkspaceContext),
-    buildDeps: vi.fn().mockReturnValue({}),
     registerCleanup: vi.fn().mockReturnValue({} as CleanupHandle),
     teardown: vi.fn().mockResolvedValue(undefined),
-    captureHeadSha: vi.fn().mockResolvedValue(null),
-    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
-    validateStepInputs: vi.fn().mockResolvedValue(undefined),
-    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-    verifyFindingRefs: vi.fn().mockResolvedValue([]),
-    digestArtifacts: vi.fn().mockResolvedValue([]),
+    // JobStatePersistenceCapability
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    // PipelineDepsBuilder
+    buildDeps: vi.fn().mockReturnValue({}),
+    // ChangedFilesCapability
+    canDeriveChangedFiles: () => canDerive,
     listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
-
-  if (canDerive !== "absent") {
-    runtime.canDeriveChangedFiles = () => canDerive;
-  }
-
-  return runtime;
 }
 
 /**
@@ -149,7 +142,7 @@ class TestablePipelineRunCommand extends PipelineRunCommand {
  */
 function makeCommand(
   preflightResult: PreflightResult,
-  runtime: RuntimeStrategy & PipelineDepsBuilder,
+  runtime: PipelineRunRuntime,
 ): TestablePipelineRunCommand {
   return new TestablePipelineRunCommand(
     runtime,

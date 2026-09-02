@@ -18,7 +18,8 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/core/step/../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../src/core/port/runtime-strategy.js";
+import type { StepArtifactLifecycleCapability } from "../../../src/core/step/step-capability.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
@@ -85,38 +86,26 @@ function makeConfig(): SpecRunnerConfig {
   return { version: 1, runtime: "local", agents: {} };
 }
 
-/**
- * Make a RuntimeStrategy that returns:
- * - headSha from captureHeadSha
- * - changedSourceFiles from listChangedFiles (simulates git diff between head and HEAD)
- */
-function makeStrategy(opts: {
-  headSha: string | null;
-  changedSourceFiles: string[];
-}) {
+/** Make a StepArtifactLifecycleCapability with a configurable captureHeadSha return value. */
+function makeStepArtifact(headSha: string | null): StepArtifactLifecycleCapability {
   return {
-    async *query() {},
-    createAgentRunner() { return { async run(): Promise<AgentRunResult> { return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 }; } }; },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return opts.headSha; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null as null })); },
-    async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles(_base: string, _cwd: string, _branch: string | null) { return { kind: "success" as const, files: opts.changedSourceFiles }; },
+    async captureHeadSha() { return headSha; },
+    async prepareStepArtifacts() {},
+    async finalizeStepArtifacts() {},
+    async snapshotMainCheckoutGuard() { return null; },
+    async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function makeDeps(runtimeStrategy?: any): PipelineDeps {
+/** Make a ChangedFilesCapability that returns a fixed list of changed files. */
+function makeChangedFiles(changedSourceFiles: string[]): ChangedFilesCapability {
+  return {
+    canDeriveChangedFiles: () => true,
+    async listChangedFiles(_base, _cwd, _branch) { return { kind: "success" as const, files: changedSourceFiles }; },
+  };
+}
+
+function makeDeps(stepArtifact?: StepArtifactLifecycleCapability, changedFiles?: ChangedFilesCapability): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -153,8 +142,8 @@ function makeDeps(runtimeStrategy?: any): PipelineDeps {
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: (runtimeStrategy ?? noopStepArtifact) as never,
-    changedFiles: runtimeStrategy as never,
+    stepArtifact: stepArtifact ?? noopStepArtifact,
+    changedFiles,
     stepIo: noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
@@ -225,7 +214,8 @@ describe("TC-NOP-001: no-op detected → verdict overridden to needs-fix", () =>
     await seedJobState(jobId, state);
 
     // captureHeadSha returns a sha (enabling no-op detection), listChangedFiles returns []
-    const strategy = makeStrategy({ headSha: "abc123def", changedSourceFiles: [] });
+    const stepArtifactCap = makeStepArtifact("abc123def");
+    const changedFilesCap = makeChangedFiles([]);
 
     const events = new EventBus();
     const verdicts: string[] = [];
@@ -240,7 +230,7 @@ describe("TC-NOP-001: no-op detected → verdict overridden to needs-fix", () =>
       return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
     } }, makeStoreFactory(tempDir), gitSpawnFn);
 
-    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(strategy));
+    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(stepArtifactCap, changedFilesCap));
     expect(result.steps?.["code-fixer"]?.at(-1)?.outcome.verdict).toBe("needs-fix");
     expect(verdicts).toContain("needs-fix");
   });
@@ -256,13 +246,14 @@ describe("TC-NOP-002: source changes present → verdict not overridden", () => 
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const strategy = makeStrategy({ headSha: "abc123def", changedSourceFiles: ["src/core/step/executor.ts"] });
+    const stepArtifactCap = makeStepArtifact("abc123def");
+    const changedFilesCap = makeChangedFiles(["src/core/step/executor.ts"]);
 
     const executor = new StepExecutor(new EventBus(), { async run(): Promise<AgentRunResult> {
       return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
     } }, makeStoreFactory(tempDir));
 
-    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(strategy));
+    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(stepArtifactCap, changedFilesCap));
     expect(result.steps?.["code-fixer"]?.at(-1)?.outcome.verdict).toBe("success");
   });
 });
@@ -277,13 +268,14 @@ describe("TC-NOP-003: noOpDetect not set → detection skipped", () => {
     const state = { ...makeJobState(jobId), step: "implementer" };
     await seedJobState(jobId, state);
 
-    const strategy = makeStrategy({ headSha: "abc123def", changedSourceFiles: [] });
+    const stepArtifactCap = makeStepArtifact("abc123def");
+    const changedFilesCap = makeChangedFiles([]);
 
     const executor = new StepExecutor(new EventBus(), { async run(): Promise<AgentRunResult> {
       return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
     } }, makeStoreFactory(tempDir));
 
-    const result = await executor.execute(makeImplementerStep(), state, makeDeps(strategy));
+    const result = await executor.execute(makeImplementerStep(), state, makeDeps(stepArtifactCap, changedFilesCap));
     // implementer without noOpDetect → should be "success", not "needs-fix"
     expect(result.steps?.["implementer"]?.at(-1)?.outcome.verdict).toBe("success");
   });
@@ -303,7 +295,7 @@ describe("TC-NOP-004: no runtimeStrategy → no-op detection skipped", () => {
       return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
     } }, makeStoreFactory(tempDir));
 
-    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(undefined));
+    const result = await executor.execute(makeCodeFixerStep(), state, makeDeps());
     // Without runtimeStrategy, no-op detection is skipped → verdict is "success"
     expect(result.steps?.["code-fixer"]?.at(-1)?.outcome.verdict).toBe("success");
   });

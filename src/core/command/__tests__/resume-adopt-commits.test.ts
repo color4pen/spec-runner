@@ -155,6 +155,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
+import type { CommandRunnerRuntime } from "../runner.js";
 import { ResumeCommand } from "../resume.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
@@ -239,6 +240,22 @@ function makeRunningState(overrides: Partial<JobState> = {}): JobState {
 }
 
 /** Access the protected prepare() via type cast (same pattern as resume-apply-canon.test.ts) */
+/**
+ * Minimal CommandRunnerRuntime fake for tests that only call prepare() via callPrepare().
+ * The runtime methods are not invoked in prepare(); only slug/state resolution happens.
+ */
+function makeMinimalRuntime(): CommandRunnerRuntime {
+  return {
+    assertProviderReadiness: vi.fn().mockResolvedValue(undefined),
+    setupWorkspace: vi.fn().mockResolvedValue({ cwd: "/repo" }),
+    teardown: vi.fn().mockResolvedValue(undefined),
+    registerCleanup: vi.fn().mockReturnValue({}),
+    reloadJobState: vi.fn().mockResolvedValue(undefined),
+    persistJobState: vi.fn().mockResolvedValue(undefined),
+    buildDeps: vi.fn().mockReturnValue({}),
+  };
+}
+
 async function callPrepare(cmd: ResumeCommand): Promise<PrepareResult> {
   return (cmd as unknown as { prepare(): Promise<PrepareResult> }).prepare();
 }
@@ -290,7 +307,7 @@ describe("TC-001: unknown committed commit halts before any step executes", () =
   it("TC-001: prepare() throws when an unknown commit is in the publish range (no --adopt-commits)", async () => {
     // WHEN: resume without --adopt-commits
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" }, // no adoptCommits
@@ -302,7 +319,7 @@ describe("TC-001: unknown committed commit halts before any step executes", () =
 
   it("TC-001: prepare() throws with exitCode 1 (PrepareError — user-correctable)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -323,7 +340,7 @@ describe("TC-001: unknown committed commit halts before any step executes", () =
     // Verification: the throw from prepare() prevents execute() from running the pipeline.
     // This assertion documents: the halt is at prepare() boundary, before any step executes.
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -351,7 +368,7 @@ describe("TC-001: unknown committed commit halts before any step executes", () =
     // That would cause TC-001 to fail, confirming the guard is load-bearing.
     // The presence of this test (and TC-001 passing) proves the gate is active.
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -385,7 +402,7 @@ describe("TC-002: empty publish range leaves resume behavior unchanged", () => {
 
     // WHEN: resume without any flags
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -412,7 +429,7 @@ describe("TC-002: empty publish range leaves resume behavior unchanged", () => {
     vi.mocked(transitionJob).mockReturnValue({ state: runningState, noop: false });
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -445,7 +462,7 @@ describe("TC-003: escalation names the commit and offers three fixes", () => {
 
   it("TC-003: escalation output contains the unknown commit's short SHA", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -467,7 +484,7 @@ describe("TC-003: escalation names the commit and offers three fixes", () => {
 
   it("TC-003: escalation output references --adopt-commits as one option", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -488,7 +505,7 @@ describe("TC-003: escalation names the commit and offers three fixes", () => {
 
   it("TC-003: escalation output references pushing to origin as one option", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -509,7 +526,7 @@ describe("TC-003: escalation names the commit and offers three fixes", () => {
 
   it("TC-003: escalation output references removing/reverting as one option", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -532,7 +549,7 @@ describe("TC-003: escalation names the commit and offers three fixes", () => {
 
   it("TC-003: state.synthesizedCommits does NOT contain the unknown OID after the halt", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -566,7 +583,7 @@ describe("TC-004: adopted OID is recorded in persisted state", () => {
 
     // WHEN: resume with adoptCommits: true
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -593,7 +610,7 @@ describe("TC-004: adopted OID is recorded in persisted state", () => {
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -627,7 +644,7 @@ describe("TC-005: persist failure prevents pipeline launch", () => {
 
     // WHEN: resume with adoptCommits: true
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -660,7 +677,7 @@ describe("TC-005: persist failure prevents pipeline launch", () => {
     });
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -692,7 +709,7 @@ describe("TC-006: --apply-canon alone still halts on a committed operator commit
 
     // WHEN: resume with only --apply-canon (no --adopt-commits)
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true } as never,
@@ -707,7 +724,7 @@ describe("TC-006: --apply-canon alone still halts on a committed operator commit
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true } as never,
@@ -728,7 +745,7 @@ describe("TC-006: --apply-canon alone still halts on a committed operator commit
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true } as never,
@@ -753,7 +770,7 @@ describe("TC-006: --apply-canon alone still halts on a committed operator commit
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true } as never,
@@ -790,7 +807,7 @@ describe("TC-011: null runStore prevents pipeline launch when --adopt-commits is
 
     // WHEN: resume with adoptCommits: true
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -814,7 +831,7 @@ describe("TC-011: null runStore prevents pipeline launch when --adopt-commits is
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", adoptCommits: true } as never,
@@ -848,7 +865,7 @@ describe("TC-012: exit-128 is treated as empty publish range; any other git fail
 
     // WHEN: resume without flags
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -865,7 +882,7 @@ describe("TC-012: exit-128 is treated as empty publish range; any other git fail
     );
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -889,7 +906,7 @@ describe("TC-012: exit-128 is treated as empty publish range; any other git fail
     );
 
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo" },
@@ -931,7 +948,7 @@ describe("TC-013: --apply-canon and --adopt-commits flags are composable; apply-
 
   it("TC-013: prepare() resolves when both --apply-canon and --adopt-commits are given", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true, adoptCommits: true } as never,
@@ -942,7 +959,7 @@ describe("TC-013: --apply-canon and --adopt-commits flags are composable; apply-
 
   it("TC-013: synthesizedCommits contains both apply-canon OID and adopted OID in persisted state", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true, adoptCommits: true } as never,
@@ -961,7 +978,7 @@ describe("TC-013: --apply-canon and --adopt-commits flags are composable; apply-
 
   it("TC-013: apply-canon OID appears exactly once in synthesizedCommits (not re-adopted)", async () => {
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true, adoptCommits: true } as never,
@@ -987,7 +1004,7 @@ describe("TC-013: --apply-canon and --adopt-commits flags are composable; apply-
     // D4 composability invariant: the ledger is read AFTER apply-canon appends its OID,
     // so detectUnadoptedCommits sees the apply-canon OID as known and does not return it.
     const cmd = new ResumeCommand(
-      {} as never,
+      makeMinimalRuntime(),
       {} as never,
       "test-slug",
       { cwd: "/repo", applyCanon: true, adoptCommits: true } as never,

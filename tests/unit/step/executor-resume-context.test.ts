@@ -16,13 +16,12 @@ import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState, StepRun } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentStepName } from "../../../src/kernel/agent-definition.js";
-import { noopRoundGitEffects, noopTerminalState } from "../../../src/core/step/noop-capabilities.js";
+import { noopRoundGitEffects, noopTerminalState, noopStepArtifact, noopStepIo } from "../../../src/core/step/noop-capabilities.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test lifecycle
@@ -134,29 +133,7 @@ function makeCapturingRunner(): {
   return { runner, getCapturedCtx: () => capturedCtx };
 }
 
-function makeBaseStrategy() {
-  return {
-    async *query() {},
-    createAgentRunner: () => ({ async run(): Promise<AgentRunResult> { return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 }; } }),
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async validateStepInputs(): Promise<void> {},
-    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs() { return []; },
-    async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-  };
-}
-
-function makeDeps(runtimeStrategy?: RuntimeStrategy, extra?: Partial<PipelineDeps>): PipelineDeps {
+function makeDeps(extra?: Partial<PipelineDeps>): PipelineDeps {
   return {
     config: makeConfig(),
     request: {
@@ -193,8 +170,8 @@ function makeDeps(runtimeStrategy?: RuntimeStrategy, extra?: Partial<PipelineDep
     repo: "testrepo",
     spawn: noopSpawn,
     storeFactory: makeStoreFactory(tempDir),
-    stepArtifact: runtimeStrategy as never,
-    stepIo: runtimeStrategy as never,
+    stepArtifact: noopStepArtifact,
+    stepIo: noopStepIo,
     terminalState: noopTerminalState,
     roundGitEffects: noopRoundGitEffects,
     ...extra,
@@ -227,7 +204,7 @@ describe("TC-RC-001: code-fixer first run → no resumeSessionId", () => {
     const { runner, getCapturedCtx } = makeCapturingRunner();
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
-    await executor.execute(makeAgentStep("code-fixer"), state, makeDeps(makeBaseStrategy()));
+    await executor.execute(makeAgentStep("code-fixer"), state, makeDeps());
 
     const ctx = getCapturedCtx();
     expect(ctx).toBeDefined();
@@ -249,7 +226,7 @@ describe("TC-RC-002: code-fixer second run → resumeSessionId from previous run
     const { runner, getCapturedCtx } = makeCapturingRunner();
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
-    await executor.execute(makeAgentStep("code-fixer"), state, makeDeps(makeBaseStrategy()));
+    await executor.execute(makeAgentStep("code-fixer"), state, makeDeps());
 
     const ctx = getCapturedCtx();
     expect(ctx).toBeDefined();
@@ -272,7 +249,7 @@ describe("TC-RC-003: non-fixer step → resumeSessionId always undefined", () =>
     const { runner, getCapturedCtx } = makeCapturingRunner();
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
-    await executor.execute(makeAgentStep("implementer"), state, makeDeps(makeBaseStrategy()));
+    await executor.execute(makeAgentStep("implementer"), state, makeDeps());
 
     const ctx = getCapturedCtx();
     expect(ctx).toBeDefined();
@@ -298,7 +275,7 @@ describe("TC-RC-004: executor does not clear deps.resumePrompt (one-shot is Pipe
     const { runner } = makeCapturingRunner();
     const executor = new StepExecutor(new EventBus(), runner, makeStoreFactory(tempDir));
 
-    const deps = makeDeps(makeBaseStrategy(), { resumePrompt: "resume note from operator" });
+    const deps = makeDeps({ resumePrompt: "resume note from operator" });
     expect(deps.resumePrompt).toBe("resume note from operator");
 
     await executor.execute(makeAgentStep("code-fixer"), state, deps);

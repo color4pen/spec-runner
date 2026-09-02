@@ -26,7 +26,7 @@ import {
   UnsupportedRuntimeCapabilityError,
 } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
-import type { RuntimeStrategy } from "../../../../src/core/port/runtime-strategy.js";
+import type { ChangedFilesCapability } from "../../../../src/core/port/runtime-strategy.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -307,12 +307,18 @@ describe("applyScopeConfig", () => {
 // ---------------------------------------------------------------------------
 
 describe("capability gate — assertRuntimeSupportsScope", () => {
-  function makeIncapableRuntime(): Pick<RuntimeStrategy, "canDeriveChangedFiles"> {
-    return { canDeriveChangedFiles: () => false };
+  function makeIncapableRuntime(): ChangedFilesCapability {
+    return {
+      canDeriveChangedFiles: () => false,
+      listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
+    };
   }
 
-  function makeCapableRuntime(): Pick<RuntimeStrategy, "canDeriveChangedFiles"> {
-    return { canDeriveChangedFiles: () => true };
+  function makeCapableRuntime(): ChangedFilesCapability {
+    return {
+      canDeriveChangedFiles: () => true,
+      listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
+    };
   }
 
   it("throws UnsupportedRuntimeCapabilityError for fast descriptor (no config) + incapable runtime", () => {
