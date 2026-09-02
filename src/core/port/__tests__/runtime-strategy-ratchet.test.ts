@@ -316,4 +316,33 @@ describe("TC-035: Command テストに RuntimeStrategy & PipelineDepsBuilder が
       `Found RuntimeStrategy & PipelineDepsBuilder in tests/unit/pipeline/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
+
+  // TC-035h: root-level tests/ files (e.g., tests/custom-reviewers-e2e.test.ts,
+  // tests/pipeline-sole-committer-e2e.test.ts) are explicitly guarded here.
+  // These files live directly under tests/ and are not picked up by any of the
+  // subdirectory-scoped checks above (tests/unit/, tests/attach/, tests/core/).
+  // Note: collectTestFiles() already includes all of TESTS_DIR recursively for
+  // TC-012, but the RuntimeStrategy & PipelineDepsBuilder ratchet must be explicit.
+  it("TC-035h: `RuntimeStrategy & PipelineDepsBuilder` が root-level tests/ ファイルに 0 件", async () => {
+    const entries = await fs.readdir(TESTS_DIR);
+    const rootLevelFiles = (
+      await Promise.all(
+        entries.map(async (entry) => {
+          const full = path.join(TESTS_DIR, entry);
+          let stat;
+          try {
+            stat = await fs.stat(full);
+          } catch {
+            return null;
+          }
+          return stat.isFile() && entry.endsWith(".ts") ? full : null;
+        }),
+      )
+    ).filter((f): f is string => f !== null);
+    const hits = await findOccurrences(rootLevelFiles, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in root-level tests/ files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
 });
