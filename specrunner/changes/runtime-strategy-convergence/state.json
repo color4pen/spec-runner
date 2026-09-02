@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T11:29:12.309Z",
+  "updatedAt": "2026-09-02T11:35:21.820Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -155,7 +155,8 @@
     "35d19c13afd57705f00b13801f1fad1a9c025b3a",
     "a2fd990494cf09854ee3ff2072e50d34a25af9a3",
     "64634d4b41fa98bcb5e383f08cdd5f6c61c4e5e4",
-    "077af6f0bdd7934877de1b0f5785ccba35162f42"
+    "077af6f0bdd7934877de1b0f5785ccba35162f42",
+    "bbee35c55ab64af063cbd2306e9d074edb979386"
   ],
   "touchedFiles": {
     "request-review": [
@@ -207,19 +208,20 @@
     ],
     "code-review": [
       "src/core/port/command-runtime.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/command/runner.ts",
       "src/core/runtime-facade.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "tests/pipeline-sole-committer-e2e.test.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
       "src/core/command/resume.ts",
       "src/core/runtime/factory.ts",
-      "src/cli/bootstrap.ts",
-      "tests/unit/step/executor-activation.test.ts",
-      "src/core/step/executor.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
+      "tests/unit/core/runtime/runner-reload-after-setup.test.ts",
+      "tests/unit/core/command/runner.test.ts",
+      "tests/core/provider-readiness-gate.test.ts",
+      "tests/pipeline-sole-committer-e2e.test.ts",
+      "tests/unit/core/command/runner-fidelity-gate.test.ts",
       "src/core/step/scope-check.ts"
     ],
     "code-fixer": [
@@ -311,7 +313,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 448,
+    "historyCount": 452,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -320,7 +322,7 @@
       "spec-fixer": 2,
       "implementer": 14,
       "verification": 22,
-      "code-review": 11,
+      "code-review": 12,
       "code-fixer": 13,
       "cross-boundary-invariants": 7,
       "scale-tolerance": 1,

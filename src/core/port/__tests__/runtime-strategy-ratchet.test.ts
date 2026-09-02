@@ -528,4 +528,21 @@ describe("TC-039: Command 層テストの facade 依存と runtime 引数 as nev
       `Found "as never" in runtime (1st) argument of constructor calls in test files:\n${violations.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
+
+  // TC-039c: No local `type CommandRunnerRuntime = …` re-definitions in test files.
+  // CommandRunnerRuntime must always be imported from src/core/command/runner.ts.
+  // A local re-definition silently drifts when the canonical type changes in runner.ts.
+  it("TC-039c: local `type CommandRunnerRuntime =` re-definitions absent from all test files", async () => {
+    const allTestFiles = await collectTestFiles(SRC_DIR, TESTS_DIR);
+    const candidateFiles = allTestFiles.filter((f) => f !== SELF_FILE);
+    // Match any local type alias declaration for CommandRunnerRuntime
+    const hits = await findOccurrencesRegex(
+      candidateFiles,
+      /type\s+CommandRunnerRuntime\s*=/,
+    );
+    expect(
+      hits,
+      `Found local "type CommandRunnerRuntime =" re-definitions in test files (must import from src/core/command/runner.ts instead):\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
 });

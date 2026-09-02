@@ -19,14 +19,9 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { EventBus } from "../../src/core/event/event-bus.js";
 import { CommandRunner } from "../../src/core/command/runner.js";
-import type { PrepareResult } from "../../src/core/command/runner.js";
+import type { PrepareResult, CommandRunnerRuntime } from "../../src/core/command/runner.js";
 import type { CleanupHandle } from "../../src/core/port/runtime-strategy.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../src/core/types.js";
-import type {
-  ProviderReadinessCapability,
-  WorkspaceLifecycleCapability,
-  JobStatePersistenceCapability,
-} from "../../src/core/port/command-runtime.js";
+import type { PipelineDeps } from "../../src/core/types.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../src/core/port/provider-readiness.js";
 import { LocalRuntime } from "../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../src/core/runtime/managed.js";
@@ -75,12 +70,6 @@ function countingProbe(result: ProviderReadinessResult) {
 // ---------------------------------------------------------------------------
 // Helpers: minimal RuntimeStrategy fake for gate tests
 // ---------------------------------------------------------------------------
-
-/** Narrow runtime type required by CommandRunner. */
-type CommandRunnerRuntime = ProviderReadinessCapability
-  & WorkspaceLifecycleCapability
-  & JobStatePersistenceCapability
-  & PipelineDepsBuilder;
 
 /**
  * Build a minimal runtime fake that tracks side-effect calls.
