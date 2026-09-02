@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T13:26:49.607Z",
+  "updatedAt": "2026-09-02T13:31:10.176Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "69b570c62ca82e821ffb567dad9fe8f901449cbd",
     "90e9503c7ab69e9d24b345be6c477a193d2ef231",
-    "1a6a1ecae9013cf783fe333a8d613bb62093ff04"
+    "1a6a1ecae9013cf783fe333a8d613bb62093ff04",
+    "d033aa156be6c1f34050c42d6fbbba9b59df81c3"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -73,13 +74,15 @@
       "src/cli/command-registry.ts",
       "src/cli/run.ts",
       "src/cli/resume.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
