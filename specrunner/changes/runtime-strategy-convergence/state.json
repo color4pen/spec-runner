@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T04:43:27.106Z",
+  "updatedAt": "2026-09-02T04:47:46.072Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -135,7 +135,9 @@
     "05c57e96753537aad5ba56d8eb295204ca73969e",
     "94c28c477d16d2cd674610d6b1a73d4d79ebe1b9",
     "450c5c29faf0eb5bd10abfb568b66be2e9b6511e",
-    "28946839ba40635b0efdb1991cd65a2a9900bd60"
+    "28946839ba40635b0efdb1991cd65a2a9900bd60",
+    "1894f81ada759367922bd83aac3ad250035c39be",
+    "b04984c56c24b45cb85fa17b3d9f0f73af4744c4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -204,16 +206,12 @@
       "src/core/command/runner.ts"
     ],
     "conformance": [
+      "src/core/step/executor.ts",
       "src/core/command/runner.ts",
       "src/core/command/pipeline-run.ts",
-      "src/core/runtime-facade.ts",
-      "src/core/port/command-runtime.ts",
       "src/core/pipeline/runtime-capability-gate.ts",
       "src/core/port/runtime-strategy.ts",
-      "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "src/core/step/scope-check.ts",
-      "src/core/step/executor.ts"
+      "src/core/runtime-facade.ts"
     ]
   },
   "resumePoint": null,
@@ -261,7 +259,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 338,
+    "historyCount": 347,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -269,14 +267,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 11,
-      "verification": 16,
+      "verification": 17,
       "code-review": 9,
       "code-fixer": 10,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 7,
       "regression-gate": 9,
-      "conformance": 6,
+      "conformance": 7,
       "adr-gen": 1,
       "pr-create": 1
     }

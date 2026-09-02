@@ -44,12 +44,13 @@ function makeFixtureWithScope(id: string): PipelineDescriptor {
 /**
  * Build a minimal fake runtime with a given canDeriveChangedFiles predicate.
  * canDeriveChangedFiles is required (R2c: made required on ChangedFilesCapability).
+ * listChangedFiles is also required on ChangedFilesCapability but is never called
+ * by assertRuntimeSupportsScope — it is provided as a stub here for type correctness.
  */
-function makeFakeRuntime(
-  canDerive: boolean,
-): Pick<ChangedFilesCapability, "canDeriveChangedFiles"> {
+function makeFakeRuntime(canDerive: boolean): ChangedFilesCapability {
   return {
     canDeriveChangedFiles: () => canDerive,
+    listChangedFiles: () => Promise.reject(new Error("not called in gate tests")),
   };
 }
 
