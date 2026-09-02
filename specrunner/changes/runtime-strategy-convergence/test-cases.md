@@ -201,15 +201,15 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-018: RuntimeFacade が 4 capability と PipelineDepsBuilder の intersection として定義されている
+### TC-018: RuntimeFacade が 5 capability と PipelineDepsBuilder の intersection として定義されている
 
 **Category**: unit
 **Priority**: should
 **Source**: design.md > Decisions > D2: CommandRunner とサブクラスが受け取る型を intersection に変更する / tasks.md > T-02
 
-**GIVEN** `src/core/port/command-runtime.ts` に `RuntimeFacade` type alias が定義されている
+**GIVEN** `src/core/runtime-facade.ts` に `RuntimeFacade` type alias が定義されている
 **WHEN** `RuntimeFacade` の型定義を検査する
-**THEN** `ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` の intersection であり、すべての構成要素が named interface として参照されている
+**THEN** `ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder & ChangedFilesCapability` の intersection であり、すべての構成要素が named interface として参照されている
 
 ---
 

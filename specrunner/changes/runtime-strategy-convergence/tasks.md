@@ -25,7 +25,7 @@
 - [x] `JobBootstrapCapability` interface を定義する（`assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>` と `bootstrapJob(repoRoot: string, params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string }): Promise<JobState>` を required で含む）
 - [x] `WorkspaceLifecycleCapability` interface を定義する（`setupWorkspace`, `registerCleanup`, `teardown` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
 - [x] `JobStatePersistenceCapability` interface を定義する（`persistJobState`, `reloadJobState` を required で含む。型は `runtime-strategy.ts` の既存シグネチャと合わせる）
-- [x] `RuntimeFacade = ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder` を type alias として export する
+- [x] `RuntimeFacade = ProviderReadinessCapability & JobBootstrapCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder & ChangedFilesCapability` を type alias として export する（定義場所は `src/core/runtime-facade.ts`）
 - [x] 必要な import（`JobState`, `RequestInfo`, `RepositoryInfo`, `WorkspaceContext`, `CleanupHandle`, `WorkspaceOptions` など）を `runtime-strategy.ts` や `state/schema.ts` から引く
 - [x] `bun run typecheck` を実行してエラーがないことを確認する
 
@@ -41,7 +41,7 @@
 
 - [x] `src/core/runtime/factory.ts` で `createRuntime()` の戻り値型を `RuntimeStrategy & PipelineDepsBuilder` から `RuntimeFacade` に変更する
 - [x] `src/cli/bootstrap.ts` で `BootstrapResult.runtime` の型を `RuntimeFacade` に変更する
-- [x] 両ファイルの import を更新する（`command-runtime.ts` の `RuntimeFacade` を import し、`RuntimeStrategy` / `PipelineDepsBuilder` の import を削除するか確認する）
+- [x] 両ファイルの import を更新する（`src/core/runtime-facade.ts` の `RuntimeFacade` を import し、`RuntimeStrategy` / `PipelineDepsBuilder` の import を削除するか確認する）
 - [x] `LocalRuntime` と `ManagedRuntime` が構造的に `RuntimeFacade` を満たすことを typecheck で確認する（コンパイルエラーが出た場合は当該クラスを先に修正する）
 - [x] `bun run typecheck` を実行してエラーがないことを確認する
 

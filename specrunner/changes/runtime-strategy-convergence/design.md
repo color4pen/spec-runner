@@ -89,7 +89,7 @@ PipelineDepsBuilder
 
 `ResumeCommand` は `CommandRunner` と同じ（prepare() 内で bootstrap 呼び出しなし）。
 
-composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 capability + PipelineDepsBuilder の intersection とする。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。
+composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 lifecycle capability + PipelineDepsBuilder + ChangedFilesCapability の intersection とする（定義場所は domain 層の `src/core/runtime-facade.ts`）。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。
 
 **Rationale**: orchestrator が複数 capability を合成して受け取ること自体は許容（要件§2）。各部分は目的が明確で小規模。  
 **Alternatives considered**: `CommandRunnerRuntime` / `PipelineRunRuntime` を個別に alias 定義 → 型の増殖を避けるため RuntimeFacade で統一。

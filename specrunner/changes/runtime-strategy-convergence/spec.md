@@ -130,7 +130,7 @@ Test fakes injected into `PipelineDeps` capability slots MUST be typed directly 
 
 ### Requirement: LocalRuntime と ManagedRuntime は `RuntimeFacade` を構造的に満たす
 
-`LocalRuntime` and `ManagedRuntime` MUST structurally satisfy `RuntimeFacade` (the intersection of the four lifecycle capability interfaces and `PipelineDepsBuilder`). A compile-time type-assignment assertion SHALL exist in the contract test to enforce this.
+`LocalRuntime` and `ManagedRuntime` MUST structurally satisfy `RuntimeFacade` (the intersection of the four lifecycle capability interfaces, `PipelineDepsBuilder`, and `ChangedFilesCapability`). A compile-time type-assignment assertion SHALL exist in the contract test to enforce this.
 
 #### Scenario: LocalRuntime が RuntimeFacade を満たす
 
