@@ -610,3 +610,10 @@
 {"type":"transition","ts":"2026-09-02T08:27:49.160Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-09-02T08:27:49.162Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-09-02T08:27:49.165Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-09-02T08:31:35.617Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"73c8277e-4b31-43e6-803a-1f92c64cf483","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/runtime-strategy-convergence/regression-gate-result-011.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":27,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-09-02T08:27:49.205Z","endedAt":"2026-09-02T08:31:33.996Z","commitOid":"9cbbfd427fb67605929ddacefa520778c60aff44"}
+{"type":"lineage","step":"regression-gate","ts":"2026-09-02T08:31:33.996Z","outputs":[{"path":"specrunner/changes/runtime-strategy-convergence/regression-gate-result-011.md","hash":"sha256:317ca936bfb138f92c5a9b0e690c99ae9b936d46515319e644f3b74982477744"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-09-02T08:31:35.623Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-09-02T08:31:35.623Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-09-02T08:31:35.625Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-02T08:31:35.627Z","step":"conformance-started","status":"started","message":"Starting conformance step"}

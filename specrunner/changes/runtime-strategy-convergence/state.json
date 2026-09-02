@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T08:27:49.165Z",
+  "updatedAt": "2026-09-02T08:31:35.627Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -150,7 +150,8 @@
     "5b77ddc7315f07791cad4e11bb14f6d5046eb76f",
     "ab67c8b9a7fa4578912cdef023c8ece4e8923d14",
     "999285b99a0ac26d42193dc7665b176ca71073d6",
-    "c1b92354fd2cd30ddfbf4257c4659bd04d65b41e"
+    "c1b92354fd2cd30ddfbf4257c4659bd04d65b41e",
+    "9cbbfd427fb67605929ddacefa520778c60aff44"
   ],
   "touchedFiles": {
     "request-review": [
@@ -231,10 +232,14 @@
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
       "src/core/port/command-runtime.ts",
       "src/core/runtime/managed.ts",
+      "src/core/command/runner.ts",
       "src/core/types.ts",
       "src/core/port/runtime-strategy.ts",
+      "tests/unit/core/command/runner.test.ts",
       "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
-      "src/core/command/runner.ts"
+      "tests/unit/core/runtime/runner-reload-after-setup.test.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "tests/unit/core/pipeline/resolve-scope.test.ts"
     ],
     "conformance": [
       "src/core/port/command-runtime.ts",
@@ -301,7 +306,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 417,
+    "historyCount": 422,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -315,7 +320,7 @@
       "cross-boundary-invariants": 7,
       "scale-tolerance": 1,
       "custom-reviewers": 9,
-      "regression-gate": 10,
+      "regression-gate": 11,
       "conformance": 8,
       "adr-gen": 2,
       "pr-create": 2
