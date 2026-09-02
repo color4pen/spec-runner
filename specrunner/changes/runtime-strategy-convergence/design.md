@@ -94,7 +94,7 @@ consumer ごとの契約は Command 層が named composition として所有す�
 - `CommandRunnerRuntime`（`src/core/command/runner.ts` で export）= `ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder`。`CommandRunner` と `ResumeCommand` のコンストラクタはこれを受け取る。
 - `PipelineRunRuntime`（`src/core/command/pipeline-run.ts` で export）= `CommandRunnerRuntime & JobBootstrapCapability & ChangedFilesCapability`。`PipelineRunCommand` のコンストラクタはこれを受け取る。`PipelineRunCommand` は `canDeriveChangedFiles()` を直接呼ばないが、`prepare()` が runtime を `assertRuntimeSupportsScope(descriptor, runtime)` に渡し、その gate が `ChangedFilesCapability` を要求するため含める。
 
-composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 lifecycle capability + PipelineDepsBuilder + ChangedFilesCapability の intersection とする（定義場所は domain 層の `src/core/runtime-facade.ts`）。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。
+composition root（factory, bootstrap）用に `RuntimeFacade` という名前付きエイリアスを定義し、全 4 lifecycle capability + PipelineDepsBuilder + ChangedFilesCapability の intersection とする（定義場所は domain 層の `src/core/runtime-facade.ts`）。LocalRuntime / ManagedRuntime は構造的に `RuntimeFacade` を満たす（TypeScript structural subtyping。明示的 `implements` は不要だが contract test でコンパイル時検証する）。`src/core/runtime-facade.ts` の JSDoc は「domain 層の `PipelineRunCommand` / `ResumeCommand` が import する」と記述しているが、これは現在の依存関係と一致しない（PR #1107 再々レビュー non-blocking）。JSDoc の import 元を composition root（`src/core/runtime/factory.ts`, `src/cli/bootstrap.ts`）と `command-lifecycle-contract.test.ts` のみに更新する。定義場所を `src/core/runtime-facade.ts` に置く理由（ports→domain edge の禁止）は変わらないため、ファイルは移動しない。
 
 **Rationale**: orchestrator が複数 capability を合成して受け取ること自体は許容（要件§2）。各部分は目的が明確で小規模。  
 **Alternatives considered**: consumer 側も `RuntimeFacade` で統一 → `ResumeCommand` が未使用 capability を含む型に依存し、issue の「未使用メソッドまで露出する巨大 port に戻さない」に反する（PR #1107 再レビュー blocking 1）。`RuntimeFacade` は composition root（factory / bootstrap）の戻り値・保持型に限定する。
@@ -165,6 +165,8 @@ const stepIoImpl: StepIoValidationCapability = {
 
 同型の whole-port fake は step executor テストにも残る（PR #1107 再レビュー blocking 2）。`tests/unit/step/executor-activation.test.ts`（`any` で受けた同一 object を `as never` で `stepArtifact` / `stepIo` / `changedFiles` に注入）、`executor-resume-context.test.ts`、`executor-verdict.test.ts`、`executor-no-op.test.ts`、`executor-drift-detection.test.ts`（`RuntimeStrategy` を import して全メソッドを実装した fake を `as never` で slot に注入）が対象。これらも slot ごとに `StepArtifactLifecycleCapability` / `StepIoValidationCapability` / `ChangedFilesCapability` 型の typed object へ分離し、テストが使わない command lifecycle / commit inspection / revision content 系メソッドを fake に持たせない。5 ファイルで重複する fake は `tests/unit/step/` 配下の typed builder/helper に集約してよい（production src には置かない）。`tests/pipeline-integration.test.ts` の `RuntimeStrategy` import（`ReturnType<RuntimeStrategy["registerCleanup"]>` の型参照のみ）は capability interface 由来の型に置き換え、whole-port import を残さない。
 
+Command 層の境界を直接テストするファイルにも同型の問題が残る（PR #1107 再々レビュー blocking）。`tests/unit/core/command/runner.test.ts` は `CommandRunner` のテストでありながら fake と test subclass が `RuntimeFacade` を受け取り、`CommandRunner` が使わない `JobBootstrapCapability` / `ChangedFilesCapability` まで実装している。`tests/unit/core/command/resume.test.ts` はファイル内でローカルに `CommandRunnerRuntime` を再定義しつつ、TC-011 用 fake だけ `RuntimeFacade` のままである。`src/core/command/__tests__/resume-wontfix.test.ts` の `buildMockRuntime()` は commit inspection / revision content / changed-files / bootstrap 系メソッドまで持つ object を `ResumeCommand` に `as never` で渡している。これらは production から export された `CommandRunnerRuntime`（`src/core/command/runner.ts`）を直接 import して fake を構築し、provider readiness / workspace lifecycle / state persistence / deps builder のメソッドのみを実装する。ローカルな型の再定義は削除し、runtime 引数への `as never` は除去する（`resume-operator-guidance.test.ts` / `reopen-command.test.ts` のように `{} as never` を渡している箇所も `CommandRunnerRuntime` 型の最小 fake に置き換える。共通 helper に集約してよいが production src には置かない）。`PipelineRunCommand` のテスト（`tests/unit/core/command/pipeline-run*.test.ts`）は `RuntimeFacade` ではなく `PipelineRunRuntime` を import する。`RuntimeFacade` を type position で使うテストは `command-lifecycle-contract.test.ts`（Local / Managed が構造的に満たすことの contract test）のみとする。
+
 ### D7: Architecture ratchet test を追加する
 
 `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` に以下を assert するテストを追加する:
@@ -181,6 +183,11 @@ const stepIoImpl: StepIoValidationCapability = {
 
 8. テストファイル全体（`tests/**` および `src/**/__tests__/**`。ratchet test 自身と `command-lifecycle-contract.test.ts` は除外）で、`RuntimeStrategy` を named import する `import type { ... RuntimeStrategy ... }` / `import { ... RuntimeStrategy ... }` が 0 件
 9. `tests/unit/step/` 配下で、`PipelineDeps` / `StepDeps` の capability slot（`stepArtifact`, `stepIo`, `changedFiles`, `roundGitEffects`, `terminalState`, `commitInspection`, `revisionContent`）への `<identifier> as never` 注入が 0 件
+
+TC-037 は `tests/unit/step/` の slot と `RuntimeStrategy` import しか見ないため、Command 層テストが `RuntimeFacade` や runtime 引数の `as never` で広い契約に依存し直しても検知できない（PR #1107 再々レビュー blocking）。以下を追加する:
+
+10. テストファイル全体（`tests/**` および `src/**/__tests__/**`。`command-lifecycle-contract.test.ts` は除外）で、`RuntimeFacade` を named import する import 文が 0 件
+11. テストファイル全体で、`new ResumeCommand(` / `new PipelineRunCommand(` およびテスト内で定義された `CommandRunner` subclass（`class X extends CommandRunner`）の `new X(` の第 1 引数（runtime）に対する `as never` キャストが 0 件（複数行にまたがる呼び出しも対象）
 
 **Rationale**: structural refactoring は時間経過で回帰しやすい。ratchet があれば CI が防衛線になる。  
 **Alternatives considered**: ESLint custom rule → 導入コストが高い。ソースを読む vitest テストの方が軽量で実行可能。

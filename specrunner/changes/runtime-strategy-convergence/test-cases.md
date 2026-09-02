@@ -213,6 +213,30 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-038: CommandRunner / ResumeCommand テストが CommandRunnerRuntime 型の fake を注入する
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > Decisions > D6: `as unknown as RuntimeStrategy` を typed capability object で置換する / spec.md > Requirement: テスト fake の double cast が typed capability object で置換される / tasks.md > T-17
+
+**GIVEN** `tests/unit/core/command/runner.test.ts`、`tests/unit/core/command/resume.test.ts`、`src/core/command/__tests__/resume-wontfix.test.ts` および `ResumeCommand` / `CommandRunner` subclass を構築するその他のテストを検査する
+**WHEN** runtime 引数の型、fake が実装するメソッド、import 文を確認する
+**THEN** runtime 引数は `src/core/command/runner.ts` から import した `CommandRunnerRuntime` 型で構築され、fake は provider readiness / workspace lifecycle / state persistence / deps builder のメソッドのみを持ち、`RuntimeFacade` の import・ローカルな `CommandRunnerRuntime` 再定義・runtime 引数への `as never` が存在せず、`tests/unit/core/command/pipeline-run*.test.ts` は `PipelineRunRuntime` を import し、`src/core/runtime-facade.ts` の JSDoc に `PipelineRunCommand` / `ResumeCommand` が import するという記述がなく、テストが正常に実行される
+
+---
+
+### TC-039: ratchet が Command 層テストの広い facade 依存を検知する
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > Decisions > D7: Architecture ratchet test を追加する / spec.md > Requirement: architecture ratchet が禁止パターンの再導入を防ぐ / tasks.md > T-18
+
+**GIVEN** `tests/**` および `src/**/__tests__/**` 配下の TypeScript テストファイルを検査する（`command-lifecycle-contract.test.ts` を除く）
+**WHEN** (a) `RuntimeFacade` を named import する import 文、(b) `new ResumeCommand(` / `new PipelineRunCommand(` / テスト内で定義された `CommandRunner` subclass のコンストラクタ呼び出しの第 1 引数（runtime）に対する `as never` キャストを検索する（複数行にまたがる呼び出しも対象）
+**THEN** (a) (b) ともに 0 件であり、ratchet test がこの 2 条件を assert している
+
+---
+
 ## Group 5: Behavioral Invariants
 
 ### TC-016: ユーザー向け挙動に差分がない
@@ -449,10 +473,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ```yaml
 result: completed
-total: 37
-automated: 36
+total: 39
+automated: 38
 manual: 1
-must: 26
+must: 28
 should: 10
 could: 1
 blocked_reasons: []

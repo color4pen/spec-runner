@@ -291,3 +291,37 @@
 **Acceptance Criteria**:
 - ratchet が whole-port `RuntimeStrategy` import と slot への `as never` 注入の再導入で fail する
 - 現行コードで ratchet が green
+
+---
+
+## T-17: CommandRunner / ResumeCommand / PipelineRunCommand テストの fake を consumer-owned contract に揃える
+
+対象: `tests/unit/core/command/runner.test.ts`, `tests/unit/core/command/resume.test.ts`, `src/core/command/__tests__/resume-wontfix.test.ts`, `src/core/command/__tests__/resume-operator-guidance.test.ts`, `src/core/command/__tests__/reopen-command.test.ts`, `tests/unit/core/command/pipeline-run*.test.ts`（6 ファイル）, その他 `ResumeCommand` / `CommandRunner` subclass を構築するテスト
+
+- [ ] `runner.test.ts` の `buildMockRuntime()` の戻り値型と `TestCommand` コンストラクタ引数型を `RuntimeFacade` から production export の `CommandRunnerRuntime`（`src/core/command/runner.ts`）に変更し、fake から `assertNoDuplicateLiveJob` / `bootstrapJob` / `canDeriveChangedFiles` / `listChangedFiles` を削除する
+- [ ] `resume.test.ts` のローカル `type CommandRunnerRuntime = ...` 定義を削除して production export を import し、`buildResumeTestRuntime()` を `CommandRunnerRuntime` 型に変更して bootstrap / changed-files メソッドを削除する
+- [ ] `resume-wontfix.test.ts` の `buildMockRuntime()` を `CommandRunnerRuntime` 型で構築し、commit inspection / revision content / changed-files / bootstrap 系メソッドを削除、`new ResumeCommand(buildMockRuntime() as never, ...)` の `as never` を除去する
+- [ ] `resume-operator-guidance.test.ts` / `reopen-command.test.ts` など `ResumeCommand` の runtime 引数に `{} as never` を渡している箇所を `CommandRunnerRuntime` 型の最小 fake（共通 helper 可、production src には置かない）に置き換える
+- [ ] `tests/unit/core/command/pipeline-run*.test.ts` の `RuntimeFacade` import を `PipelineRunRuntime`（`src/core/command/pipeline-run.ts`）に置き換える
+- [ ] `src/core/runtime-facade.ts` の JSDoc を現在の依存関係（import 元は `src/core/runtime/factory.ts`, `src/cli/bootstrap.ts`, `command-lifecycle-contract.test.ts` のみ。`PipelineRunCommand` / `ResumeCommand` は import しない）に合わせて更新する
+- [ ] `bun run typecheck` と対象テストの `bun run test` が通ることを確認する
+
+**Acceptance Criteria**:
+- `tests/**` および `src/**/__tests__/**` で `RuntimeFacade` を import するファイルが `command-lifecycle-contract.test.ts` のみ
+- `CommandRunner` subclass / `ResumeCommand` の runtime 引数が `CommandRunnerRuntime` 型で構築され、`as never` キャストが存在しない
+- `src/core/runtime-facade.ts` の JSDoc に `PipelineRunCommand` / `ResumeCommand` が import するという記述がない
+- テストが通る
+
+---
+
+## T-18: ratchet を Command 層テストの広い facade 依存検知に拡張する
+
+`src/core/port/__tests__/runtime-strategy-ratchet.test.ts` に追加する:
+
+- [ ] `tests/**` および `src/**/__tests__/**`（`command-lifecycle-contract.test.ts` を除く）で、`RuntimeFacade` を named import する import 文が 0 件であることを assert する
+- [ ] `tests/**` および `src/**/__tests__/**` で、`new ResumeCommand(` / `new PipelineRunCommand(` およびテスト内で定義された `CommandRunner` subclass（`class X extends CommandRunner` から抽出）の `new X(` の第 1 引数（runtime）に対する `as never` キャストが 0 件であることを assert する（複数行にまたがる呼び出しも対象にする）
+- [ ] `bun run test src/core/port/__tests__/runtime-strategy-ratchet.test.ts` が通ることを確認する
+
+**Acceptance Criteria**:
+- ratchet が `RuntimeFacade` import の再導入と runtime 引数への `as never` で fail する
+- 現行コードで ratchet が green

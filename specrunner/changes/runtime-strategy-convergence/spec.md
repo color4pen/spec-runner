@@ -138,6 +138,18 @@ Test fakes injected into `PipelineDeps` capability slots MUST be typed directly 
 **When** `RuntimeStrategy` を named import する import 文を検索する
 **Then** 一致が 0 件である
 
+#### Scenario: CommandRunner / ResumeCommand テストが CommandRunnerRuntime 型の fake を注入する
+
+**Given** `CommandRunner` のテスト用 subclass または `ResumeCommand` を構築するテストファイル（`tests/unit/core/command/runner.test.ts`、`tests/unit/core/command/resume.test.ts`、`src/core/command/__tests__/*.test.ts` など）を検査する
+**When** runtime 引数の型と構築方法を確認する
+**Then** runtime 引数は production から export された `CommandRunnerRuntime` 型（`src/core/command/runner.ts`）で構築されており、fake は provider readiness / workspace lifecycle / state persistence / deps builder のメソッドのみを実装し、`RuntimeFacade` 型の fake や runtime 引数への `as never` キャストが存在しない
+
+#### Scenario: テストファイルに RuntimeFacade import が存在しない
+
+**Given** `tests/` および `src/**/__tests__/` 配下の TypeScript ファイルをすべてスキャンする（`command-lifecycle-contract.test.ts` を除く）
+**When** `RuntimeFacade` を named import する import 文を検索する
+**Then** 一致が 0 件である（`PipelineRunCommand` のテストは `PipelineRunRuntime`、`CommandRunner` / `ResumeCommand` のテストは `CommandRunnerRuntime` を使う）
+
 ---
 
 ### Requirement: LocalRuntime と ManagedRuntime は `RuntimeFacade` を構造的に満たす
@@ -160,7 +172,7 @@ Test fakes injected into `PipelineDeps` capability slots MUST be typed directly 
 
 ### Requirement: architecture ratchet が禁止パターンの再導入を防ぐ
 
-An architecture ratchet test SHALL exist at `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` and MUST run in CI. It SHALL assert zero occurrences of all forbidden patterns (whole-port reference, `RealRuntimeStrategy`, Pick-based shims, double casts) so that any regression causes an immediate CI failure. It SHALL also assert zero whole-port `RuntimeStrategy` named imports in test files and zero `as never` injections into capability slots under `tests/unit/step/`, so that a whole-port fake cannot be re-introduced via a bare `RuntimeStrategy` import, `any`, or `as never`.
+An architecture ratchet test SHALL exist at `src/core/port/__tests__/runtime-strategy-ratchet.test.ts` and MUST run in CI. It SHALL assert zero occurrences of all forbidden patterns (whole-port reference, `RealRuntimeStrategy`, Pick-based shims, double casts) so that any regression causes an immediate CI failure. It SHALL also assert zero whole-port `RuntimeStrategy` named imports in test files and zero `as never` injections into capability slots under `tests/unit/step/`, so that a whole-port fake cannot be re-introduced via a bare `RuntimeStrategy` import, `any`, or `as never`. It SHALL further assert zero `RuntimeFacade` named imports in test files (excluding `command-lifecycle-contract.test.ts`) and zero `as never` casts on the runtime argument of `ResumeCommand` / `PipelineRunCommand` / test-defined `CommandRunner` subclass constructors, so that a Command-layer test cannot depend on a wider contract than the production consumer.
 
 #### Scenario: ratchet test が禁止パターンの再導入を検出する
 
@@ -171,6 +183,12 @@ An architecture ratchet test SHALL exist at `src/core/port/__tests__/runtime-str
 #### Scenario: ratchet test が test fake への whole-port 再導入を検出する
 
 **Given** `tests/unit/step/` 配下に `RuntimeStrategy` を import した fake を `stepArtifact: fake as never` で注入するテストファイルが追加される
+**When** `bun run test` を実行する
+**Then** ratchet test が失敗し、CI が赤になる
+
+#### Scenario: ratchet が Command 層テストの広い facade 依存を検出する
+
+**Given** `tests/unit/core/command/` 配下に `RuntimeFacade` を import した fake を `ResumeCommand` へ `as never` で渡すテストファイルが追加される
 **When** `bun run test` を実行する
 **Then** ratchet test が失敗し、CI が赤になる
 
