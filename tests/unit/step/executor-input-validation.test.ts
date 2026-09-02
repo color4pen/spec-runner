@@ -20,9 +20,9 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import type { AgentStep, CliStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/state/schema.js";
-import type { PipelineDeps, PipelineDepsBuilder } from "../../../src/core/types.js";
+import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { StepIoValidationCapability } from "../../../src/core/step/step-capability.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../src/errors.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
@@ -82,49 +82,17 @@ function makeJobState(jobId: string): JobState {
 }
 
 /**
- * Build a RuntimeStrategy mock where validateStepInputs always rejects with
- * the given error. All other methods are no-ops or return safe defaults.
+ * Build a narrow StepIoValidationCapability stub where validateStepInputs
+ * always rejects with the given error. Only the three methods required by
+ * StepIoValidationCapability are implemented.
  */
-function makeFailingValidationStrategy(errorToThrow: Error): RuntimeStrategy & PipelineDepsBuilder {
+function makeFailingValidationStrategy(errorToThrow: Error): StepIoValidationCapability {
   return {
-    async *query() {},
-    createAgentRunner(): AgentRunner {
-      return {
-        async run(): Promise<AgentRunResult> {
-          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
-        },
-      };
-    },
-    async setupWorkspace() { return { cwd: "" }; },
-    buildDeps() { return {} as PipelineDeps; },
-    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
-    async teardown() {},
-    async captureHeadSha(): Promise<string | null> { return null; },
-    async prepareStepArtifacts(): Promise<void> {},
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
     async validateStepInputs(): Promise<void> {
       throw errorToThrow;
     },
-    async bootstrapJob(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented in test"); },
-    async persistJobState(): Promise<void> {},
-    async verifyFindingRefs(): Promise<import("../../../src/core/port/runtime-strategy.js").FindingRef[]> { return []; },
-    async digestArtifacts(refs: { path: string }[]): Promise<import("../../../src/store/event-journal.js").ArtifactRef[]> {
-      return refs.map((r) => ({ path: r.path, hash: null }));
-    },
-    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-    async validateStepOutputs(): Promise<import("../../../src/core/port/output-contract.js").OutputCheckResult> {
-      return { violations: [] };
-    },
-    // R2c: previously optional methods, now required on RuntimeStrategy
-    async assertProviderReadiness() {},
-    async assertNoDuplicateLiveJob() {},
-    async reloadJobState(): Promise<import("../../../src/state/schema.js").JobState> { throw new Error("not implemented"); },
-    canDeriveChangedFiles: () => false,
-    async listWorktreeChanges() { return { kind: "success" as const, paths: [] }; },
-    async listCommitChangedFiles() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readFileAtCommit() { return { kind: "unavailable" as const, reason: "test" }; },
-    async readRevisionContent() { return { current: null, prior: null }; },
-    async lastCommitTouchingPath() { return { kind: "unavailable" as const, reason: "test" }; },
+    async validateStepOutputs() { return { violations: [] }; },
+    async verifyFindingRefs() { return []; },
   };
 }
 
@@ -229,7 +197,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,
@@ -282,7 +250,7 @@ describe("TC-021: AgentStep — validateStepInputs failure halts before runner.r
       parseResult: () => ({ verdict: null, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy });
 
     let thrownErr: unknown;
     try {
@@ -343,7 +311,7 @@ describe("TC-022: CliStep — validateStepInputs failure halts before step.run()
       parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
     };
 
-    const deps = makeBaseDeps({ stepIo: runtimeStrategy as never });
+    const deps = makeBaseDeps({ stepIo: runtimeStrategy });
 
     await expect(executor.execute(step, state, deps)).rejects.toMatchObject({
       code: ERROR_CODES.STEP_INPUT_MISSING,

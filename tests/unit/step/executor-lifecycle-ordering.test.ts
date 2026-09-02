@@ -337,7 +337,7 @@ describe("T-15: Terminal commit lifecycle ordering", () => {
 //
 // runtime-strategy.ts now has NO import from ../types.js and NO buildDeps
 // declaration. Composition-root types (CommandRunner, factory.ts) use the
-// intersection RuntimeStrategy & PipelineDepsBuilder.
+// unified RuntimeFacade intersection (RuntimeStrategy + PipelineDepsBuilder).
 //
 // This test verifies that PipelineDepsBuilder.buildDeps() compiles and returns
 // a correctly typed PipelineDeps value without any cast in the caller.

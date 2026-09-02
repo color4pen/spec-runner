@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:01:42.694Z",
+  "updatedAt": "2026-09-02T00:03:49.801Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -108,7 +108,8 @@
     "b38515d39799cd105d85bad86df717262d719610",
     "b91416b64ccd9f2de993e3b6cd1a2ce77dcffa00",
     "721366b1f769c761a74f9dda809689fda7205bf3",
-    "8b13324949cab1d969495bba2d15dda656a4e876"
+    "8b13324949cab1d969495bba2d15dda656a4e876",
+    "40d27beadabdc688ed31adcf5f07e07d3153090b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -146,17 +147,9 @@
       "src/core/port/runtime-strategy.ts"
     ],
     "code-review": [
-      "src/core/port/command-runtime.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/command/runner.ts",
-      "src/core/runtime-facade.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/command/resume.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/runtime/factory.ts",
-      "src/core/runtime/local.ts"
+      "src/core/runtime-facade.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts"
     ],
     "code-fixer": [
       "tests/unit/core/runtime/runner-reload-egress-e2e.test.ts",
@@ -241,7 +234,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 217,
+    "historyCount": 221,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -250,7 +243,7 @@
       "spec-fixer": 2,
       "implementer": 8,
       "verification": 11,
-      "code-review": 6,
+      "code-review": 7,
       "code-fixer": 4,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,

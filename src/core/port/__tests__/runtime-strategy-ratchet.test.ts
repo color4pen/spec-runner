@@ -254,4 +254,19 @@ describe("TC-032: Command テストに RuntimeStrategy & PipelineDepsBuilder が
       `Found RuntimeStrategy & PipelineDepsBuilder in Runtime test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
     ).toHaveLength(0);
   });
+
+  // TC-032d: step-layer tests (tests/unit/step/) are now guarded after R2c narrowing.
+  // Previously this directory was outside TC-032 scope; the monolithic fakes in
+  // unpushable-path-contract.test.ts and executor-input-validation.test.ts have been
+  // replaced with narrow capability stubs (StepIoValidationCapability / noopStepArtifact).
+  // tests/attach/ remains outside scope (E2E tests — tracked as a known ratchet gap).
+  it("TC-032d: `RuntimeStrategy & PipelineDepsBuilder` が tests/unit/step/ に 0 件", async () => {
+    const stepTestDir = path.join(TESTS_DIR, "unit", "step");
+    const files = (await collectTsFiles(stepTestDir)).filter((f) => f !== SELF_FILE);
+    const hits = await findOccurrences(files, "RuntimeStrategy & PipelineDepsBuilder");
+    expect(
+      hits,
+      `Found RuntimeStrategy & PipelineDepsBuilder in step-layer test files:\n${hits.map((h) => `  ${h.file} (${h.count}x)`).join("\n")}`,
+    ).toHaveLength(0);
+  });
 });
