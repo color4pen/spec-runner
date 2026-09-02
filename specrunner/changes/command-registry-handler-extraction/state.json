@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T16:31:38.067Z",
+  "updatedAt": "2026-09-02T16:38:43.634Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,8 @@
     "a73a4bb4c7e2dd9b9ac85a8c320410ad277cd747",
     "e939a80f668f05b2b78059702ec69abecbcfbba0",
     "982292803bb05818cb7cced9ea3f1a9430693411",
-    "1410715aec4cca280d7454813c68617fd18ce00e"
+    "1410715aec4cca280d7454813c68617fd18ce00e",
+    "3ad20b35273bd676da65b0c2d101501272bf3a47"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -103,10 +104,31 @@
       "src/cli/prune.ts",
       "src/cli/scaffold-handlers.ts",
       "src/cli/usage-handler.ts"
+    ],
+    "code-review": [
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/resume.ts",
+      "src/cli/archive.ts",
+      "src/cli/command-handler.ts",
+      "src/cli/request-handlers.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/usage-handler.ts",
+      "src/cli/guide-handler.ts",
+      "src/cli/ps.ts",
+      "src/cli/cancel.ts",
+      "src/cli/run.ts",
+      "src/cli/doctor.ts"
     ]
   },
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -114,7 +136,8 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 3,
-      "verification": 3
+      "verification": 3,
+      "code-review": 1
     }
   }
 }
