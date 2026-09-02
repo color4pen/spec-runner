@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b0074b66-4d3c-4b07-87dc-93ebadf732d0",
   "createdAt": "2026-09-01T01:32:28.000Z",
-  "updatedAt": "2026-09-02T00:20:45.724Z",
+  "updatedAt": "2026-09-02T00:28:45.829Z",
   "request": {
     "title": "refactor: RuntimeStrategy の whole-port 依存と移行 shim を撤去する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/runtime-strategy-convergence-b0074b66",
   "error": null,
@@ -114,7 +114,9 @@
     "a90759eb9e6128f87985cd01f8b152f75de332cf",
     "88ee5a7d694675001a2d672ca7139ed7242f60bd",
     "7ec7376cd26a9bbaca56cd165031b7c911337801",
-    "be1ba72dedafd254e38fa2302ee1969a1ced4951"
+    "be1ba72dedafd254e38fa2302ee1969a1ced4951",
+    "d05cbb5c26192ebaf5c5ea2ad82de1a285bb0c14",
+    "32d73f2ffa53e4a12d668a428bcece8014786af3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -177,18 +179,17 @@
       "src/core/runtime/__tests__/managed-runtime-capabilities.test.ts"
     ],
     "conformance": [
-      "src/core/port/command-runtime.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/command/runner.ts",
+      "src/core/port/command-runtime.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/command/resume.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/runtime-facade.ts",
       "src/core/runtime/factory.ts",
-      "src/cli/bootstrap.ts",
+      "src/core/runtime-facade.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
       "src/core/port/__tests__/runtime-strategy-ratchet.test.ts",
-      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts",
-      "src/core/step/executor.ts"
+      "src/cli/bootstrap.ts",
+      "src/core/runtime/__tests__/command-lifecycle-contract.test.ts"
     ]
   },
   "resumePoint": null,
@@ -236,7 +237,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 243,
+    "historyCount": 252,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -244,14 +245,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 8,
-      "verification": 11,
+      "verification": 12,
       "code-review": 7,
       "code-fixer": 6,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 5,
       "regression-gate": 5,
-      "conformance": 4,
+      "conformance": 5,
       "adr-gen": 1,
       "pr-create": 1
     }
