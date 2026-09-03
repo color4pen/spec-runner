@@ -398,12 +398,11 @@ function tarjanSCC(graph: Map<string, Set<string>>): string[][] {
   return sccs;
 }
 
-/** List src/cli/*.ts files excluding __tests__ subdirectory. */
+/** List src/cli/*.ts files excluding test files (*.test.ts, *.spec.ts). */
 function listCliTsFilesNoTests(): string[] {
-  return fs
-    .readdirSync(CLI_DIR)
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts"))
-    .map((f) => path.join(CLI_DIR, f));
+  return listCliTsFiles().filter(
+    (f) => !f.endsWith(".test.ts") && !f.endsWith(".spec.ts"),
+  );
 }
 
 describe("Check 5: no value-import cycles within src/cli/ (T-19)", () => {

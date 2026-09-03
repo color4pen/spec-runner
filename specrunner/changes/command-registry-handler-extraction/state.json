@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T07:39:59.571Z",
+  "updatedAt": "2026-09-03T07:46:57.371Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -112,7 +112,8 @@
     "cd6ebbef0ad00fdf78d41a5e71871bc9bd2cf6ba",
     "b3c3efc360b9df0c628c325f067647a819d5dbf1",
     "f79b57262aeb50f4ce108e53164aa44bf90049af",
-    "5446827e0f62fe2ff2747e2d7c7650fe83c8fe92"
+    "5446827e0f62fe2ff2747e2d7c7650fe83c8fe92",
+    "e572cee332e8377153deb017e2648986f878d19e"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -133,19 +134,17 @@
       "src/cli/command-registry.ts",
       "src/cli/__tests__/architecture-ratchet.test.ts",
       "src/cli/job-start-handler.ts",
-      "src/cli/job-resume-handler.ts",
-      "src/cli/job-archive-handler.ts",
       "src/cli/__tests__/cli-contract-snapshot.test.ts",
-      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/job-resume-handler.ts",
       "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/job-archive-handler.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/usage-handler.ts",
       "src/cli/__tests__/from-issue.test.ts",
-      "src/cli/__tests__/archive-from-issue.test.ts",
-      "src/cli/doctor.ts",
-      "src/cli/__tests__/fixtures/cli-contract.base.json",
       "src/cli/__tests__/command-registry-resume.test.ts",
-      "src/cli/run.ts",
-      "src/cli/resume.ts",
-      "src/cli/scaffold-handlers.ts"
+      "src/cli/command-context.ts",
+      "src/cli/command-handler.ts"
     ],
     "code-fixer": [
       "src/cli/scaffold-handlers.ts"
@@ -223,7 +222,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 251,
+    "historyCount": 255,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -232,7 +231,7 @@
       "spec-fixer": 1,
       "implementer": 10,
       "verification": 14,
-      "code-review": 6,
+      "code-review": 7,
       "code-fixer": 4,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 4,
