@@ -13,7 +13,6 @@ import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
 import { getVersion } from "../src/cli/version.js";
 import { buildCommandContext } from "../src/cli/command-context.js";
-import { stderrWrite } from "../src/logger/stdout.js";
 
 
 function emitHelp(usage: string | undefined): never {
@@ -100,11 +99,11 @@ export async function main(): Promise<void> {
     parsed = parseFlags(restArgs, spec.flags ?? {}, positionalDef);
   } catch (e) {
     if (e instanceof FlagParseError) {
-      stderrWrite(e.message);
-      stderrWrite(spec.help?.detail ?? USAGE);
+      process.stderr.write(e.message + "\n");
+      process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
     }
-    stderrWrite(`Fatal: ${e instanceof Error ? e.message : String(e)}`);
+    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(1);
   }
 
@@ -123,16 +122,16 @@ export async function main(): Promise<void> {
     code = await spec.handler!(parsed, ctx);
   } catch (e) {
     if (e instanceof FlagParseError) {
-      stderrWrite(e.message);
-      stderrWrite(spec.help?.detail ?? USAGE);
+      process.stderr.write(e.message + "\n");
+      process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
     }
     if (e instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${e.message}`);
-      stderrWrite(`Hint: ${e.hint}`);
+      process.stderr.write(`Error: ${e.message}\n`);
+      process.stderr.write(`Hint: ${e.hint}\n`);
       process.exit(e.exitCode);
     }
-    stderrWrite(`Fatal: ${e instanceof Error ? e.message : String(e)}`);
+    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(1);
   }
   process.exit(code);
