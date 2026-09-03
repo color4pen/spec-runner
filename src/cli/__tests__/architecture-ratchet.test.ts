@@ -28,6 +28,7 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { parse as tseParse } from "@typescript-eslint/parser";
 import { COMMANDS } from "../command-registry.js";
 import type { CommandSpec } from "../command-registry.js";
 
@@ -103,29 +104,76 @@ describe("Check 2: command-registry.ts has no process.exit calls", () => {
 // Check 3: no handler module imports command-registry (value import cycle)
 // ---------------------------------------------------------------------------
 
+/**
+ * Parse `source` with @typescript-eslint/parser and return every value
+ * ImportDeclaration whose module specifier contains `needle`.
+ *
+ * Using AST traversal instead of line-splitting ensures multi-line imports
+ * (e.g. `import {\n  FOO\n} from "../command-registry.js"`) are detected.
+ * type-only imports (`importKind === "type"`) are excluded.
+ */
+function findValueImportsFrom(source: string, needle: string): string[] {
+  let ast: ReturnType<typeof tseParse>;
+  try {
+    ast = tseParse(source, { jsx: false, range: false, loc: true });
+  } catch {
+    // If the file fails to parse we conservatively return no violations —
+    // a broken file will surface through compilation, not this ratchet.
+    return [];
+  }
+
+  const hits: string[] = [];
+  for (const node of ast.body) {
+    if (
+      node.type === "ImportDeclaration" &&
+      node.importKind !== "type" &&
+      typeof node.source.value === "string" &&
+      node.source.value.includes(needle)
+    ) {
+      // Report the first line of the import as a readable location hint.
+      const line = node.loc?.start.line ?? "?";
+      hits.push(`line ${line}: ${node.source.value}`);
+    }
+  }
+  return hits;
+}
+
 describe("Check 3: no src/cli/*.ts file (other than command-registry.ts) imports from command-registry", () => {
-  it("only command-registry.ts itself references 'command-registry'", () => {
+  it("only command-registry.ts itself references 'command-registry' (AST-based, detects multi-line imports)", () => {
     const files = listCliTsFiles().filter((f) => f !== REGISTRY_FILE);
     const violations: string[] = [];
 
     for (const file of files) {
       const src = fs.readFileSync(file, "utf-8");
-      const stripped = stripComments(src);
-
-      // Match value imports (not type-only): `import { ... } from "...command-registry..."`
-      // We also exclude `import type { ... }` lines.
-      const lines = stripped.split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("import")) continue;
-        if (trimmed.startsWith("import type")) continue; // type-only: allowed
-        if (trimmed.includes("command-registry")) {
-          violations.push(`${path.relative(CLI_DIR, file)}: ${line.trim()}`);
-        }
+      const hits = findValueImportsFrom(src, "command-registry");
+      for (const hit of hits) {
+        violations.push(`${path.relative(CLI_DIR, file)}: ${hit}`);
       }
     }
 
     expect(violations).toEqual([]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Regression guard: verify the AST-based helper catches multi-line imports
+  // that the old line-splitting approach would have silently missed.
+  // -------------------------------------------------------------------------
+  it("findValueImportsFrom detects a multi-line value import from command-registry", () => {
+    const multiLineImport = [
+      "import {",
+      "  COMMANDS",
+      '} from "../command-registry.js"',
+    ].join("\n");
+    expect(findValueImportsFrom(multiLineImport, "command-registry")).toHaveLength(1);
+  });
+
+  it("findValueImportsFrom does NOT flag a multi-line type-only import from command-registry", () => {
+    const typeOnlyMultiLine = [
+      "import type {",
+      "  CommandSpec",
+      '} from "../command-registry.js"',
+    ].join("\n");
+    expect(findValueImportsFrom(typeOnlyMultiLine, "command-registry")).toHaveLength(0);
   });
 });
 
