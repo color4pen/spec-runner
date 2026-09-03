@@ -9,11 +9,11 @@ import { executeRulesNew } from "../core/command/rules-new.js";
 import { executeReviewersNew } from "../core/command/reviewers-new.js";
 
 /* c8 ignore next 4 */
-export async function handleRulesNew(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleRulesNew(parsed: ParsedArgs, _ctx?: CommandContext): Promise<void> {
   process.exit(await executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, process.cwd()));
 }
 
 /* c8 ignore next 4 */
-export async function handleReviewersNew(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleReviewersNew(parsed: ParsedArgs, _ctx?: CommandContext): Promise<void> {
   process.exit(await executeReviewersNew(parsed.positional!, process.cwd()));
 }
