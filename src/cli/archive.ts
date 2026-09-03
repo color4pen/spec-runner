@@ -23,7 +23,7 @@ import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-hos
 import { loadConfig } from "../config/store.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, resolveDesignLayerConfig } from "../config/schema.js";
 import type { ResolvedDesignLayer, ShellCommand } from "../config/schema.js";
-import { SpecRunnerError, EXIT_CODE } from "../errors.js";
+import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";

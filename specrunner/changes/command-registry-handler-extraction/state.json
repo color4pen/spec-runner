@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T05:58:27.577Z",
+  "updatedAt": "2026-09-03T07:01:01.356Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -98,7 +98,9 @@
     "71eae66d336e2939267a8790b29f320fa9579e05",
     "ce63cb52db82c25b577cf9fddc8e438f0f39c9af",
     "a5e38ca74495bd43ab09115f3ba1fcf517e6b379",
-    "23f938db7dfec9715b03fb10a1e638c2b68b8a29"
+    "23f938db7dfec9715b03fb10a1e638c2b68b8a29",
+    "7d29a5d7f1979ffe3ca925a88557c017f00de42e",
+    "53f1ca59a604a8308208bf145006248d69274ff5"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -113,7 +115,38 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/cli/__tests__/architecture-ratchet.test.ts"
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/run.ts",
+      "src/cli/resume.ts",
+      "src/cli/archive.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/command-registry-adopt-commits.test.ts",
+      "src/cli/__tests__/command-registry-apply-canon.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/job-archive-handler.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/__tests__/__snapshots__/cli-contract-snapshot.test.ts.snap",
+      "src/cli/__tests__/dump-base.tmp.ts",
+      "bin/specrunner.ts",
+      "tests/unit/cli/command-spec-api.test.ts",
+      "tests/unit/cli/bootstrap.test.ts",
+      "tests/unit/cli/cancel.test.ts",
+      "tests/unit/cli/resume.test.ts",
+      "tests/unit/cli/specrunner-resume-dispatch.test.ts",
+      "tests/dedup-verified-safe.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/cli/repo-root-exactly-once.test.ts"
     ],
     "code-review": [
       "src/cli/command-registry.ts",
@@ -199,15 +232,15 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 183,
+    "historyCount": 191,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 6,
-      "verification": 9,
+      "implementer": 7,
+      "verification": 10,
       "code-review": 5,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
