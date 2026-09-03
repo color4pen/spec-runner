@@ -73,6 +73,66 @@ function listCliTsFiles(): string[] {
 // Check 1: inline handler = 0
 // ---------------------------------------------------------------------------
 
+/**
+ * Return true if `node` is a function expression node (FunctionExpression or
+ * ArrowFunctionExpression), possibly wrapped in a TSAsExpression cast.
+ * This is used to detect `handler: async function myFn() {}` and
+ * `handler: async () => {}` in CommandSpec object literals.
+ */
+function isFunctionNode(node: any): boolean {
+  if (!node || typeof node !== "object") return false;
+  if (
+    node.type === "FunctionExpression" ||
+    node.type === "ArrowFunctionExpression"
+  )
+    return true;
+  // Handle `(fn) as Handler` casts
+  if (node.type === "TSAsExpression" || node.type === "TSTypeAssertion") {
+    return isFunctionNode(node.expression);
+  }
+  return false;
+}
+
+/**
+ * Walk an AST node tree and collect locations of `handler:` properties whose
+ * value is a function expression (inline implementation) rather than an
+ * identifier reference to a named exported function.
+ *
+ * This catches both anonymous arrow functions (`.name === "handler"` at
+ * runtime) and named inline function expressions (`.name === "myFn"` at
+ * runtime, which the pure runtime check misses).
+ */
+function findInlineHandlerNodes(ast: any): string[] {
+  const violations: string[] = [];
+
+  function walk(node: any): void {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "Property") {
+      const key = node.key;
+      const isHandlerKey =
+        (key?.type === "Identifier" && key.name === "handler") ||
+        (key?.type === "Literal" && key.value === "handler");
+      if (isHandlerKey && isFunctionNode(node.value)) {
+        const line = node.loc?.start.line ?? "?";
+        violations.push(`line ${line}: inline handler (${node.value.type})`);
+      }
+    }
+    // Recurse into all child nodes
+    for (const val of Object.values(node)) {
+      if (Array.isArray(val)) {
+        for (const child of val) {
+          if (child && typeof child === "object" && child.type) walk(child);
+        }
+      } else if (val && typeof val === "object" && (val as any).type) {
+        walk(val as any);
+      }
+    }
+  }
+
+  walk(ast);
+  return violations;
+}
+
 describe("Check 1: no inline (anonymous) handlers in COMMANDS tree", () => {
   it('every spec.handler has a name !== "handler" (i.e., is a named exported function)', () => {
     const all = collectSpecs(COMMANDS);
@@ -85,6 +145,26 @@ describe("Check 1: no inline (anonymous) handlers in COMMANDS tree", () => {
     }
 
     expect(violations).toEqual([]);
+  });
+
+  it("command-registry.ts source has no handler: <function expression> properties (catches named inline functions)", () => {
+    const src = fs.readFileSync(REGISTRY_FILE, "utf-8");
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    const violations = findInlineHandlerNodes(ast);
+    expect(violations).toEqual([]);
+  });
+
+  // Regression guard: named function expression must be caught by AST check
+  it("findInlineHandlerNodes detects a named inline function expression on handler:", () => {
+    const src = `const spec = { handler: async function myFn(p, ctx) { return 0; } };`;
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    expect(findInlineHandlerNodes(ast)).toHaveLength(1);
+  });
+
+  it("findInlineHandlerNodes does NOT flag a handler: identifier reference", () => {
+    const src = `const spec = { handler: handleFoo };`;
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    expect(findInlineHandlerNodes(ast)).toHaveLength(0);
   });
 });
 
@@ -111,16 +191,16 @@ describe("Check 2: command-registry.ts has no process.exit calls", () => {
  * Using AST traversal instead of line-splitting ensures multi-line imports
  * (e.g. `import {\n  FOO\n} from "../command-registry.js"`) are detected.
  * type-only imports (`importKind === "type"`) are excluded.
+ *
+ * Parse errors are intentionally re-thrown: a src/cli/*.ts file that the
+ * installed parser cannot handle is itself an error condition, and silently
+ * returning [] would hide any value imports from command-registry in that
+ * file.
  */
 function findValueImportsFrom(source: string, needle: string): string[] {
-  let ast: ReturnType<typeof tseParse>;
-  try {
-    ast = tseParse(source, { jsx: false, range: false, loc: true });
-  } catch {
-    // If the file fails to parse we conservatively return no violations —
-    // a broken file will surface through compilation, not this ratchet.
-    return [];
-  }
+  // Let parse errors propagate — callers (the ratchet tests) must not swallow
+  // them, as that would silently skip import detection on broken files.
+  const ast = tseParse(source, { jsx: false, range: false, loc: true });
 
   const hits: string[] = [];
   for (const node of ast.body) {

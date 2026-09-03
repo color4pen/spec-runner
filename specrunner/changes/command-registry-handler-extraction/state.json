@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T00:59:48.368Z",
+  "updatedAt": "2026-09-03T01:06:59.953Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -87,7 +87,8 @@
     "8f8882d8a071546e33c92b20dd433b79346bb5f0",
     "dd3c5481281f4699e2567eacdebc7d74f978e88c",
     "2f5155dca5b32745217c82b59c26aafba3ffe756",
-    "76883dcdf1cb9c16eed49642b515564bfd3d63fb"
+    "76883dcdf1cb9c16eed49642b515564bfd3d63fb",
+    "c4d1308ca752953e38185c612dfa18fd2b5ca94f"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -110,7 +111,20 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-review": [
-      "src/cli/__tests__/architecture-ratchet.test.ts"
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/command-handler.ts",
+      "src/cli/usage-handler.ts",
+      "src/cli/guide-handler.ts",
+      "src/cli/run.ts",
+      "src/cli/resume.ts",
+      "bin/specrunner.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/ps.ts",
+      "src/cli/cancel.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/cli/request-handlers.ts"
     ],
     "code-fixer": [
       "src/cli/scaffold-handlers.ts",
@@ -166,7 +180,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 110,
+    "historyCount": 114,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -175,7 +189,7 @@
       "spec-fixer": 1,
       "implementer": 5,
       "verification": 6,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
