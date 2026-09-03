@@ -236,3 +236,6 @@
 {"type":"lineage","step":"regression-gate","ts":"2026-09-03T01:42:21.632Z","outputs":[{"path":"specrunner/changes/command-registry-handler-extraction/regression-gate-result-004.md","hash":"sha256:ac3282adc92d1a179ca4f7d0d72c7b213cba63b57bbd890bb7a55b754c755ca0"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-09-03T01:42:23.071Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-09-03T01:42:23.071Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: conformance did not approve after 2 iterations"}
+{"type":"transition","ts":"2026-09-03T02:16:52.330Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-09-03T02:16:52.557Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-03T02:16:52.559Z","step":"conformance-started","status":"started","message":"Starting conformance step"}

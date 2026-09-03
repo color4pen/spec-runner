@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T01:42:23.071Z",
+  "updatedAt": "2026-09-03T02:16:52.559Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
-  "error": {
-    "code": "CONFORMANCE_RETRIES_EXHAUSTED",
-    "message": "conformance did not approve after 2 iterations",
-    "hint": "Review conformance-result-002.md and fix the implementation manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -148,12 +144,7 @@
       "src/cli/__tests__/architecture-ratchet.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-exhausted"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -197,7 +188,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 163,
+    "historyCount": 166,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
