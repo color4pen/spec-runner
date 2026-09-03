@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T01:28:47.960Z",
+  "updatedAt": "2026-09-03T01:35:45.325Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -92,7 +92,9 @@
     "a24b2569195a813900abb678d52b5c849a65a2c2",
     "cdf0c79ba5b8cb332f3e5616dbfac647dfc1887d",
     "9a26f7a2237af0c5aa946a55a5c1a55e4334ee52",
-    "fefe124465898d6aba439d839338cc5b69bf1e44"
+    "fefe124465898d6aba439d839338cc5b69bf1e44",
+    "e930d6c8285deb572771c10a60301f242a7a759c",
+    "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -107,12 +109,7 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/cli/command-context.ts",
-      "src/cli/init.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/scaffold-handlers.ts",
-      "src/cli/usage-handler.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "src/cli/__tests__/architecture-ratchet.test.ts"
     ],
     "code-review": [
       "src/cli/command-registry.ts",
@@ -187,15 +184,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 139,
+    "historyCount": 148,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 5,
-      "verification": 7,
+      "implementer": 6,
+      "verification": 8,
       "code-review": 4,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
