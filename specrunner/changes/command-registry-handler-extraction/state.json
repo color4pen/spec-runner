@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T07:48:47.929Z",
+  "updatedAt": "2026-09-03T07:52:30.042Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -114,7 +114,8 @@
     "f79b57262aeb50f4ce108e53164aa44bf90049af",
     "5446827e0f62fe2ff2747e2d7c7650fe83c8fe92",
     "e572cee332e8377153deb017e2648986f878d19e",
-    "0ba8cad1315fbb76879a32eb4645089c67558cbe"
+    "0ba8cad1315fbb76879a32eb4645089c67558cbe",
+    "1c5fbd2c7659b6d8df22ecb0dd5ac902951b7331"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -171,7 +172,11 @@
       "src/cli/init.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "regression-gate",
+    "reason": "regression-gate escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -225,7 +230,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 266,
+    "historyCount": 269,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -239,7 +244,7 @@
       "cross-boundary-invariants": 5,
       "scale-tolerance": 5,
       "custom-reviewers": 5,
-      "regression-gate": 6,
+      "regression-gate": 7,
       "conformance": 4,
       "adr-gen": 1,
       "pr-create": 1
