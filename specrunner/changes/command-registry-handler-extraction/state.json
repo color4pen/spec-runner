@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T08:16:05.228Z",
+  "updatedAt": "2026-09-03T08:31:21.613Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -116,7 +116,8 @@
     "e572cee332e8377153deb017e2648986f878d19e",
     "0ba8cad1315fbb76879a32eb4645089c67558cbe",
     "1c5fbd2c7659b6d8df22ecb0dd5ac902951b7331",
-    "e830b718507ffd0cec07919f80e4882959b95885"
+    "e830b718507ffd0cec07919f80e4882959b95885",
+    "0b2e572431703d052a8805d7b06be84f251ffc84"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -160,19 +161,17 @@
     ],
     "conformance": [
       "src/cli/command-registry.ts",
+      "src/cli/architecture-ratchet.test.ts",
       "src/cli/__tests__/architecture-ratchet.test.ts",
-      "src/cli/__tests__/cli-contract-snapshot.test.ts",
-      "src/cli/__tests__/cli-contract-normalize.ts",
       "src/cli/scaffold-handlers.ts",
-      "src/cli/usage-handler.ts",
-      "src/cli/job-resume-handler.ts",
-      "src/cli/job-start-handler.ts",
-      "src/cli/job-archive-handler.ts",
-      "src/cli/command-handler.ts",
-      "src/cli/init.ts"
+      "src/cli/usage-handler.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "conformance escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -231,7 +230,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 277,
+    "historyCount": 280,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -246,7 +245,7 @@
       "scale-tolerance": 5,
       "custom-reviewers": 5,
       "regression-gate": 8,
-      "conformance": 4,
+      "conformance": 5,
       "adr-gen": 1,
       "pr-create": 1
     }
