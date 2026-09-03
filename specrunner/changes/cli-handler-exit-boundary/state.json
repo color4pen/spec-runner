@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "61bd403d-a2d9-4bd6-b4f7-0de1df4c2b94",
   "createdAt": "2026-09-03T13:03:55.638Z",
-  "updatedAt": "2026-09-03T15:51:48.536Z",
+  "updatedAt": "2026-09-03T15:52:47.127Z",
   "request": {
     "title": "refactor: CommandHandlerをexit code返却契約へ変更しprocess.exitをdispatch境界へ集約する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/cli-handler-exit-boundary-61bd403d",
   "error": null,
@@ -78,7 +78,8 @@
     "5ef267fb9686b9ffdfee09e9006e0693640a7208",
     "c93b1828d1a7011a8562fb68a785f2f139839a8b",
     "b73d6f0283743348f25b027c4f33c16b7beb32d2",
-    "560d375b765d4a30d295c032db9f0308849d440c"
+    "560d375b765d4a30d295c032db9f0308849d440c",
+    "1f28642da8f8842f1ffb9965e3b3637af7fb26d3"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -134,6 +135,10 @@
     "code-fixer": [
       "src/cli/__tests__/command-registry-reopen.test.ts",
       "src/cli/__tests__/exit-contract-harness.ts"
+    ],
+    "regression-gate": [
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/exit-contract-harness.ts"
     ]
   },
   "resumePoint": null,
@@ -175,7 +180,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -188,7 +193,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
