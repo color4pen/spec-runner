@@ -85,7 +85,7 @@
 - [ ] `/* c8 ignore next N */` の N が実際の行数とずれた場合のみ調整する（それ以外の format 変更をしない）
 
 **Acceptance Criteria**:
-- 上記 13 module の handler がすべて `Promise<number>` を宣言し、`process.exit` を呼ばない
+- 上記 11 module の handler がすべて `Promise<number>` を宣言し、`process.exit` を呼ばない
 - `ps.ts` `handleJobLs` の 2 重 catch（config fallback / token fallback）が変更前と同一の構造で残っている
 - `src/cli/ps.ts`, `src/cli/init.ts`, `src/cli/login.ts`, `src/cli/credentials.ts`, `src/cli/config-effective.ts`, `src/cli/inbox.ts`, `src/cli/managed.ts`, `src/cli/job-show.ts`, `src/cli/guide-handler.ts`, `src/cli/usage-handler.ts`, `src/cli/scaffold-handlers.ts` の `process.exit` 呼び出しが 0 件
 
