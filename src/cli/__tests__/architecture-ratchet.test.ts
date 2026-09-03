@@ -691,13 +691,13 @@ function findHandlersWithVoidReturn(src: string, label: string): string[] {
 
   for (const node of ast.body) {
     if (node.type !== "ExportNamedDeclaration") continue;
-    const decl = (node as Record<string, unknown>).declaration as Record<string, unknown> | null | undefined;
+    const decl = (node as unknown as Record<string, unknown>).declaration as Record<string, unknown> | null | undefined;
     if (!decl) continue;
 
     if (decl.type === "FunctionDeclaration") {
       const name = (decl.id as Record<string, unknown> | undefined)?.name as string | undefined;
       if (name?.startsWith("handle") && isPromiseVoid(decl.returnType)) {
-        const loc = (node as Record<string, unknown>).loc as { start: { line: number } } | undefined;
+        const loc = (node as unknown as Record<string, unknown>).loc as { start: { line: number } } | undefined;
         violations.push(`${label}: ${name} returns Promise<void> (line ${loc?.start.line ?? "?"})`);
       }
     } else if (decl.type === "VariableDeclaration") {

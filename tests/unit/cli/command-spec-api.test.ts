@@ -245,12 +245,12 @@ describe("TC-010: child inherits parent requiresRepo from fixture spec", () => {
       path: ["parent"],
       summary: "Parent with requiresRepo: true",
       requiresRepo: true,
-      handler: async () => {},
+      handler: async () => 0,
       children: {
         childA: {
           path: ["parent", "childA"],
           summary: "Child A — no explicit requiresRepo, inherits from parent",
-          handler: async () => {},
+          handler: async () => 0,
         },
       },
     },
@@ -275,13 +275,13 @@ describe("TC-011: child overrides parent requiresRepo from fixture spec", () => 
       path: ["parent"],
       summary: "Parent with requiresRepo: true",
       requiresRepo: true,
-      handler: async () => {},
+      handler: async () => 0,
       children: {
         childB: {
           path: ["parent", "childB"],
           summary: "Child B — overrides to false",
           requiresRepo: false,
-          handler: async () => {},
+          handler: async () => 0,
         },
       },
     },
