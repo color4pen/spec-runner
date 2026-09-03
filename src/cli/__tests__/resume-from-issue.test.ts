@@ -37,30 +37,15 @@ vi.mock("../../core/command/detach.js", () => ({
   detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
-// Synthetic mock for resume.js:
-// handleJobResume stub implements the TC-012 guard (--from-issue + positional mutual exclusion)
-// so the guard tests pass without loading the full real handler (which calls runResume internally).
-vi.mock("../resume.js", async () => {
-  const { logError } = await import("../../logger/stdout.js");
-  const mockRunResume = vi.fn().mockResolvedValue(undefined);
+// T-20: Mock resume.js with only primitives.
+// The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
+// TC-012 (--from-issue + positional guard) is now tested through the real handler.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
   return {
+    ...actual,
     runResumeCore: vi.fn().mockResolvedValue(0),
-    runResume: mockRunResume,
-    handleJobResume: vi.fn().mockImplementation(
-      async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
-        const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
-        // Guard: --from-issue + positional are mutually exclusive
-        if (fromIssue !== undefined && parsed.positional !== undefined) {
-          logError("Usage error: --from-issue and positional <slug> are mutually exclusive");
-          process.exit(2);
-          return;
-        }
-        // Default: call runResume for the positional slug path
-        if (parsed.positional) {
-          await mockRunResume(parsed.positional, {});
-        }
-      },
-    ),
+    runResume: vi.fn().mockResolvedValue(undefined),
   };
 });
 

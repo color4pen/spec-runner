@@ -25,11 +25,7 @@ import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, res
 import type { ResolvedDesignLayer, ShellCommand } from "../config/schema.js";
 import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
-import type { ParsedArgs } from "./flag-parser.js";
-import type { CommandContext } from "./command-context.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
-// runArchiveFromIssue is lazily imported inside handleJobArchive to avoid a
-// value-import cycle: archive-from-issue.ts → archive.ts → archive-from-issue.ts
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
@@ -333,62 +329,4 @@ Options:
 Note: <slug> and --from-issue are mutually exclusive. Specify exactly one.
 `;
 
-/**
- * CLI handler for `specrunner job archive`.
- * Extracted from command-registry.ts inline handler (T-10).
- */
-export async function handleJobArchive(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  const slug = parsed.positional as string | undefined;
-  const fromIssue = parsed.flags["from-issue"] as number | undefined;
-  const withMerge = !!parsed.flags["with-merge"];
-
-  // Strict XOR: exactly one of slug or --from-issue
-  if (fromIssue !== undefined && slug !== undefined) {
-    logError("'job archive': <slug> and --from-issue are mutually exclusive. Specify exactly one.");
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-  if (fromIssue === undefined && slug === undefined) {
-    logError("'job archive': either <slug> or --from-issue is required.");
-    stderrWrite(ARCHIVE_USAGE);
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-
-  // Lenient parse of --merge-wait-ms (shared by both paths)
-  let mergeWaitMs: number | undefined;
-  const mergeWaitMsRaw = parsed.flags["merge-wait-ms"] as string | undefined;
-  if (mergeWaitMsRaw !== undefined) {
-    const parsedMs = parseInt(String(mergeWaitMsRaw), 10);
-    if (!Number.isNaN(parsedMs) && parsedMs >= 0) {
-      mergeWaitMs = parsedMs;
-    }
-    // Ignore invalid values (non-numeric) — lenient behavior
-  }
-
-  try {
-    if (fromIssue !== undefined) {
-      // Lazy import breaks value-import cycle with archive-from-issue.ts
-      const { runArchiveFromIssue } = await import("./archive-from-issue.js");
-      process.exit(
-        await runArchiveFromIssue(fromIssue, { withMerge, mergeWaitMs, cwd: process.cwd() }, ctx),
-      );
-    } else {
-      process.exit(
-        await runArchive({
-          slug: slug!,
-          withMerge,
-          cwd: process.cwd(),
-          mergeWaitMs,
-        }),
-      );
-    }
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${err.message}`);
-      stderrWrite(`Hint: ${err.hint}`);
-      process.exit(err.exitCode);
-    }
-    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
-}
 

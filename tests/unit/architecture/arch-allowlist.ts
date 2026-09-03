@@ -543,48 +543,47 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-job-wait-handler-reporoot-fallback",
     comment: "role-a: handleJobWait uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
   },
+  // ── T-19 handler-extraction: process.cwd() moved from run/resume/archive to dedicated handler modules ──
+  // Entries for resume.ts (CWD-resume-handler-*), run.ts (CWD-run-handler-*), and archive.ts
+  // (CWD-archive-handler-*) were removed because handleJobStart/handleJobResume/handleJobArchive
+  // were extracted to job-start-handler.ts / job-resume-handler.ts / job-archive-handler.ts (T-19).
+  // The replacement entries follow.
   {
-    file: "src/cli/resume.ts",
+    file: "src/cli/job-start-handler.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-job-start-handler-reporoot-fallback",
+    comment: "role-a: handleJobStart uses ctx.repoRoot with process.cwd() fallback when outside a repo (moved from run.ts via T-19).",
+  },
+  {
+    file: "src/cli/job-resume-handler.ts",
     pattern: "path.resolve(process.cwd(), promptFile)",
     invariant: "CWD",
-    tracking: "CWD-resume-handler-prompt-file-relative",
-    comment: "role-b: resolve --prompt-file relative path against the invoker cwd (moved from command-registry.ts).",
+    tracking: "CWD-job-resume-handler-prompt-file-relative",
+    comment: "role-b: resolve --prompt-file relative path against the invoker cwd (moved from resume.ts via T-19).",
   },
   {
-    file: "src/cli/resume.ts",
-    pattern: "cwd: process.cwd(),",
+    file: "src/cli/job-resume-handler.ts",
+    pattern: "cwd: process.cwd()",
     invariant: "CWD",
-    tracking: "CWD-resume-handler-cwd-debt",
-    comment: "debt: handleJobResume passes process.cwd() as cwd base. Follow-up burn-down.",
+    tracking: "CWD-job-resume-handler-cwd-debt",
+    comment: "debt: handleJobResume passes process.cwd() as cwd base (moved from resume.ts via T-19). Follow-up burn-down.",
   },
   {
-    file: "src/cli/resume.ts",
+    file: "src/cli/job-resume-handler.ts",
     pattern: "ctx?.repoRoot ?? process.cwd()",
     invariant: "CWD",
-    tracking: "CWD-resume-handler-reporoot-fallback",
-    comment: "role-a: handleJobResume uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
+    tracking: "CWD-job-resume-handler-reporoot-fallback",
+    comment: "role-a: handleJobResume uses ctx.repoRoot with process.cwd() fallback when outside a repo (moved from resume.ts via T-19).",
   },
   {
-    file: "src/cli/run.ts",
-    pattern: "ctx?.repoRoot ?? process.cwd()",
+    file: "src/cli/job-archive-handler.ts",
+    pattern: "cwd: process.cwd()",
     invariant: "CWD",
-    tracking: "CWD-run-handler-reporoot-fallback",
-    comment: "role-a: handleJobStart uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
+    tracking: "CWD-job-archive-handler-cwd-debt",
+    comment: "debt: handleJobArchive passes process.cwd() as cwd base (moved from archive.ts via T-19). Follow-up burn-down.",
   },
-  {
-    file: "src/cli/archive.ts",
-    pattern: "cwd: process.cwd(),",
-    invariant: "CWD",
-    tracking: "CWD-archive-handler-cwd-debt",
-    comment: "debt: handleJobArchive passes process.cwd() as cwd base (moved from command-registry.ts). Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/archive.ts",
-    pattern: "cwd: process.cwd() }",
-    invariant: "CWD",
-    tracking: "CWD-archive-from-issue-cwd-debt",
-    comment: "debt: handleJobArchive passes process.cwd() to runArchiveFromIssue (moved from command-registry.ts). Follow-up burn-down.",
-  },
+
   {
     file: "src/cli/request-handlers.ts",
     pattern: "executeList(process.cwd())",

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T02:24:51.642Z",
+  "updatedAt": "2026-09-03T05:58:27.577Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -157,6 +157,11 @@
       "text": "Operator 裁定（code-review iter 2 / CANON_FINDING_ESCALATION への復帰）:\n\n保護正典は operator-apply commit 098ccab8 で修正済み（feature branch に push 済み）。内容: tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx!.invokerCwd に更新（Finding 2、実装側を採用）、design.md に D6「bin/specrunner.ts の duck-type error guard（抽出に伴う companion fix）」を追加（Finding 3、受け入れ）。この 2 件は解消済みとして扱い、再指摘しないこと。\n\n残る Finding 1（medium、fixable）は code-fixer で修正する: src/cli/__tests__/architecture-ratchet.test.ts の Check 3 を design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査する実装に置き換え、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import（import {\\n COMMANDS\\n} from \"../command-registry.js\"）を検出できることを確認するテストケースを追加する。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない、bin/specrunner.ts の duck-type guard は維持する。",
       "step": "code-review",
       "recordedAt": "2026-09-03T00:31:48.836Z"
+    },
+    {
+      "text": "PR #1109 の review で 4 件の blocking findings が出た。正典（specrunner/changes/command-registry-handler-extraction/）は operator-apply commit 83b863e5 で改訂済みなので、改訂後の canon に従って T-19〜T-23 を実装すること。canon と現状の不一致を再指摘する必要はない（既に改訂済み）。\n\nFinding 1（循環の隠蔽）: run.ts / resume.ts / archive.ts が ./from-issue.js / ./resume-from-issue.js / ./archive-from-issue.js を await import() している。これは run.ts ↔ from-issue.ts 等の相互 value import を隠しているだけ。D7 に従い handleJobStart（+ resolveSlugForDetach）/ handleJobResume / handleJobArchive を job-start-handler.ts / job-resume-handler.ts / job-archive-handler.ts に移し、primitive を static import する。src/cli 内部モジュール（./ で始まる specifier）への dynamic import は 0 件にし、ratchet にチェック 5（value-import SCC = 0）とチェック 6（./ dynamic import = 0）を追加する（T-19、TC-026）。\n\nFinding 2（テストの handler 複製）: src/cli/__tests__ の 7 ファイル（from-issue / resume-from-issue / archive-from-issue / command-registry-adopt-commits / command-registry-apply-canon / command-registry-resume / detach-flag-cli）が handler のロジックを mock 内に写している。実 handler を import し、primitive だけを vi.mock する形に置き換える（T-20、TC-027）。\n\nFinding 3（CLI contract snapshot が弱い）: 現在の normaliseSpec は path / flag 名 / boolean のみで、期待値も候補側で生成している。D5 に従い src/cli/__tests__/cli-contract-normalize.ts の normalizeCommandsTree（summary / flags の type,min,values,deprecated / args の name,required,count / help / visibility / aliasOf / requiresRepo / worktreeGuard / hasHandler / children）を実装し、base 483c75f7 の command-registry.ts から生成した fixtures/cli-contract.base.json と toEqual で比較する。.snap は削除する（T-21、TC-028）。fixture 生成手順は D5 に記載。\n\nFinding 4（bin/specrunner.ts の duck-type guard）: D6 を改訂した。isFlagParseError / isSpecRunnerError を撤回し、git checkout 483c75f7 -- bin/specrunner.ts で base と差分ゼロに戻す。vi.resetModules() による module registry 分裂はテスト側で直す（main と error class を resetModules 後に同一 registry から import する等）。production 側の回避策（duck-type、name 比較、Symbol.hasInstance）は禁止。D6 の再議論はしない（T-22、TC-029）。\n\nT-23: 実測値の before / after 表を specrunner/changes/command-registry-handler-extraction/metrics.md に置く（inline handler 数、registry 内 process.exit 数、registry 行数、production process.exit 数、各計測コマンド）。\n\n維持する制約: command-registry.ts に inline handler と process.exit を持ち込まない、production の process.exit 総数 79 を変えない、CLI contract は base と完全同一、R3a は純粋な移動（振る舞い変更なし）。",
+      "step": "implementer",
+      "recordedAt": "2026-09-03T05:58:27.264Z"
     }
   ],
   "reviewerStatuses": [
@@ -194,7 +199,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 180,
+    "historyCount": 183,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

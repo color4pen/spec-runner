@@ -1,0 +1,913 @@
+{
+  "config": {
+    "path": [
+      "config"
+    ],
+    "summary": "Configuration commands",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "effective": {
+        "path": [
+          "config",
+          "effective"
+        ],
+        "summary": "Show effective configuration",
+        "args": [],
+        "flags": {
+          "json": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "help": {
+          "group": "Environment commands",
+          "summary": "  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source",
+          "detail": "Usage: specrunner config effective [options]\n\nShow each standard agent step's effective model, maxTurns, timeoutMs, and the source\nthat supplied each value. Deterministic CLI-only steps are not listed.\n\nOptions:\n  --type <requestType>  Resolve byRequestType entries for a request type\n  --json                Output stable JSON with full source metadata\n  --help, -h            Show this help message\n\nRequest types:\n  new-feature, bug-fix, spec-change, refactoring, chore\n\nNote: managed runtime ignores configured model for execution, but this command still\nshows the configured effective value.\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "credentials": {
+    "path": [
+      "credentials"
+    ],
+    "summary": "Credential management",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "set": {
+        "path": [
+          "credentials",
+          "set"
+        ],
+        "summary": "Store a credential",
+        "args": [
+          {
+            "name": "name",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Environment commands",
+          "summary": "  credentials set <name>          headless 用 credential を credentials.json(0600) に保存",
+          "detail": "Usage: specrunner credentials set <name>\n\nStore a credential secret to ~/.config/specrunner/credentials.json (0600).\nThe value is read from stdin without echoing (safe for cron / scripts).\n\nSupported names:\n  claude-code           Claude Code OAuth token (for headless cron / inbox runs)\n  anthropic-api-key     Anthropic API key (for managed runtime)\n\nAfter storing, run 'specrunner doctor' to verify the credential was saved correctly.\n\nExamples:\n  specrunner credentials set claude-code\n  echo \"$MY_TOKEN\" | specrunner credentials set claude-code\n\nOptions:\n  --help, -h    Show this help message\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "doctor": {
+    "path": [
+      "doctor"
+    ],
+    "summary": "Diagnose environment prerequisites",
+    "args": [],
+    "flags": {
+      "json": {
+        "type": "boolean"
+      }
+    },
+    "help": {
+      "group": "Environment commands",
+      "summary": "  doctor                          Diagnose environment / config / auth prerequisites",
+      "detail": "Usage: specrunner doctor [options]\n\nDiagnose environment, configuration, and authentication prerequisites.\nRuns all checks and reports pass/warn/fail per check with hints for remediation.\n\nOptions:\n  --json      Output results as machine-readable JSON (schema: { summary, results[] })\n  --help, -h  Show this help message\n"
+    },
+    "hasHandler": true,
+    "children": {
+      "repair": {
+        "path": [
+          "doctor",
+          "repair"
+        ],
+        "summary": "Repair slug occupancy sidecar",
+        "args": [
+          {
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "detail": "Usage: specrunner doctor repair <slug>\n\nRepair the occupancy sidecar for the given slug.\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "repair",
+        "requiresRepo": true
+      }
+    },
+    "visibility": "normal"
+  },
+  "guide": {
+    "path": [
+      "guide"
+    ],
+    "summary": "Show operator guide for a topic",
+    "args": [
+      {
+        "name": "topic",
+        "required": false
+      }
+    ],
+    "flags": {},
+    "help": {
+      "group": "Guide",
+      "summary": "  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)"
+    },
+    "hasHandler": true,
+    "children": {},
+    "visibility": "normal"
+  },
+  "inbox": {
+    "path": [
+      "inbox"
+    ],
+    "summary": "Inbox commands",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "run": {
+        "path": [
+          "inbox",
+          "run"
+        ],
+        "summary": "Auto-fire jobs from inbox",
+        "args": [],
+        "flags": {
+          "dry-run": {
+            "type": "boolean"
+          },
+          "json": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "min": 0
+          },
+          "quiet": {
+            "type": "boolean"
+          },
+          "verbose": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Inbox commands",
+          "summary": "  inbox run                       issue から job を自動発火 (承認ラベル + /resume)",
+          "detail": "Usage: specrunner inbox run [options]\n\nScan GitHub issues for approval-labeled and /resume-triggered events.\nStarts new jobs from approved issues and resumes awaiting-resume jobs.\nExits after one pass. Does not run as a daemon.\n\nOptions:\n  --dry-run          Show what would happen without executing any effects\n  --limit <n>        Override inbox.maxStartsPerRun config for this run (0 = no new starts)\n  --json             Output structured JSON result\n  --verbose          More detailed output\n  --quiet            Suppress informational output\n  --help, -h         Show this help message\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "requiresRepo": true,
+        "worktreeGuard": true
+      }
+    },
+    "visibility": "normal"
+  },
+  "init": {
+    "path": [
+      "init"
+    ],
+    "summary": "config scaffold",
+    "args": [],
+    "flags": {
+      "provider": {
+        "type": "string",
+        "values": [
+          "anthropic",
+          "openai"
+        ]
+      },
+      "runtime": {
+        "type": "string",
+        "values": [
+          "managed",
+          "local"
+        ]
+      }
+    },
+    "help": {
+      "group": "Environment commands",
+      "summary": "  init                            config scaffold"
+    },
+    "hasHandler": true,
+    "children": {},
+    "visibility": "normal",
+    "requiresRepo": true
+  },
+  "job": {
+    "path": [
+      "job"
+    ],
+    "summary": "Job management commands",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "archive": {
+        "path": [
+          "job",
+          "archive"
+        ],
+        "summary": "Archive a completed change folder",
+        "args": [
+          {
+            "name": "slug",
+            "required": false
+          }
+        ],
+        "flags": {
+          "from-issue": {
+            "type": "integer",
+            "min": 1
+          },
+          "merge-wait-ms": {
+            "type": "string"
+          },
+          "with-merge": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する",
+          "detail": "Usage: specrunner job archive <slug> [options]\n       specrunner job archive --from-issue <n> [options]\n\nArchive the completed change folder, remove worktree, and update job status.\n\nPlain archive (without --with-merge): pushes an archive record commit to the feature branch\nand leaves the job in awaiting-archive until the PR is merged. After the PR is merged,\nre-run the same command to complete the transition (archived status + worktree cleanup).\n\nUse --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.\n\nArguments:\n  <slug>            Slug of the request to archive.\n\nOptions:\n  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).\n                         Mutually exclusive with <slug>: specify exactly one.\n  --with-merge           Wait for PR checks to pass, merge, then archive\n  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).\n                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.\n  --help, -h             Show this help message\n\nNote: <slug> and --from-issue are mutually exclusive. Specify exactly one.\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "worktreeGuard": true
+      },
+      "attach": {
+        "path": [
+          "job",
+          "attach"
+        ],
+        "summary": "Attach a remote branch checkpoint",
+        "args": [],
+        "flags": {
+          "branch": {
+            "type": "string"
+          },
+          "quiet": {
+            "type": "boolean"
+          },
+          "verbose": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "operator",
+        "requiresRepo": true,
+        "worktreeGuard": true
+      },
+      "cancel": {
+        "path": [
+          "job",
+          "cancel"
+        ],
+        "summary": "Cancel a job",
+        "args": [
+          {
+            "name": "jobId",
+            "required": false
+          }
+        ],
+        "flags": {
+          "all-terminated": {
+            "type": "boolean"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "purge": {
+            "type": "boolean"
+          },
+          "restore-draft": {
+            "type": "boolean"
+          },
+          "yes": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "requiresRepo": true
+      },
+      "ls": {
+        "path": [
+          "job",
+          "ls"
+        ],
+        "summary": "List jobs",
+        "args": [],
+        "flags": {
+          "active": {
+            "type": "boolean"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "json": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "values": [
+              "running",
+              "awaiting-resume",
+              "awaiting-archive",
+              "failed",
+              "terminated",
+              "archived",
+              "canceled"
+            ]
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job ls [--json]                 全 job 一覧（区分付き運用ビュー）"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "prune": {
+        "path": [
+          "job",
+          "prune"
+        ],
+        "summary": "Remove orphan worktrees and sidecars",
+        "args": [],
+        "flags": {
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）",
+          "detail": "Usage: specrunner job prune [options]\n\nRemove orphan worktrees and orphan sidecar directories that have no associated\nnon-terminal job state. This cleans up resources left behind when a process died\nor a job was archived/canceled.\n\n  Orphan worktrees: directories under .git/specrunner-worktrees/ with no active job.\n  Orphan sidecars:  directories under .specrunner/local/ for archived, canceled,\n                    or otherwise missing jobs.\n\nBy default runs as a dry-run (lists orphans without deleting). Use --force to delete.\n\nWorktrees with uncommitted or unpushed changes are always skipped (even with --force).\nActive job sidecars (running / awaiting-* / failed / terminated) are never touched.\n\nOptions:\n  --force     Delete orphan worktrees and sidecar directories (default: dry-run)\n  --help, -h  Show this help message\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "maintenance",
+        "requiresRepo": true,
+        "worktreeGuard": true
+      },
+      "reopen": {
+        "path": [
+          "job",
+          "reopen"
+        ],
+        "summary": "Reopen an awaiting-archive job",
+        "args": [
+          {
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "flags": {
+          "json": {
+            "type": "boolean"
+          },
+          "no-worktree": {
+            "type": "boolean"
+          },
+          "quiet": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "verbose": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する",
+          "detail": "Usage: specrunner job reopen <slug> --reason <text> [options]\n\nTransitions an awaiting-archive job to awaiting-resume without executing the pipeline.\nThe associated PR must be OPEN (not merged or closed).\n\nThis is an operator-scoped lifecycle action: --reason is required.\nPrior evidence (steps, artifacts, reviewer statuses) is preserved.\n\nAfter reopen, run 'specrunner job resume <slug> --from <step> [--prompt ...]' to start pipeline execution.\n\nArguments:\n  <slug>              Slug of the job to reopen (required).\n\nOptions:\n  --reason <text>     Operator rationale for the reopen (required, recorded in journal).\n  --verbose           More detailed output\n  --quiet             Suppress informational output\n  --json              Output structured JSON result\n  --no-worktree       Run without a git worktree\n  --help, -h          Show this help message\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "operator",
+        "worktreeGuard": true
+      },
+      "resume": {
+        "path": [
+          "job",
+          "resume"
+        ],
+        "summary": "Resume a halted job",
+        "args": [
+          {
+            "name": "slug",
+            "required": false
+          }
+        ],
+        "flags": {
+          "adopt-commits": {
+            "type": "boolean"
+          },
+          "apply-canon": {
+            "type": "boolean"
+          },
+          "detach": {
+            "type": "boolean"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "from": {
+            "type": "string"
+          },
+          "from-issue": {
+            "type": "integer",
+            "min": 1
+          },
+          "json": {
+            "type": "boolean"
+          },
+          "no-worktree": {
+            "type": "boolean"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "prompt-file": {
+            "type": "string"
+          },
+          "quiet": {
+            "type": "boolean"
+          },
+          "verbose": {
+            "type": "boolean"
+          },
+          "wontfix": {
+            "type": "string"
+          },
+          "wontfix-reason": {
+            "type": "string"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)",
+          "detail": "Usage: specrunner job resume <slug> [options]\n       specrunner job resume --from-issue <n> [options]\n\nResume a halted or awaiting-resume job.\n\nArguments:\n  <slug>              Job slug to resume. Resolved by slug first; if not found,\n                      falls back to a short Job ID prefix.\n                      Mutually exclusive with --from-issue.\n\nOptions:\n  --from-issue <n>    Locate the resumable job by GitHub issue number instead of slug.\n                      Locator resolution: scans issue comments for the latest escalation\n                      marker (→ jobId), then enumerates Development-linked branches and\n                      confirms identity by matching jobId / issueNumber / branch name in\n                      the branch-borne checkpoint. Rebind is performed automatically when\n                      no local job state is found. Mutually exclusive with positional <slug>.\n                      When no Development-linked branch is found, use:\n                        specrunner job attach --branch <branch>\n                        specrunner job resume <slug>\n  --from <step>       Override the start step (default: recorded resumePoint step).\n                      Valid steps: request-review, design, spec-review, spec-fixer, test-case-gen, implementer, code-review, code-fixer, conformance, adr-gen, verification, pr-create\n                      Note: jobs with custom reviewers also accept: regression-gate,\n                      custom-reviewers, or reviewer member names (member names are\n                      mapped to the custom-reviewers coordinator).\n  --force             Override the 3× consecutive escalation guard and resume anyway.\n  --verbose           More detailed log output.\n  --quiet             Suppress informational log output.\n  --prompt <text>     Inject operator guidance into the agent context at resume.\n                      ⚠  Do not pass untrusted external input directly.\n                      Mutually exclusive with --prompt-file.\n  --prompt-file <path>  Read operator guidance from a file (alternative to --prompt).\n                      Mutually exclusive with --prompt.\n  --json              Output structured JSON result. Mutually exclusive with --detach.\n  --no-worktree       Resume without a git worktree.\n  --apply-canon       Commit dirty protected canon paths as an operator-apply commit\n                      before resuming. Required (fail-closed) when you have edited\n                      protected canon files (e.g. spec.md, design.md) and want to adopt\n                      the changes into the synthesized-commits ledger.\n  --adopt-commits     Adopt publish-range commits not in the synthesized-commits ledger\n                      before resuming. Required (fail-closed) when you have made commits\n                      to the worktree branch outside the pipeline.\n  --wontfix <indices> Mark regression-gate findings as wontfix (comma-separated 1-based indices,\n                      e.g. --wontfix 1,3). Requires --wontfix-reason. Exits with code 2 if\n                      the gate has not run, indices are out of range, or reason is missing.\n  --wontfix-reason <text>\n                      Mandatory reason for the wontfix disposition. Required when --wontfix\n                      is specified.\n  --detach            Start resume in detached mode. Parent waits until the job is registered\n                      (or reports a start failure), then exits. Use\n                      'job wait <slug>' to monitor progress. Mutually exclusive with --json.\n  --help, -h          Show this help message.\n\nMutually exclusive pairs:\n  --detach     /  --json         (only one output mode can be active at a time)\n  --prompt     /  --prompt-file  (only one operator guidance source at a time)\n  --from-issue /  <slug>         (only one job locator at a time)\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "worktreeGuard": true
+      },
+      "show": {
+        "path": [
+          "job",
+          "show"
+        ],
+        "summary": "Show job state",
+        "args": [
+          {
+            "name": "jobId|slug",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Job commands",
+          "summary": "  job show <jobId|slug>           job state 詳細"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "start": {
+        "path": [
+          "job",
+          "start"
+        ],
+        "summary": "Start a job",
+        "args": [
+          {
+            "name": "slug|file",
+            "required": false
+          }
+        ],
+        "flags": {
+          "detach": {
+            "type": "boolean"
+          },
+          "from-issue": {
+            "type": "integer",
+            "min": 1
+          },
+          "issue": {
+            "type": "integer",
+            "min": 1
+          },
+          "json": {
+            "type": "boolean"
+          },
+          "no-worktree": {
+            "type": "boolean"
+          },
+          "quiet": {
+            "type": "boolean"
+          },
+          "verbose": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "worktreeGuard": true
+      },
+      "stats": {
+        "path": [
+          "job",
+          "stats"
+        ],
+        "summary": "Show job statistics",
+        "args": [],
+        "flags": {
+          "json": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "group": "Job commands",
+          "summary": "  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "requiresRepo": true
+      },
+      "wait": {
+        "path": [
+          "job",
+          "wait"
+        ],
+        "summary": "Wait for a job to settle",
+        "args": [
+          {
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Job commands",
+          "summary": "  job wait <slug>                 job が settle するまで block (process-death gate)"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "login": {
+    "path": [
+      "login"
+    ],
+    "summary": "GitHub Device Flow OAuth",
+    "args": [],
+    "flags": {
+      "force": {
+        "type": "boolean"
+      },
+      "provider": {
+        "type": "string",
+        "deprecated": {
+          "message": "<function>"
+        }
+      }
+    },
+    "help": {
+      "group": "Environment commands",
+      "summary": "  login                           GitHub Device Flow OAuth",
+      "detail": "Usage: specrunner login [options]\n\nAuthenticate with GitHub via Device Flow and store the token in\n~/.config/specrunner/credentials.json (0600).\n\nIf a valid GitHub token is already present (from GH_TOKEN / GITHUB_TOKEN env\nor 'gh auth login'), the Device Flow is skipped automatically.\n\nFor headless Claude Code or Anthropic API key storage, use:\n  specrunner credentials set claude-code\n  specrunner credentials set anthropic-api-key\n\nOptions:\n  --force       Always run the Device Flow even when a valid token exists\n  --help, -h    Show this help message\n"
+    },
+    "hasHandler": true,
+    "children": {},
+    "visibility": "normal"
+  },
+  "request": {
+    "path": [
+      "request"
+    ],
+    "summary": "Request management commands",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "ls": {
+        "path": [
+          "request",
+          "ls"
+        ],
+        "summary": "List active requests",
+        "args": [],
+        "flags": {},
+        "help": {
+          "group": "Request commands",
+          "summary": "  request ls                      active 配下の request 一覧"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "new": {
+        "path": [
+          "request",
+          "new"
+        ],
+        "summary": "Create a request",
+        "args": [
+          {
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "flags": {
+          "type": {
+            "type": "string"
+          }
+        },
+        "help": {
+          "group": "Request commands",
+          "summary": "  request new <slug>              template から request.md を作る"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal",
+        "requiresRepo": true
+      },
+      "prompt": {
+        "path": [
+          "request",
+          "prompt"
+        ],
+        "summary": "Output request creation prompt",
+        "args": [],
+        "flags": {},
+        "help": {
+          "group": "Request commands",
+          "summary": "  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "template": {
+        "path": [
+          "request",
+          "template"
+        ],
+        "summary": "Print request template",
+        "args": [],
+        "flags": {
+          "type": {
+            "type": "string"
+          }
+        },
+        "help": {
+          "group": "Request commands",
+          "summary": "  request template                雛形 markdown を stdout"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "validate": {
+        "path": [
+          "request",
+          "validate"
+        ],
+        "summary": "Validate a request file",
+        "args": [
+          {
+            "name": "file-or-slug",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Request commands",
+          "summary": "  request validate <file|slug>    構文 / 規律 check"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "reviewers": {
+    "path": [
+      "reviewers"
+    ],
+    "summary": "Reviewer management commands",
+    "args": [],
+    "flags": {},
+    "help": {
+      "detail": "Usage: specrunner reviewers new <name>\n\nScaffold a custom reviewer definition file at specrunner/reviewers/<name>.md.\n\nArguments:\n  <name>   Reviewer name (lowercase alphanumeric, hyphens, underscores; must start with a letter or digit)\n\nThe generated file includes:\n  - Frontmatter with name, maxIterations, and commented-out activation conditions\n  - Required sections: ## 目的 / ## 観点 / ## 判定基準\n\nActivation conditions (optional — add to frontmatter to enable selective activation):\n  paths:         glob patterns for changed files (at least one must match)\n  requestTypes:  request types that activate this reviewer\n\nExamples:\n  specrunner reviewers new security\n  specrunner reviewers new perf-check\n\nOptions:\n  --help, -h    Show this help message\n"
+    },
+    "hasHandler": false,
+    "children": {
+      "new": {
+        "path": [
+          "reviewers",
+          "new"
+        ],
+        "summary": "Scaffold a reviewer definition",
+        "args": [
+          {
+            "name": "name",
+            "required": true
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Reviewer commands",
+          "summary": "  reviewers new <name>            カスタムレビューワーの雛形を scaffold"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "rules": {
+    "path": [
+      "rules"
+    ],
+    "summary": "Rules management commands",
+    "args": [],
+    "flags": {},
+    "help": {
+      "detail": "Usage: specrunner rules new <step-name> <rule-slug>\n\nScaffold a step-specific rules file at specrunner/rules/<step-name>/<NN>-<rule-slug>.md.\n\nArguments:\n  <step-name>   Agent step name (see valid steps below)\n  <rule-slug>   Kebab-case identifier for the rule (e.g. no-inline-comment)\n\nValid agent step names:\n  request-review, design, spec-review, spec-fixer, test-case-gen, implementer, code-review, code-fixer, conformance, adr-gen\n\n  Note: CLI steps (verification, pr-create) are not accepted\n  because the executor ignores rules for CLI steps.\n\nNumbering:\n  Files are numbered automatically with a 2-digit zero-padded prefix (01-, 02-, ...).\n  The prefix is determined by scanning existing files and using max + 1.\n  An empty directory starts at 01-.\n\nTemplate:\n  The generated file includes a leading comment explaining the rules format,\n  and three recommended sections:\n    ## やめてほしいこと  (what to avoid)\n    ## こうしてほしいこと (what to do instead)\n    ## 例外             (exceptions)\n  These headings are suggestions — the CLI does not enforce them.\n\nOrdering:\n  The numeric prefix determines follow-up execution order (ascending).\n  Tip: place your most important rules last to leverage recency bias.\n\nDelivery:\n  Each rule file may declare a delivery mode in its YAML frontmatter:\n\n    ---\n    delivery: followup\n    ---\n\n  delivery: followup (default)\n    The rule is delivered as a post-work follow-up prompt after the main\n    work turn completes. Use for post-hoc verification and style checks.\n\n  delivery: prompt\n    The rule is injected into the main work prompt before the agent starts,\n    after artifacts and resume context but before the completion directive.\n    Use for behavioral constraints that must be active during the work turn\n    (e.g. forbidden commands, off-limits files, mandatory tool usage).\n\n  Files without a delivery frontmatter default to followup (backward compat).\n  An unknown delivery value causes the step to fail before the agent starts.\n\nExamples:\n  specrunner rules new implementer no-inline-comment\n  specrunner rules new code-review prefer-explicit-types\n\nOptions:\n  --help, -h    Show this help message\n"
+    },
+    "hasHandler": false,
+    "children": {
+      "new": {
+        "path": [
+          "rules",
+          "new"
+        ],
+        "summary": "Scaffold a rules file",
+        "args": [
+          {
+            "name": "step-name rule-slug",
+            "required": true,
+            "count": 2
+          }
+        ],
+        "flags": {},
+        "help": {
+          "group": "Rules commands",
+          "summary": "  rules new <step> <slug>         step 用の rules ファイルを scaffold"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "run": {
+    "path": [
+      "run"
+    ],
+    "summary": "job start の互換 alias",
+    "args": [],
+    "flags": {},
+    "help": {
+      "group": "Aliases",
+      "summary": "  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)"
+    },
+    "hasHandler": false,
+    "children": {},
+    "visibility": "compatibility",
+    "aliasOf": [
+      "job",
+      "start"
+    ]
+  },
+  "runtime": {
+    "path": [
+      "runtime"
+    ],
+    "summary": "Runtime resource management",
+    "args": [],
+    "flags": {},
+    "help": {},
+    "hasHandler": false,
+    "children": {
+      "reset": {
+        "path": [
+          "runtime",
+          "reset"
+        ],
+        "summary": "Delete the Anthropic Environment",
+        "args": [],
+        "flags": {
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "help": {
+          "detail": "Usage: specrunner runtime reset [--force]\n\nDelete the Anthropic Environment from the provider and clear managed config.\n\nNote: Anthropic-side agent resources are NOT deleted (no agent delete API available)\n      and remain as orphans on the provider side.\n\nOptions:\n  --force   Skip confirmation prompt (including when runtime is not managed)\n  --help    Show this help message\n"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "setup": {
+        "path": [
+          "runtime",
+          "setup"
+        ],
+        "summary": "Set up Anthropic runtime",
+        "args": [],
+        "flags": {},
+        "help": {
+          "group": "Environment commands",
+          "summary": "  runtime setup|status|reset      Manage Anthropic runtime resources"
+        },
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      },
+      "status": {
+        "path": [
+          "runtime",
+          "status"
+        ],
+        "summary": "Show runtime status",
+        "args": [],
+        "flags": {},
+        "help": {},
+        "hasHandler": true,
+        "children": {},
+        "visibility": "normal"
+      }
+    },
+    "visibility": "normal"
+  },
+  "usage": {
+    "path": [
+      "usage"
+    ],
+    "summary": "Show request usage",
+    "args": [
+      {
+        "name": "slug",
+        "required": false
+      }
+    ],
+    "flags": {},
+    "help": {},
+    "hasHandler": true,
+    "children": {},
+    "visibility": "operator"
+  }
+}

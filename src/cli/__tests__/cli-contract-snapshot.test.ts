@@ -1,77 +1,43 @@
 /**
- * CLI contract snapshot test (T-01).
+ * CLI contract test (T-01, T-21).
  *
- * Serialises the full COMMANDS tree into a normalised shape that captures
- * path / flags / args / requiresRepo / worktreeGuard / aliasOf / visibility /
- * hasHandler for every CommandSpec node.
+ * Compares the current COMMANDS tree (normalised with full field coverage) against
+ * the base fixture generated from commit 483c75f7.  Any CLI-contract change —
+ * new/removed flag, changed type, arg rename, guard toggle, visibility change —
+ * will cause this test to fail.  Intentional changes require updating the fixture.
  *
- * The snapshot file acts as a living contract: if any flag, arg, guard, or
- * visibility annotation changes, the snapshot will fail and the author must
- * update it intentionally.
+ * Base fixture: src/cli/__tests__/fixtures/cli-contract.base.json
+ * Generation procedure (run once to refresh; requires commit 483c75f7 in repo):
  *
- * The `hasHandler` boolean deliberately captures only presence (true/false),
- * not the handler's identity, so renaming an inline handler to a named
- * reference does NOT cause a snapshot mismatch — which is exactly what we
- * want to verify after the extraction refactoring.
+ *   git show 483c75f7:src/cli/command-registry.ts > src/cli/command-registry.base.tmp.ts
+ *   cat > src/cli/__tests__/dump-base.tmp.ts <<'EOF'
+ *   import { COMMANDS } from "../command-registry.base.tmp.js";
+ *   import { normalizeCommandsTree } from "./cli-contract-normalize.js";
+ *   console.log(JSON.stringify(normalizeCommandsTree(COMMANDS), null, 2));
+ *   EOF
+ *   bun src/cli/__tests__/dump-base.tmp.ts > src/cli/__tests__/fixtures/cli-contract.base.json
+ *   rm src/cli/command-registry.base.tmp.ts src/cli/__tests__/dump-base.tmp.ts
+ *
+ * The `hasHandler` field captures only boolean presence (handler !== undefined)
+ * so moving an inline closure to a named function does NOT fail this test — which
+ * is exactly what the R3a (handler-extraction) refactoring verifies.
  */
 
 import { describe, it, expect } from "vitest";
 import { COMMANDS } from "../command-registry.js";
-import type { CommandSpec } from "../command-registry.js";
+import { normalizeCommandsTree } from "./cli-contract-normalize.js";
+import baseFixture from "./fixtures/cli-contract.base.json";
 
 // ---------------------------------------------------------------------------
-// Normalised shape
+// Contract test
 // ---------------------------------------------------------------------------
 
-interface NormalisedSpec {
-  path: string[];
-  flags: string[];
-  args: string[];
-  requiresRepo: boolean | undefined;
-  worktreeGuard: boolean | undefined;
-  aliasOf: string[] | undefined;
-  visibility: string | undefined;
-  hasHandler: boolean;
-  children?: Record<string, NormalisedSpec>;
-}
-
-function normaliseSpec(spec: CommandSpec): NormalisedSpec {
-  const norm: NormalisedSpec = {
-    path: spec.path,
-    flags: Object.keys(spec.flags ?? {}).sort(),
-    args: (spec.args ?? []).map((a) => a.name),
-    requiresRepo: spec.requiresRepo,
-    worktreeGuard: spec.worktreeGuard,
-    aliasOf: spec.aliasOf,
-    visibility: spec.visibility,
-    hasHandler: spec.handler !== undefined,
-  };
-  if (spec.children) {
-    norm.children = Object.fromEntries(
-      Object.entries(spec.children).map(([key, child]) => [key, normaliseSpec(child)]),
-    );
-  }
-  return norm;
-}
-
-export function normalizeCommandsTree(
-  commands: Record<string, CommandSpec>,
-): Record<string, NormalisedSpec> {
-  return Object.fromEntries(
-    Object.entries(commands).map(([key, spec]) => [key, normaliseSpec(spec)]),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Snapshot test
-// ---------------------------------------------------------------------------
-
-describe("CLI contract snapshot", () => {
-  it("COMMANDS tree shape is stable", () => {
-    const snapshot = normalizeCommandsTree(COMMANDS);
+describe("CLI contract", () => {
+  it("COMMANDS tree matches base fixture (483c75f7)", () => {
+    const candidate = normalizeCommandsTree(COMMANDS);
 
     // Sanity: all expected top-level commands are present
-    const topLevel = Object.keys(snapshot);
+    const topLevel = Object.keys(candidate);
     const expected = [
       "init", "login", "credentials", "run", "request", "job",
       "config", "inbox", "rules", "reviewers", "runtime", "doctor", "guide", "usage",
@@ -80,6 +46,6 @@ describe("CLI contract snapshot", () => {
       expect(topLevel).toContain(cmd);
     }
 
-    expect(snapshot).toMatchSnapshot();
+    expect(candidate).toEqual(baseFixture);
   });
 });

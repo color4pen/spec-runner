@@ -6,38 +6,21 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Synthetic mock for resume.js:
-// - runResume is a vi.fn() so tests can assert on its call args
-// - handleJobResume is a lightweight stub that maps CLI flags → runResume options
-//   (mirrors the real forwarding logic without the heavy detach/process-exit paths)
-// Using importOriginal is NOT viable: the real handleJobResume calls runResume via its
-// module-internal binding (not the exported one), so the mock runResume would not be called.
-vi.mock("../resume.js", () => {
-  const mockRunResume = vi.fn().mockResolvedValue(undefined);
+// T-20: Mock resume.js with only the primitive runResume.
+// The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
+// Mocking runResume lets us assert on argument forwarding from the real handler.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
   return {
-    runResume: mockRunResume,
-    handleJobResume: vi.fn().mockImplementation(
-      async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
-        const flags = parsed.flags;
-        await mockRunResume(parsed.positional, {
-          detach: !!flags["detach"],
-          from: flags["from"] as string | undefined,
-          force: !!flags["force"],
-          applyCanon: !!flags["apply-canon"],
-          adoptCommits: !!flags["adopt-commits"],
-          wontfix: flags["wontfix"] as string | undefined,
-          wontfixReason: flags["wontfix-reason"] as string | undefined,
-          noWorktree: !!flags["no-worktree"],
-          json: !!flags["json"],
-          logLevel: "normal",
-          cwd: process.cwd(),
-          repoRoot: undefined,
-          prompt: flags["prompt"] as string | undefined,
-        });
-      },
-    ),
+    ...actual,
+    runResume: vi.fn().mockResolvedValue(undefined),
   };
 });
+
+// Mock resume-from-issue.js so the real handler's from-issue path doesn't fire
+vi.mock("../resume-from-issue.js", () => ({
+  runResumeFromIssue: vi.fn().mockResolvedValue(0),
+}));
 
 // Mock logger to prevent stderr output
 vi.mock("../../logger/stdout.js", () => ({
@@ -45,6 +28,14 @@ vi.mock("../../logger/stdout.js", () => ({
   logError: vi.fn(),
   stdoutWrite: vi.fn(),
   resolveLogLevel: vi.fn().mockReturnValue("normal"),
+  setLogLevel: vi.fn(),
+}));
+
+vi.mock("../../core/command/detach.js", () => ({
+  DETACH_MARKER_ENV: "SPECRUNNER_DETACHED",
+  isDetachedChild: vi.fn().mockReturnValue(false),
+  stripDetachFlag: vi.fn((args: string[]) => args.filter((a) => a !== "--detach")),
+  detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
 import { COMMANDS } from "../command-registry.js";

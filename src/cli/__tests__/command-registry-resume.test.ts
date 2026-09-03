@@ -10,49 +10,21 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as fsPromises from "node:fs/promises";
 
-// Synthetic mock for resume.js:
-// - runResume is a vi.fn() so tests can assert on calls
-// - handleJobResume is a lightweight stub that mirrors the warning logic from the real handler:
-//     reads --prompt-file if provided, then calls stderrWrite if a prompt is set.
-// Using importOriginal is NOT viable: the real handleJobResume calls runResume via its
-// module-internal binding (not the exported one), so the mock runResume would not be called.
-vi.mock("../resume.js", async () => {
-  const { stderrWrite } = await import("../../logger/stdout.js");
-  const fs = await import("node:fs");
-  const path = await import("node:path");
-  const mockRunResume = vi.fn().mockResolvedValue(undefined);
-  const WARNING = "Warning: --prompt の内容は agent prompt に直接注入されます。外部入力をそのまま渡さないでください。";
+// T-20: Mock resume.js with only the primitive runResume.
+// The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
+// Mocking only runResume lets us assert on warning output from the real handler.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
   return {
-    runResume: mockRunResume,
-    handleJobResume: vi.fn().mockImplementation(
-      async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
-        const flags = parsed.flags;
-        const promptText = flags["prompt"] as string | undefined;
-        const promptFile = flags["prompt-file"] as string | undefined;
-        let resolvedPrompt: string | undefined = promptText;
-        if (promptFile !== undefined) {
-          resolvedPrompt = fs.readFileSync(path.resolve(process.cwd(), promptFile), "utf-8");
-        }
-        if (resolvedPrompt !== undefined) {
-          stderrWrite(WARNING);
-        }
-        await mockRunResume(parsed.positional, {
-          detach: !!flags["detach"],
-          from: flags["from"] as string | undefined,
-          force: !!flags["force"],
-          applyCanon: !!flags["apply-canon"],
-          adoptCommits: !!flags["adopt-commits"],
-          noWorktree: !!flags["no-worktree"],
-          json: !!flags["json"],
-          logLevel: "normal",
-          cwd: process.cwd(),
-          repoRoot: undefined,
-          prompt: resolvedPrompt,
-        });
-      },
-    ),
+    ...actual,
+    runResume: vi.fn().mockResolvedValue(undefined),
   };
 });
+
+// Mock resume-from-issue.js so the real handler's from-issue path doesn't fire
+vi.mock("../resume-from-issue.js", () => ({
+  runResumeFromIssue: vi.fn().mockResolvedValue(0),
+}));
 
 // Mock logger to capture stderrWrite calls
 vi.mock("../../logger/stdout.js", () => ({
@@ -60,6 +32,14 @@ vi.mock("../../logger/stdout.js", () => ({
   logError: vi.fn(),
   stdoutWrite: vi.fn(),
   resolveLogLevel: vi.fn().mockReturnValue("normal"),
+  setLogLevel: vi.fn(),
+}));
+
+vi.mock("../../core/command/detach.js", () => ({
+  DETACH_MARKER_ENV: "SPECRUNNER_DETACHED",
+  isDetachedChild: vi.fn().mockReturnValue(false),
+  stripDetachFlag: vi.fn((args: string[]) => args.filter((a) => a !== "--detach")),
+  detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
 import { COMMANDS } from "../command-registry.js";

@@ -86,9 +86,9 @@ describe("TC-011: run and job start handlers are the same function reference (sh
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
 
-    // After handler extraction (T-05): handleJobStart is imported from ./run.js
-    // and wired as job start's handler. No inline runJobHandler is defined.
-    expect(content).toMatch(/import\s*\{[^}]*handleJobStart[^}]*\}\s*from\s*["']\.\/run\.js["']/);
+    // After handler extraction (T-19): handleJobStart is imported from ./job-start-handler.js
+    // (moved from ./run.js to break the value-import cycle). No inline runJobHandler is defined.
+    expect(content).toMatch(/import\s*\{[^}]*handleJobStart[^}]*\}\s*from\s*["']\.\/job-start-handler\.js["']/);
 
     // The job start entry must reference it by name.
     expect(content).toMatch(/handler:\s*handleJobStart/);
