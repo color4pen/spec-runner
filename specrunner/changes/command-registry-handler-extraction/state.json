@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T08:31:21.613Z",
+  "updatedAt": "2026-09-03T08:52:46.403Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -167,11 +167,7 @@
       "src/cli/usage-handler.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -193,6 +189,11 @@
       "text": "Operator ruling (regression-gate iter 7 escalation): ledger finding d581ef8e (\"use process.cwd() in scaffold-handlers.ts\") is SUPERSEDED by canon tasks.md T-14 and test-cases.md TC-023 (operator ruling from code-review iter 1 Finding 2). The authoritative value is ctx!.invokerCwd in src/cli/scaffold-handlers.ts and src/cli/usage-handler.ts. Retire d581ef8e as superseded; treat the current ctx!.invokerCwd implementation as FIXED (it satisfies ledger 7bdae8c0 and the spec). code-fixer and implementer must NOT switch these calls back to process.cwd(). No code change is required for this ruling; proceed to conformance.",
       "step": "regression-gate",
       "recordedAt": "2026-09-03T08:14:31.073Z"
+    },
+    {
+      "text": "Operator ruling (conformance iter 5 escalation, finding F-1): the spec.md scenario 'process.exit 件数が変化しない' measures with a raw grep that counts comment lines and test files. The normative MUST (no aggregation / reduction / return-contract change of process.exit; all 67 registry calls moved 1:1 to handlers) is satisfied as conformance iter 5 verified. The +3 JSDoc comment lines and +24 references in new test files required by spec Req-5/6 are out of scope of the MUST and are ACCEPTED by the operator. Treat F-1 as resolved by operator ruling; do not require code changes or spec-fixer for it. All other normative items already PASS. Approve conformance and proceed (reverification only if code changed, then pr-create / awaiting-archive).",
+      "step": "conformance",
+      "recordedAt": "2026-09-03T08:52:46.288Z"
     }
   ],
   "reviewerStatuses": [
@@ -230,7 +231,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 280,
+    "historyCount": 283,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
