@@ -390,3 +390,6 @@
 {"type":"lineage","step":"regression-gate","ts":"2026-09-03T07:52:28.708Z","outputs":[{"path":"specrunner/changes/command-registry-handler-extraction/regression-gate-result-007.md","hash":"sha256:957ec67ee3754904b28e2cf01c4c4c0146805218007922a4a6ea65fea09a05d9"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-09-03T07:52:30.041Z","step":"regression-gate","status":"error","message":"regression-gate iteration 1 completed with verdict: escalation"}
 {"type":"transition","ts":"2026-09-03T07:52:30.042Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: regression-gate escalated"}
+{"type":"transition","ts":"2026-09-03T08:14:31.073Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'regression-gate'"}
+{"type":"transition","ts":"2026-09-03T08:14:31.504Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-09-03T08:14:31.507Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}

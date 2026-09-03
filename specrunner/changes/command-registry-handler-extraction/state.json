@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T07:52:30.042Z",
+  "updatedAt": "2026-09-03T08:14:31.507Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -172,11 +172,7 @@
       "src/cli/init.ts"
     ]
   },
-  "resumePoint": {
-    "step": "regression-gate",
-    "reason": "regression-gate escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -193,6 +189,11 @@
       "text": "PR #1109 の review で 4 件の blocking findings が出た。正典（specrunner/changes/command-registry-handler-extraction/）は operator-apply commit 83b863e5 で改訂済みなので、改訂後の canon に従って T-19〜T-23 を実装すること。canon と現状の不一致を再指摘する必要はない（既に改訂済み）。\n\nFinding 1（循環の隠蔽）: run.ts / resume.ts / archive.ts が ./from-issue.js / ./resume-from-issue.js / ./archive-from-issue.js を await import() している。これは run.ts ↔ from-issue.ts 等の相互 value import を隠しているだけ。D7 に従い handleJobStart（+ resolveSlugForDetach）/ handleJobResume / handleJobArchive を job-start-handler.ts / job-resume-handler.ts / job-archive-handler.ts に移し、primitive を static import する。src/cli 内部モジュール（./ で始まる specifier）への dynamic import は 0 件にし、ratchet にチェック 5（value-import SCC = 0）とチェック 6（./ dynamic import = 0）を追加する（T-19、TC-026）。\n\nFinding 2（テストの handler 複製）: src/cli/__tests__ の 7 ファイル（from-issue / resume-from-issue / archive-from-issue / command-registry-adopt-commits / command-registry-apply-canon / command-registry-resume / detach-flag-cli）が handler のロジックを mock 内に写している。実 handler を import し、primitive だけを vi.mock する形に置き換える（T-20、TC-027）。\n\nFinding 3（CLI contract snapshot が弱い）: 現在の normaliseSpec は path / flag 名 / boolean のみで、期待値も候補側で生成している。D5 に従い src/cli/__tests__/cli-contract-normalize.ts の normalizeCommandsTree（summary / flags の type,min,values,deprecated / args の name,required,count / help / visibility / aliasOf / requiresRepo / worktreeGuard / hasHandler / children）を実装し、base 483c75f7 の command-registry.ts から生成した fixtures/cli-contract.base.json と toEqual で比較する。.snap は削除する（T-21、TC-028）。fixture 生成手順は D5 に記載。\n\nFinding 4（bin/specrunner.ts の duck-type guard）: D6 を改訂した。isFlagParseError / isSpecRunnerError を撤回し、git checkout 483c75f7 -- bin/specrunner.ts で base と差分ゼロに戻す。vi.resetModules() による module registry 分裂はテスト側で直す（main と error class を resetModules 後に同一 registry から import する等）。production 側の回避策（duck-type、name 比較、Symbol.hasInstance）は禁止。D6 の再議論はしない（T-22、TC-029）。\n\nT-23: 実測値の before / after 表を specrunner/changes/command-registry-handler-extraction/metrics.md に置く（inline handler 数、registry 内 process.exit 数、registry 行数、production process.exit 数、各計測コマンド）。\n\n維持する制約: command-registry.ts に inline handler と process.exit を持ち込まない、production の process.exit 総数 79 を変えない、CLI contract は base と完全同一、R3a は純粋な移動（振る舞い変更なし）。",
       "step": "implementer",
       "recordedAt": "2026-09-03T05:58:27.264Z"
+    },
+    {
+      "text": "Operator ruling (regression-gate iter 7 escalation): ledger finding d581ef8e (\"use process.cwd() in scaffold-handlers.ts\") is SUPERSEDED by canon tasks.md T-14 and test-cases.md TC-023 (operator ruling from code-review iter 1 Finding 2). The authoritative value is ctx!.invokerCwd in src/cli/scaffold-handlers.ts and src/cli/usage-handler.ts. Retire d581ef8e as superseded; treat the current ctx!.invokerCwd implementation as FIXED (it satisfies ledger 7bdae8c0 and the spec). code-fixer and implementer must NOT switch these calls back to process.cwd(). No code change is required for this ruling; proceed to conformance.",
+      "step": "regression-gate",
+      "recordedAt": "2026-09-03T08:14:31.073Z"
     }
   ],
   "reviewerStatuses": [
@@ -230,7 +231,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 269,
+    "historyCount": 272,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
