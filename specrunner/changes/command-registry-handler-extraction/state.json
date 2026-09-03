@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-02T23:52:48.736Z",
+  "updatedAt": "2026-09-03T00:31:49.237Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/command-registry-handler-extraction/tasks.md, title: \"T-14 and TC-023 still specify process.cwd() instead of ctx.invokerCwd\"\n  - file: specrunner/changes/command-registry-handler-extraction/design.md, title: \"design.md missing companion fix paragraph for duck-type error guards\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -117,21 +113,22 @@
       "bin/specrunner.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/command-registry-handler-extraction/tasks.md, title: \"T-14 and TC-023 still specify process.cwd() instead of ctx.invokerCwd\"\n  - file: specrunner/changes/command-registry-handler-extraction/design.md, title: \"design.md missing companion fix paragraph for duck-type error guards\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "Operator 裁定（code-review iter 1 の 3 findings に対して）:\n\nFinding 3（bin/specrunner.ts の duck-type guard isFlagParseError / isSpecRunnerError、decision-needed）: 受け入れる。handler を別モジュールに抽出したことで、main() を vi.resetModules() 付きで呼ぶ既存テスト（tests/unit/cli/*.test.ts、10 本）で module 境界を跨ぐ error の instanceof が落ちるのを回避する companion fix として R3a に含める。production の挙動は不変。差し戻し不要。ただし design.md に「抽出に伴う companion fix」として 1 段落で記録すること。\n\nFinding 1（architecture-ratchet Check 3 が regex 実装、medium）: 修正する。design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査し、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import も検出できることを確認するテストケースを追加する。\n\nFinding 2（scaffold-handlers.ts / usage-handler.ts の ctx!.invokerCwd、low）: 実装側を採用する。process.cwd() には戻さず、tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx.invokerCwd（dispatch 時に process.cwd() を capture、同値）に更新して整合させる。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない。",
       "step": "code-review",
       "recordedAt": "2026-09-02T23:46:49.602Z"
+    },
+    {
+      "text": "Operator 裁定（code-review iter 2 / CANON_FINDING_ESCALATION への復帰）:\n\n保護正典は operator-apply commit 098ccab8 で修正済み（feature branch に push 済み）。内容: tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx!.invokerCwd に更新（Finding 2、実装側を採用）、design.md に D6「bin/specrunner.ts の duck-type error guard（抽出に伴う companion fix）」を追加（Finding 3、受け入れ）。この 2 件は解消済みとして扱い、再指摘しないこと。\n\n残る Finding 1（medium、fixable）は code-fixer で修正する: src/cli/__tests__/architecture-ratchet.test.ts の Check 3 を design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査する実装に置き換え、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import（import {\\n COMMANDS\\n} from \"../command-registry.js\"）を検出できることを確認するテストケースを追加する。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない、bin/specrunner.ts の duck-type guard は維持する。",
+      "step": "code-review",
+      "recordedAt": "2026-09-03T00:31:48.836Z"
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
