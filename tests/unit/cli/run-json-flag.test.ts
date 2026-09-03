@@ -12,44 +12,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Must mock before importing main (vitest hoists vi.mock)
-// Synthetic mocks: handleJobStart/handleJobResume forward the relevant flags to runRun/runResume
-// so TC-JSON-CLI-001 through 004 can assert on the runRun/runResume call args.
-vi.mock("../../../src/cli/run.js", () => {
-  const mockRunRun = vi.fn().mockResolvedValue(undefined);
-  const mockRunRunCore = vi.fn().mockResolvedValue(0);
-  return {
-    runRun: mockRunRun,
-    runRunCore: mockRunRunCore,
-    handlePostPipelineState: vi.fn(),
-    handleJobStart: vi.fn().mockImplementation(async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
-      // Forward the positional + flags to runRun (simple positional path)
-      if (parsed.positional) {
-        await mockRunRun(parsed.positional, {
-          json: !!parsed.flags["json"],
-          noWorktree: !!parsed.flags["no-worktree"],
-          logLevel: "normal",
-        });
-      }
-    }),
-  };
-});
+// Only the primitives (runRun / runResume) are mocked; the registry dispatches through the
+// production handler modules (job-start-handler.ts / job-resume-handler.ts), so
+// TC-JSON-CLI-001 through 004 assert on the runRun/runResume call args those handlers produce.
+vi.mock("../../../src/cli/run.js", () => ({
+  runRun: vi.fn().mockResolvedValue(undefined),
+  runRunCore: vi.fn().mockResolvedValue(0),
+  handlePostPipelineState: vi.fn(),
+}));
 
-vi.mock("../../../src/cli/resume.js", () => {
-  const mockRunResume = vi.fn().mockResolvedValue(undefined);
-  return {
-    runResume: mockRunResume,
-    runResumeCore: vi.fn().mockResolvedValue(0),
-    handleJobResume: vi.fn().mockImplementation(async (parsed: { flags: Record<string, unknown>; positional?: string }) => {
-      if (parsed.positional) {
-        await mockRunResume(parsed.positional, {
-          json: !!parsed.flags["json"],
-          noWorktree: !!parsed.flags["no-worktree"],
-          logLevel: "normal",
-        });
-      }
-    }),
-  };
-});
+vi.mock("../../../src/cli/resume.js", () => ({
+  runResume: vi.fn().mockResolvedValue(undefined),
+  runResumeCore: vi.fn().mockResolvedValue(0),
+}));
 
 // Prevent worktree guard from blocking dispatch
 vi.mock("../../../src/core/worktree/detection.js", () => ({

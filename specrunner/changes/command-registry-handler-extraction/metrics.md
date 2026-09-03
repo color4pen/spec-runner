@@ -155,18 +155,95 @@ grep -E '^import' src/cli/command-registry.ts \
 
 ## 7. 抽出した handler module 数と command family 対応表
 
-| | before | after |
-|---|---|---|
-| 専用 handler module 数 | **0** | **3** |
+対象は base で `handler: async ...` だった inline handler **29 件すべて**（registry 内 local 関数 `runJobHandler` を参照していた `job start` を加えると registry の handler 参照は 30 件）。
+計測は COMMANDS tree を走査し、各 leaf の `handler.name` と command-registry.ts の import 文から所有 module を解決する（コマンドは末尾）。
 
-| module | command family |
-|---|---|
-| `src/cli/job-start-handler.ts` | `job start` |
-| `src/cli/job-resume-handler.ts` | `job resume` |
-| `src/cli/job-archive-handler.ts` | `job archive` |
+| | before (483c75f7) | after |
+|---|---|---|
+| registry 内 inline handler | **29** | **0** |
+| registry 内 local named handler（`runJobHandler`） | **1** | **0** |
+| registry が handler を import する module 数 | **0** | **21** |
+| ├ 新設 module | — | **7** |
+| └ 既存 module の拡張 | — | **14** |
+
+### command family → module 集計
+
+| command family | 抽出 handler 数 | 所有 module（新設 = ★） |
+|---|---|---|
+| `init` / `login` / `credentials` | 3 | `init.ts`, `login.ts`, `credentials.ts` |
+| `request *` | 5 | ★ `request-handlers.ts` |
+| `job start` / `job resume` / `job archive` | 3 | ★ `job-start-handler.ts`, ★ `job-resume-handler.ts`, ★ `job-archive-handler.ts` |
+| `job ls` / `job stats` | 2 | `ps.ts` |
+| `job show` / `job wait` / `job cancel` / `job reopen` / `job attach` / `job prune` | 6 | `job-show.ts`, `job-wait.ts`, `cancel.ts`, `reopen.ts`, `attach.ts`, `prune.ts` |
+| `config effective` | 1 | `config-effective.ts` |
+| `inbox run` | 1 | `inbox.ts` |
+| `rules new` / `reviewers new` | 2 | ★ `scaffold-handlers.ts` |
+| `runtime *` | 3 | `managed.ts` |
+| `doctor` / `doctor repair` | 2 | `doctor.ts` |
+| `guide` | 1 | ★ `guide-handler.ts` |
+| `usage` | 1 | ★ `usage-handler.ts` |
+| **合計** | **30**（inline 29 + local named 1） | **21 module**（新設 7 / 既存 14） |
+
+### command path → handler → 所有 module（全 30 件）
+
+| command path | before (483c75f7) | after handler | 所有 module | 新設 |
+|---|---|---|---|---|
+| `init` | inline | `handleInit` | `src/cli/init.ts` | |
+| `login` | inline | `handleLogin` | `src/cli/login.ts` | |
+| `credentials set` | inline | `handleCredentialsSet` | `src/cli/credentials.ts` | |
+| `request new` | inline | `handleRequestNew` | `src/cli/request-handlers.ts` | ★ |
+| `request prompt` | inline | `handleRequestPrompt` | `src/cli/request-handlers.ts` | ★ |
+| `request ls` | inline | `handleRequestLs` | `src/cli/request-handlers.ts` | ★ |
+| `request template` | inline | `handleRequestTemplate` | `src/cli/request-handlers.ts` | ★ |
+| `request validate` | inline | `handleRequestValidate` | `src/cli/request-handlers.ts` | ★ |
+| `job start` | local named `runJobHandler` | `handleJobStart` | `src/cli/job-start-handler.ts` | ★ |
+| `job ls` | inline | `handleJobLs` | `src/cli/ps.ts` | |
+| `job show` | inline | `handleJobShow` | `src/cli/job-show.ts` | |
+| `job wait` | inline | `handleJobWait` | `src/cli/job-wait.ts` | |
+| `job cancel` | inline | `handleJobCancel` | `src/cli/cancel.ts` | |
+| `job resume` | inline | `handleJobResume` | `src/cli/job-resume-handler.ts` | ★ |
+| `job reopen` | inline | `handleJobReopen` | `src/cli/reopen.ts` | |
+| `job attach` | inline | `handleJobAttach` | `src/cli/attach.ts` | |
+| `job archive` | inline | `handleJobArchive` | `src/cli/job-archive-handler.ts` | ★ |
+| `job prune` | inline | `handleJobPrune` | `src/cli/prune.ts` | |
+| `job stats` | inline | `handleJobStats` | `src/cli/ps.ts` | |
+| `config effective` | inline | `handleConfigEffective` | `src/cli/config-effective.ts` | |
+| `inbox run` | inline | `handleInboxRun` | `src/cli/inbox.ts` | |
+| `rules new` | inline | `handleRulesNew` | `src/cli/scaffold-handlers.ts` | ★ |
+| `reviewers new` | inline | `handleReviewersNew` | `src/cli/scaffold-handlers.ts` | ★ |
+| `runtime setup` | inline | `handleRuntimeSetup` | `src/cli/managed.ts` | |
+| `runtime status` | inline | `handleRuntimeStatus` | `src/cli/managed.ts` | |
+| `runtime reset` | inline | `handleRuntimeReset` | `src/cli/managed.ts` | |
+| `doctor` | inline | `handleDoctor` | `src/cli/doctor.ts` | |
+| `doctor repair` | inline | `handleDoctorRepair` | `src/cli/doctor.ts` | |
+| `guide` | inline | `handleGuide` | `src/cli/guide-handler.ts` | ★ |
+| `usage` | inline | `handleUsage` | `src/cli/usage-handler.ts` | ★ |
+
+新設 7 module のうち `job-*-handler.ts` の 3 件は D7 の循環禁止（`run.ts` / `resume.ts` / `archive.ts` が
+`from-issue.ts` 等の primitive を static import するため、handler を primitive module と同居させると
+sibling 間の循環が生じる）により専用 module として切り出したもの。残り 4 件（`request-handlers.ts` /
+`scaffold-handlers.ts` / `guide-handler.ts` / `usage-handler.ts`）は対応する既存 module が
+handler 配置先として適切でなかった family（複数 primitive を束ねる、または registry 専用の薄い dispatch）。
 
 ```sh
-ls src/cli/job-*-handler.ts | wc -l
+# before: inline handler と local named handler の数
+git show 483c75f7:src/cli/command-registry.ts | grep -c "handler: async"      # 29
+git show 483c75f7:src/cli/command-registry.ts | grep -c "handler: runJobHandler" # 1
+
+# after: command path → handler.name → 所有 module（COMMANDS tree を走査し import 文で解決）
+bun -e '
+import { readFileSync } from "node:fs";
+import { COMMANDS } from "./src/cli/command-registry.ts";
+const src = readFileSync("src/cli/command-registry.ts", "utf8");
+const owner = {};
+for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*"([^"]+)"/g))
+  for (const n of m[1].split(",").map((x) => x.trim())) if (n) owner[n] = m[2];
+const walk = (specs) => { for (const s of Object.values(specs)) {
+  if (s.handler) console.log(s.path.join(" "), "\t", s.handler.name, "\t", owner[s.handler.name] ?? "(local)");
+  if (s.children) walk(s.children); } };
+walk(COMMANDS);
+' | sort -t$'"'"'\t'"'"' -k3 | tee /tmp/handler-map.tsv
+cut -f3 /tmp/handler-map.tsv | sort -u | wc -l   # 21
 ```
 
 ---
