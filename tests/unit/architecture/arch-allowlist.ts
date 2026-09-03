@@ -612,5 +612,19 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-doctor-handler-reporoot-fallback",
     comment: "role-a: handleDoctorRepair uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
   },
+  {
+    file: "src/cli/scaffold-handlers.ts",
+    pattern: "executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-scaffold-rules-new-debt",
+    comment: "role-a: handleRulesNew passes process.cwd() to executeRulesNew. Moved from command-registry.ts inline handler (T-14). R3b target.",
+  },
+  {
+    file: "src/cli/scaffold-handlers.ts",
+    pattern: "executeReviewersNew(parsed.positional!, process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-scaffold-reviewers-new-debt",
+    comment: "role-a: handleReviewersNew passes process.cwd() to executeReviewersNew. Moved from command-registry.ts inline handler (T-14). R3b target.",
+  },
 
 ];
