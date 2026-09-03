@@ -62,3 +62,5 @@
 {"type":"lineage","step":"verification","ts":"2026-09-03T14:45:09.656Z","outputs":[{"path":"specrunner/changes/cli-handler-exit-boundary/verification-result.md","hash":"sha256:b36dc57f9c21b3bb3753f418eaac450f3d51543e37dbe4b5626c873ee57e1cde"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-09-03T14:45:09.715Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-09-03T14:45:09.716Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-09-03T15:32:09.221Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-09-03T15:32:09.546Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
