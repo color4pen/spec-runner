@@ -613,33 +613,5 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-doctor-handler-reporoot-fallback",
     comment: "role-a: handleDoctorRepair uses ctx.repoRoot with process.cwd() fallback when outside a repo.",
   },
-  {
-    file: "src/cli/scaffold-handlers.ts",
-    pattern: "executeRulesNew(parsed.positionals[0]!, parsed.positionals[1]!, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-scaffold-rules-new-debt",
-    comment: "debt: handleRulesNew passes process.cwd() as cwd base (moved from command-registry.ts inline handler). Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/scaffold-handlers.ts",
-    pattern: "executeReviewersNew(parsed.positional!, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-scaffold-reviewers-new-debt",
-    comment: "debt: handleReviewersNew passes process.cwd() as cwd base (moved from command-registry.ts inline handler). Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/usage-handler.ts",
-    pattern: "showUsage(slug, process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-usage-handler-show-debt",
-    comment: "debt: handleUsage passes process.cwd() to showUsage (moved from command-registry.ts inline handler). Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/usage-handler.ts",
-    pattern: "showUsageSummary(process.cwd())",
-    invariant: "CWD",
-    tracking: "CWD-usage-handler-summary-debt",
-    comment: "debt: handleUsage passes process.cwd() to showUsageSummary (moved from command-registry.ts inline handler). Follow-up burn-down.",
-  },
 
 ];
