@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T02:16:52.559Z",
+  "updatedAt": "2026-09-03T02:24:51.642Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -96,7 +96,9 @@
     "e930d6c8285deb572771c10a60301f242a7a759c",
     "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a",
     "71eae66d336e2939267a8790b29f320fa9579e05",
-    "ce63cb52db82c25b577cf9fddc8e438f0f39c9af"
+    "ce63cb52db82c25b577cf9fddc8e438f0f39c9af",
+    "a5e38ca74495bd43ab09115f3ba1fcf517e6b379",
+    "23f938db7dfec9715b03fb10a1e638c2b68b8a29"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -140,7 +142,6 @@
       "src/cli/usage-handler.ts"
     ],
     "conformance": [
-      "src/cli/command-registry.ts",
       "src/cli/__tests__/architecture-ratchet.test.ts"
     ]
   },
@@ -187,8 +188,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1109",
+    "number": 1109,
+    "createdAt": "2026-09-03T02:24:50.912Z"
+  },
   "_journal": {
-    "historyCount": 166,
+    "historyCount": 180,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -196,14 +202,16 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 6,
-      "verification": 8,
+      "verification": 9,
       "code-review": 5,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 3,
       "custom-reviewers": 3,
       "regression-gate": 4,
-      "conformance": 2
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
