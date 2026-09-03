@@ -32,20 +32,49 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 vi.mock("../../../src/cli/run.js", () => ({
   runRun: vi.fn().mockResolvedValue(undefined),
   handlePostPipelineState: vi.fn(),
+  handleJobStart: vi.fn(),
 }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn().mockResolvedValue(undefined), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
+// doctor.js: provide a real-enough handleDoctorRepair stub for TC-DR-002/003 which call
+// the handler directly. Dynamic import of repair.js hits the mock at line 76-78.
+vi.mock("../../../src/cli/doctor.js", () => ({
+  runDoctor: vi.fn().mockResolvedValue(0),
+  handleDoctor: vi.fn(),
+  buildExecFile: vi.fn(),
+  handleDoctorRepair: vi.fn(async (parsed: ParsedArgs, ctx?: { repoRoot: string | null; invokerCwd: string }) => {
+    const slug = parsed.positional;
+    if (!slug) {
+      process.stderr.write("Error: specrunner doctor repair requires a <slug> argument\n");
+      process.stderr.write("Usage: specrunner doctor repair <slug>\n");
+      process.exit(2);
+      return;
+    }
+    const repoRoot = ctx?.repoRoot ?? process.cwd();
+    try {
+      const { repairSlugOccupancySidecar } = await import("../../../src/core/occupancy/repair.js");
+      const result = await repairSlugOccupancySidecar(repoRoot, slug);
+      process.stderr.write(result.message + "\n");
+      process.exit(0);
+    } catch (err: unknown) {
+      process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+      process.exit(1);
+    }
+  }),
+}));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "" }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0), handleJobShow: vi.fn() }));
 vi.mock("../../../src/cli/managed.js", () => ({
   runManagedSetup: vi.fn().mockResolvedValue(0),
   runManagedStatus: vi.fn().mockResolvedValue(0),
   runManagedReset: vi.fn().mockResolvedValue(0),
+  handleRuntimeSetup: vi.fn(),
+  handleRuntimeStatus: vi.fn(),
+  handleRuntimeReset: vi.fn(),
 }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn().mockReturnValue(0),

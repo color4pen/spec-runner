@@ -353,9 +353,11 @@ describe("TC-016: CWD allowlist strictly decreases — exactly four entries remo
     // Subsequent PRs added 2 legitimate entries (CWD-pipeline-terminal-state-di-default,
     // CWD-runner-terminal-state-di-default for the TerminalStateCapability cwd fallback) → 39.
     // R2b refactor adds 2 more (pipeline.ts + runner.ts terminal-state paths) → 41.
+    // R3a handler extraction adds 2 more for scaffold-handlers.ts (CWD-scaffold-*-debt,
+    // moved from command-registry.ts inline handlers) → 43.
     // Threshold updated to reflect legitimate growth while TC-009 tracking-ID checks
     // continue to guard against re-adding the 4 specifically removed entries.
-    expect(cwdEntries.length).toBeLessThan(43);
+    expect(cwdEntries.length).toBeLessThan(45);
   });
 
   it("TC-016: no new CWD entry was added for any of the converted handler files", async () => {
@@ -893,12 +895,12 @@ describe("TC-023: job ls production dispatch never triggers ps.ts internal resol
    *   resolveRepoRoot is called internally → spy records call → assertion fails.
    * GREEN after implementation: registry passes ctx.repoRoot ?? ctx.invokerCwd to runPs.
    */
-  it("TC-023: COMMANDS.job.subcommands.ls handler calls runPs with a non-null repoRoot", async () => {
-    // We verify this by checking the registry source directly
-    // After conversion: the ls handler passes repoRoot to runPs
-    const registryPath = path.join(ROOT, "src/cli/command-registry.ts");
+  it("TC-023: handleJobLs in ps.ts calls runPs with a non-null repoRoot", async () => {
+    // After handler extraction (T-04): handleJobLs lives in ps.ts, not command-registry.ts.
+    // The registry imports handleJobLs from ps.ts; the repoRoot plumbing is inside ps.ts.
+    const psPath = path.join(ROOT, "src/cli/ps.ts");
     // Check that the ls handler passes repoRoot to runPs
-    const result = grepFile("repoRoot", registryPath);
+    const result = grepFile("repoRoot", psPath);
     const lsHandlerLines = result
       .split("\n")
       .filter(Boolean)
@@ -907,7 +909,7 @@ describe("TC-023: job ls production dispatch never triggers ps.ts internal resol
         const content = line.split(":").slice(2).join(":");
         return content.includes("runPs") || content.includes("repoRoot");
       });
-    // After conversion: there are lines where ls handler sets repoRoot for runPs
+    // After handler extraction: there are lines where handleJobLs passes repoRoot to runPs
     // This is a documentation check; the behavioral check is in TC-002
     expect(lsHandlerLines.length).toBeGreaterThan(0);
   });

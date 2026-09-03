@@ -35,6 +35,9 @@ vi.mock("../../core/command/detach.js", () => ({
   detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
+// T-20: Mock run.js with only the primitive functions.
+// The real handleJobStart is now in job-start-handler.ts and imported by command-registry.ts.
+// Mocking run.js here allows asserting on runRunCore calls from the real handler.
 vi.mock("../run.js", () => ({
   runRun: vi.fn().mockResolvedValue(undefined),
   runRunCore: vi.fn().mockResolvedValue(0),
@@ -590,4 +593,3 @@ describe("TC-005: positional + --issue → startWithIssueLink に route され�
     expect(typeof opts["onFeatureBranchCreated"]).toBe("function");
   });
 });
-

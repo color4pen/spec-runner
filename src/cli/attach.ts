@@ -23,10 +23,13 @@ import { createTransportAuth } from "../git/transport-auth.js";
 import { spawnCommand } from "../util/spawn.js";
 import {
   SpecRunnerError,
+  EXIT_CODE,
   worktreeGuardError,
   attachRuntimeUnsupportedError,
 } from "../errors.js";
-import { logResult, logError, stderrWrite, type LogLevel, setLogLevel } from "../logger/stdout.js";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
+import { logResult, logError, stderrWrite, resolveLogLevel, type LogLevel, setLogLevel } from "../logger/stdout.js";
 import { LocalRuntime } from "../core/runtime/local.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
@@ -168,4 +171,39 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
     stderrWrite(`Run 'specrunner job resume ${verified.slug}' to resume the pipeline.`);
   }
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner job attach --branch <branch>`.
+ * Extracted from command-registry.ts inline handler (T-09).
+ */
+export async function handleJobAttach(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const branch = parsed.flags["branch"] as string | undefined;
+  if (!branch) {
+    logError("--branch <branch> is required for 'job attach'.");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+  const logLevel = resolveLogLevel({
+    quiet: !!parsed.flags["quiet"],
+    verbose: !!parsed.flags["verbose"],
+    debug: !!parsed.flags["debug"],
+  });
+  try {
+    process.exit(
+      await runAttach({
+        branch,
+        cwd: ctx!.invokerCwd,
+        repoRoot: ctx!.repoRoot!,
+        logLevel,
+      }),
+    );
+  } catch (err: unknown) {
+    if (err instanceof SpecRunnerError) {
+      stderrWrite(`Error: ${err.message}`);
+      stderrWrite(`Hint: ${err.hint}`);
+      process.exit(err.exitCode);
+    }
+    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  }
 }

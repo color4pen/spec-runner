@@ -58,39 +58,40 @@ async function collectTsFiles(dir: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 describe("TC-001: run and job-start commands produce identical runtime behavior", () => {
-  it("TC-001: command-registry.ts defines a shared runJobHandler function", async () => {
+  it("TC-001: command-registry.ts imports handleJobStart from run.ts (shared handler via alias)", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
 
-    // After implementation: `runJobHandler` is declared as a named function/const
-    // and referenced by both the `run` entry and `job.subcommands.start` entry.
-    // Before implementation: no such named function exists.
-    expect(content).toMatch(/runJobHandler/);
+    // After handler extraction (T-05): handleJobStart is imported from ./run.js
+    // and referenced as the job start handler. run is an alias of job start.
+    // The shared handler is handleJobStart; runJobHandler has been removed.
+    expect(content).toMatch(/handleJobStart/);
   });
 
-  it("TC-001: run is an alias of job start; job.start entry references runJobHandler", async () => {
+  it("TC-001: run is an alias of job start; job.start entry references handleJobStart", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
 
     // After CommandSpec migration: `run` is an alias (aliasOf: ["job","start"]) and has no handler.
-    // `job.start` references runJobHandler as the single shared handler.
+    // `job.start` references handleJobStart as the single shared handler (imported from run.ts).
     // Behavioral equivalence is guaranteed by alias resolution at dispatch time.
     expect(content).toMatch(/aliasOf:\s*\["job",\s*"start"\]/);
-    const matches = content.match(/handler:\s*runJobHandler/g) ?? [];
+    const matches = content.match(/handler:\s*handleJobStart/g) ?? [];
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });
 
 describe("TC-011: run and job start handlers are the same function reference (should)", () => {
-  it("TC-011: runJobHandler is the single handler referenced by both commands", async () => {
+  it("TC-011: handleJobStart is the single handler imported and referenced for job start", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
 
-    // A single named async function `runJobHandler` must be declared.
-    expect(content).toMatch(/(?:async function runJobHandler|const runJobHandler\s*=\s*async)/);
+    // After handler extraction (T-19): handleJobStart is imported from ./job-start-handler.js
+    // (moved from ./run.js to break the value-import cycle). No inline runJobHandler is defined.
+    expect(content).toMatch(/import\s*\{[^}]*handleJobStart[^}]*\}\s*from\s*["']\.\/job-start-handler\.js["']/);
 
-    // Both `run:` entry and `start:` entry must reference it by name.
-    expect(content).toMatch(/handler:\s*runJobHandler/);
+    // The job start entry must reference it by name.
+    expect(content).toMatch(/handler:\s*handleJobStart/);
   });
 });
 

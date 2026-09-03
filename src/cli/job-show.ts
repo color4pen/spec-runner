@@ -12,6 +12,8 @@
  *   - Otherwise → resolve by slug (all jobs, latest updatedAt wins)
  */
 import * as fs from "node:fs";
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../store/job-state-store.js";
@@ -102,6 +104,18 @@ export async function runJobShow(
 
   await printJobState(state, repoRoot);
   return 0;
+}
+
+/**
+ * CLI handler for `specrunner job show <jobId|slug>`.
+ * Extracted from command-registry.ts inline handler (T-07).
+ */
+/* c8 ignore next 6 */
+export async function handleJobShow(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  process.exit(await runJobShow(
+    parsed.positional!,
+    { repoRoot: ctx?.repoRoot ?? ctx?.invokerCwd },
+  ));
 }
 
 export async function printJobState(state: JobState, repoRoot: string = process.cwd()): Promise<void> {

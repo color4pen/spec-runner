@@ -517,8 +517,10 @@ describe("TC-015: archive --dry-run removed, inbox --dry-run unchanged", () => {
     expect(content).not.toContain("dryRun");
   });
 
-  it("src/cli/command-registry.ts ARCHIVE_USAGE help text has no --dry-run line", async () => {
-    const content = await readSrc("src/cli/command-registry.ts");
+  it("src/cli/archive.ts ARCHIVE_USAGE help text has no --dry-run line", async () => {
+    // After handler extraction (T-10): ARCHIVE_USAGE is defined in archive.ts, not command-registry.ts.
+    // command-registry.ts re-exports it via `export { ARCHIVE_USAGE } from "./archive.js"`.
+    const content = await readSrc("src/cli/archive.ts");
     // The ARCHIVE_USAGE string definition must not mention --dry-run
     const archiveUsageMatch = /const ARCHIVE_USAGE\s*=\s*`([^`]*)`/s.exec(content);
     expect(archiveUsageMatch).not.toBeNull();
@@ -539,8 +541,8 @@ describe("TC-015: archive --dry-run removed, inbox --dry-run unchanged", () => {
     // Inbox run section still has dry-run flag in INBOX_RUN_USAGE and in its handler
     expect(content).toContain("INBOX_RUN_USAGE");
     expect(content).toContain("--dry-run");
-    // The inbox handler still passes dryRun
-    expect(content).toContain("runInboxRun");
+    // After handler extraction (T-11): the inbox handler is handleInboxRun (imported from inbox.ts)
+    expect(content).toContain("handleInboxRun");
   });
 });
 

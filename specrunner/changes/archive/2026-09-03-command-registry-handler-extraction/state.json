@@ -1,0 +1,250 @@
+{
+  "version": 2,
+  "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
+  "createdAt": "2026-09-02T13:13:05.155Z",
+  "updatedAt": "2026-09-03T08:58:42.157Z",
+  "request": {
+    "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
+    "type": "refactoring",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1108,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "69b570c62ca82e821ffb567dad9fe8f901449cbd",
+    "90e9503c7ab69e9d24b345be6c477a193d2ef231",
+    "1a6a1ecae9013cf783fe333a8d613bb62093ff04",
+    "d033aa156be6c1f34050c42d6fbbba9b59df81c3",
+    "4808f641979c728b36b90e1eb02c2f559107061e",
+    "94f828c8594bd945519166cbfd4094e8ca6e6218",
+    "674ed8396e8c32ba01bfb3d5d195e6bc77f3f792",
+    "6e857a6612867c35fd18386e885659b8e24bed8e",
+    "a73a4bb4c7e2dd9b9ac85a8c320410ad277cd747",
+    "e939a80f668f05b2b78059702ec69abecbcfbba0",
+    "982292803bb05818cb7cced9ea3f1a9430693411",
+    "1410715aec4cca280d7454813c68617fd18ce00e",
+    "3ad20b35273bd676da65b0c2d101501272bf3a47",
+    "603cb90eb9558f44eef462ecb64aa0dda9b1da5a",
+    "4920cab892428333b8eaebf659a5084d938e92eb",
+    "327c5a30bc5cbe76ebb3b9ed3576b41eeccb0e3e",
+    "43988f258088b9898f7170dc1faf4dade53d45e4",
+    "754305b1a288aa2ce29e4fe0e053cebd8a3752ea",
+    "4128bc3a2151927226e0fab731f24b4edbb2c1d3",
+    "829e228286959fc1f36170f9deb5e265f25ae45f",
+    "6e872902059efa8593b340d786acaa2e04c3bb7a",
+    "8f8882d8a071546e33c92b20dd433b79346bb5f0",
+    "dd3c5481281f4699e2567eacdebc7d74f978e88c",
+    "2f5155dca5b32745217c82b59c26aafba3ffe756",
+    "76883dcdf1cb9c16eed49642b515564bfd3d63fb",
+    "c4d1308ca752953e38185c612dfa18fd2b5ca94f",
+    "a24b2569195a813900abb678d52b5c849a65a2c2",
+    "cdf0c79ba5b8cb332f3e5616dbfac647dfc1887d",
+    "9a26f7a2237af0c5aa946a55a5c1a55e4334ee52",
+    "fefe124465898d6aba439d839338cc5b69bf1e44",
+    "e930d6c8285deb572771c10a60301f242a7a759c",
+    "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a",
+    "71eae66d336e2939267a8790b29f320fa9579e05",
+    "ce63cb52db82c25b577cf9fddc8e438f0f39c9af",
+    "a5e38ca74495bd43ab09115f3ba1fcf517e6b379",
+    "23f938db7dfec9715b03fb10a1e638c2b68b8a29",
+    "7d29a5d7f1979ffe3ca925a88557c017f00de42e",
+    "53f1ca59a604a8308208bf145006248d69274ff5",
+    "4b15207b1277aa5a2c53cd4583fe8693f26a447c",
+    "4b721f99ffc720178fcf7106af23454b824bd81e",
+    "fe42121bfa0bea0dcaa9696755c673d54e70cbcf",
+    "867ffa417e3db9971006cd4fb36fc66a1687fd4e",
+    "ffbe267c3ff4a16ea45cd321640bc94d49966e3e",
+    "3a585c09e52084d6b0e5ebbb309187003f65399c",
+    "025e1a09aa1f514456f65f1c2adfb6d1e23b2b39",
+    "ecb5d5dc10e0fdf2819b9e7e5528cc0076ec79b9",
+    "cd6ebbef0ad00fdf78d41a5e71871bc9bd2cf6ba",
+    "b3c3efc360b9df0c628c325f067647a819d5dbf1",
+    "f79b57262aeb50f4ce108e53164aa44bf90049af",
+    "5446827e0f62fe2ff2747e2d7c7650fe83c8fe92",
+    "e572cee332e8377153deb017e2648986f878d19e",
+    "0ba8cad1315fbb76879a32eb4645089c67558cbe",
+    "1c5fbd2c7659b6d8df22ecb0dd5ac902951b7331",
+    "e830b718507ffd0cec07919f80e4882959b95885",
+    "0b2e572431703d052a8805d7b06be84f251ffc84",
+    "80253a5033237971e92fed80df1ca1244b76532e",
+    "6b539376b570853d441e793cfc624d9607996f0d"
+  ],
+  "touchedFiles": {
+    "request-review": [],
+    "design": [
+      "src/cli/command-registry.ts",
+      "src/cli/run.ts",
+      "src/cli/resume.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/command-registry.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/cli/scaffold-handlers.ts"
+    ],
+    "code-review": [
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "bin/specrunner.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/job-archive-handler.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/usage-handler.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "src/cli/command-context.ts",
+      "src/cli/command-handler.ts"
+    ],
+    "code-fixer": [
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/usage-handler.ts"
+    ],
+    "regression-gate": [
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/scaffold-handlers.ts"
+    ],
+    "conformance": []
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "Operator 裁定（code-review iter 1 の 3 findings に対して）:\n\nFinding 3（bin/specrunner.ts の duck-type guard isFlagParseError / isSpecRunnerError、decision-needed）: 受け入れる。handler を別モジュールに抽出したことで、main() を vi.resetModules() 付きで呼ぶ既存テスト（tests/unit/cli/*.test.ts、10 本）で module 境界を跨ぐ error の instanceof が落ちるのを回避する companion fix として R3a に含める。production の挙動は不変。差し戻し不要。ただし design.md に「抽出に伴う companion fix」として 1 段落で記録すること。\n\nFinding 1（architecture-ratchet Check 3 が regex 実装、medium）: 修正する。design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査し、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import も検出できることを確認するテストケースを追加する。\n\nFinding 2（scaffold-handlers.ts / usage-handler.ts の ctx!.invokerCwd、low）: 実装側を採用する。process.cwd() には戻さず、tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx.invokerCwd（dispatch 時に process.cwd() を capture、同値）に更新して整合させる。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない。",
+      "step": "code-review",
+      "recordedAt": "2026-09-02T23:46:49.602Z"
+    },
+    {
+      "text": "Operator 裁定（code-review iter 2 / CANON_FINDING_ESCALATION への復帰）:\n\n保護正典は operator-apply commit 098ccab8 で修正済み（feature branch に push 済み）。内容: tasks.md T-14 / T-15 と test-cases.md TC-023 を ctx!.invokerCwd に更新（Finding 2、実装側を採用）、design.md に D6「bin/specrunner.ts の duck-type error guard（抽出に伴う companion fix）」を追加（Finding 3、受け入れ）。この 2 件は解消済みとして扱い、再指摘しないこと。\n\n残る Finding 1（medium、fixable）は code-fixer で修正する: src/cli/__tests__/architecture-ratchet.test.ts の Check 3 を design.md §D4 / tasks.md T-17 のとおり @typescript-eslint/parser（既存 devDependency）で ImportDeclaration を走査する実装に置き換え、importKind === 'type' を除外した value import の source が command-registry を指すものを violation とする。複数行 import（import {\\n COMMANDS\\n} from \"../command-registry.js\"）を検出できることを確認するテストケースを追加する。\n\n制約は変えない: command-registry.ts に inline handler / process.exit を戻さない、repo 全体の production process.exit 件数（79）を変えない、CLI contract snapshot を変えない、bin/specrunner.ts の duck-type guard は維持する。",
+      "step": "code-review",
+      "recordedAt": "2026-09-03T00:31:48.836Z"
+    },
+    {
+      "text": "PR #1109 の review で 4 件の blocking findings が出た。正典（specrunner/changes/command-registry-handler-extraction/）は operator-apply commit 83b863e5 で改訂済みなので、改訂後の canon に従って T-19〜T-23 を実装すること。canon と現状の不一致を再指摘する必要はない（既に改訂済み）。\n\nFinding 1（循環の隠蔽）: run.ts / resume.ts / archive.ts が ./from-issue.js / ./resume-from-issue.js / ./archive-from-issue.js を await import() している。これは run.ts ↔ from-issue.ts 等の相互 value import を隠しているだけ。D7 に従い handleJobStart（+ resolveSlugForDetach）/ handleJobResume / handleJobArchive を job-start-handler.ts / job-resume-handler.ts / job-archive-handler.ts に移し、primitive を static import する。src/cli 内部モジュール（./ で始まる specifier）への dynamic import は 0 件にし、ratchet にチェック 5（value-import SCC = 0）とチェック 6（./ dynamic import = 0）を追加する（T-19、TC-026）。\n\nFinding 2（テストの handler 複製）: src/cli/__tests__ の 7 ファイル（from-issue / resume-from-issue / archive-from-issue / command-registry-adopt-commits / command-registry-apply-canon / command-registry-resume / detach-flag-cli）が handler のロジックを mock 内に写している。実 handler を import し、primitive だけを vi.mock する形に置き換える（T-20、TC-027）。\n\nFinding 3（CLI contract snapshot が弱い）: 現在の normaliseSpec は path / flag 名 / boolean のみで、期待値も候補側で生成している。D5 に従い src/cli/__tests__/cli-contract-normalize.ts の normalizeCommandsTree（summary / flags の type,min,values,deprecated / args の name,required,count / help / visibility / aliasOf / requiresRepo / worktreeGuard / hasHandler / children）を実装し、base 483c75f7 の command-registry.ts から生成した fixtures/cli-contract.base.json と toEqual で比較する。.snap は削除する（T-21、TC-028）。fixture 生成手順は D5 に記載。\n\nFinding 4（bin/specrunner.ts の duck-type guard）: D6 を改訂した。isFlagParseError / isSpecRunnerError を撤回し、git checkout 483c75f7 -- bin/specrunner.ts で base と差分ゼロに戻す。vi.resetModules() による module registry 分裂はテスト側で直す（main と error class を resetModules 後に同一 registry から import する等）。production 側の回避策（duck-type、name 比較、Symbol.hasInstance）は禁止。D6 の再議論はしない（T-22、TC-029）。\n\nT-23: 実測値の before / after 表を specrunner/changes/command-registry-handler-extraction/metrics.md に置く（inline handler 数、registry 内 process.exit 数、registry 行数、production process.exit 数、各計測コマンド）。\n\n維持する制約: command-registry.ts に inline handler と process.exit を持ち込まない、production の process.exit 総数 79 を変えない、CLI contract は base と完全同一、R3a は純粋な移動（振る舞い変更なし）。",
+      "step": "implementer",
+      "recordedAt": "2026-09-03T05:58:27.264Z"
+    },
+    {
+      "text": "Operator ruling (regression-gate iter 7 escalation): ledger finding d581ef8e (\"use process.cwd() in scaffold-handlers.ts\") is SUPERSEDED by canon tasks.md T-14 and test-cases.md TC-023 (operator ruling from code-review iter 1 Finding 2). The authoritative value is ctx!.invokerCwd in src/cli/scaffold-handlers.ts and src/cli/usage-handler.ts. Retire d581ef8e as superseded; treat the current ctx!.invokerCwd implementation as FIXED (it satisfies ledger 7bdae8c0 and the spec). code-fixer and implementer must NOT switch these calls back to process.cwd(). No code change is required for this ruling; proceed to conformance.",
+      "step": "regression-gate",
+      "recordedAt": "2026-09-03T08:14:31.073Z"
+    },
+    {
+      "text": "Operator ruling (conformance iter 5 escalation, finding F-1): the spec.md scenario 'process.exit 件数が変化しない' measures with a raw grep that counts comment lines and test files. The normative MUST (no aggregation / reduction / return-contract change of process.exit; all 67 registry calls moved 1:1 to handlers) is satisfied as conformance iter 5 verified. The +3 JSDoc comment lines and +24 references in new test files required by spec Req-5/6 are out of scope of the MUST and are ACCEPTED by the operator. Treat F-1 as resolved by operator ruling; do not require code changes or spec-fixer for it. All other normative items already PASS. Approve conformance and proceed (reverification only if code changed, then pr-create / awaiting-archive).",
+      "step": "conformance",
+      "recordedAt": "2026-09-03T08:52:46.288Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1109",
+    "number": 1109,
+    "createdAt": "2026-09-03T08:58:40.930Z"
+  },
+  "_journal": {
+    "historyCount": 297,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 10,
+      "verification": 15,
+      "code-review": 7,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 5,
+      "custom-reviewers": 5,
+      "regression-gate": 8,
+      "conformance": 6,
+      "adr-gen": 2,
+      "pr-create": 2
+    }
+  }
+}

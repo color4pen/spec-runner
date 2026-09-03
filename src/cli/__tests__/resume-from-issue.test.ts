@@ -37,10 +37,17 @@ vi.mock("../../core/command/detach.js", () => ({
   detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
-vi.mock("../resume.js", () => ({
-  runResumeCore: vi.fn().mockResolvedValue(0),
-  runResume: vi.fn().mockResolvedValue(undefined),
-}));
+// T-20: Mock resume.js with only primitives.
+// The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
+// TC-012 (--from-issue + positional guard) is now tested through the real handler.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
+  return {
+    ...actual,
+    runResumeCore: vi.fn().mockResolvedValue(0),
+    runResume: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 vi.mock("../load-config-with-overlay.js", () => ({
   loadConfigWithOverlay: vi.fn().mockResolvedValue({

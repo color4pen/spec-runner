@@ -18,15 +18,15 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
 
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn() }));
-vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn(), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "" }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0), handleJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 
 let originalArgv: string[];

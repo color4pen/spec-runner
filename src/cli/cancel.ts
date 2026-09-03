@@ -7,8 +7,10 @@
  *   specrunner job cancel <jobId> [--force] [--purge] [--restore-draft]
  *   specrunner job cancel --all-terminated [--yes]
  */
+import type { ParsedArgs } from "./flag-parser.js";
+import type { CommandContext } from "./command-context.js";
 import { JobStateStore } from "../store/job-state-store.js";
-import { SpecRunnerError } from "../errors.js";
+import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
@@ -31,6 +33,33 @@ export interface RunCancelOptions {
    * arg-exclusivity checks) do not require it in type-checked tests (TC-020).
    */
   repoRoot?: string;
+}
+
+/** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
+export const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
+
+/**
+ * CLI handler for `specrunner job cancel`.
+ * Extracted from command-registry.ts inline handler (T-07).
+ */
+export async function handleJobCancel(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const jobId = parsed.positional;
+  if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
+    logError("invalid jobId format");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+  // SpecRunnerError propagates to bin/specrunner.ts unified catch
+  process.exit(
+    await runCancel({
+      jobId,
+      force: !!parsed.flags["force"],
+      purge: !!parsed.flags["purge"],
+      allTerminated: !!parsed.flags["all-terminated"],
+      yes: !!parsed.flags["yes"],
+      restoreDraft: !!parsed.flags["restore-draft"],
+      repoRoot: ctx!.repoRoot!,
+    }),
+  );
 }
 
 /**

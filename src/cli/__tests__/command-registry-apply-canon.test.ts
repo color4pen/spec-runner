@@ -6,9 +6,20 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock runResume to prevent actual job execution and capture call args
-vi.mock("../resume.js", () => ({
-  runResume: vi.fn().mockResolvedValue(undefined),
+// T-20: Mock resume.js with only the primitive runResume.
+// The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
+// Mocking runResume lets us assert on argument forwarding from the real handler.
+vi.mock("../resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../resume.js")>();
+  return {
+    ...actual,
+    runResume: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+// Mock resume-from-issue.js so the real handler's from-issue path doesn't fire
+vi.mock("../resume-from-issue.js", () => ({
+  runResumeFromIssue: vi.fn().mockResolvedValue(0),
 }));
 
 // Mock logger to prevent stderr output
@@ -17,6 +28,14 @@ vi.mock("../../logger/stdout.js", () => ({
   logError: vi.fn(),
   stdoutWrite: vi.fn(),
   resolveLogLevel: vi.fn().mockReturnValue("normal"),
+  setLogLevel: vi.fn(),
+}));
+
+vi.mock("../../core/command/detach.js", () => ({
+  DETACH_MARKER_ENV: "SPECRUNNER_DETACHED",
+  isDetachedChild: vi.fn().mockReturnValue(false),
+  stripDetachFlag: vi.fn((args: string[]) => args.filter((a) => a !== "--detach")),
+  detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
 import { COMMANDS } from "../command-registry.js";

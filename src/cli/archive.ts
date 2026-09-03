@@ -303,3 +303,30 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
   stderrWrite(archiveResult.message);
   return 2;
 }
+
+export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
+       specrunner job archive --from-issue <n> [options]
+
+Archive the completed change folder, remove worktree, and update job status.
+
+Plain archive (without --with-merge): pushes an archive record commit to the feature branch
+and leaves the job in awaiting-archive until the PR is merged. After the PR is merged,
+re-run the same command to complete the transition (archived status + worktree cleanup).
+
+Use --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.
+
+Arguments:
+  <slug>            Slug of the request to archive.
+
+Options:
+  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).
+                         Mutually exclusive with <slug>: specify exactly one.
+  --with-merge           Wait for PR checks to pass, merge, then archive
+  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
+                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
+  --help, -h             Show this help message
+
+Note: <slug> and --from-issue are mutually exclusive. Specify exactly one.
+`;
+
+

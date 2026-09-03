@@ -12,9 +12,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Must mock before importing main (vitest hoists vi.mock)
+// Only the primitives (runRun / runResume) are mocked; the registry dispatches through the
+// production handler modules (job-start-handler.ts / job-resume-handler.ts), so
+// TC-JSON-CLI-001 through 004 assert on the runRun/runResume call args those handlers produce.
 vi.mock("../../../src/cli/run.js", () => ({
   runRun: vi.fn().mockResolvedValue(undefined),
   runRunCore: vi.fn().mockResolvedValue(0),
+  handlePostPipelineState: vi.fn(),
 }));
 
 vi.mock("../../../src/cli/resume.js", () => ({
@@ -28,12 +32,12 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 }));
 
 // Silence other CLI modules
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn() }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn(), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn(), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn(), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn(), handleJobShow: vi.fn() }));
 vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn() }));
 
 let originalArgv: string[];

@@ -18,20 +18,32 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 vi.mock("../../../src/cli/run.js", () => ({
   runRun: vi.fn().mockResolvedValue(undefined),
   handlePostPipelineState: vi.fn(),
+  handleJobStart: vi.fn(),
 }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0) }));
-vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0) }));
+// TC-HELP-DISPATCH-06: handleJobResume stub must exit 2 + write "requires a <slug>" to stderr.
+// SpecRunnerError with exitCode 2 is used (instead of FlagParseError) to avoid module-isolation
+// instanceof issues; the dispatch writes e.message to stderr and exits with e.exitCode.
+// TC-HELP-DISPATCH-06: use importOriginal so the real handleJobResume (which throws FlagParseError
+// from the same flag-parser.js instance as bin/specrunner.ts) is used. Only runResume is stubbed.
+vi.mock("../../../src/cli/resume.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../src/cli/resume.js")>();
+  return { ...actual, runResume: vi.fn().mockResolvedValue(undefined) };
+});
+vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
+vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
+vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
+vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0), handleJobCancel: vi.fn(), VALID_JOB_ID_CHARS: /^[a-zA-Z0-9_-]+$/ }));
+vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn().mockResolvedValue(0), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "Archive the completed change folder" }));
+vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(0), handleJobShow: vi.fn() }));
 vi.mock("../../../src/cli/managed.js", () => ({
   runManagedSetup: vi.fn().mockResolvedValue(0),
   runManagedStatus: vi.fn().mockResolvedValue(0),
   runManagedReset: vi.fn().mockResolvedValue(0),
+  handleRuntimeSetup: vi.fn(),
+  handleRuntimeStatus: vi.fn(),
+  handleRuntimeReset: vi.fn(),
 }));
 vi.mock("../../../src/core/command/request.js", () => ({
   executeTemplate: vi.fn().mockReturnValue(0),

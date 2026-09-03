@@ -1,4 +1,5 @@
 import * as readline from "node:readline";
+import type { ParsedArgs } from "./flag-parser.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { createEnvironment, retrieveEnvironment } from "../adapter/managed-agent/environments.js";
@@ -314,6 +315,33 @@ async function createNewEnvironment(
   });
   logSuccess(`Environment created (${environment.id})`);
   return environment.id;
+}
+
+/**
+ * CLI handler for `specrunner runtime setup`.
+ * Extracted from command-registry.ts inline handler (T-12).
+ */
+/* c8 ignore next 3 */
+export async function handleRuntimeSetup(): Promise<void> {
+  process.exit(await runManagedSetup());
+}
+
+/**
+ * CLI handler for `specrunner runtime status`.
+ * Extracted from command-registry.ts inline handler (T-12).
+ */
+/* c8 ignore next 3 */
+export async function handleRuntimeStatus(): Promise<void> {
+  process.exit(await runManagedStatus());
+}
+
+/**
+ * CLI handler for `specrunner runtime reset`.
+ * Extracted from command-registry.ts inline handler (T-12).
+ */
+/* c8 ignore next 3 */
+export async function handleRuntimeReset(parsed: ParsedArgs): Promise<void> {
+  process.exit(await runManagedReset({ force: !!parsed.flags["force"] }));
 }
 
 function promptConfirm(message: string): Promise<boolean> {

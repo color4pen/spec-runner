@@ -1,59 +1,41 @@
 /**
  * Command registry for the specrunner CLI.
  * Single CommandSpec tree is the canonical source for parser / help / dispatch / guards.
- * No external dependencies.
+ * All handler implementations live in per-command or per-family modules.
  */
 
-import * as path from "node:path";
-import * as fs from "node:fs";
-import { runInit } from "./init.js";
-import { runManagedSetup, runManagedStatus, runManagedReset } from "./managed.js";
-import { runLogin } from "./login.js";
-import { runCredentialsSet, CREDENTIALS_SET_USAGE } from "./credentials.js";
-import { runRun, runRunCore } from "./run.js";
-import { runPs } from "./ps.js";
-import { runDoctor } from "./doctor.js";
-import { runArchive } from "./archive.js";
-import { runAttach } from "./attach.js";
-import { runCancel } from "./cancel.js";
-import { runPrune } from "./prune.js";
-import { runResume } from "./resume.js";
-import { runReopen } from "./reopen.js";
-import { runJobShow } from "./job-show.js";
-import { runJobStats } from "../core/command/job-stats.js";
-import { runInboxRun } from "./inbox.js";
-import { runConfigEffective } from "./config-effective.js";
-import { executeTemplate, executeValidate } from "../core/command/request.js";
-import { executePrompt } from "../core/command/request-prompt.js";
-import { executeList } from "../core/command/request-list.js";
-import { executeNew } from "../core/command/request-new.js";
-import { executeRulesNew } from "../core/command/rules-new.js";
-import { executeReviewersNew } from "../core/command/reviewers-new.js";
-import { showUsage } from "../core/command/usage-show.js";
-import { showUsageSummary } from "../core/command/usage-summary.js";
-import { resolveWithFallback as storeResolve } from "../core/request/store.js";
+import { CREDENTIALS_SET_USAGE } from "./credentials.js";
 import { AGENT_STEP_NAMES, CLI_STEP_NAMES } from "../core/step/step-names.js";
-import { FlagParseError } from "./flag-parser.js";
-import type { FlagDef, ParsedArgs } from "./flag-parser.js";
-import { resolveGitHubToken } from "../core/credentials/github.js";
-import { createGitHubClient } from "../adapter/github/github-client.js";
-import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
-import { logError, stderrWrite, resolveLogLevel } from "../logger/stdout.js";
-import { SpecRunnerError, EXIT_CODE } from "../errors.js";
-import type { CommandContext } from "./command-context.js";
-import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
-import { SLUG_REGEX } from "../util/validation-patterns.js";
-import { isDetachedChild, detachSelf } from "../core/command/detach.js";
-import { parseRequestMdRaw } from "../parser/request-md.js";
-import { runJobWait } from "./job-wait.js";
-import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
-import { runFromIssue } from "./from-issue.js";
-import { runResumeFromIssue } from "./resume-from-issue.js";
-import { runArchiveFromIssue } from "./archive-from-issue.js";
-import { getOriginInfo } from "../git/remote.js";
+import type { FlagDef } from "./flag-parser.js";
+import { GUIDE_TOPICS } from "../core/command/guide.js";
 
-/** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
-const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
+// Handler imports (T-03 through T-15)
+import { handleInit } from "./init.js";
+import { handleLogin } from "./login.js";
+import { handleCredentialsSet } from "./credentials.js";
+import { handleRequestNew, handleRequestPrompt, handleRequestLs, handleRequestTemplate, handleRequestValidate } from "./request-handlers.js";
+import { handleJobStart } from "./job-start-handler.js";
+import { handleJobLs, handleJobStats } from "./ps.js";
+import { handleJobShow } from "./job-show.js";
+import { handleJobWait } from "./job-wait.js";
+import { handleJobCancel } from "./cancel.js";
+import { handleJobResume } from "./job-resume-handler.js";
+import { handleJobReopen } from "./reopen.js";
+import { handleJobAttach } from "./attach.js";
+import { handleJobArchive } from "./job-archive-handler.js";
+import { ARCHIVE_USAGE } from "./archive.js";
+export { ARCHIVE_USAGE } from "./archive.js";
+import { handleJobPrune } from "./prune.js";
+import { handleConfigEffective } from "./config-effective.js";
+import { handleInboxRun } from "./inbox.js";
+import { handleRuntimeSetup, handleRuntimeStatus, handleRuntimeReset } from "./managed.js";
+import { handleDoctor, handleDoctorRepair } from "./doctor.js";
+import { handleRulesNew, handleReviewersNew } from "./scaffold-handlers.js";
+import { handleGuide } from "./guide-handler.js";
+import { handleUsage } from "./usage-handler.js";
+
+import type { CommandHandler } from "./command-handler.js";
+export type { CommandHandler } from "./command-handler.js";
 
 // ---------------------------------------------------------------------------
 // CommandSpec types (canonical)
@@ -73,8 +55,6 @@ export interface CommandHelp {
   /** Full text for --help output. */
   detail?: string;
 }
-
-export type CommandHandler = (parsed: ParsedArgs, ctx?: CommandContext) => Promise<void>;
 
 export interface CommandSpec {
   /** Full command path, e.g. ["job", "start"]. */
@@ -474,31 +454,6 @@ Options:
   --help, -h  Show this help message
 `;
 
-export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
-       specrunner job archive --from-issue <n> [options]
-
-Archive the completed change folder, remove worktree, and update job status.
-
-Plain archive (without --with-merge): pushes an archive record commit to the feature branch
-and leaves the job in awaiting-archive until the PR is merged. After the PR is merged,
-re-run the same command to complete the transition (archived status + worktree cleanup).
-
-Use --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.
-
-Arguments:
-  <slug>            Slug of the request to archive.
-
-Options:
-  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).
-                         Mutually exclusive with <slug>: specify exactly one.
-  --with-merge           Wait for PR checks to pass, merge, then archive
-  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
-                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
-  --help, -h             Show this help message
-
-Note: <slug> and --from-issue are mutually exclusive. Specify exactly one.
-`;
-
 export const REOPEN_USAGE = `Usage: specrunner job reopen <slug> --reason <text> [options]
 
 Transitions an awaiting-archive job to awaiting-resume without executing the pipeline.
@@ -532,38 +487,6 @@ Options:
 `;
 
 // ---------------------------------------------------------------------------
-// resolveSlugForDetach (kept in this file per handler-in-registry constraint)
-// ---------------------------------------------------------------------------
-
-function resolveSlugForDetach(input: string, cwd: string): string | null {
-  if (SLUG_REGEX.test(input)) return input;
-
-  const absPath = path.resolve(cwd, input);
-  if (fs.existsSync(absPath)) {
-    try {
-      const content = fs.readFileSync(absPath, "utf-8");
-      const raw = parseRequestMdRaw(content, absPath);
-      if (raw.slug && SLUG_REGEX.test(raw.slug)) return raw.slug;
-    } catch {
-      // ignore — fall through
-    }
-  }
-
-  try {
-    const resolved = storeResolve(cwd, input);
-    if (fs.existsSync(resolved)) {
-      const content = fs.readFileSync(resolved, "utf-8");
-      const raw = parseRequestMdRaw(content, resolved);
-      if (raw.slug && SLUG_REGEX.test(raw.slug)) return raw.slug;
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
-}
-
-// ---------------------------------------------------------------------------
 // Shared flag sets
 // ---------------------------------------------------------------------------
 
@@ -576,129 +499,6 @@ const RUN_JOB_FLAGS = {
   detach: { type: "boolean" },
   "from-issue": { type: "integer", min: 1 },
 } as const satisfies Record<string, FlagDef>;
-
-// ---------------------------------------------------------------------------
-// Shared handler (job start / run alias)
-// ---------------------------------------------------------------------------
-
-async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
-  const hasPositional = parsed.positional !== undefined;
-
-  // --- Presence check: need exactly one of positional or --from-issue ---
-  if (fromIssue === undefined && !hasPositional) {
-    logError("Usage error: 'job start' requires a <slug|file> positional or --from-issue <n>");
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-
-  // --- Exclusivity: --from-issue + positional ---
-  if (fromIssue !== undefined && hasPositional) {
-    logError("Usage error: --from-issue and positional <slug|file> are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-
-  // --- Exclusivity: --from-issue + --issue ---
-  if (fromIssue !== undefined && parsed.flags["issue"] !== undefined) {
-    logError("Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)");
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-
-  if (parsed.flags["detach"] && parsed.flags["json"]) {
-    logError("--detach and --json are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
-  }
-
-  // --- Route --from-issue before generic detach branch ---
-  if (fromIssue !== undefined) {
-    const logLevel = resolveLogLevel({
-      quiet: !!parsed.flags["quiet"],
-      verbose: !!parsed.flags["verbose"],
-      debug: !!parsed.flags["debug"],
-    });
-    const code = await runFromIssue(
-      fromIssue,
-      { detach: !!parsed.flags["detach"], logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] },
-      ctx,
-    );
-    process.exit(code);
-  }
-
-  // --- Positional path (confirmed present) ---
-  const requestMdPath = parsed.positional!;
-
-  if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
-    const repoRoot = ctx?.repoRoot ?? process.cwd();
-    const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
-    if (!slug) {
-      logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
-    }
-    const code = await detachSelf({
-      args: process.argv.slice(2),
-      repoRoot,
-      slug,
-      env: process.env as Record<string, string | undefined>,
-    });
-    process.exit(code);
-  }
-
-  const logLevel = resolveLogLevel({
-    quiet: !!parsed.flags["quiet"],
-    verbose: !!parsed.flags["verbose"],
-    debug: !!parsed.flags["debug"],
-  });
-  // --issue is now validated as integer by the parser (min: 1)
-  const issue = typeof parsed.flags["issue"] === "number" ? parsed.flags["issue"] : undefined;
-
-  // Positional + --issue: route through issue-target for Development linked branch registration
-  if (issue !== undefined) {
-    const repoRoot = ctx?.repoRoot ?? process.cwd();
-    let config;
-    try {
-      config = await loadConfigWithOverlay(repoRoot, repoRoot);
-    } catch (err) {
-      logError(`Failed to load config: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
-    }
-    const githubHost = resolveGitHubHost(config.github);
-    const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
-    let githubToken: string;
-    try {
-      const result = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-      githubToken = result.token;
-    } catch (err) {
-      logError(`Failed to resolve GitHub token: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
-    }
-    let owner: string;
-    let repo: string;
-    try {
-      const origin = await getOriginInfo(repoRoot, githubHost);
-      owner = origin.owner;
-      repo = origin.name;
-    } catch (err) {
-      logError(`Failed to resolve git origin: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
-    }
-    const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
-    const { startWithIssueLink } = await import("../core/issue-target/start.js");
-    const code = await startWithIssueLink({
-      repoRoot,
-      requestMdPath,
-      issueNumber: issue,
-      githubClient,
-      owner,
-      repo,
-      // Closure carries the CLI flags (logLevel / json / no-worktree) so the issue-target
-      // route preserves the same runRunCore contract as the plain positional route.
-      startPrimitive: (path, opts) =>
-        runRunCore(path, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
-    });
-    process.exit(code);
-  }
-
-  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
-}
 
 // ---------------------------------------------------------------------------
 // USAGE generation
@@ -760,13 +560,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       group: "Environment commands",
       summary: "  init                            config scaffold",
     },
-    handler: async (parsed, ctx) => {
-      const runtimeRaw = parsed.flags["runtime"] as string | undefined;
-      const runtime = runtimeRaw as "managed" | "local" | undefined;
-      const providerRaw = parsed.flags["provider"] as string | undefined;
-      const provider = providerRaw as "anthropic" | "openai" | undefined;
-      process.exit(await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! }));
-    },
+    handler: handleInit,
   },
 
   login: {
@@ -795,9 +589,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       summary: "  login                           GitHub Device Flow OAuth",
       detail: LOGIN_USAGE,
     },
-    handler: async (parsed) => {
-      process.exit(await runLogin({ force: !!parsed.flags["force"] }));
-    },
+    handler: handleLogin,
   },
 
   credentials: {
@@ -816,10 +608,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  credentials set <name>          headless 用 credential を credentials.json(0600) に保存",
           detail: CREDENTIALS_SET_USAGE,
         },
-        handler: async (parsed) => {
-          const name = parsed.positional!;
-          process.exit(await runCredentialsSet(name));
-        },
+        handler: handleCredentialsSet,
       },
     },
   },
@@ -854,11 +643,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Request commands",
           summary: "  request new <slug>              template から request.md を作る",
         },
-        handler: async (parsed, ctx) => {
-          const slug = parsed.positional!;
-          const requestType = (parsed.flags["type"] as string | undefined) ?? "new-feature";
-          process.exit(await executeNew(slug, requestType, ctx!.repoRoot!));
-        },
+        handler: handleRequestNew,
       },
       prompt: {
         path: ["request", "prompt"],
@@ -869,9 +654,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Request commands",
           summary: "  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）",
         },
-        handler: async () => {
-          process.exit(executePrompt());
-        },
+        handler: handleRequestPrompt,
       },
       ls: {
         path: ["request", "ls"],
@@ -882,9 +665,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Request commands",
           summary: "  request ls                      active 配下の request 一覧",
         },
-        handler: async () => {
-          process.exit(await executeList(process.cwd()));
-        },
+        handler: handleRequestLs,
       },
       template: {
         path: ["request", "template"],
@@ -897,10 +678,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Request commands",
           summary: "  request template                雛形 markdown を stdout",
         },
-        handler: async (parsed) => {
-          const requestType = (parsed.flags["type"] as string | undefined) ?? "new-feature";
-          process.exit(executeTemplate(requestType));
-        },
+        handler: handleRequestTemplate,
       },
       validate: {
         path: ["request", "validate"],
@@ -912,24 +690,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Request commands",
           summary: "  request validate <file|slug>    構文 / 規律 check",
         },
-        handler: async (parsed) => {
-          const input = parsed.positional!;
-          let filePath = path.resolve(process.cwd(), input);
-          if (!fs.existsSync(filePath)) {
-            if (!SLUG_REGEX.test(input)) {
-              logError(`Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
-              process.exit(2);
-            }
-            const slugResolved = storeResolve(process.cwd(), input);
-            if (!fs.existsSync(slugResolved)) {
-              logError(`'${input}' is neither a file path nor an active request slug.`);
-              stderrWrite("Hint: Use 'specrunner request ls' to see available slugs.");
-              process.exit(1);
-            }
-            filePath = slugResolved;
-          }
-          process.exit(await executeValidate(filePath));
-        },
+        handler: handleRequestValidate,
       },
     },
   },
@@ -950,7 +711,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)",
         },
-        handler: runJobHandler,
+        handler: handleJobStart,
       },
       ls: {
         path: ["job", "ls"],
@@ -966,34 +727,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job ls [--json]                 全 job 一覧（区分付き運用ビュー）",
         },
-        handler: async (parsed, ctx) => {
-          let githubClient = null;
-          try {
-            let githubHost = "github.com";
-            let githubApiBaseUrl = "https://api.github.com";
-            try {
-              const cfg = await loadConfigWithOverlay();
-              githubHost = resolveGitHubHost(cfg.github);
-              githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
-            } catch {
-              // Config not available — use defaults
-            }
-            const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-            githubClient = createGitHubClient(fetch, token, githubApiBaseUrl);
-          } catch {
-            // No token available — PR merge check will be skipped
-          }
-          process.exit(await runPs(
-            {
-              active: !!parsed.flags["active"],
-              all: !!parsed.flags["all"],
-              status: parsed.flags["status"] as string | undefined,
-              json: !!parsed.flags["json"],
-              repoRoot: ctx!.repoRoot ?? ctx!.invokerCwd,
-            },
-            githubClient,
-          ));
-        },
+        handler: handleJobLs,
       },
       show: {
         path: ["job", "show"],
@@ -1005,12 +739,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job show <jobId|slug>           job state 詳細",
         },
-        handler: async (parsed, ctx) => {
-          process.exit(await runJobShow(
-            parsed.positional!,
-            { repoRoot: ctx?.repoRoot ?? ctx?.invokerCwd },
-          ));
-        },
+        handler: handleJobShow,
       },
       wait: {
         path: ["job", "wait"],
@@ -1022,15 +751,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job wait <slug>                 job が settle するまで block (process-death gate)",
         },
-        handler: async (parsed, ctx) => {
-          const slug = parsed.positional;
-          if (!slug) {
-            stderrWrite("Error: 'job wait' requires a <slug> argument.");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-          const repoRoot = ctx?.repoRoot ?? process.cwd();
-          process.exit(await runJobWait(slug, { repoRoot }));
-        },
+        handler: handleJobWait,
       },
       cancel: {
         path: ["job", "cancel"],
@@ -1049,25 +770,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)",
         },
-        handler: async (parsed, ctx) => {
-          const jobId = parsed.positional;
-          if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
-            logError("invalid jobId format");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-          // SpecRunnerError propagates to bin/specrunner.ts unified catch
-          process.exit(
-            await runCancel({
-              jobId,
-              force: !!parsed.flags["force"],
-              purge: !!parsed.flags["purge"],
-              allTerminated: !!parsed.flags["all-terminated"],
-              yes: !!parsed.flags["yes"],
-              restoreDraft: !!parsed.flags["restore-draft"],
-              repoRoot: ctx!.repoRoot!,
-            }),
-          );
-        },
+        handler: handleJobCancel,
       },
       resume: {
         path: ["job", "resume"],
@@ -1096,120 +799,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)",
           detail: JOB_RESUME_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          if (parsed.flags["detach"] && parsed.flags["json"]) {
-            logError("--detach and --json are mutually exclusive");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-
-          const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
-
-          // Exclusivity: --from-issue + positional slug
-          if (fromIssue !== undefined && parsed.positional !== undefined) {
-            logError("Usage error: --from-issue and positional <slug> are mutually exclusive");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-
-          // Prompt resolution (shared by both --from-issue and slug paths)
-          const promptText = parsed.flags["prompt"] as string | undefined;
-          const promptFile = parsed.flags["prompt-file"] as string | undefined;
-
-          if (promptText !== undefined && promptFile !== undefined) {
-            throw new FlagParseError("--prompt and --prompt-file are mutually exclusive.");
-          }
-
-          let resolvedPrompt: string | undefined;
-          if (promptFile !== undefined) {
-            try {
-              resolvedPrompt = fs.readFileSync(path.resolve(process.cwd(), promptFile), "utf-8");
-            } catch (err) {
-              logError(`Cannot read prompt file '${promptFile}': ${(err as Error).message}`);
-              process.exit(1);
-            }
-          } else {
-            resolvedPrompt = promptText;
-          }
-
-          if (resolvedPrompt !== undefined) {
-            stderrWrite("Warning: --prompt の内容は agent prompt に直接注入されます。外部入力をそのまま渡さないでください。");
-          }
-
-          const logLevel = resolveLogLevel({
-            quiet: !!parsed.flags["quiet"],
-            verbose: !!parsed.flags["verbose"],
-            debug: !!parsed.flags["debug"],
-          });
-
-          // --from-issue path
-          if (fromIssue !== undefined) {
-            const code = await runResumeFromIssue(
-              fromIssue,
-              {
-                detach: !!parsed.flags["detach"],
-                prompt: resolvedPrompt,
-                from: parsed.flags["from"] as string | undefined,
-                force: !!parsed.flags["force"],
-                applyCanon: !!parsed.flags["apply-canon"],
-                adoptCommits: !!parsed.flags["adopt-commits"],
-                wontfix: parsed.flags["wontfix"] as string | undefined,
-                wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
-                noWorktree: !!parsed.flags["no-worktree"],
-                json: !!parsed.flags["json"],
-                logLevel,
-                cwd: process.cwd(),
-                repoRoot: ctx?.repoRoot,
-              },
-              ctx,
-            );
-            process.exit(code);
-          }
-
-          // Normal slug path — slug is required when --from-issue is absent
-          if (!parsed.positional) {
-            throw new FlagParseError("Usage error: 'job resume' requires a <slug> argument or --from-issue <n>");
-          }
-
-          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
-            const slug = parsed.positional;
-            if (!SLUG_REGEX.test(slug)) {
-              logError(`Invalid slug '${slug}' for --detach.`);
-              process.exit(EXIT_CODE.GENERAL_ERROR);
-            }
-            const repoRoot = ctx?.repoRoot ?? process.cwd();
-            const code = await detachSelf({
-              args: process.argv.slice(2),
-              repoRoot,
-              slug,
-              env: process.env as Record<string, string | undefined>,
-            });
-            process.exit(code);
-          }
-
-          try {
-            await runResume(parsed.positional, {
-              from: parsed.flags["from"] as string | undefined,
-              force: !!parsed.flags["force"],
-              logLevel,
-              cwd: process.cwd(),
-              repoRoot: ctx?.repoRoot,
-              prompt: resolvedPrompt,
-              json: !!parsed.flags["json"],
-              noWorktree: !!parsed.flags["no-worktree"],
-              applyCanon: !!parsed.flags["apply-canon"],
-              adoptCommits: !!parsed.flags["adopt-commits"],
-              wontfix: parsed.flags["wontfix"] as string | undefined,
-              wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
-            });
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
-        },
+        handler: handleJobResume,
       },
       reopen: {
         path: ["job", "reopen"],
@@ -1229,39 +819,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する",
           detail: REOPEN_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          const reason = parsed.flags["reason"] as string | undefined;
-
-          if (!reason) {
-            logError("--reason <text> is required for 'job reopen'.");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-
-          const logLevel = resolveLogLevel({
-            quiet: !!parsed.flags["quiet"],
-            verbose: !!parsed.flags["verbose"],
-            debug: !!parsed.flags["debug"],
-          });
-
-          try {
-            await runReopen(parsed.positional!, {
-              reason,
-              logLevel,
-              cwd: process.cwd(),
-              repoRoot: ctx?.repoRoot,
-              json: !!parsed.flags["json"],
-              noWorktree: !!parsed.flags["no-worktree"],
-            });
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
-        },
+        handler: handleJobReopen,
       },
       attach: {
         path: ["job", "attach"],
@@ -1278,36 +836,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する",
         },
-        handler: async (parsed, ctx) => {
-          const branch = parsed.flags["branch"] as string | undefined;
-          if (!branch) {
-            logError("--branch <branch> is required for 'job attach'.");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-          const logLevel = resolveLogLevel({
-            quiet: !!parsed.flags["quiet"],
-            verbose: !!parsed.flags["verbose"],
-            debug: !!parsed.flags["debug"],
-          });
-          try {
-            process.exit(
-              await runAttach({
-                branch,
-                cwd: process.cwd(),
-                repoRoot: ctx!.repoRoot!,
-                logLevel,
-              }),
-            );
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
-        },
+        handler: handleJobAttach,
       },
       archive: {
         path: ["job", "archive"],
@@ -1327,58 +856,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する",
           detail: ARCHIVE_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          const slug = parsed.positional as string | undefined;
-          const fromIssue = parsed.flags["from-issue"] as number | undefined;
-          const withMerge = !!parsed.flags["with-merge"];
-
-          // Strict XOR: exactly one of slug or --from-issue
-          if (fromIssue !== undefined && slug !== undefined) {
-            logError("'job archive': <slug> and --from-issue are mutually exclusive. Specify exactly one.");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-          if (fromIssue === undefined && slug === undefined) {
-            logError("'job archive': either <slug> or --from-issue is required.");
-            stderrWrite(ARCHIVE_USAGE);
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-
-          // Lenient parse of --merge-wait-ms (shared by both paths)
-          let mergeWaitMs: number | undefined;
-          const mergeWaitMsRaw = parsed.flags["merge-wait-ms"] as string | undefined;
-          if (mergeWaitMsRaw !== undefined) {
-            const parsed_ms = parseInt(String(mergeWaitMsRaw), 10);
-            if (!Number.isNaN(parsed_ms) && parsed_ms >= 0) {
-              mergeWaitMs = parsed_ms;
-            }
-            // Ignore invalid values (non-numeric) — lenient behavior
-          }
-
-          try {
-            if (fromIssue !== undefined) {
-              process.exit(
-                await runArchiveFromIssue(fromIssue, { withMerge, mergeWaitMs, cwd: process.cwd(), }, ctx),
-              );
-            } else {
-              process.exit(
-                await runArchive({
-                  slug: slug!,
-                  withMerge,
-                  cwd: process.cwd(),
-                  mergeWaitMs,
-                }),
-              );
-            }
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
-        },
+        handler: handleJobArchive,
       },
       prune: {
         path: ["job", "prune"],
@@ -1394,24 +872,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）",
           detail: PRUNE_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          try {
-            process.exit(
-              await runPrune({
-                force: !!parsed.flags["force"],
-                repoRoot: ctx!.repoRoot!,
-              }),
-            );
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
-        },
+        handler: handleJobPrune,
       },
       stats: {
         path: ["job", "stats"],
@@ -1425,9 +886,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Job commands",
           summary: "  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計",
         },
-        handler: async (parsed, ctx) => {
-          process.exit(await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] }));
-        },
+        handler: handleJobStats,
       },
     },
   },
@@ -1450,13 +909,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source",
           detail: CONFIG_EFFECTIVE_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          process.exit(await runConfigEffective({
-            requestType: parsed.flags["type"] as string | undefined,
-            json: !!parsed.flags["json"],
-            repoRoot: ctx?.repoRoot,
-          }));
-        },
+        handler: handleConfigEffective,
       },
     },
   },
@@ -1485,20 +938,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  inbox run                       issue から job を自動発火 (承認ラベル + /resume)",
           detail: INBOX_RUN_USAGE,
         },
-        handler: async (parsed, ctx) => {
-          // --limit is now validated as integer by the parser (min: 0)
-          const limit = typeof parsed.flags["limit"] === "number" ? parsed.flags["limit"] : undefined;
-          process.exit(
-            await runInboxRun({
-              dryRun: !!parsed.flags["dry-run"],
-              limit,
-              json: !!parsed.flags["json"],
-              verbose: !!parsed.flags["verbose"],
-              quiet: !!parsed.flags["quiet"],
-              repoRoot: ctx!.repoRoot!,
-            }),
-          );
-        },
+        handler: handleInboxRun,
       },
     },
   },
@@ -1521,11 +961,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Rules commands",
           summary: "  rules new <step> <slug>         step 用の rules ファイルを scaffold",
         },
-        handler: async (parsed) => {
-          const stepName = parsed.positionals[0]!;
-          const ruleSlug = parsed.positionals[1]!;
-          process.exit(await executeRulesNew(stepName, ruleSlug, process.cwd()));
-        },
+        handler: handleRulesNew,
       },
     },
   },
@@ -1548,10 +984,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Reviewer commands",
           summary: "  reviewers new <name>            カスタムレビューワーの雛形を scaffold",
         },
-        handler: async (parsed) => {
-          const name = parsed.positional!;
-          process.exit(await executeReviewersNew(name, process.cwd()));
-        },
+        handler: handleReviewersNew,
       },
     },
   },
@@ -1570,18 +1003,14 @@ export const COMMANDS: Record<string, CommandSpec> = {
           group: "Environment commands",
           summary: "  runtime setup|status|reset      Manage Anthropic runtime resources",
         },
-        handler: async () => {
-          process.exit(await runManagedSetup());
-        },
+        handler: handleRuntimeSetup,
       },
       status: {
         path: ["runtime", "status"],
         summary: "Show runtime status",
         flags: {},
         visibility: "normal",
-        handler: async () => {
-          process.exit(await runManagedStatus());
-        },
+        handler: handleRuntimeStatus,
       },
       reset: {
         path: ["runtime", "reset"],
@@ -1593,9 +1022,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         help: {
           detail: RUNTIME_RESET_USAGE,
         },
-        handler: async (parsed) => {
-          process.exit(await runManagedReset({ force: !!parsed.flags["force"] }));
-        },
+        handler: handleRuntimeReset,
       },
     },
   },
@@ -1613,19 +1040,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       summary: "  doctor                          Diagnose environment / config / auth prerequisites",
       detail: DOCTOR_USAGE,
     },
-    handler: async (parsed, ctx) => {
-      // default action: run diagnostics
-      try {
-        process.exit(await runDoctor({
-          json: !!parsed.flags["json"],
-          repoRoot: ctx?.repoRoot,
-          invokerCwd: ctx?.invokerCwd,
-        }));
-      } catch (err: unknown) {
-        stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-        process.exit(EXIT_CODE.GENERAL_ERROR);
-      }
-    },
+    handler: handleDoctor,
     children: {
       repair: {
         path: ["doctor", "repair"],
@@ -1634,25 +1049,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         requiresRepo: true, // override: repair requires repo even though doctor doesn't
         visibility: "repair",
         help: { detail: "Usage: specrunner doctor repair <slug>\n\nRepair the occupancy sidecar for the given slug.\n" },
-        handler: async (parsed, ctx) => {
-          const slug = parsed.positional;
-          if (!slug) {
-            stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
-            stderrWrite("Usage: specrunner doctor repair <slug>\n");
-            process.exit(2);
-            return;
-          }
-          const repoRoot = ctx?.repoRoot ?? process.cwd();
-          try {
-            const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
-            const result = await repairSlugOccupancySidecar(repoRoot, slug);
-            stderrWrite(result.message + "\n");
-            process.exit(0);
-          } catch (err: unknown) {
-            stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
-            process.exit(EXIT_CODE.GENERAL_ERROR);
-          }
-        },
+        handler: handleDoctorRepair,
       },
     },
   },
@@ -1667,9 +1064,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       group: "Guide",
       summary: `  guide [topic]                   運用ガイドを表示 (topics: ${GUIDE_TOPICS.map((t) => t.name).join(" ")})`,
     },
-    handler: async (parsed) => {
-      process.exit(runGuide(parsed.positional));
-    },
+    handler: handleGuide,
   },
 
   usage: {
@@ -1678,14 +1073,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
     flags: {},
     args: [{ name: "slug", required: false }],
     visibility: "operator",
-    handler: async (parsed) => {
-      const slug = parsed.positional;
-      if (slug) {
-        process.exit(await showUsage(slug, process.cwd()));
-      } else {
-        process.exit(await showUsageSummary(process.cwd()));
-      }
-    },
+    handler: handleUsage,
   },
 };
 
