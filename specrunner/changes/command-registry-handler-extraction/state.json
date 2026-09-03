@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T00:33:35.691Z",
+  "updatedAt": "2026-09-03T00:35:05.270Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -77,7 +77,8 @@
     "1410715aec4cca280d7454813c68617fd18ce00e",
     "3ad20b35273bd676da65b0c2d101501272bf3a47",
     "603cb90eb9558f44eef462ecb64aa0dda9b1da5a",
-    "4920cab892428333b8eaebf659a5084d938e92eb"
+    "4920cab892428333b8eaebf659a5084d938e92eb",
+    "327c5a30bc5cbe76ebb3b9ed3576b41eeccb0e3e"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -109,6 +110,9 @@
     ],
     "code-review": [
       "src/cli/__tests__/architecture-ratchet.test.ts"
+    ],
+    "code-fixer": [
+      "src/cli/__tests__/architecture-ratchet.test.ts"
     ]
   },
   "resumePoint": null,
@@ -125,8 +129,37 @@
       "recordedAt": "2026-09-03T00:31:48.836Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -135,7 +168,11 @@
       "spec-fixer": 1,
       "implementer": 3,
       "verification": 3,
-      "code-review": 3
+      "code-review": 3,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
