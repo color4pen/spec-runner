@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T08:52:46.403Z",
+  "updatedAt": "2026-09-03T08:58:42.157Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
   "pipelineId": "standard",
@@ -117,7 +117,9 @@
     "0ba8cad1315fbb76879a32eb4645089c67558cbe",
     "1c5fbd2c7659b6d8df22ecb0dd5ac902951b7331",
     "e830b718507ffd0cec07919f80e4882959b95885",
-    "0b2e572431703d052a8805d7b06be84f251ffc84"
+    "0b2e572431703d052a8805d7b06be84f251ffc84",
+    "80253a5033237971e92fed80df1ca1244b76532e",
+    "6b539376b570853d441e793cfc624d9607996f0d"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -159,13 +161,7 @@
       "src/cli/__tests__/architecture-ratchet.test.ts",
       "src/cli/scaffold-handlers.ts"
     ],
-    "conformance": [
-      "src/cli/command-registry.ts",
-      "src/cli/architecture-ratchet.test.ts",
-      "src/cli/__tests__/architecture-ratchet.test.ts",
-      "src/cli/scaffold-handlers.ts",
-      "src/cli/usage-handler.ts"
-    ]
+    "conformance": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -228,10 +224,10 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/1109",
     "number": 1109,
-    "createdAt": "2026-09-03T02:24:50.912Z"
+    "createdAt": "2026-09-03T08:58:40.930Z"
   },
   "_journal": {
-    "historyCount": 283,
+    "historyCount": 297,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -239,16 +235,16 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 10,
-      "verification": 14,
+      "verification": 15,
       "code-review": 7,
       "code-fixer": 5,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 5,
       "custom-reviewers": 5,
       "regression-gate": 8,
-      "conformance": 5,
-      "adr-gen": 1,
-      "pr-create": 1
+      "conformance": 6,
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
