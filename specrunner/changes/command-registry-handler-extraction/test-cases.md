@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 25 cases
-- **Automated** (unit/integration): 23
+- **Total**: 30 cases
+- **Automated** (unit/integration): 27
 - **Manual**: 0
-- **Priority**: must: 13, should: 11, could: 1
+- **Priority**: must: 18, should: 11, could: 1
 
 ---
 
@@ -196,18 +196,18 @@ AND `command-registry.ts` から `executeTemplate`・`executeValidate`・`execut
 
 ---
 
-### TC-015: handleJobStart が run.ts に export され resolveSlugForDetach が command-registry から消えている
+### TC-015: handleJobStart が job-start-handler.ts に export され resolveSlugForDetach が command-registry から消えている
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md > T-05
+**Source**: tasks.md > T-05, T-19; design.md > D7（PR #1109 review による改訂）
 
-**GIVEN** T-05 の抽出が完了している
-**WHEN** `src/cli/run.ts` の export 一覧と `src/cli/command-registry.ts` のソースを確認する
-**THEN** `run.ts` に `handleJobStart` が named export されている
+**GIVEN** T-05 と T-19 の抽出が完了している
+**WHEN** `src/cli/job-start-handler.ts`・`src/cli/run.ts` の export 一覧と `src/cli/command-registry.ts` のソースを確認する
+**THEN** `job-start-handler.ts` に `handleJobStart` と `resolveSlugForDetach` が named export されている（`run.ts` には存在しない）
 AND `command-registry.ts` に `resolveSlugForDetach` の定義が存在しない
 AND `COMMANDS.job.children.start.handler` が `handleJobStart` を参照している（`handler.name === "handleJobStart"`）
-AND `handleJobStart` は `--from-issue` 経由の `runFromIssue` 呼び出しと dynamic import `startWithIssueLink` を含む全分岐を維持している
+AND `handleJobStart` は `--from-issue` 経由の `runFromIssue` 呼び出し（`./from-issue.js` からの static import）と dynamic import `startWithIssueLink`（`../core/issue-target/start.js`）を含む全分岐を維持している
 
 ---
 
@@ -230,9 +230,9 @@ AND `COMMANDS.job.children.ls.handler` と `COMMANDS.job.children.stats.handler`
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md > T-08
+**Source**: tasks.md > T-08, T-19
 
-**GIVEN** `src/cli/resume.ts` に `handleJobResume` が実装されている
+**GIVEN** `src/cli/job-resume-handler.ts` に `handleJobResume` が実装されている（T-19 改訂）
 **WHEN** `--prompt-file <path>` フラグと `--prompt` フラグの両方を同時に指定して handleJobResume を呼び出す
 **THEN** `--prompt` と `--prompt-file` の排他チェックが先行し、両指定時はエラーとして終了する
 AND `--prompt-file` のみ指定した場合は `fs.readFileSync` でファイルを読み込み prompt として使用する
@@ -243,12 +243,12 @@ AND `--prompt-file` のみ指定した場合は `fs.readFileSync` でファイ�
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md > T-08
+**Source**: tasks.md > T-08, T-19; design.md > D7（PR #1109 review による改訂）
 
-**GIVEN** `src/cli/resume.ts` に `handleJobResume` が実装されている
+**GIVEN** `src/cli/job-resume-handler.ts` に `handleJobResume` が実装されている
 **WHEN** `--from-issue` フラグを指定して handleJobResume を呼び出す
 **THEN** positional 引数との排他チェックが先行する
-AND `runResumeFromIssue` が呼ばれ、戻り値が `process.exit(code)` に渡される
+AND `runResumeFromIssue`（`./resume-from-issue.js` からの static import）が呼ばれ、戻り値が `process.exit(code)` に渡される
 AND `--detach` / `--json` の排他チェックも維持されている
 
 ---
@@ -342,19 +342,88 @@ AND `COMMANDS.runtime.children` の各 handler が named reference になって�
 
 ---
 
-### TC-025: architecture-ratchet.test.ts が 4 チェックを実装しすべてグリーンである
+### TC-025: architecture-ratchet.test.ts が 6 チェックを実装しすべてグリーンである
 
 **Category**: unit
 **Priority**: must
-**Source**: tasks.md > T-17, design.md > D4
+**Source**: tasks.md > T-17, T-19; design.md > D4
 
 **GIVEN** `src/cli/__tests__/architecture-ratchet.test.ts` が新規作成されている
 **WHEN** `bun run test` を実行する
-**THEN** 以下の 4 チェックがすべてグリーンである:
+**THEN** 以下の 6 チェックがすべてグリーンである:
 1. **handler.name チェック**: `COMMANDS` ツリーを再帰的に走査し、全 handler の `.name` が `"handler"` でないことを確認する（inline handler が存在する場合はどの command path で違反したかのメッセージとともに失敗する）
 2. **process.exit ゼロ検証**: `command-registry.ts` のソースからコメントを除去した後 `process.exit` が 0 件であることを確認する
 3. **import cycle ゼロ検証**: `@typescript-eslint/parser` で handler モジュールの import 宣言を解析し `command-registry` への type-only でない ImportDeclaration が 0 件であることを確認する
 4. **並行 CLI 契約正本ゼロ検証**: `src/cli/` 配下のファイルで `export const COMMANDS` を定義するファイルが `command-registry.ts` のみであることを確認する
+5. **`src/cli` 内 value-import 循環ゼロ検証**: 相対 import から構築した value-import グラフに `src/cli/` 内で閉じる強連結成分（サイズ 2 以上）がないことを確認する
+6. **`src/cli` 内部モジュールへの dynamic import ゼロ検証**: specifier が `./` で始まる `import(...)` が 0 件であることを確認する
+
+---
+
+### TC-026: src/cli に value-import 循環と `./` dynamic import が存在しない
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > D7, tasks.md > T-19（PR #1109 review Finding 1）
+
+**GIVEN** T-19 が完了し `job-start-handler.ts`・`job-resume-handler.ts`・`job-archive-handler.ts` が存在する
+**WHEN** `src/cli/` 配下（`__tests__` を除く）の `.ts` を `@typescript-eslint/parser` で解析し、相対 import の value-import グラフと `import(...)` 式の specifier 一覧を得る
+**THEN** `run.ts`・`resume.ts`・`archive.ts` は `./from-issue.js`・`./resume-from-issue.js`・`./archive-from-issue.js` を import しない（static / dynamic とも）
+AND `src/cli/` 内で閉じる強連結成分（サイズ 2 以上）が 0 件である
+AND specifier が `./` で始まる dynamic import が 0 件である（`grep -rn 'import("\./' src/cli --include=*.ts` も 0 件）
+AND `run.ts` に `await import("./from-issue.js")` を戻すと ratchet チェック 6 が失敗する
+
+---
+
+### TC-027: src/cli/__tests__ が handler を複製せず実 handler + primitive mock で検証する
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > D7「テストの方針」, tasks.md > T-20（PR #1109 review Finding 2）
+
+**GIVEN** T-20 が完了している
+**WHEN** `src/cli/__tests__/from-issue.test.ts`・`resume-from-issue.test.ts`・`archive-from-issue.test.ts`・`command-registry-adopt-commits.test.ts`・`command-registry-apply-canon.test.ts`・`command-registry-resume.test.ts`・`detach-flag-cli.test.ts` のソースを確認する
+**THEN** いずれの `vi.mock` factory にも `handleJobStart` / `handleJobResume` / `handleJobArchive` の関数本体（guard・routing・`process.exit` の写し）が存在しない
+AND 各テストは handler module（`../job-start-handler.js` 等）から実 handler を import し、mock は primitive（`runRunCore`・`runFromIssue`・`runResume`・`runResumeFromIssue`・`runArchive`・`runArchiveFromIssue` 等）に限定されている
+AND 7 ファイルのテスト数が T-20 前より減っていない
+
+---
+
+### TC-028: CLI contract fixture が base から再生成可能で候補と一致する
+
+**Category**: integration
+**Priority**: must
+**Source**: design.md > D5（改訂）, tasks.md > T-21（PR #1109 review Finding 3）
+
+**GIVEN** `src/cli/__tests__/fixtures/cli-contract.base.json` と `cli-contract-normalize.ts` が存在し、`__snapshots__/cli-contract-snapshot.test.ts.snap` が存在しない
+**WHEN** design.md D5 の手順で base `483c75f7` の `command-registry.ts` から fixture を再生成し、既存の fixture と diff する。さらに `bun run test` を実行する
+**THEN** 再生成した fixture と既存 fixture の diff が空である
+AND `cli-contract-snapshot.test.ts` が `toEqual(baseFixture)` でグリーンである
+AND fixture の各 leaf に `flags` の `type`・`min`・`values`・`deprecated`、`args` の `name`・`required`・`count`、`help` の `group`・`summary`・`detail`、`summary`・`visibility`・`aliasOf`・`requiresRepo`・`worktreeGuard`・`hasHandler` が含まれている
+
+---
+
+### TC-029: bin/specrunner.ts が base と差分ゼロで既存テストがグリーン
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > D6（改訂）, tasks.md > T-22
+
+**GIVEN** T-22 が完了している
+**WHEN** `git diff 483c75f7 -- bin/specrunner.ts` と `bun run test` を実行する
+**THEN** diff の出力が空である（`isFlagParseError` / `isSpecRunnerError` が存在せず `instanceof` 判定のまま）
+AND `tests/unit/cli/*.test.ts` を含む全テストがグリーンである
+AND テスト数が T-22 前より減っていない
+
+---
+
+### TC-030: metrics.md に before / after の実測値が揃っている
+
+**Category**: gate
+**Priority**: must
+**Source**: tasks.md > T-23, request.md > PR本文に載せる実測値（PR #1109 review Finding 4）
+
+verification: conformance が `specrunner/changes/command-registry-handler-extraction/metrics.md` を読み、request.md の全項目に before（base `483c75f7`）/ after（HEAD）/ 計測コマンドがあること、および同一コマンドで再計測した値と一致することを確認する
 
 ---
 
@@ -362,10 +431,10 @@ AND `COMMANDS.runtime.children` の各 handler が named reference になって�
 
 ```yaml
 result: completed
-total: 25
-automated: 23
+total: 30
+automated: 27
 manual: 0
-must: 13
+must: 18
 should: 11
 could: 1
 blocked_reasons: []

@@ -54,6 +54,13 @@ handler モジュールは `command-registry.ts` から値（関数・定数・�
 **When** handler モジュール（例: `resume.ts`）に `import { COMMANDS } from "../command-registry.js"` を追加する
 **Then** `architecture-ratchet.test.ts` の import cycle チェックが失敗する
 
+#### Scenario: src/cli 内で value-import の循環と内部モジュールへの dynamic import が存在しない
+
+**Given** 全抽出作業（T-03〜T-16、T-19）が完了した状態
+**When** `src/cli/` 配下（`__tests__` を除く）の相対 import から value-import グラフを構築し、あわせて `import(...)` 式の specifier を収集する
+**Then** `src/cli/` 内で閉じる強連結成分（サイズ 2 以上）が 0 件である
+**And** specifier が `./` で始まる dynamic import が 0 件である（`run.ts` ↔ `from-issue.ts` 等の循環を `await import()` で隠していない）
+
 ---
 
 ### Requirement: CommandSpec ツリーが CLI 契約の唯一の正本であり続ける
@@ -80,9 +87,10 @@ handler モジュールは `command-registry.ts` から値（関数・定数・�
 
 #### Scenario: CLI contract snapshot が変更前後で一致する
 
-**Given** T-01 で作成した `cli-contract-snapshot.test.ts.snap` が存在する
-**When** 全抽出作業（T-03〜T-16）を完了した後に `bun run test` を実行する
-**Then** `cli-contract-snapshot.test.ts` の snapshot 比較がグリーンであり、変更なし（0 diffs）で通過する
+**Given** base（merge-base = main `483c75f7`）の `command-registry.ts` から design.md D5 の手順で生成した `src/cli/__tests__/fixtures/cli-contract.base.json` が存在する
+**When** 全抽出作業（T-03〜T-16、T-19〜T-21）を完了した後に `bun run test` を実行する
+**Then** `cli-contract-snapshot.test.ts` が `normalizeCommandsTree(COMMANDS)` と fixture の `toEqual` 比較でグリーンである
+**And** fixture を同じ手順で base から再生成しても差分がない
 
 ---
 
@@ -119,3 +127,30 @@ R3a は process.exit の集約・削減・return contract 化を行わない（M
 **Given** 本リファクタリング前に `grep -r "process.exit" src/ --include="*.ts" | wc -l` で計測した件数がある
 **When** 全抽出作業完了後に同コマンドで再計測する
 **Then** 件数が同一である（削減も増加もしていない）
+
+---
+
+### Requirement: dispatch の error 境界（bin/specrunner.ts）を変更しない
+
+`bin/specrunner.ts` の `main()` における `FlagParseError` / `SpecRunnerError` の判定は base と同一の `instanceof` でなければならない（MUST）。テスト都合の module registry 分裂は production コードではなくテスト側で解消する（request.md 停止条件「dispatch error boundary の変更」）。
+
+#### Scenario: bin/specrunner.ts が base と差分ゼロである
+
+**Given** 全抽出作業と T-22 が完了した状態
+**When** `git diff 483c75f7 -- bin/specrunner.ts` を実行する
+**Then** 出力が空である
+**And** `bun run test` がグリーンである
+
+---
+
+### Requirement: 実測値の before / after 表を正典フォルダに置く
+
+request.md「PR本文に載せる実測値」の各項目を、before（base `483c75f7`）/ after（HEAD）/ 計測コマンドの表として `specrunner/changes/command-registry-handler-extraction/metrics.md` に記録しなければならない（MUST）。取得不能な項目は推測で埋めず理由を書く。
+
+#### Scenario: metrics.md に全項目の before / after がある
+
+**Given** T-23 が完了した状態
+**When** `metrics.md` を読み、記載された計測コマンドを HEAD で再実行する
+**Then** request.md「PR本文に載せる実測値」の全項目に before・after・計測コマンドがある
+**And** after の値が再実行結果と一致し、repository 全体の production `process.exit` 件数が before と after で一致する
+

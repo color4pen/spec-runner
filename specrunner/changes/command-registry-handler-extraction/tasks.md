@@ -2,6 +2,8 @@
 
 ## T-01: CLI contract pre-condition snapshot を作成する
 
+> **改訂（operator-apply, PR #1109 review）**: 本タスクの snapshot は T-21 で base 由来 fixture との全項目比較に置き換える。
+
 コードを変更する前に CLI 契約の構造スナップショットを確立し、抽出後も一致することを保証するテストを作成する。
 
 - [x] `src/cli/__tests__/cli-contract-snapshot.test.ts` を新規作成する
@@ -83,6 +85,8 @@
 
 ## T-05: job.start handler を run.ts へ抽出する
 
+> **改訂（operator-apply, PR #1109 review）**: 最終配置は T-19 のとおり `src/cli/job-start-handler.ts`。本タスクでの `run.ts` 配置は暫定であり、T-19 で移し替える。
+
 `runJobHandler` と `resolveSlugForDetach` を `command-registry.ts` から `run.ts` へ移動する。
 
 - [x] `resolveSlugForDetach(input: string, cwd: string): string | null` を `run.ts` へ移動する（`path`・`fs`・`storeResolve`・`parseRequestMdRaw`・`SLUG_REGEX` の必要な import を `run.ts` に追加する）
@@ -138,6 +142,8 @@
 
 ## T-08: job.resume handler を resume.ts へ抽出する
 
+> **改訂（operator-apply, PR #1109 review）**: 最終配置は T-19 のとおり `src/cli/job-resume-handler.ts`。本タスクでの `resume.ts` 配置は暫定であり、T-19 で移し替える。
+
 最も複雑な inline handler（100 行超）を抽出する。
 
 - [x] **`src/cli/resume.ts`**: `handleJobResume(parsed: ParsedArgs, ctx?: CommandContext): Promise<void>` を追加・export する
@@ -176,6 +182,8 @@
 ---
 
 ## T-10: job.archive handler を抽出し ARCHIVE_USAGE を移動する
+
+> **改訂（operator-apply, PR #1109 review）**: `handleJobArchive` の最終配置は T-19 のとおり `src/cli/job-archive-handler.ts`。`ARCHIVE_USAGE` の `archive.ts` 配置と re-export は変更しない。
 
 - [x] `ARCHIVE_USAGE` 文字列定数を `src/cli/archive.ts` へ移動し、export する
 - [x] **`src/cli/archive.ts`**: `handleJobArchive(parsed: ParsedArgs, ctx?: CommandContext): Promise<void>` を追加・export する
@@ -325,6 +333,8 @@ T-16 完了後に architecture ratchet test を追加し、回帰を機械的に
 
 ## T-18: CLI contract snapshot 一致検証と PR 掲載用メトリクス収集
 
+> **改訂（operator-apply, PR #1109 review）**: snapshot 一致検証は T-21 の fixture 比較に置き換える。メトリクスは T-23 で `metrics.md` として正典フォルダに置く。
+
 - [x] T-01 で作成した `cli-contract-snapshot.test.ts` を再実行し、snapshot が変更前後で完全一致することを確認する
   - mismatch が出た場合はハンドラの入れ替えミスを意味するため、command-registry.ts の COMMANDS ツリーを修正する
 - [x] 以下の before / after メトリクスを収集する（同一コマンド・方法で計測）:
@@ -345,3 +355,87 @@ T-16 完了後に architecture ratchet test を追加し、回帰を機械的に
 - `bun run build` が成功する
 - メトリクスが揃っており、before / after 対比が明確
 - repository 全体の `process.exit` 件数が before と after で一致する（R3a スコープ内で削減していない）
+
+---
+
+## T-19: job.start / job.resume / job.archive の handler を独立 module へ移し、`./` dynamic import を撤去する
+
+PR #1109 review Finding 1 への対応。design.md D7 を参照。
+
+- [ ] `src/cli/job-start-handler.ts` を新規作成し、`run.ts` から `handleJobStart` と `resolveSlugForDetach` を移動する（実装は変更しない）。`runRun` / `runRunCore` は `./run.js`、`runFromIssue` は `./from-issue.js` から static import する。`await import("./from-issue.js")` を撤去する。`startWithIssueLink` の dynamic import（`../core/issue-target/start.js`）はそのまま維持する
+- [ ] `src/cli/job-resume-handler.ts` を新規作成し、`resume.ts` から `handleJobResume` を移動する。`runResume` は `./resume.js`、`runResumeFromIssue` は `./resume-from-issue.js` から static import する。`await import("./resume-from-issue.js")` を撤去する
+- [ ] `src/cli/job-archive-handler.ts` を新規作成し、`archive.ts` から `handleJobArchive` を移動する。`runArchive`・`ARCHIVE_USAGE` は `./archive.js`、`runArchiveFromIssue` は `./archive-from-issue.js` から static import する。`await import("./archive-from-issue.js")` を撤去する
+- [ ] `run.ts` / `resume.ts` / `archive.ts` から移動した関数と、それにのみ使われていた import を削除する（`ARCHIVE_USAGE` は `archive.ts` に残す）
+- [ ] `command-registry.ts` の `job.start` / `job.resume` / `job.archive` の handler import を新 module に付け替える
+- [ ] `architecture-ratchet.test.ts` に design.md D4 のチェック 5（`src/cli` 内 value-import 循環ゼロ）とチェック 6（`./` 始まりの dynamic import ゼロ）を追加する。チェック 6 は `src/cli/run.ts` に `await import("./from-issue.js")` を戻すと失敗することをテストケースで確認する
+- [ ] `grep -rn 'import("\./' src/cli --include=*.ts` が 0 件であることを確認する
+
+**Acceptance Criteria**:
+- `handleJobStart`・`resolveSlugForDetach`・`handleJobResume`・`handleJobArchive` が各新 module に named export されている
+- `run.ts`・`resume.ts`・`archive.ts` は `*-from-issue.js` を import しない（static / dynamic とも）
+- `src/cli/` 内で `import("./` が 0 件、ratchet チェック 5・6 がグリーン
+- `bun run typecheck`・`bun run test` がグリーン
+
+---
+
+## T-20: テストの handler 複製 mock を撤去し、実 handler + primitive mock に置き換える
+
+PR #1109 review Finding 2 への対応。design.md D7「テストの方針」を参照。
+
+- [ ] 対象: `src/cli/__tests__/from-issue.test.ts`・`resume-from-issue.test.ts`・`archive-from-issue.test.ts`・`command-registry-adopt-commits.test.ts`・`command-registry-apply-canon.test.ts`・`command-registry-resume.test.ts`・`detach-flag-cli.test.ts`（`grep -ln 'mirrors the real\|vi.mock("../run.js"\|vi.mock("../resume.js"\|vi.mock("../archive.js"' src/cli/__tests__/*.ts` で列挙し、漏れがあれば加える）
+- [ ] 各テストで `vi.mock("../run.js")` 等の factory 内に書かれた handler の写し（guard・routing・`process.exit` の再実装）を削除し、handler は `../job-start-handler.js` 等から実物を import する
+- [ ] mock は primitive（`runRunCore`・`runRun`・`runFromIssue`・`runResume`・`runResumeFromIssue`・`runArchive`・`runArchiveFromIssue`・`detachSelf` 等）に限定する
+- [ ] テストの assertion（どの primitive がどの引数で呼ばれるか、exit code）は変えない。テストが検証していた挙動が実 handler で通らない場合は handler の移動ミスであり、テストではなく実装を直す
+- [ ] `src/cli/__tests__/*.test.ts` 内に `handleJob*` の関数本体を定義する `vi.mock` factory が残っていないことを確認する
+
+**Acceptance Criteria**:
+- 上記 7 ファイルの `vi.mock` factory に `handleJobStart` / `handleJobResume` / `handleJobArchive` の実装が存在しない
+- 7 ファイルとも `bun run test` でグリーン（テスト数は減らさない）
+
+---
+
+## T-21: CLI contract 構造比較を base 由来 fixture との全項目比較に置き換える
+
+PR #1109 review Finding 3 への対応。design.md D5（改訂）を参照。
+
+- [ ] `src/cli/__tests__/cli-contract-normalize.ts` を新規作成し、`normalizeCommandsTree(commands)` を移す。正規化対象: `path`・`summary`・`visibility`・`aliasOf`・`requiresRepo`・`worktreeGuard`・`args`（`name`・`required`・`count`）・`flags`（名前順、各 `FlagDef` の `type`・`min`・`values`・`deprecated`。`deprecated.message` が関数なら `"<function>"`）・`help`（`group`・`summary`・`detail`）・`hasHandler`・`children`（key 順、再帰）
+- [ ] D5 の手順で base `483c75f7` の `command-registry.ts` から `src/cli/__tests__/fixtures/cli-contract.base.json` を生成してコミットする。生成に使った一時ファイル（`command-registry.base.tmp.ts`・`dump-base.tmp.ts`）は削除する
+- [ ] `cli-contract-snapshot.test.ts` を `expect(normalizeCommandsTree(COMMANDS)).toEqual(baseFixture)` に書き換え、ヘッダコメントに base SHA と生成手順を記録する
+- [ ] `src/cli/__tests__/__snapshots__/cli-contract-snapshot.test.ts.snap` を削除する
+- [ ] fixture に全 top-level command（init, login, credentials, run, request, job, config, inbox, rules, reviewers, runtime, doctor, guide, usage）と `help.detail`（`ARCHIVE_USAGE` を含む）が含まれることを確認する
+
+**Acceptance Criteria**:
+- `cli-contract.base.json` が存在し、D5 の手順で再生成しても差分がない
+- `cli-contract-snapshot.test.ts` が `toMatchSnapshot` を使わず、`.snap` ファイルが存在しない
+- `bun run test` でグリーン
+
+---
+
+## T-22: bin/specrunner.ts の duck-type guard を撤回し、テスト側で module registry の分裂を止める
+
+PR #1109 review Finding 2（guard 部分）への対応。design.md D6（改訂）を参照。
+
+- [ ] `bin/specrunner.ts` を base に戻す: `git checkout 483c75f7 -- bin/specrunner.ts`（`isFlagParseError` / `isSpecRunnerError` を削除し `instanceof` 判定に戻す）
+- [ ] `bun run test` を実行し、`instanceof` 失敗で落ちる `tests/unit/cli/*.test.ts` を特定する
+- [ ] 落ちたテストごとに、`main`（`bin/specrunner.ts`）と error class を `vi.resetModules()` の後に `await import()` で同一 registry から取得するよう改める（または当該テストの `resetModules` を外す）。production コード側での回避は行わない
+- [ ] `git diff 483c75f7 -- bin/specrunner.ts` が空であることを確認する
+
+**Acceptance Criteria**:
+- `git diff 483c75f7 -- bin/specrunner.ts` が空
+- `bun run test` でグリーン（テスト数は減らさない）
+
+---
+
+## T-23: 実測値の before / after 表を metrics.md として正典フォルダに置く
+
+PR #1109 review Finding 4 への対応。request.md「PR本文に載せる実測値」を参照。
+
+- [ ] `specrunner/changes/command-registry-handler-extraction/metrics.md` を作成し、request.md の各項目を before（base `483c75f7`）/ after（HEAD）の表にする。各行に計測コマンドをそのまま併記する
+- [ ] 必須行: `command-registry.ts` 行数 / inline handler 数（`grep -c "handler: async"`）/ named handler reference 数 / registry 内 `process.exit` 件数 / repository 全体の `process.exit` 件数（T-18 の生 grep 件数と、`__tests__`・`*.test.ts` を除いた production 件数の両方）/ registry の fs・credential・GitHub client value import 数 / 抽出 handler module 数と command family 対応表 / `src/cli` value-import SCC 数 / contract 比較対象 command 数（fixture の leaf 数）/ `src/cli` 内 `./` dynamic import 数
+- [ ] before の値は `git show 483c75f7:<path>` または base の一時 checkout に対して同一コマンドで計測する
+- [ ] pr-create は既存 PR（existing-open）の本文を更新しないため、PR #1109 本文への転記は finalize 後に operator が行う（implementer の作業対象外）
+
+**Acceptance Criteria**:
+- `metrics.md` が存在し、全必須行に before / after / 計測コマンドがある
+- repository 全体の production `process.exit` 件数が before と after で一致する
+
