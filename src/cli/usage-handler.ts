@@ -13,8 +13,8 @@ export async function handleUsage(parsed: ParsedArgs, ctx?: CommandContext): Pro
   const slug = parsed.positional;
   // ctx is always provided by the dispatch layer; ctx! is safe here.
   if (slug) {
-    process.exit(await showUsage(slug, ctx!.invokerCwd));
+    process.exit(await showUsage(slug, process.cwd()));
   } else {
-    process.exit(await showUsageSummary(ctx!.invokerCwd));
+    process.exit(await showUsageSummary(process.cwd()));
   }
 }
