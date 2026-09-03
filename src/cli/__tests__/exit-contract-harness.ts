@@ -46,7 +46,7 @@ function normalise(lines: string[]): string[] {
  */
 export async function runCase(
   argv: string[],
-  configureMocks: () => void,
+  configureMocks: () => void | Promise<void>,
 ): Promise<ExitContractSnapshot> {
   const stdoutLines: string[] = [];
   const stderrLines: string[] = [];
@@ -77,8 +77,8 @@ export async function runCase(
     throw new Error(SENTINEL);
   });
 
-  // Apply per-case mock setup
-  configureMocks();
+  // Apply per-case mock setup (await to ensure async setup completes before import)
+  await configureMocks();
 
   try {
     const mod = await import("../../../bin/specrunner.js");

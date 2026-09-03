@@ -47,10 +47,10 @@ import type { ParsedArgs } from "../flag-parser.js";
  * Returns undefined if the subcommand hasn't been registered yet (RED state).
  */
 function getReopenHandler():
-  | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<void>)
+  | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<number>)
   | undefined {
   return COMMANDS["job"]?.children?.["reopen"]?.handler as
-    | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<void>)
+    | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<number>)
     | undefined;
 }
 
@@ -88,29 +88,19 @@ describe("TC-004-registry: job reopen without --reason exits with ARG_ERROR", ()
     expect(reopenCmd?.flags?.["from"]).toBeUndefined();
   });
 
-  it("TC-004-registry-c: handler exits with ARG_ERROR (2) when --reason is missing", async () => {
+  it("TC-004-registry-c: handler returns ARG_ERROR (2) when --reason is missing", async () => {
     const handler = getReopenHandler();
     // If reopen is not registered yet, this test fails here (expected RED state)
     expect(handler).toBeDefined();
 
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`process.exit(${String(code)})`);
-    });
+    const result = await handler!(
+      makeParsedArgs({
+        flags: {}, // --reason absent
+      }),
+    );
 
-    try {
-      await handler!(
-        makeParsedArgs({
-          flags: {}, // --reason absent
-        }),
-      );
-      // If we reach here, process.exit was not called — test fails
-      expect.fail("Expected process.exit(2) to be called");
-    } catch (err) {
-      const msg = (err as Error).message;
-      expect(msg).toMatch(/process\.exit\(2\)/);
-    } finally {
-      exitSpy.mockRestore();
-    }
+    // Handler must return exit code 2 (ARG_ERROR) without calling process.exit
+    expect(result).toBe(2);
   });
 
   it("TC-004-registry-d: missing --reason returns exit code before any pipeline execution", async () => {
@@ -139,28 +129,20 @@ describe("TC-012: providing --from to job reopen is rejected", () => {
     expect(reopenCmd?.flags?.["from"]).toBeUndefined();
   });
 
-  it("TC-012-b: handler exits with ARG_ERROR when only --from is provided (no --reason)", async () => {
+  it("TC-012-b: handler returns ARG_ERROR when only --from is provided (no --reason)", async () => {
     const handler = getReopenHandler();
     expect(handler).toBeDefined();
 
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`process.exit(${String(code)})`);
-    });
-
     // Even if the parser somehow passes --from through (e.g. unknown flag),
     // the handler must reject when --reason is absent
-    try {
-      await handler!(
-        makeParsedArgs({
-          flags: { from: "spec-review" }, // --from present, --reason absent
-        }),
-      );
-      expect.fail("Expected process.exit(2) to be called");
-    } catch (err) {
-      expect((err as Error).message).toMatch(/process\.exit\(2\)/);
-    } finally {
-      exitSpy.mockRestore();
-    }
+    const result = await handler!(
+      makeParsedArgs({
+        flags: { from: "spec-review" }, // --from present, --reason absent
+      }),
+    );
+
+    // Handler must return exit code 2 (ARG_ERROR) without calling process.exit
+    expect(result).toBe(2);
   });
 });
 

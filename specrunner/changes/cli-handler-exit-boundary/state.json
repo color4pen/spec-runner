@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "61bd403d-a2d9-4bd6-b4f7-0de1df4c2b94",
   "createdAt": "2026-09-03T13:03:55.638Z",
-  "updatedAt": "2026-09-03T15:41:32.518Z",
+  "updatedAt": "2026-09-03T15:50:24.052Z",
   "request": {
     "title": "refactor: CommandHandlerをexit code返却契約へ変更しprocess.exitをdispatch境界へ集約する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/cli-handler-exit-boundary-61bd403d",
   "error": null,
@@ -76,7 +76,8 @@
     "e2356422b5f43f7183f5cd77ecf39217b314b048",
     "977d93cd2748e215bd2ea95a5029ef14b0ce918c",
     "5ef267fb9686b9ffdfee09e9006e0693640a7208",
-    "c93b1828d1a7011a8562fb68a785f2f139839a8b"
+    "c93b1828d1a7011a8562fb68a785f2f139839a8b",
+    "b73d6f0283743348f25b027c4f33c16b7beb32d2"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -108,6 +109,26 @@
       "src/logger/stdout.ts",
       "src/cli/flag-parser.ts",
       "src/cli/command-context.ts"
+    ],
+    "code-review": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-exit-contract.test.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/job-archive-handler.ts",
+      "src/cli/doctor.ts",
+      "src/cli/reopen.ts",
+      "src/cli/prune.ts",
+      "src/cli/attach.ts",
+      "src/cli/__tests__/exit-contract-harness.ts",
+      "src/cli/__tests__/exit-contract-cases.ts",
+      "src/cli/__tests__/fixtures/cli-exit-contract.base.json",
+      "src/cli/cancel.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/generate-exit-contract-fixture.test.ts",
+      "src/cli/__tests__/command-registry-adopt-commits.test.ts",
+      "src/cli/job-start-handler.ts"
     ]
   },
   "resumePoint": null,
@@ -120,7 +141,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -128,7 +149,8 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 4,
-      "verification": 4
+      "verification": 4,
+      "code-review": 1
     }
   }
 }
