@@ -162,6 +162,8 @@ request.md の「74 件 / 24 ファイル」は text 一致（grep）の値で�
 
 **停止条件との関係**: 本判断は「stdout / stderr の文言変更」には当たらない（非 secret 入力に対して出力は同一）。ただし secret 混入時のみ出力が変わるため、design 上の明示判断として記録し、PR 本文にも記載する。
 
+**改訂（PR #1112 レビュー、operator 裁定）: D5 は撤回し、境界は base と同一の生 `process.stderr.write` を維持する。** 理由は 2 点。(1) `stderrWrite` は常に末尾へ改行を付加するため、改行終端の usage 文字列を渡すと `FlagParseError` 時の stderr 末尾が `\n` → `\n\n` に変わり、request の「文言・改行を含む observable behavior を完全維持」と T-12 の停止条件に抵触した。(2) 生出力だった entrypoint 経路へ `maskSensitive` を適用することは token 形状入力時の出力変更であり、本 refactoring に黙って含めるべき変更ではない。mask 境界の拡張は別 Issue / request として切り出して判断する。したがって集約後の境界出力は base の `bin/specrunner.ts` とバイト一致し、archive / attach / prune / reopen / resume の 5 command で handler 側 catch が行っていた mask は境界集約により失われる（既知の後退として別 Issue へ記録）。
+
 ### D6: 終了契約の base / candidate 比較は「in-process dispatch harness ＋ 先に採取した base fixture」で行う
 
 `src/cli/__tests__/` に次を追加する。
@@ -179,6 +181,12 @@ base fixture を「production 変更前に、最終形の harness で採取し�
 - subprocess で実 CLI を起動して base / candidate を比較 — 忠実だが、`SpecRunnerError` / 予期しない error / primitive の non-zero 透過を注入する手段がなく（fault injection 用の production コードを足すことになる）、base 用に worktree + 依存解決が必要で、実行時間も増える。
 - base commit の worktree で vitest を実行して fixture を生成 — 実現可能だが、node_modules の共有・vitest root 制約という再現手順の脆さを持ち込む。D6 の採用案は同じ証明力をより低いリスクで得る。
 - 既存テストの `process.exit` mock を単に return expectation に置換する — request が明示的に禁止している（外部契約の同一性を示せないため）。
+
+**改訂（PR #1112 レビュー、operator 裁定）**: 初回実装では fixture generator が `*.test.ts` として通常 suite に検出され、candidate 実行時に base fixture を上書きしていた（比較が循環し、fixture 採取 commit にも production 変更が同居していた）。これを次のように是正する。
+- generator は `src/cli/__tests__/exit-contract-generate.gen.ts`（`*.test.ts` に一致しない）とし、専用 config `vitest.exit-contract.config.ts` 経由の `bun run exit-contract:generate` でのみ実行する。通常 suite からは検出されない。
+- fixture は base commit（`de88d1b5`）の worktree で generator を実行して採取し、`fixtures/cli-exit-contract.base.provenance.json`（`baseCommit` / `generatedAt` / `productionDirtyFiles`）を併置する。fixture 採取 commit は production ファイルを含まない。
+- contract test は fixture を read-only として扱い、suite 実行前後の SHA-256 が一致することを guard する。
+- 各ケースの実行前に全 mock を既定実装へ reset してから case 固有 setup を適用する（`exit-contract-setup.ts` の `resetMockDefaults()`）。hoisted mock の実装は `vi.resetModules()` / `vi.restoreAllMocks()` では既定へ戻らず、EC-16 の worktree 設定が EC-18〜23 へ漏れていたため。
 
 **mock 対象の選定**: fault injection が必要なケースは、**base と candidate で呼び出し関係が変わらない cross-module primitive** だけを mock する。具体的には `src/cli/archive.ts` の `runArchive`（`job-archive-handler.ts` が別 module から import、base / candidate 同一）を用いて「0 返却」「7 返却（non-zero 透過）」「`SpecRunnerError` throw」「plain `Error` throw」を注入する。`runRun` / `runResume` は D2 で削除されるため mock 対象にしない。guard 系は `core/worktree/detection.js` の `detectWorktree` と `cli/command-context.js` の `buildCommandContext` を mock する（いずれも bin が import しており base / candidate 同一）。
 
