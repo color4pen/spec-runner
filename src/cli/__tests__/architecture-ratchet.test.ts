@@ -73,22 +73,26 @@ function listCliTsFiles(): string[] {
 // Check 1: inline handler = 0
 // ---------------------------------------------------------------------------
 
+/** Generic AST node shape used for property-access type narrowing. */
+type AstNode = Record<string, unknown>;
+
 /**
  * Return true if `node` is a function expression node (FunctionExpression or
  * ArrowFunctionExpression), possibly wrapped in a TSAsExpression cast.
  * This is used to detect `handler: async function myFn() {}` and
  * `handler: async () => {}` in CommandSpec object literals.
  */
-function isFunctionNode(node: any): boolean {
+function isFunctionNode(node: unknown): boolean {
   if (!node || typeof node !== "object") return false;
+  const n = node as AstNode;
   if (
-    node.type === "FunctionExpression" ||
-    node.type === "ArrowFunctionExpression"
+    n.type === "FunctionExpression" ||
+    n.type === "ArrowFunctionExpression"
   )
     return true;
   // Handle `(fn) as Handler` casts
-  if (node.type === "TSAsExpression" || node.type === "TSTypeAssertion") {
-    return isFunctionNode(node.expression);
+  if (n.type === "TSAsExpression" || n.type === "TSTypeAssertion") {
+    return isFunctionNode(n.expression);
   }
   return false;
 }
@@ -102,29 +106,32 @@ function isFunctionNode(node: any): boolean {
  * runtime) and named inline function expressions (`.name === "myFn"` at
  * runtime, which the pure runtime check misses).
  */
-function findInlineHandlerNodes(ast: any): string[] {
+function findInlineHandlerNodes(ast: unknown): string[] {
   const violations: string[] = [];
 
-  function walk(node: any): void {
+  function walk(node: unknown): void {
     if (!node || typeof node !== "object") return;
-    if (node.type === "Property") {
-      const key = node.key;
+    const n = node as AstNode;
+    if (n.type === "Property") {
+      const key = n.key as AstNode | null | undefined;
       const isHandlerKey =
         (key?.type === "Identifier" && key.name === "handler") ||
         (key?.type === "Literal" && key.value === "handler");
-      if (isHandlerKey && isFunctionNode(node.value)) {
-        const line = node.loc?.start.line ?? "?";
-        violations.push(`line ${line}: inline handler (${node.value.type})`);
+      if (isHandlerKey && isFunctionNode(n.value)) {
+        const loc = n.loc as { start: { line: number } } | null | undefined;
+        const line = loc?.start.line ?? "?";
+        const valueType = String((n.value as AstNode | null | undefined)?.type ?? "unknown");
+        violations.push(`line ${line}: inline handler (${valueType})`);
       }
     }
     // Recurse into all child nodes
-    for (const val of Object.values(node)) {
+    for (const val of Object.values(n)) {
       if (Array.isArray(val)) {
         for (const child of val) {
-          if (child && typeof child === "object" && child.type) walk(child);
+          if (child && typeof child === "object" && (child as AstNode).type) walk(child);
         }
-      } else if (val && typeof val === "object" && (val as any).type) {
-        walk(val as any);
+      } else if (val && typeof val === "object" && (val as AstNode).type) {
+        walk(val);
       }
     }
   }
