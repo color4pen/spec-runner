@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T01:35:45.325Z",
+  "updatedAt": "2026-09-03T01:40:50.931Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -94,7 +94,8 @@
     "9a26f7a2237af0c5aa946a55a5c1a55e4334ee52",
     "fefe124465898d6aba439d839338cc5b69bf1e44",
     "e930d6c8285deb572771c10a60301f242a7a759c",
-    "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a"
+    "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a",
+    "71eae66d336e2939267a8790b29f320fa9579e05"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -114,18 +115,20 @@
     "code-review": [
       "src/cli/command-registry.ts",
       "src/cli/__tests__/architecture-ratchet.test.ts",
-      "src/cli/scaffold-handlers.ts",
       "src/cli/command-handler.ts",
-      "src/cli/usage-handler.ts",
-      "src/cli/guide-handler.ts",
+      "src/cli/request-handlers.ts",
       "src/cli/run.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
       "src/cli/resume.ts",
       "bin/specrunner.ts",
-      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/scaffold-handlers.ts",
+      "src/cli/guide-handler.ts",
+      "src/cli/usage-handler.ts",
       "src/cli/ps.ts",
+      "src/cli/managed.ts",
+      "src/cli/doctor.ts",
       "src/cli/cancel.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/cli/request-handlers.ts"
+      "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
       "src/cli/__tests__/architecture-ratchet.test.ts"
@@ -184,7 +187,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 148,
+    "historyCount": 160,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -193,11 +196,11 @@
       "spec-fixer": 1,
       "implementer": 6,
       "verification": 8,
-      "code-review": 4,
+      "code-review": 5,
       "code-fixer": 3,
-      "cross-boundary-invariants": 2,
-      "scale-tolerance": 2,
-      "custom-reviewers": 2,
+      "cross-boundary-invariants": 3,
+      "scale-tolerance": 3,
+      "custom-reviewers": 3,
       "regression-gate": 3,
       "conformance": 2
     }
