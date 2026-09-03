@@ -1,31 +1,38 @@
 /**
- * Fixture generator for cli-exit-contract.test.ts.
+ * Fixture generator for cli-exit-contract.test.ts (standalone).
  *
- * Run this with:
- *   bun run test -- src/cli/__tests__/generate-exit-contract-fixture.test.ts
+ * This file is deliberately NOT named `*.test.ts`, so `bun run test` never
+ * discovers it and the normal suite can never overwrite the base fixture.
+ * It is only picked up by the dedicated config vitest.exit-contract.config.ts:
  *
- * It runs all 23 exit contract cases and writes the results to
- * src/cli/__tests__/fixtures/cli-exit-contract.base.json.
+ *   bun run exit-contract:generate
  *
- * This file is NOT part of the normal test suite — it is only run to
- * regenerate the fixture after intentional changes.
+ * Run it on a tree whose production files (src/cli/**, bin/specrunner.ts)
+ * match the base commit the contract is meant to pin.  It writes:
+ *   - fixtures/cli-exit-contract.base.json         (expected snapshots)
+ *   - fixtures/cli-exit-contract.base.provenance.json
+ *       { baseCommit, generatedAt, productionDirtyFiles }
+ * where productionDirtyFiles lists uncommitted changes under the production
+ * paths at generation time (must be empty for a trustworthy fixture).
  */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { EXIT_CONTRACT_CASES } from "./exit-contract-cases.js";
-import type { SetupKind } from "./exit-contract-cases.js";
 import { runCase } from "./exit-contract-harness.js";
-// NOTE: SpecRunnerError is NOT imported statically — see applySetup for reason
+import { resetMockDefaults, applySetup } from "./exit-contract-setup.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, "../../..");
 const FIXTURES_DIR = path.join(__dirname, "fixtures");
 const OUTPUT_FILE = path.join(FIXTURES_DIR, "cli-exit-contract.base.json");
+const PROVENANCE_FILE = path.join(FIXTURES_DIR, "cli-exit-contract.base.provenance.json");
 
 // ---------------------------------------------------------------------------
-// Mock declarations (same as cli-exit-contract.test.ts)
+// Mock declarations — keep in sync with cli-exit-contract.test.ts
 // ---------------------------------------------------------------------------
 
 vi.mock("../archive.js", async (importOriginal) => {
@@ -88,50 +95,23 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Apply setup (same as cli-exit-contract.test.ts)
+// Provenance helpers
 // ---------------------------------------------------------------------------
 
-async function applySetup(setup: SetupKind): Promise<void> {
-  if (setup.kind === "none") return;
+function git(args: string[]): string {
+  return execFileSync("git", args, { cwd: REPO_ROOT, encoding: "utf-8" }).trim();
+}
 
-  if (setup.kind === "archive-resolve") {
-    const { runArchive } = await import("../archive.js");
-    vi.mocked(runArchive).mockResolvedValue(setup.value);
-    return;
-  }
-
-  if (setup.kind === "archive-reject-specrunner-error") {
-    const { runArchive } = await import("../archive.js");
-    // Dynamic import before specrunner loads ensures same class instance for instanceof
-    const { SpecRunnerError } = await import("../../errors.js");
-    const err = new SpecRunnerError(setup.code, setup.hint, setup.message, setup.exitCode as 1 | 2);
-    vi.mocked(runArchive).mockRejectedValue(err);
-    return;
-  }
-
-  if (setup.kind === "archive-reject-plain") {
-    const { runArchive } = await import("../archive.js");
-    vi.mocked(runArchive).mockRejectedValue(new Error(setup.message));
-    return;
-  }
-
-  if (setup.kind === "worktree") {
-    const { detectWorktree } = await import("../../core/worktree/detection.js");
-    vi.mocked(detectWorktree).mockResolvedValue({
-      isWorktree: true,
-      mainWorktreePath: setup.mainWorktreePath,
-    });
-    return;
-  }
-
-  if (setup.kind === "no-repo") {
-    const { buildCommandContext } = await import("../command-context.js");
-    vi.mocked(buildCommandContext).mockResolvedValue({
-      repoRoot: null,
-      invokerCwd: "/tmp/not-a-repo",
-    });
-    return;
-  }
+function productionDirtyFiles(): string[] {
+  const out = git([
+    "status",
+    "--porcelain",
+    "--",
+    "src/cli",
+    "bin/specrunner.ts",
+    ":!src/cli/__tests__",
+  ]);
+  return out === "" ? [] : out.split("\n").map((l) => l.slice(3));
 }
 
 // ---------------------------------------------------------------------------
@@ -141,10 +121,11 @@ async function applySetup(setup: SetupKind): Promise<void> {
 // Collect results across separate it() blocks
 const fixture: Record<string, unknown> = {};
 
-describe("generate-exit-contract-fixture", () => {
+describe("exit-contract-generate", () => {
   for (const caseDef of EXIT_CONTRACT_CASES) {
     it(caseDef.id, async () => {
       const result = await runCase(caseDef.argv, async () => {
+        await resetMockDefaults();
         await applySetup(caseDef.setup);
       });
       fixture[caseDef.id] = result;
@@ -152,14 +133,24 @@ describe("generate-exit-contract-fixture", () => {
     }, 30000);
   }
 
-  // Write fixture after all cases run
-  it("writes fixture file", () => {
+  // Write fixture + provenance after all cases run
+  it("writes fixture and provenance files", () => {
+    expect(Object.keys(fixture)).toHaveLength(EXIT_CONTRACT_CASES.length);
+
     if (!fs.existsSync(FIXTURES_DIR)) {
       fs.mkdirSync(FIXTURES_DIR, { recursive: true });
     }
     fs.writeFileSync(OUTPUT_FILE, JSON.stringify(fixture, null, 2) + "\n", "utf-8");
+
+    const provenance = {
+      baseCommit: git(["rev-parse", "HEAD"]),
+      generatedAt: new Date().toISOString(),
+      generator: "bun run exit-contract:generate",
+      productionDirtyFiles: productionDirtyFiles(),
+    };
+    fs.writeFileSync(PROVENANCE_FILE, JSON.stringify(provenance, null, 2) + "\n", "utf-8");
+
     console.log(`\nFixture written to: ${OUTPUT_FILE}`);
-    // Verify all cases are present
-    expect(Object.keys(fixture)).toHaveLength(EXIT_CONTRACT_CASES.length);
+    console.log(`Provenance: ${JSON.stringify(provenance)}`);
   });
 });

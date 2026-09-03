@@ -29,7 +29,7 @@
     "stdout": [],
     "stderr": [
       "--issue requires an integer (got: abc)\n",
-      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n\n"
+      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n"
     ]
   },
   "EC-06-specrunner-error-exit2": {
@@ -127,48 +127,43 @@
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Error: Usage error: --from-issue and positional <slug|file> are mutually exclusive\n"
     ]
   },
   "EC-19-start-from-issue-issue-exclusive": {
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Error: Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)\n"
     ]
   },
   "EC-20-start-detach-json-exclusive": {
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Error: --detach and --json are mutually exclusive\n"
     ]
   },
   "EC-21-resume-from-issue-positional-exclusive": {
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Error: Usage error: --from-issue and positional <slug> are mutually exclusive\n"
     ]
   },
   "EC-22-archive-slug-from-issue-exclusive": {
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Error: 'job archive': <slug> and --from-issue are mutually exclusive. Specify exactly one.\n"
     ]
   },
   "EC-23-resume-missing-slug": {
     "exitCode": 2,
     "stdout": [],
     "stderr": [
-      "Error: This command cannot be run from inside a worktree.\n",
-      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+      "Usage error: 'job resume' requires a <slug> argument or --from-issue <n>\n",
+      "Usage: specrunner job resume <slug> [options]\n       specrunner job resume --from-issue <n> [options]\n\nResume a halted or awaiting-resume job.\n\nArguments:\n  <slug>              Job slug to resume. Resolved by slug first; if not found,\n                      falls back to a short Job ID prefix.\n                      Mutually exclusive with --from-issue.\n\nOptions:\n  --from-issue <n>    Locate the resumable job by GitHub issue number instead of slug.\n                      Locator resolution: scans issue comments for the latest escalation\n                      marker (→ jobId), then enumerates Development-linked branches and\n                      confirms identity by matching jobId / issueNumber / branch name in\n                      the branch-borne checkpoint. Rebind is performed automatically when\n                      no local job state is found. Mutually exclusive with positional <slug>.\n                      When no Development-linked branch is found, use:\n                        specrunner job attach --branch <branch>\n                        specrunner job resume <slug>\n  --from <step>       Override the start step (default: recorded resumePoint step).\n                      Valid steps: request-review, design, spec-review, spec-fixer, test-case-gen, implementer, code-review, code-fixer, conformance, adr-gen, verification, pr-create\n                      Note: jobs with custom reviewers also accept: regression-gate,\n                      custom-reviewers, or reviewer member names (member names are\n                      mapped to the custom-reviewers coordinator).\n  --force             Override the 3× consecutive escalation guard and resume anyway.\n  --verbose           More detailed log output.\n  --quiet             Suppress informational log output.\n  --prompt <text>     Inject operator guidance into the agent context at resume.\n                      ⚠  Do not pass untrusted external input directly.\n                      Mutually exclusive with --prompt-file.\n  --prompt-file <path>  Read operator guidance from a file (alternative to --prompt).\n                      Mutually exclusive with --prompt.\n  --json              Output structured JSON result. Mutually exclusive with --detach.\n  --no-worktree       Resume without a git worktree.\n  --apply-canon       Commit dirty protected canon paths as an operator-apply commit\n                      before resuming. Required (fail-closed) when you have edited\n                      protected canon files (e.g. spec.md, design.md) and want to adopt\n                      the changes into the synthesized-commits ledger.\n  --adopt-commits     Adopt publish-range commits not in the synthesized-commits ledger\n                      before resuming. Required (fail-closed) when you have made commits\n                      to the worktree branch outside the pipeline.\n  --wontfix <indices> Mark regression-gate findings as wontfix (comma-separated 1-based indices,\n                      e.g. --wontfix 1,3). Requires --wontfix-reason. Exits with code 2 if\n                      the gate has not run, indices are out of range, or reason is missing.\n  --wontfix-reason <text>\n                      Mandatory reason for the wontfix disposition. Required when --wontfix\n                      is specified.\n  --detach            Start resume in detached mode. Parent waits until the job is registered\n                      (or reports a start failure), then exits. Use\n                      'job wait <slug>' to monitor progress. Mutually exclusive with --json.\n  --help, -h          Show this help message.\n\nMutually exclusive pairs:\n  --detach     /  --json         (only one output mode can be active at a time)\n  --prompt     /  --prompt-file  (only one operator guidance source at a time)\n  --from-issue /  <slug>         (only one job locator at a time)\n"
     ]
   }
 }

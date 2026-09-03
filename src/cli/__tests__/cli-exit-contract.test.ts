@@ -2,25 +2,35 @@
  * Exit contract snapshot tests (T-01).
  *
  * Compares the actual exit code, stdout, and stderr of bin/specrunner.ts
- * for 23 canonical cases against the base fixture generated before production
- * changes.  Any unintentional shift in exit codes or output messages fails here.
+ * for 23 canonical cases against the base fixture captured from the base
+ * commit (see fixtures/cli-exit-contract.base.provenance.json).  Any
+ * unintentional shift in exit codes or output messages fails here.
  *
- * To regenerate the base fixture after an intentional change:
- *   bun run src/cli/__tests__/dump-exit-contract.ts
+ * The fixture is read-only for this suite: its content hash is compared
+ * before and after the run so no test can silently rewrite the expected
+ * values.  To regenerate it after an INTENTIONAL contract change (standalone
+ * command, never part of `bun run test`):
+ *   bun run exit-contract:generate
  */
 
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from "vitest";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { EXIT_CONTRACT_CASES } from "./exit-contract-cases.js";
-import type { SetupKind } from "./exit-contract-cases.js";
 import { runCase } from "./exit-contract-harness.js";
+import { resetMockDefaults, applySetup } from "./exit-contract-setup.js";
 import baseFixture from "./fixtures/cli-exit-contract.base.json";
 // NOTE: SpecRunnerError is NOT imported statically here because vi.resetModules()
 // clears the module cache between tests, causing instanceof to fail when specrunner.ts
-// loads a fresh errors.js after reset. We use a dynamic import inside applySetup instead,
-// so errors.js is cached before specrunner.ts loads it.
+// loads a fresh errors.js after reset. exit-contract-setup.ts uses a dynamic import
+// instead, so errors.js is cached before specrunner.ts loads it.
 
 // ---------------------------------------------------------------------------
-// Mock declarations (hoisted by vitest)
+// Mock declarations (hoisted by vitest) — keep in sync with
+// exit-contract-generate.gen.ts.  Defaults are re-applied per case by
+// resetMockDefaults(); the values here only matter for module shape.
 // ---------------------------------------------------------------------------
 
 // archive.js — spread actual so non-mocked exports work; swap out runArchive
@@ -95,6 +105,34 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
+// Fixture read-only guard: this suite must never modify the base fixture
+// ---------------------------------------------------------------------------
+
+const FIXTURE_FILE = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "fixtures",
+  "cli-exit-contract.base.json",
+);
+
+function fixtureHash(): string {
+  return createHash("sha256").update(fs.readFileSync(FIXTURE_FILE)).digest("hex");
+}
+
+let fixtureHashBefore = "";
+
+beforeAll(() => {
+  fixtureHashBefore = fixtureHash();
+});
+
+afterAll(() => {
+  if (fixtureHash() !== fixtureHashBefore) {
+    throw new Error(
+      "cli-exit-contract.base.json was modified during the test run — the fixture is read-only for this suite",
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Fixture completeness guard
 // ---------------------------------------------------------------------------
 
@@ -109,53 +147,6 @@ describe("cli-exit-contract fixture completeness", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Helper: configure mocks for each setup kind
-// ---------------------------------------------------------------------------
-
-async function applySetup(setup: SetupKind): Promise<void> {
-  if (setup.kind === "none") return;
-
-  if (setup.kind === "archive-resolve") {
-    const { runArchive } = await import("../archive.js");
-    vi.mocked(runArchive).mockResolvedValue(setup.value);
-    return;
-  }
-
-  if (setup.kind === "archive-reject-specrunner-error") {
-    const { runArchive } = await import("../archive.js");
-    // Dynamic import ensures errors.js is loaded before specrunner.ts, so instanceof works
-    const { SpecRunnerError } = await import("../../errors.js");
-    const err = new SpecRunnerError(setup.code, setup.hint, setup.message, setup.exitCode as 1 | 2);
-    vi.mocked(runArchive).mockRejectedValue(err);
-    return;
-  }
-
-  if (setup.kind === "archive-reject-plain") {
-    const { runArchive } = await import("../archive.js");
-    vi.mocked(runArchive).mockRejectedValue(new Error(setup.message));
-    return;
-  }
-
-  if (setup.kind === "worktree") {
-    const { detectWorktree } = await import("../../core/worktree/detection.js");
-    vi.mocked(detectWorktree).mockResolvedValue({
-      isWorktree: true,
-      mainWorktreePath: setup.mainWorktreePath,
-    });
-    return;
-  }
-
-  if (setup.kind === "no-repo") {
-    const { buildCommandContext } = await import("../command-context.js");
-    vi.mocked(buildCommandContext).mockResolvedValue({
-      repoRoot: null,
-      invokerCwd: "/tmp/not-a-repo",
-    });
-    return;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Snapshot tests — one per case
 // ---------------------------------------------------------------------------
 
@@ -166,6 +157,7 @@ describe("cli-exit-contract: exit code and output snapshot", () => {
       expect(expected).toBeDefined();
 
       const result = await runCase(caseDef.argv, async () => {
+        await resetMockDefaults();
         await applySetup(caseDef.setup);
       });
 
