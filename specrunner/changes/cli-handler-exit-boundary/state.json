@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "61bd403d-a2d9-4bd6-b4f7-0de1df4c2b94",
   "createdAt": "2026-09-03T13:03:55.638Z",
-  "updatedAt": "2026-09-03T13:07:33.916Z",
+  "updatedAt": "2026-09-03T13:22:49.771Z",
   "request": {
     "title": "refactor: CommandHandlerをexit code返却契約へ変更しprocess.exitをdispatch境界へ集約する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "refactor/cli-handler-exit-boundary-61bd403d",
   "error": null,
@@ -64,15 +64,29 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "da97151422ebdd5979dfad6fd63067bd170964bd",
-    "ea644de2c46ffca1cbd41e11c695df60ce8e2623"
+    "ea644de2c46ffca1cbd41e11c695df60ce8e2623",
+    "187a1dc335e43d94499d31a7bb05689d86aaff6a"
   ],
   "touchedFiles": {
-    "request-review": []
+    "request-review": [],
+    "design": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/reopen.ts",
+      "src/cli/job-archive-handler.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
