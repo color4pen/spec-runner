@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "61bd403d-a2d9-4bd6-b4f7-0de1df4c2b94",
   "createdAt": "2026-09-03T13:03:55.638Z",
-  "updatedAt": "2026-09-03T15:52:47.127Z",
+  "updatedAt": "2026-09-03T16:00:56.188Z",
   "request": {
     "title": "refactor: CommandHandlerをexit code返却契約へ変更しprocess.exitをdispatch境界へ集約する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/cli-handler-exit-boundary-61bd403d",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,9 @@
     "c93b1828d1a7011a8562fb68a785f2f139839a8b",
     "b73d6f0283743348f25b027c4f33c16b7beb32d2",
     "560d375b765d4a30d295c032db9f0308849d440c",
-    "1f28642da8f8842f1ffb9965e3b3637af7fb26d3"
+    "1f28642da8f8842f1ffb9965e3b3637af7fb26d3",
+    "57a625941de38c91530a9cdc6367f40763ab7ffd",
+    "944bf0e37ba2611658e20c648d0ad5441d23708f"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -139,6 +141,14 @@
     "regression-gate": [
       "src/cli/__tests__/command-registry-reopen.test.ts",
       "src/cli/__tests__/exit-contract-harness.ts"
+    ],
+    "conformance": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-exit-contract.test.ts",
+      "src/cli/__tests__/fixtures/cli-exit-contract.base.json",
+      "src/cli/__tests__/generate-exit-contract-fixture.test.ts"
     ]
   },
   "resumePoint": null,
@@ -179,8 +189,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1112",
+    "number": 1112,
+    "createdAt": "2026-09-03T16:00:55.352Z"
+  },
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -188,13 +203,16 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 4,
-      "verification": 4,
+      "verification": 5,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
