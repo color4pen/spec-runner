@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T01:06:59.953Z",
+  "updatedAt": "2026-09-03T01:08:44.180Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -88,7 +88,8 @@
     "dd3c5481281f4699e2567eacdebc7d74f978e88c",
     "2f5155dca5b32745217c82b59c26aafba3ffe756",
     "76883dcdf1cb9c16eed49642b515564bfd3d63fb",
-    "c4d1308ca752953e38185c612dfa18fd2b5ca94f"
+    "c4d1308ca752953e38185c612dfa18fd2b5ca94f",
+    "a24b2569195a813900abb678d52b5c849a65a2c2"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -127,8 +128,7 @@
       "src/cli/request-handlers.ts"
     ],
     "code-fixer": [
-      "src/cli/scaffold-handlers.ts",
-      "src/cli/usage-handler.ts"
+      "src/cli/__tests__/architecture-ratchet.test.ts"
     ],
     "regression-gate": [
       "src/cli/__tests__/architecture-ratchet.test.ts",
@@ -180,7 +180,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 114,
+    "historyCount": 125,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -190,10 +190,10 @@
       "implementer": 5,
       "verification": 6,
       "code-review": 4,
-      "code-fixer": 2,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 1
     }
