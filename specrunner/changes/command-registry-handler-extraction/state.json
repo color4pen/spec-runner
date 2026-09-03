@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T07:05:15.511Z",
+  "updatedAt": "2026-09-03T07:11:39.316Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
   "error": null,
@@ -102,7 +102,8 @@
     "7d29a5d7f1979ffe3ca925a88557c017f00de42e",
     "53f1ca59a604a8308208bf145006248d69274ff5",
     "4b15207b1277aa5a2c53cd4583fe8693f26a447c",
-    "4b721f99ffc720178fcf7106af23454b824bd81e"
+    "4b721f99ffc720178fcf7106af23454b824bd81e",
+    "fe42121bfa0bea0dcaa9696755c673d54e70cbcf"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -122,20 +123,20 @@
     "code-review": [
       "src/cli/command-registry.ts",
       "src/cli/__tests__/architecture-ratchet.test.ts",
-      "src/cli/command-handler.ts",
-      "src/cli/request-handlers.ts",
-      "src/cli/run.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/job-archive-handler.ts",
       "src/cli/__tests__/cli-contract-snapshot.test.ts",
-      "src/cli/resume.ts",
-      "bin/specrunner.ts",
-      "src/cli/scaffold-handlers.ts",
-      "src/cli/guide-handler.ts",
-      "src/cli/usage-handler.ts",
-      "src/cli/ps.ts",
-      "src/cli/managed.ts",
+      "src/cli/command-handler.ts",
+      "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
       "src/cli/doctor.ts",
-      "src/cli/cancel.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "src/cli/__tests__/fixtures/cli-contract.base.json",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "src/cli/run.ts",
+      "src/cli/resume.ts",
+      "src/cli/scaffold-handlers.ts"
     ],
     "code-fixer": [
       "src/cli/__tests__/architecture-ratchet.test.ts"
@@ -203,7 +204,7 @@
     "createdAt": "2026-09-03T02:24:50.912Z"
   },
   "_journal": {
-    "historyCount": 200,
+    "historyCount": 212,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -212,11 +213,11 @@
       "spec-fixer": 1,
       "implementer": 8,
       "verification": 11,
-      "code-review": 5,
+      "code-review": 6,
       "code-fixer": 3,
-      "cross-boundary-invariants": 3,
-      "scale-tolerance": 3,
-      "custom-reviewers": 3,
+      "cross-boundary-invariants": 4,
+      "scale-tolerance": 4,
+      "custom-reviewers": 4,
       "regression-gate": 4,
       "conformance": 3,
       "adr-gen": 1,
