@@ -144,7 +144,7 @@ function getArchiveHandler() {
   return COMMANDS["job"]!.children!["archive"]!.handler!;
 }
 
-function exitSpy() {
+function _exitSpy() {
   let capturedCode: number | undefined;
   const spy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
     capturedCode = code as number;

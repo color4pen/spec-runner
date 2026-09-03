@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { EXIT_CONTRACT_CASES } from "./exit-contract-cases.js";
-import type { ExitContractCase, SetupKind } from "./exit-contract-cases.js";
+import type { SetupKind } from "./exit-contract-cases.js";
 import { runCase } from "./exit-contract-harness.js";
 import baseFixture from "./fixtures/cli-exit-contract.base.json";
 // NOTE: SpecRunnerError is NOT imported statically here because vi.resetModules()

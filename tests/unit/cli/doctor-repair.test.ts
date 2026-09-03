@@ -166,7 +166,7 @@ function getStderrOutput(): string {
   return stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("");
 }
 
-function getExitCodes(): (string | number | undefined)[] {
+function _getExitCodes(): (string | number | undefined)[] {
   return exitSpy.mock.calls.map((c: unknown[]) => c[0] as string | number | undefined);
 }
 

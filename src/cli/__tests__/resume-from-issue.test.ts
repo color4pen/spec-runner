@@ -158,7 +158,7 @@ function getResumeHandler() {
   return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
-function exitSpy() {
+function _exitSpy() {
   return vi.spyOn(process, "exit").mockImplementation((code?: number) => {
     throw new Error(`process.exit(${code})`);
   });
