@@ -1,9 +1,9 @@
 /**
  * Tests for --json flag acceptance in run / job start / resume CLI commands.
  *
- * TC-JSON-CLI-001: run --json passes json: true to runRun
- * TC-JSON-CLI-002: job start --json passes json: true to runRun
- * TC-JSON-CLI-003: resume --json passes json: true to runResume
+ * TC-JSON-CLI-001: run --json passes json: true to runRunCore
+ * TC-JSON-CLI-002: job start --json passes json: true to runRunCore
+ * TC-JSON-CLI-003: resume --json passes json: true to runResumeCore
  * TC-JSON-CLI-004: run without --json passes json: false (or undefined)
  * TC-JSON-CLI-005: run --json does not raise Unknown flag error
  * TC-JSON-CLI-006: job start --json does not raise Unknown flag error
@@ -12,17 +12,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Must mock before importing main (vitest hoists vi.mock)
-// Only the primitives (runRun / runResume) are mocked; the registry dispatches through the
+// Only the primitives (runRunCore / runResumeCore) are mocked; the registry dispatches through the
 // production handler modules (job-start-handler.ts / job-resume-handler.ts), so
-// TC-JSON-CLI-001 through 004 assert on the runRun/runResume call args those handlers produce.
+// TC-JSON-CLI-001 through 004 assert on the runRunCore/runResumeCore call args those handlers produce.
 vi.mock("../../../src/cli/run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
   runRunCore: vi.fn().mockResolvedValue(0),
   handlePostPipelineState: vi.fn(),
 }));
 
 vi.mock("../../../src/cli/resume.js", () => ({
-  runResume: vi.fn().mockResolvedValue(undefined),
   runResumeCore: vi.fn().mockResolvedValue(0),
 }));
 
@@ -69,42 +67,42 @@ async function runMain(args: string[]) {
   }
 }
 
-// TC-JSON-CLI-001: run --json passes json: true to runRun
-describe("TC-JSON-CLI-001: run --json passes json: true to runRun", () => {
-  it("calls runRun with json: true when --json is specified", async () => {
-    const { runRun } = await import("../../../src/cli/run.js");
+// TC-JSON-CLI-001: run --json passes json: true to runRunCore
+describe("TC-JSON-CLI-001: run --json passes json: true to runRunCore", () => {
+  it("calls runRunCore with json: true when --json is specified", async () => {
+    const { runRunCore } = await import("../../../src/cli/run.js");
 
     await runMain(["run", "my-feature", "--json"]);
 
-    expect(runRun).toHaveBeenCalledWith(
+    expect(runRunCore).toHaveBeenCalledWith(
       "my-feature",
       expect.objectContaining({ json: true }),
     );
   });
 });
 
-// TC-JSON-CLI-002: job start --json passes json: true to runRun
-describe("TC-JSON-CLI-002: job start --json passes json: true to runRun", () => {
-  it("calls runRun with json: true when job start --json is specified", async () => {
-    const { runRun } = await import("../../../src/cli/run.js");
+// TC-JSON-CLI-002: job start --json passes json: true to runRunCore
+describe("TC-JSON-CLI-002: job start --json passes json: true to runRunCore", () => {
+  it("calls runRunCore with json: true when job start --json is specified", async () => {
+    const { runRunCore } = await import("../../../src/cli/run.js");
 
     await runMain(["job", "start", "my-feature", "--json"]);
 
-    expect(runRun).toHaveBeenCalledWith(
+    expect(runRunCore).toHaveBeenCalledWith(
       "my-feature",
       expect.objectContaining({ json: true }),
     );
   });
 });
 
-// TC-JSON-CLI-003: resume --json passes json: true to runResume
-describe("TC-JSON-CLI-003: resume --json passes json: true to runResume", () => {
-  it("calls runResume with json: true when job resume --json is specified", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+// TC-JSON-CLI-003: resume --json passes json: true to runResumeCore
+describe("TC-JSON-CLI-003: resume --json passes json: true to runResumeCore", () => {
+  it("calls runResumeCore with json: true when job resume --json is specified", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-feature", "--json"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-feature",
       expect.objectContaining({ json: true }),
     );
@@ -113,12 +111,12 @@ describe("TC-JSON-CLI-003: resume --json passes json: true to runResume", () => 
 
 // TC-JSON-CLI-004: run without --json passes json: false
 describe("TC-JSON-CLI-004: run without --json passes json: false", () => {
-  it("calls runRun with json: false when --json is not specified", async () => {
-    const { runRun } = await import("../../../src/cli/run.js");
+  it("calls runRunCore with json: false when --json is not specified", async () => {
+    const { runRunCore } = await import("../../../src/cli/run.js");
 
     await runMain(["run", "my-feature"]);
 
-    expect(runRun).toHaveBeenCalledWith(
+    expect(runRunCore).toHaveBeenCalledWith(
       "my-feature",
       expect.objectContaining({ json: false }),
     );

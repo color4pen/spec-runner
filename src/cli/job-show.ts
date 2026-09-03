@@ -111,11 +111,11 @@ export async function runJobShow(
  * Extracted from command-registry.ts inline handler (T-07).
  */
 /* c8 ignore next 6 */
-export async function handleJobShow(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  process.exit(await runJobShow(
+export async function handleJobShow(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
+  return await runJobShow(
     parsed.positional!,
     { repoRoot: ctx?.repoRoot ?? ctx?.invokerCwd },
-  ));
+  );
 }
 
 export async function printJobState(state: JobState, repoRoot: string = process.cwd()): Promise<void> {

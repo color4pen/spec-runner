@@ -282,12 +282,11 @@ describe("TC-018: runGuide の戻り値が仕様どおり", () => {
     expect(runGuide("unknown-topic")).toBe(2);
   });
 
-  it("TC-018: guide handler calls process.exit with runGuide return value", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {}) as never);
+  it("TC-018: guide handler returns runGuide return value (dispatch boundary owns process.exit)", async () => {
     const handler = COMMANDS["guide"]!.handler!;
-    await handler({ flags: {}, positional: undefined, positionals: [] });
-    expect(exitSpy).toHaveBeenCalledWith(0);
-    exitSpy.mockRestore();
+    const result = await handler({ flags: {}, positional: undefined, positionals: [] });
+    // runGuide(undefined) returns 0 (no topic → shows list, success)
+    expect(result).toBe(0);
   });
 });
 

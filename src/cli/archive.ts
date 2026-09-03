@@ -84,7 +84,7 @@ export interface RunArchiveOptions {
 /**
  * Run the archive command.
  * Returns exit code: 0 (success), 1 (escalation/error), 2 (arg error).
- * Caller (bin/specrunner.ts) is responsible for process.exit().
+ * Caller returns this exit code to the dispatch boundary (bin/specrunner.ts).
  */
 export async function runArchive(opts: RunArchiveOptions): Promise<number> {
   registerExitGuard(opts.cwd);

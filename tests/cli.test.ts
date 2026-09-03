@@ -69,16 +69,13 @@ async function createRequestMd() {
 describe("TC-063: specrunner run — fail-fast when config missing", () => {
   it("exits with code 2 when config does not exist (CONFIG_MISSING → ARG_ERROR)", async () => {
     // No config created — config is missing
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
-      throw new Error("process.exit called");
-    });
-
-    const { runRun } = await import("../src/cli/run.js");
+    // runRunCore returns exit code directly (no process.exit); handler contract changed in T-05.
+    const { runRunCore } = await import("../src/cli/run.js");
     const reqPath = await createRequestMd();
 
-    await expect(runRun(reqPath, { cwd: tempDir })).rejects.toThrow("process.exit called");
+    const result = await runRunCore(reqPath, { cwd: tempDir });
 
-    expect(exitSpy).toHaveBeenCalledWith(2);
+    expect(result).toBe(2);
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
     expect(combined).toMatch(/Config file not found|init|config/i);
@@ -95,17 +92,14 @@ describe("TC-064: specrunner run — fail-fast when github token missing", () =>
     const originalGithubToken = process.env["GITHUB_TOKEN"];
     delete process.env["GITHUB_TOKEN"];
 
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: string | number | null) => {
-      throw new Error("process.exit called");
-    });
-
-    const { runRun } = await import("../src/cli/run.js");
+    // runRunCore returns exit code directly (no process.exit); handler contract changed in T-05.
+    const { runRunCore } = await import("../src/cli/run.js");
     const reqPath = await createRequestMd();
 
     try {
-      await expect(runRun(reqPath, { cwd: tempDir })).rejects.toThrow("process.exit called");
+      const result = await runRunCore(reqPath, { cwd: tempDir });
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(result).toBe(1);
       const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
       const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
       expect(combined).toMatch(/login/i);

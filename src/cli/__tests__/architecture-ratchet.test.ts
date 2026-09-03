@@ -1,9 +1,9 @@
 /**
- * Architecture ratchet tests (T-17, T-19).
+ * Architecture ratchet tests (T-17, T-19, T-11).
  *
- * Six checks mechanically prevent regression of the handler-extraction
- * refactoring.  They are intentionally "boring" static checks so they run fast
- * without spawning subprocesses.
+ * Ten checks mechanically prevent regression of the handler-extraction and
+ * exit-boundary refactorings.  They are intentionally "boring" static checks
+ * so they run fast without spawning subprocesses.
  *
  * Check 1 — handler.name guard (inline handler = 0)
  *   Any function defined as `handler: async (parsed, ctx) => { ... }` receives
@@ -35,6 +35,28 @@
  *   dynamic imports of ../core/* or other non-sibling modules are acceptable.
  *   Regression test: adding `await import("./from-issue.js")` to run.ts fails
  *   this check.
+ *
+ * Check 7 — no process.exit() in src/cli/**\/*.ts production files (T-11)
+ *   All process.exit() calls must have been removed from src/cli/ production
+ *   code (before: 74 text matches / 70 AST calls across 23–24 files;
+ *   after: 0 / 0).  AST-based so comments are not counted.
+ *
+ * Check 8 — CommandHandler type is Promise<number>; all handle* exports conform (T-11)
+ *   CommandHandler type alias in command-handler.ts must return Promise<number>.
+ *   No exported handle* function in src/cli/ may carry a Promise<void> return
+ *   type annotation (before: 0/30 conformant; after: 30/30).
+ *
+ * Check 9 — process.exit ownership non-redistribution (T-11)
+ *   The set of production files (src/**\/*, bin\/**\/*; excl. __tests__ /
+ *   *.test.ts) that contain a process.exit() CallExpression must equal exactly
+ *   { "bin/specrunner.ts", "src/core/runtime/local.ts",
+ *     "src/core/runtime/managed.ts" }.
+ *   The latter two are signal-handler registrations, not in scope for this
+ *   refactoring; they are permanently allowlisted.
+ *
+ * Check 10 — entrypoint has no parallel dispatch paths (T-11)
+ *   bin/specrunner.ts must contain no SwitchStatement, and spec.handler must
+ *   be called exactly once.
  */
 
 import { describe, it, expect } from "vitest";
@@ -517,5 +539,359 @@ describe("Check 6: no ./ dynamic imports within src/cli/ (T-19)", () => {
     const src = `const { x } = await import("../core/issue-target/start.js");`;
     const ast = tseParse(src, { jsx: false, range: false, loc: true });
     expect(findDotSlashDynamicImports(ast)).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shared helpers for Checks 7–10
+// ---------------------------------------------------------------------------
+
+/**
+ * Recursively list all .ts files under `dir`, excluding any `__tests__`
+ * directory and any file ending in `.test.ts`, `.spec.ts`, or `.d.ts`.
+ */
+function listTsFilesRecursive(dir: string): string[] {
+  const result: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (entry.name === "__tests__") continue;
+      result.push(...listTsFilesRecursive(path.join(dir, entry.name)));
+    } else if (
+      entry.name.endsWith(".ts") &&
+      !entry.name.endsWith(".d.ts") &&
+      !entry.name.endsWith(".test.ts") &&
+      !entry.name.endsWith(".spec.ts")
+    ) {
+      result.push(path.join(dir, entry.name));
+    }
+  }
+  return result;
+}
+
+/**
+ * Walk an AST and collect all `process.exit(...)` CallExpression nodes.
+ * Comments are not part of the AST, so they are never reported.
+ */
+function findProcessExitCalls(ast: unknown): string[] {
+  const hits: string[] = [];
+
+  function walk(node: unknown): void {
+    if (!node || typeof node !== "object") return;
+    const n = node as Record<string, unknown>;
+
+    if (n.type === "CallExpression") {
+      const callee = n.callee as Record<string, unknown> | null | undefined;
+      if (
+        callee?.type === "MemberExpression" &&
+        (callee.object as Record<string, unknown> | undefined)?.type === "Identifier" &&
+        (callee.object as Record<string, unknown> | undefined)?.name === "process" &&
+        (callee.property as Record<string, unknown> | undefined)?.type === "Identifier" &&
+        (callee.property as Record<string, unknown> | undefined)?.name === "exit"
+      ) {
+        const loc = n.loc as { start: { line: number } } | null | undefined;
+        hits.push(`line ${loc?.start.line ?? "?"}: process.exit()`);
+      }
+    }
+
+    for (const val of Object.values(n)) {
+      if (Array.isArray(val)) {
+        for (const child of val) {
+          if (child && typeof child === "object" && (child as Record<string, unknown>).type)
+            walk(child);
+        }
+      } else if (val && typeof val === "object" && (val as Record<string, unknown>).type) {
+        walk(val);
+      }
+    }
+  }
+
+  walk(ast);
+  return hits;
+}
+
+// ---------------------------------------------------------------------------
+// Check 7: no process.exit() in src/cli/**/*.ts production files (T-11)
+// ---------------------------------------------------------------------------
+
+describe("Check 7: no process.exit() in src/cli/**/*.ts production files (T-11)", () => {
+  it("no src/cli production .ts file contains a process.exit() call (AST-based)", () => {
+    const cliFiles = listTsFilesRecursive(CLI_DIR);
+    const violations: string[] = [];
+
+    for (const file of cliFiles) {
+      const src = fs.readFileSync(file, "utf-8");
+      let ast;
+      try {
+        ast = tseParse(src, { jsx: false, range: false, loc: true });
+      } catch {
+        continue;
+      }
+      const hits = findProcessExitCalls(ast);
+      for (const hit of hits) {
+        violations.push(`${path.relative(CLI_DIR, file)}: ${hit}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  // Regression guard 1: actual call is detected
+  it("findProcessExitCalls detects process.exit(1) in synthetic source", () => {
+    const src = `function foo() { process.exit(1); }`;
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    expect(findProcessExitCalls(ast)).toHaveLength(1);
+  });
+
+  // Regression guard 2: comment mention is not detected
+  it("findProcessExitCalls does NOT flag process.exit() inside a comment", () => {
+    const src = `/** Calls process.exit() to terminate. */ function foo(): void {}`;
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    expect(findProcessExitCalls(ast)).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Check 8: CommandHandler is Promise<number>; handle* exports conform (T-11)
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk AST body looking for exported `handle*` function declarations or
+ * variable declarations whose return type annotation contains TSVoidKeyword
+ * inside a Promise<…> type reference.
+ *
+ * Returns violation strings for each `Promise<void>` return type found.
+ */
+function findHandlersWithVoidReturn(src: string, label: string): string[] {
+  let ast: ReturnType<typeof tseParse>;
+  try {
+    ast = tseParse(src, { jsx: false, range: false, loc: true });
+  } catch {
+    return [];
+  }
+
+  const violations: string[] = [];
+
+  function isPromiseVoid(returnType: unknown): boolean {
+    if (!returnType || typeof returnType !== "object") return false;
+    const rta = returnType as Record<string, unknown>;
+    // returnType is TSTypeAnnotation wrapping the real type
+    const typeNode = rta.type === "TSTypeAnnotation"
+      ? (rta.typeAnnotation as Record<string, unknown> | undefined)
+      : rta;
+    if (!typeNode) return false;
+    if (typeNode.type !== "TSTypeReference") return false;
+    const typeName = typeNode.typeName as Record<string, unknown> | undefined;
+    if (!typeName || typeName.name !== "Promise") return false;
+    // @typescript-eslint/parser uses `typeArguments` (not `typeParameters`) for generic args
+    const typeArgs = ((typeNode.typeArguments ?? typeNode.typeParameters) as Record<string, unknown> | undefined);
+    const paramList = (typeArgs?.params as unknown[] | undefined) ?? [];
+    if (paramList.length !== 1) return false;
+    return (paramList[0] as Record<string, unknown> | undefined)?.type === "TSVoidKeyword";
+  }
+
+  for (const node of ast.body) {
+    if (node.type !== "ExportNamedDeclaration") continue;
+    const decl = (node as Record<string, unknown>).declaration as Record<string, unknown> | null | undefined;
+    if (!decl) continue;
+
+    if (decl.type === "FunctionDeclaration") {
+      const name = (decl.id as Record<string, unknown> | undefined)?.name as string | undefined;
+      if (name?.startsWith("handle") && isPromiseVoid(decl.returnType)) {
+        const loc = (node as Record<string, unknown>).loc as { start: { line: number } } | undefined;
+        violations.push(`${label}: ${name} returns Promise<void> (line ${loc?.start.line ?? "?"})`);
+      }
+    } else if (decl.type === "VariableDeclaration") {
+      for (const d of ((decl.declarations as unknown[]) ?? [])) {
+        const vd = d as Record<string, unknown>;
+        const id = vd.id as Record<string, unknown> | undefined;
+        const name = id?.name as string | undefined;
+        if (name?.startsWith("handle") && isPromiseVoid(id?.typeAnnotation)) {
+          const loc = vd.loc as { start: { line: number } } | undefined;
+          violations.push(`${label}: ${name} returns Promise<void> (line ${loc?.start.line ?? "?"})`);
+        }
+      }
+    }
+  }
+
+  return violations;
+}
+
+describe("Check 8: CommandHandler is Promise<number>; handle* exports conform (T-11)", () => {
+  it("CommandHandler type alias in command-handler.ts returns Promise<number>", () => {
+    const src = fs.readFileSync(path.join(CLI_DIR, "command-handler.ts"), "utf-8");
+    const stripped = stripComments(src);
+    // The type alias must reference Promise<number> (not Promise<void>)
+    expect(stripped).toMatch(/CommandHandler[^;]*Promise<number>/s);
+    expect(stripped).not.toMatch(/CommandHandler[^;]*Promise<void>/s);
+  });
+
+  it("no exported handle* function in src/cli/ has a Promise<void> return type annotation", () => {
+    const files = listCliTsFiles().filter(
+      (f) => !f.endsWith(".test.ts") && !f.endsWith(".spec.ts"),
+    );
+    const violations: string[] = [];
+
+    for (const file of files) {
+      const src = fs.readFileSync(file, "utf-8");
+      const hits = findHandlersWithVoidReturn(src, path.relative(CLI_DIR, file));
+      violations.push(...hits);
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  // Regression guard: Promise<void> annotation is flagged
+  it("findHandlersWithVoidReturn detects an exported handle* function returning Promise<void>", () => {
+    const src = `export async function handleFoo(parsed: unknown): Promise<void> { return; }`;
+    expect(findHandlersWithVoidReturn(src, "test.ts")).toHaveLength(1);
+  });
+
+  // Regression guard: Promise<number> annotation is not flagged
+  it("findHandlersWithVoidReturn does NOT flag an exported handle* function returning Promise<number>", () => {
+    const src = `export async function handleFoo(parsed: unknown): Promise<number> { return 0; }`;
+    expect(findHandlersWithVoidReturn(src, "test.ts")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Check 9: process.exit ownership non-redistribution (T-11)
+// ---------------------------------------------------------------------------
+
+/**
+ * Allowlist of files permitted to call process.exit().
+ * - bin/specrunner.ts: the sole dispatch boundary (this refactoring's goal)
+ * - src/core/runtime/local.ts: SIGINT/SIGTERM signal handler — out of scope
+ * - src/core/runtime/managed.ts: SIGINT/SIGTERM signal handler — out of scope
+ */
+const PROCESS_EXIT_ALLOWLIST = new Set([
+  "bin/specrunner.ts",
+  "src/core/runtime/local.ts",
+  "src/core/runtime/managed.ts",
+]);
+
+describe("Check 9: process.exit ownership non-redistribution (T-11)", () => {
+  it("only allowlisted files contain process.exit() calls in src/ and bin/", () => {
+    const REPO_ROOT = path.resolve(CLI_DIR, "../..");
+
+    const srcDir = path.join(REPO_ROOT, "src");
+    const binDir = path.join(REPO_ROOT, "bin");
+
+    const allFiles: string[] = [];
+    if (fs.existsSync(srcDir)) allFiles.push(...listTsFilesRecursive(srcDir));
+    if (fs.existsSync(binDir)) allFiles.push(...listTsFilesRecursive(binDir));
+
+    const violations: string[] = [];
+
+    for (const file of allFiles) {
+      const relPath = path.relative(REPO_ROOT, file).replace(/\\/g, "/");
+      const src = fs.readFileSync(file, "utf-8");
+      let ast;
+      try {
+        ast = tseParse(src, { jsx: false, range: false, loc: true });
+      } catch {
+        continue;
+      }
+      const hits = findProcessExitCalls(ast);
+      if (hits.length > 0 && !PROCESS_EXIT_ALLOWLIST.has(relPath)) {
+        violations.push(`${relPath}: ${hits.length} process.exit() call(s) — not in allowlist`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  // Regression guard: a 4th file triggers violation
+  it("detects an unexpected 4th file with process.exit() as a violation", () => {
+    const actual = [
+      "bin/specrunner.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/cli/evil.ts",  // interloper
+    ];
+    const violations = actual.filter((f) => !PROCESS_EXIT_ALLOWLIST.has(f));
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toBe("src/cli/evil.ts");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Check 10: entrypoint has no parallel dispatch paths (T-11)
+// ---------------------------------------------------------------------------
+
+describe("Check 10: bin/specrunner.ts has no SwitchStatement and spec.handler called once (T-11)", () => {
+  const REPO_ROOT = path.resolve(CLI_DIR, "../..");
+  const SPECRUNNER_FILE = path.join(REPO_ROOT, "bin", "specrunner.ts");
+
+  function findNodes(ast: unknown, type: string): unknown[] {
+    const found: unknown[] = [];
+    function walk(node: unknown): void {
+      if (!node || typeof node !== "object") return;
+      const n = node as Record<string, unknown>;
+      if (n.type === type) found.push(n);
+      for (const val of Object.values(n)) {
+        if (Array.isArray(val)) {
+          for (const child of val) {
+            if (child && typeof child === "object" && (child as Record<string, unknown>).type) walk(child);
+          }
+        } else if (val && typeof val === "object" && (val as Record<string, unknown>).type) {
+          walk(val);
+        }
+      }
+    }
+    walk(ast);
+    return found;
+  }
+
+  /**
+   * Count `spec.handler(...)` or `spec.handler!(...)` call expressions in AST.
+   * These are CallExpression nodes whose callee is a MemberExpression with
+   * optional chaining or non-null assertion accessing `handler` on `spec`.
+   */
+  function countSpecHandlerCalls(ast: unknown): number {
+    let count = 0;
+    function walk(node: unknown): void {
+      if (!node || typeof node !== "object") return;
+      const n = node as Record<string, unknown>;
+      if (n.type === "CallExpression") {
+        // callee may be TSNonNullExpression(MemberExpression) or direct MemberExpression
+        let callee = n.callee as Record<string, unknown> | undefined;
+        if (callee?.type === "TSNonNullExpression") {
+          callee = callee.expression as Record<string, unknown> | undefined;
+        }
+        if (
+          callee?.type === "MemberExpression" &&
+          (callee.object as Record<string, unknown> | undefined)?.type === "Identifier" &&
+          (callee.object as Record<string, unknown> | undefined)?.name === "spec" &&
+          (callee.property as Record<string, unknown> | undefined)?.name === "handler"
+        ) {
+          count++;
+        }
+      }
+      for (const val of Object.values(n)) {
+        if (Array.isArray(val)) {
+          for (const child of val) {
+            if (child && typeof child === "object" && (child as Record<string, unknown>).type) walk(child);
+          }
+        } else if (val && typeof val === "object" && (val as Record<string, unknown>).type) {
+          walk(val);
+        }
+      }
+    }
+    walk(ast);
+    return count;
+  }
+
+  it("bin/specrunner.ts has no SwitchStatement", () => {
+    const src = fs.readFileSync(SPECRUNNER_FILE, "utf-8");
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    const switches = findNodes(ast, "SwitchStatement");
+    expect(switches).toHaveLength(0);
+  });
+
+  it("spec.handler is called exactly once in bin/specrunner.ts", () => {
+    const src = fs.readFileSync(SPECRUNNER_FILE, "utf-8");
+    const ast = tseParse(src, { jsx: false, range: false, loc: true });
+    const count = countSpecHandlerCalls(ast);
+    expect(count).toBe(1);
   });
 });

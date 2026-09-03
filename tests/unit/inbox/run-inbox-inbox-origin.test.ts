@@ -27,10 +27,9 @@ vi.mock("../../../src/core/inbox/draft-writer.js", () => ({
 }));
 
 // Mock runRunCore to capture its arguments
-const mockRunRunCore = vi.fn().mockResolvedValue(undefined);
+const mockRunRunCore = vi.fn().mockResolvedValue(0);
 vi.mock("../../../src/cli/run.js", () => ({
   runRunCore: mockRunRunCore,
-  runRun: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------

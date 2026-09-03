@@ -4,31 +4,31 @@
  * eliminate the value-import cycle that was previously hidden by await import().
  *
  * Dependency direction:
- *   job-resume-handler → resume.ts (runResume)
+ *   job-resume-handler → resume.ts (runResumeCore)
  *   job-resume-handler → resume-from-issue.ts (runResumeFromIssue)
  *   resume-from-issue.ts → resume.ts (runResumeCore)  ← existing, unchanged
  */
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { SpecRunnerError, EXIT_CODE } from "../errors.js";
+import { EXIT_CODE } from "../errors.js";
 import { logError, stderrWrite, resolveLogLevel } from "../logger/stdout.js";
 import { FlagParseError } from "./flag-parser.js";
 import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { SLUG_REGEX } from "../util/validation-patterns.js";
-import { runResume } from "./resume.js";
+import { runResumeCore } from "./resume.js";
 import { runResumeFromIssue } from "./resume-from-issue.js";
 
 /**
  * CLI handler for `specrunner job resume`.
- * Moved from resume.ts (T-08 → T-19). Uses static imports for all ./src/cli modules.
+ * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
  */
-export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
@@ -36,7 +36,7 @@ export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext):
   // Exclusivity: --from-issue + positional slug
   if (fromIssue !== undefined && parsed.positional !== undefined) {
     logError("Usage error: --from-issue and positional <slug> are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   // Prompt resolution (shared by both --from-issue and slug paths)
@@ -53,7 +53,7 @@ export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext):
       resolvedPrompt = fs.readFileSync(path.resolve(process.cwd(), promptFile), "utf-8");
     } catch (err) {
       logError(`Cannot read prompt file '${promptFile}': ${(err as Error).message}`);
-      process.exit(1);
+      return 1;
     }
   } else {
     resolvedPrompt = promptText;
@@ -71,7 +71,7 @@ export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext):
 
   // --from-issue path (static import — no value-import cycle with resume-from-issue.ts)
   if (fromIssue !== undefined) {
-    const code = await runResumeFromIssue(
+    return await runResumeFromIssue(
       fromIssue,
       {
         detach: !!parsed.flags["detach"],
@@ -90,7 +90,6 @@ export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext):
       },
       ctx,
     );
-    process.exit(code);
   }
 
   // Normal slug path — slug is required when --from-issue is absent
@@ -102,40 +101,29 @@ export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext):
     const slug = parsed.positional;
     if (!SLUG_REGEX.test(slug)) {
       logError(`Invalid slug '${slug}' for --detach.`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
+      return EXIT_CODE.GENERAL_ERROR;
     }
     const repoRoot = ctx?.repoRoot ?? process.cwd();
-    const code = await detachSelf({
+    return await detachSelf({
       args: process.argv.slice(2),
       repoRoot,
       slug,
       env: process.env as Record<string, string | undefined>,
     });
-    process.exit(code);
   }
 
-  try {
-    await runResume(parsed.positional, {
-      from: parsed.flags["from"] as string | undefined,
-      force: !!parsed.flags["force"],
-      logLevel,
-      cwd: process.cwd(),
-      repoRoot: ctx?.repoRoot,
-      prompt: resolvedPrompt,
-      json: !!parsed.flags["json"],
-      noWorktree: !!parsed.flags["no-worktree"],
-      applyCanon: !!parsed.flags["apply-canon"],
-      adoptCommits: !!parsed.flags["adopt-commits"],
-      wontfix: parsed.flags["wontfix"] as string | undefined,
-      wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
-    });
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${err.message}`);
-      stderrWrite(`Hint: ${err.hint}`);
-      process.exit(err.exitCode);
-    }
-    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
+  return await runResumeCore(parsed.positional, {
+    from: parsed.flags["from"] as string | undefined,
+    force: !!parsed.flags["force"],
+    logLevel,
+    cwd: process.cwd(),
+    repoRoot: ctx?.repoRoot,
+    prompt: resolvedPrompt,
+    json: !!parsed.flags["json"],
+    noWorktree: !!parsed.flags["no-worktree"],
+    applyCanon: !!parsed.flags["apply-canon"],
+    adoptCommits: !!parsed.flags["adopt-commits"],
+    wontfix: parsed.flags["wontfix"] as string | undefined,
+    wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
+  });
 }

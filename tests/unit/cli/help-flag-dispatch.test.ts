@@ -16,7 +16,7 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 }));
 
 vi.mock("../../../src/cli/run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
+  runRunCore: vi.fn().mockResolvedValue(0),
   handlePostPipelineState: vi.fn(),
   handleJobStart: vi.fn(),
 }));
@@ -25,10 +25,10 @@ vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
 // SpecRunnerError with exitCode 2 is used (instead of FlagParseError) to avoid module-isolation
 // instanceof issues; the dispatch writes e.message to stderr and exits with e.exitCode.
 // TC-HELP-DISPATCH-06: use importOriginal so the real handleJobResume (which throws FlagParseError
-// from the same flag-parser.js instance as bin/specrunner.ts) is used. Only runResume is stubbed.
+// from the same flag-parser.js instance as bin/specrunner.ts) is used. Only runResumeCore is stubbed.
 vi.mock("../../../src/cli/resume.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../src/cli/resume.js")>();
-  return { ...actual, runResume: vi.fn().mockResolvedValue(undefined) };
+  return { ...actual, runResumeCore: vi.fn().mockResolvedValue(0) };
 });
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
@@ -142,7 +142,7 @@ describe("TC-HELP-DISPATCH-02: runtime reset --help", () => {
   });
 });
 
-// TC-HELP-DISPATCH-03: job resume --help → exit 0 + detailed help (runResume not called)
+// TC-HELP-DISPATCH-03: job resume --help → exit 0 + detailed help (runResumeCore not called)
 // Updated: JOB_RESUME_USAGE is now wired into the resume entry, so detailed help is shown.
 // The old "No detailed help available" assertion is replaced with new-behavior assertions.
 describe("TC-HELP-DISPATCH-03: job resume --help", () => {
@@ -159,24 +159,24 @@ describe("TC-HELP-DISPATCH-03: job resume --help", () => {
     expect(stdoutContains("--apply-canon")).toBe(true);
   });
 
-  it("does not call runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+  it("does not call runResumeCore", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
     await runMain(["job", "resume", "--help"]);
-    expect(runResume).not.toHaveBeenCalled();
+    expect(runResumeCore).not.toHaveBeenCalled();
   });
 });
 
-// TC-HELP-DISPATCH-05: run --help → exit 0 (normal command path), runRun not called
+// TC-HELP-DISPATCH-05: run --help → exit 0 (normal command path), runRunCore not called
 describe("TC-HELP-DISPATCH-05: run --help (normal command path)", () => {
   it("exits with code 0", async () => {
     const result = await runMain(["run", "--help"]);
     expect(result).toBe("process.exit(0)");
   });
 
-  it("does not call runRun", async () => {
-    const { runRun } = await import("../../../src/cli/run.js");
+  it("does not call runRunCore", async () => {
+    const { runRunCore } = await import("../../../src/cli/run.js");
     await runMain(["run", "--help"]);
-    expect(runRun).not.toHaveBeenCalled();
+    expect(runRunCore).not.toHaveBeenCalled();
   });
 });
 

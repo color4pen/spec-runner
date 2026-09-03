@@ -17,9 +17,9 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
   detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRunCore: vi.fn().mockResolvedValue(0), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResumeCore: vi.fn().mockResolvedValue(0), handleJobResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(undefined), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn(), handleInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({
@@ -204,10 +204,11 @@ describe("TC-004: request generate が未知サブコマンドとして拒否さ
 // and the dispatch reached the handler — covering the changed DA line in command-registry.ts.
 describe("TC-006: request prompt handler が CLI dispatch 経由で到達する", () => {
   it("specrunner request prompt → handler が呼ばれ executePrompt() を実行する", async () => {
-    // process.exit(0) inside the handler is caught by dispatch try/catch → bubbles as exit(1)
+    // Handler now returns exit code; dispatch calls process.exit(code) outside try/catch.
+    // executePrompt is mocked to return 0, so the handler returns 0 → process.exit(0).
     const result = await runMain(["request", "prompt"]);
-    // The handler was reached and process.exit was called (exit(0) caught → exit(1) in mock)
-    expect(result).toBe("process.exit(1)");
+    // The handler was reached and process.exit(0) was called by the dispatch boundary.
+    expect(result).toBe("process.exit(0)");
   });
 });
 

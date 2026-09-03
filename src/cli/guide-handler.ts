@@ -6,6 +6,6 @@
 import type { ParsedArgs } from "./flag-parser.js";
 import { runGuide } from "../core/command/guide.js";
 
-export async function handleGuide(parsed: ParsedArgs): Promise<void> {
-  process.exit(runGuide(parsed.positional));
+export async function handleGuide(parsed: ParsedArgs): Promise<number> {
+  return runGuide(parsed.positional);
 }

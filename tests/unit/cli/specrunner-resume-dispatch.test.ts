@@ -1,12 +1,12 @@
 /**
  * Tests for bin/specrunner.ts `job resume` dispatch — argument parsing
  *
- * TC-DISPATCH-001: job resume with valid slug → calls runResume with slug
+ * TC-DISPATCH-001: job resume with valid slug → calls runResumeCore with slug
  * TC-DISPATCH-002: job resume without slug → exit 2
- * TC-DISPATCH-003: job resume with --from=critic → passes from: 'critic' to runResume (no CLI enum)
- * TC-DISPATCH-004: job resume with --from=fixer → passes from: 'fixer' to runResume (no CLI enum)
- * TC-DISPATCH-005: job resume with --from=creator → passes from: 'creator' to runResume (no CLI enum)
- * TC-DISPATCH-006: job resume with arbitrary --from value → passes to runResume (core validates)
+ * TC-DISPATCH-003: job resume with --from=critic → passes from: 'critic' to runResumeCore (no CLI enum)
+ * TC-DISPATCH-004: job resume with --from=fixer → passes from: 'fixer' to runResumeCore (no CLI enum)
+ * TC-DISPATCH-005: job resume with --from=creator → passes from: 'creator' to runResumeCore (no CLI enum)
+ * TC-DISPATCH-006: job resume with arbitrary --from value → passes to runResumeCore (core validates)
  * TC-DISPATCH-007: job resume with --force → passes force: true
  * TC-DISPATCH-008: job resume with unknown flag → exit 2
  */
@@ -15,15 +15,15 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 
-// Must mock runResume BEFORE importing main, since vitest hoists vi.mock
-// handleJobResume delegates to runResume so tests can still assert on runResume calls.
+// Must mock runResumeCore BEFORE importing main, since vitest hoists vi.mock
+// handleJobResume delegates to runResumeCore so tests can still assert on runResumeCore calls.
 // FlagParseError is lazily imported at call time (not captured in factory closure) to ensure
 // class identity matches the instance that bin/specrunner.ts checks via instanceof.
 vi.mock("../../../src/cli/resume.js", async () => {
   const nodeFs = await import("node:fs");
   const nodePath = await import("node:path");
 
-  const runResume = vi.fn().mockResolvedValue(undefined);
+  const runResumeCore = vi.fn().mockResolvedValue(0);
 
   const handleJobResume = vi.fn(async (parsed: { flags: Record<string, unknown>; positionals: string[]; positional?: string }, ctx?: { repoRoot: string | null; invokerCwd: string }) => {
     // Lazy import at call time ensures same FlagParseError instance as bin/specrunner.ts
@@ -50,15 +50,14 @@ vi.mock("../../../src/cli/resume.js", async () => {
         );
       } catch (err) {
         process.stderr.write(`Cannot read prompt file '${promptFile}': ${(err as Error).message}`);
-        process.exit(1);
-        return;
+        return 1;
       }
     }
     if (!parsed.positional && fromIssue === undefined) {
       throw new FlagParseError("Usage error: 'job resume' requires a <slug> argument or --from-issue <n>");
     }
     if (parsed.positional) {
-      await runResume(parsed.positional, {
+      await runResumeCore(parsed.positional, {
         from: parsed.flags?.["from"] as string | undefined,
         force: !!parsed.flags?.["force"],
         logLevel: "default",
@@ -73,9 +72,10 @@ vi.mock("../../../src/cli/resume.js", async () => {
         wontfixReason: parsed.flags?.["wontfix-reason"] as string | undefined,
       });
     }
+    return 0;
   });
 
-  return { runResume, handleJobResume };
+  return { runResumeCore, handleJobResume };
 });
 
 // Mock detectWorktree so worktree guard does not block dispatch tests
@@ -86,7 +86,7 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
 // Mock all other CLI commands to avoid side effects
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn(), handleInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn(), handleLogin: vi.fn() }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRunCore: vi.fn().mockResolvedValue(0), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn(), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn(), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
@@ -144,14 +144,14 @@ async function runMain(args: string[]) {
   }
 }
 
-// TC-DISPATCH-001: job resume with valid slug → calls runResume
+// TC-DISPATCH-001: job resume with valid slug → calls runResumeCore
 describe("TC-DISPATCH-001: job resume with valid slug", () => {
-  it("calls runResume with the slug argument", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+  it("calls runResumeCore with the slug argument", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-feature-slug"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-feature-slug",
       expect.objectContaining({ from: undefined, force: false, logLevel: "default" }),
     );
@@ -167,42 +167,42 @@ describe("TC-DISPATCH-002: job resume without slug", () => {
   });
 });
 
-// TC-DISPATCH-003: job resume with --from=critic → passed to runResume (CLI no longer rejects)
-describe("TC-DISPATCH-003: --from=critic passes through to runResume", () => {
-  it("passes from: 'critic' to runResume without CLI-level rejection", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+// TC-DISPATCH-003: job resume with --from=critic → passed to runResumeCore (CLI no longer rejects)
+describe("TC-DISPATCH-003: --from=critic passes through to runResumeCore", () => {
+  it("passes from: 'critic' to runResumeCore without CLI-level rejection", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--from=critic"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ from: "critic" }),
     );
   });
 });
 
-// TC-DISPATCH-004: job resume with --from=fixer → passed to runResume (CLI no longer rejects)
-describe("TC-DISPATCH-004: --from=fixer passes through to runResume", () => {
-  it("passes from: 'fixer' to runResume without CLI-level rejection", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+// TC-DISPATCH-004: job resume with --from=fixer → passed to runResumeCore (CLI no longer rejects)
+describe("TC-DISPATCH-004: --from=fixer passes through to runResumeCore", () => {
+  it("passes from: 'fixer' to runResumeCore without CLI-level rejection", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--from=fixer"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ from: "fixer" }),
     );
   });
 });
 
-// TC-DISPATCH-005: job resume with --from=creator → passed to runResume (CLI no longer rejects)
-describe("TC-DISPATCH-005: --from=creator passes through to runResume", () => {
-  it("passes from: 'creator' to runResume without CLI-level rejection", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+// TC-DISPATCH-005: job resume with --from=creator → passed to runResumeCore (CLI no longer rejects)
+describe("TC-DISPATCH-005: --from=creator passes through to runResumeCore", () => {
+  it("passes from: 'creator' to runResumeCore without CLI-level rejection", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--from=creator"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ from: "creator" }),
     );
@@ -211,12 +211,12 @@ describe("TC-DISPATCH-005: --from=creator passes through to runResume", () => {
 
 // TC-DISPATCH-005b: job resume with --from=code-fixer (valid step name)
 describe("TC-DISPATCH-005b: --from=code-fixer (valid step name accepted)", () => {
-  it("passes from: 'code-fixer' to runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+  it("passes from: 'code-fixer' to runResumeCore", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--from=code-fixer"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ from: "code-fixer" }),
     );
@@ -225,13 +225,13 @@ describe("TC-DISPATCH-005b: --from=code-fixer (valid step name accepted)", () =>
 
 // TC-DISPATCH-006: job resume with arbitrary --from value → CLI accepts, passes to core
 // (Validation moved to core: buildAllowedStepSet → resolveResumeStep)
-describe("TC-DISPATCH-006: arbitrary --from value passes through CLI to runResume", () => {
-  it("passes from: 'nonexistent-step' to runResume (CLI no longer rejects; core validates)", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+describe("TC-DISPATCH-006: arbitrary --from value passes through CLI to runResumeCore", () => {
+  it("passes from: 'nonexistent-step' to runResumeCore (CLI no longer rejects; core validates)", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--from=nonexistent-step"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ from: "nonexistent-step" }),
     );
@@ -240,12 +240,12 @@ describe("TC-DISPATCH-006: arbitrary --from value passes through CLI to runResum
 
 // TC-DISPATCH-007: job resume with --force → passes force: true
 describe("TC-DISPATCH-007: --force flag", () => {
-  it("passes force: true to runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+  it("passes force: true to runResumeCore", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--force"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ force: true }),
     );
@@ -261,14 +261,14 @@ describe("TC-DISPATCH-008: unknown flag", () => {
   });
 });
 
-// TC-DISPATCH-009: job resume with --prompt → passes prompt to runResume
-describe("TC-DISPATCH-009: --prompt flag passes prompt to runResume", () => {
-  it("passes prompt: 'extra context' to runResume", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+// TC-DISPATCH-009: job resume with --prompt → passes prompt to runResumeCore
+describe("TC-DISPATCH-009: --prompt flag passes prompt to runResumeCore", () => {
+  it("passes prompt: 'extra context' to runResumeCore", async () => {
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
 
     await runMain(["job", "resume", "my-slug", "--prompt=extra context"]);
 
-    expect(runResume).toHaveBeenCalledWith(
+    expect(runResumeCore).toHaveBeenCalledWith(
       "my-slug",
       expect.objectContaining({ prompt: "extra context" }),
     );
@@ -291,15 +291,15 @@ describe("TC-DISPATCH-010: --prompt and --prompt-file are mutually exclusive", (
   });
 });
 
-// TC-DISPATCH-011: job resume with --prompt-file reads file content and passes to runResume
-describe("TC-DISPATCH-011: --prompt-file reads file content and passes to runResume", () => {
+// TC-DISPATCH-011: job resume with --prompt-file reads file content and passes to runResumeCore
+describe("TC-DISPATCH-011: --prompt-file reads file content and passes to runResumeCore", () => {
   it("passes file content as prompt", async () => {
-    const { runResume } = await import("../../../src/cli/resume.js");
+    const { runResumeCore } = await import("../../../src/cli/resume.js");
     const tmpFile = path.join(os.tmpdir(), `tc-dispatch-011-${Date.now()}.md`);
     await fs.writeFile(tmpFile, "fix content");
     try {
       await runMain(["job", "resume", "my-slug", `--prompt-file=${tmpFile}`]);
-      expect(runResume).toHaveBeenCalledWith(
+      expect(runResumeCore).toHaveBeenCalledWith(
         "my-slug",
         expect.objectContaining({ prompt: "fix content" }),
       );

@@ -1,0 +1,174 @@
+{
+  "EC-01-success-zero": {
+    "exitCode": 0,
+    "stdout": [],
+    "stderr": []
+  },
+  "EC-02-primitive-nonzero": {
+    "exitCode": 7,
+    "stdout": [],
+    "stderr": []
+  },
+  "EC-03-handler-usage-error": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: 'job archive': either <slug> or --from-issue is required.\n",
+      "Usage: specrunner job archive <slug> [options]\n       specrunner job archive --from-issue <n> [options]\n\nArchive the completed change folder, remove worktree, and update job status.\n\nPlain archive (without --with-merge): pushes an archive record commit to the feature branch\nand leaves the job in awaiting-archive until the PR is merged. After the PR is merged,\nre-run the same command to complete the transition (archived status + worktree cleanup).\n\nUse --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.\n\nArguments:\n  <slug>            Slug of the request to archive.\n\nOptions:\n  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).\n                         Mutually exclusive with <slug>: specify exactly one.\n  --with-merge           Wait for PR checks to pass, merge, then archive\n  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).\n                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.\n  --help, -h             Show this help message\n\nNote: <slug> and --from-issue are mutually exclusive. Specify exactly one.\n\n"
+    ]
+  },
+  "EC-04-handler-semantic-error": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: Invalid slug 'BAD_SLUG'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/\n"
+    ]
+  },
+  "EC-05-flag-parse-error": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "--issue requires an integer (got: abc)\n",
+      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n\n"
+    ]
+  },
+  "EC-06-specrunner-error-exit2": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: archive failed\n",
+      "Hint: check your slug\n"
+    ]
+  },
+  "EC-07-specrunner-error-exit1": {
+    "exitCode": 1,
+    "stdout": [],
+    "stderr": [
+      "Error: archive failed with exit 1\n",
+      "Hint: check your repo\n"
+    ]
+  },
+  "EC-08-unexpected-error": {
+    "exitCode": 1,
+    "stdout": [],
+    "stderr": [
+      "Fatal: boom\n"
+    ]
+  },
+  "EC-09-top-level-help": {
+    "exitCode": 0,
+    "stdout": [
+      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n"
+    ],
+    "stderr": []
+  },
+  "EC-10-command-help": {
+    "exitCode": 0,
+    "stdout": [
+      "Usage: specrunner job archive <slug> [options]\n       specrunner job archive --from-issue <n> [options]\n\nArchive the completed change folder, remove worktree, and update job status.\n\nPlain archive (without --with-merge): pushes an archive record commit to the feature branch\nand leaves the job in awaiting-archive until the PR is merged. After the PR is merged,\nre-run the same command to complete the transition (archived status + worktree cleanup).\n\nUse --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.\n\nArguments:\n  <slug>            Slug of the request to archive.\n\nOptions:\n  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).\n                         Mutually exclusive with <slug>: specify exactly one.\n  --with-merge           Wait for PR checks to pass, merge, then archive\n  --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).\n                         For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.\n  --help, -h             Show this help message\n\nNote: <slug> and --from-issue are mutually exclusive. Specify exactly one.\n"
+    ],
+    "stderr": []
+  },
+  "EC-11-version": {
+    "exitCode": 0,
+    "stdout": [
+      "0.5.1\n"
+    ],
+    "stderr": []
+  },
+  "EC-12-no-args": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n"
+    ]
+  },
+  "EC-13-unknown-command": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Unknown command: nope\n\n",
+      "Usage: specrunner <command> [options]\n\nRequest commands:\n  request new <slug>              template から request.md を作る\n  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）\n  request ls                      active 配下の request 一覧\n  request template                雛形 markdown を stdout\n  request validate <file|slug>    構文 / 規律 check\n\nJob commands:\n  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)\n  job ls [--json]                 全 job 一覧（区分付き運用ビュー）\n  job show <jobId|slug>           job state 詳細\n  job wait <slug>                 job が settle するまで block (process-death gate)\n  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)\n  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)\n  job reopen <slug>               awaiting-archive job を awaiting-resume に遷移する\n  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する\n  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する\n  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）\n  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計\n\nRules commands:\n  rules new <step> <slug>         step 用の rules ファイルを scaffold\n\nReviewer commands:\n  reviewers new <name>            カスタムレビューワーの雛形を scaffold\n\nEnvironment commands:\n  init                            config scaffold\n  login                           GitHub Device Flow OAuth\n  credentials set <name>          headless 用 credential を credentials.json(0600) に保存\n  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source\n  runtime setup|status|reset      Manage Anthropic runtime resources\n  doctor                          Diagnose environment / config / auth prerequisites\n\nInbox commands:\n  inbox run                       issue から job を自動発火 (承認ラベル + /resume)\n\nAliases:\n  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)\n\nGuide:\n  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)\n\nOptions:\n  --help, -h    Show this help message\n"
+    ]
+  },
+  "EC-14-unknown-subcommand": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Unknown job subcommand: nope\n\n",
+      "Usage: specrunner job start|ls|show|wait|cancel|resume|reopen|attach|archive|prune|stats\n"
+    ]
+  },
+  "EC-15-needs-subcommand": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: specrunner request requires a subcommand.\n\n",
+      "Usage: specrunner request new|prompt|ls|template|validate\n"
+    ]
+  },
+  "EC-16-worktree-guard": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-17-repo-guard": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: 'job stats' requires a git repository.\n",
+      "Hint: Run 'git init' to initialize a repository, or cd into an existing git repository, then re-run.\n"
+    ]
+  },
+  "EC-18-start-from-issue-positional-exclusive": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-19-start-from-issue-issue-exclusive": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-20-start-detach-json-exclusive": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-21-resume-from-issue-positional-exclusive": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-22-archive-slug-from-issue-exclusive": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  },
+  "EC-23-resume-missing-slug": {
+    "exitCode": 2,
+    "stdout": [],
+    "stderr": [
+      "Error: This command cannot be run from inside a worktree.\n",
+      "Hint: Run from the main worktree: cd <MAIN_WORKTREE>\n"
+    ]
+  }
+}

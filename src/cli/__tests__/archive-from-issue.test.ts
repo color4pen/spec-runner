@@ -389,31 +389,21 @@ describe("TC-025: non-local runtime returns attachRuntimeUnsupportedError", () =
 describe("TC-015: slug and --from-issue together exits 2", () => {
   it("TC-015: handler exits with 2 when both slug and --from-issue are provided", async () => {
     const handler = getArchiveHandler();
-    const spy = exitSpy();
     vi.mocked(logError).mockClear();
-    try {
-      await handler(
-        { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
-        makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
-    expect(spy.capturedCode()).toBe(2);
+    const result = await handler(
+      { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 
   it("TC-015: error message includes 'mutually exclusive'", async () => {
     const handler = getArchiveHandler();
-    const spy = exitSpy();
     vi.mocked(logError).mockClear();
-    try {
-      await handler(
-        { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
-        makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
+    await handler(
+      { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
+      makeCtx(),
+    );
     const calls = vi.mocked(logError).mock.calls.map((c) => String(c[0]));
     expect(calls.some((m) => m.includes("mutually exclusive"))).toBe(true);
   });
@@ -426,16 +416,11 @@ describe("TC-015: slug and --from-issue together exits 2", () => {
 describe("TC-016: neither slug nor --from-issue exits 2", () => {
   it("TC-016: handler exits with 2 when no slug and no --from-issue", async () => {
     const handler = getArchiveHandler();
-    const spy = exitSpy();
-    try {
-      await handler(
-        { flags: {}, positional: undefined, positionals: [] },
-        makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
-    expect(spy.capturedCode()).toBe(2);
+    const result = await handler(
+      { flags: {}, positional: undefined, positionals: [] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 });
 

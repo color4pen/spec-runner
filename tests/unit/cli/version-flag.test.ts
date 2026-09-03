@@ -14,12 +14,12 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
 }));
 vi.mock("../../../src/cli/run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
+  runRunCore: vi.fn().mockResolvedValue(0),
   handlePostPipelineState: vi.fn(),
   handleJobStart: vi.fn(),
 }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn().mockResolvedValue(undefined), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResumeCore: vi.fn().mockResolvedValue(0), handleJobResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));

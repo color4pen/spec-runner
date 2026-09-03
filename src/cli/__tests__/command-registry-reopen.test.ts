@@ -113,26 +113,15 @@ describe("TC-004-registry: job reopen without --reason exits with ARG_ERROR", ()
     }
   });
 
-  it("TC-004-registry-d: missing --reason does not start the pipeline", async () => {
-    // Track calls to any run function by checking that the exit happens early
+  it("TC-004-registry-d: missing --reason returns exit code before any pipeline execution", async () => {
+    // Handler returns ARG_ERROR (2) without calling pipeline when --reason is missing
     const handler = getReopenHandler();
     expect(handler).toBeDefined();
 
-    let didCallExit = false;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
-      didCallExit = true;
-      throw new Error(`exit:${String(code)}`);
-    });
-    try {
-      await handler!(makeParsedArgs({ flags: {} }));
-    } catch {
-      /* expected */
-    } finally {
-      exitSpy.mockRestore();
-    }
+    const result = await handler!(makeParsedArgs({ flags: {} }));
 
-    // process.exit must have been called (before any pipeline execution)
-    expect(didCallExit).toBe(true);
+    // Handler must return an exit code (2) early, before any pipeline execution
+    expect(result).toBe(2);
   });
 });
 

@@ -279,14 +279,14 @@ export async function runJobWait(
 
 /**
  * CLI handler for `specrunner job wait <slug>`.
- * Extracted from command-registry.ts inline handler (T-07).
+ * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
  */
-export async function handleJobWait(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobWait(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const slug = parsed.positional;
   if (!slug) {
     stderrWrite("Error: 'job wait' requires a <slug> argument.");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
   const repoRoot = ctx?.repoRoot ?? process.cwd();
-  process.exit(await runJobWait(slug, { repoRoot }));
+  return await runJobWait(slug, { repoRoot });
 }

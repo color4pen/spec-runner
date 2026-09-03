@@ -19,7 +19,6 @@ vi.mock("../run.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../run.js")>();
   return {
     ...actual,
-    runRun: vi.fn().mockResolvedValue(undefined),
     runRunCore: vi.fn().mockResolvedValue(0),
   };
 });
@@ -29,7 +28,7 @@ vi.mock("../resume.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../resume.js")>();
   return {
     ...actual,
-    runResume: vi.fn().mockResolvedValue(undefined),
+    runResumeCore: vi.fn().mockResolvedValue(0),
   };
 });
 
@@ -138,66 +137,38 @@ describe("TC-023: --detach flag が Known flag として登録されている", 
 // ---------------------------------------------------------------------------
 
 describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）", () => {
-  it("TC-004: run handler exits with code 2 when both --detach and --json are given", async () => {
+  it("TC-004: run handler returns exit code 2 when both --detach and --json are given", async () => {
+    // Handler now returns exit code directly (T-05 contract change); no process.exit thrown.
     const handler = COMMANDS["job"]!.children!["start"]!.handler!;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: number) => {
-      throw new Error(`process.exit(${_code})`);
+    const result = await handler({
+      flags: { detach: true, json: true },
+      positional: "my-slug",
+      positionals: ["my-slug"],
     });
-
-    try {
-      await expect(
-        handler({
-          flags: { detach: true, json: true },
-          positional: "my-slug",
-          positionals: ["my-slug"],
-        }),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      exitSpy.mockRestore();
-    }
+    expect(result).toBe(2);
   });
 
-  it("TC-004: job start handler exits with code 2 when both --detach and --json are given", async () => {
+  it("TC-004: job start handler returns exit code 2 when both --detach and --json are given", async () => {
+    // Handler now returns exit code directly (T-05 contract change); no process.exit thrown.
     const startHandler = COMMANDS["job"]!.children!["start"]!.handler!;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: number) => {
-      throw new Error(`process.exit(${_code})`);
+    const result = await startHandler({
+      flags: { detach: true, json: true },
+      positional: "my-slug",
+      positionals: ["my-slug"],
     });
-
-    try {
-      await expect(
-        startHandler({
-          flags: { detach: true, json: true },
-          positional: "my-slug",
-          positionals: ["my-slug"],
-        }),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      exitSpy.mockRestore();
-    }
+    expect(result).toBe(2);
   });
 
-  it("TC-004: --detach alone does NOT exit with code 2 (no ARG_ERROR)", async () => {
+  it("TC-004: --detach alone does NOT return exit code 2 (no ARG_ERROR)", async () => {
+    // Handler now returns exit code directly (T-05 contract change).
     const handler = COMMANDS["job"]!.children!["start"]!.handler!;
-    const exitCodes: number[] = [];
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
-      exitCodes.push(code ?? 0);
-      throw new Error(`process.exit(${code})`);
+    const result = await handler({
+      flags: { detach: true },
+      positional: "my-slug",
+      positionals: ["my-slug"],
     });
-
-    try {
-      await handler({
-        flags: { detach: true },
-        positional: "my-slug",
-        positionals: ["my-slug"],
-      });
-    } catch {
-      // expected: process.exit throws in tests
-    } finally {
-      exitSpy.mockRestore();
-    }
-
-    // No exit code 2 should have been issued
-    expect(exitCodes.filter((c) => c === 2)).toHaveLength(0);
+    // No exit code 2 should be returned (detach alone is valid)
+    expect(result).not.toBe(2);
   });
 });
 
@@ -221,37 +192,24 @@ describe("TC-024: SLUG_REGEX 検証失敗時は spawn せず非ゼロ終了す�
     // The handler must validate the resolved slug with SLUG_REGEX before calling detachSelf.
     // This test verifies that an invalid slug (containing uppercase) in detach mode
     // causes non-zero exit without spawning.
+    // Handler now returns exit code directly (T-05 contract change); no process.exit thrown.
 
     const { detachSelf } = await import("../../core/command/detach.js");
     vi.mocked(detachSelf).mockResolvedValue(0); // TC-015: mockResolvedValue (detachSelf is now async)
 
     const handler = COMMANDS["job"]!.children!["start"]!.handler!;
-    const exitCodes: number[] = [];
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
-      exitCodes.push(code ?? 0);
-      throw new Error(`process.exit(${code})`);
+    // Use a path that would resolve to a slug with uppercase characters
+    // The test is about the SLUG_REGEX gate — if slug is invalid, spawn must not occur
+    const result = await handler({
+      flags: { detach: true },
+      positional: "INVALID-SLUG-WITH-UPPERCASE",
+      positionals: ["INVALID-SLUG-WITH-UPPERCASE"],
     });
 
-    try {
-      // Use a path that would resolve to a slug with uppercase characters
-      // The test is about the SLUG_REGEX gate — if slug is invalid, spawn must not occur
-      await handler({
-        flags: { detach: true },
-        positional: "INVALID-SLUG-WITH-UPPERCASE",
-        positionals: ["INVALID-SLUG-WITH-UPPERCASE"],
-      });
-    } catch {
-      // expected
-    } finally {
-      exitSpy.mockRestore();
-    }
-
     // detachSelf should NOT have been called (or if called, non-zero exit happens)
-    // The key assertion: non-zero exit code was issued
-    const nonZeroExits = exitCodes.filter((c) => c !== 0);
-    // Either non-zero exit happened, or detachSelf was not called
+    // The key assertion: non-zero exit code was returned or detachSelf was not called
     const detachSelfNotCalled = vi.mocked(detachSelf).mock.calls.length === 0;
-    expect(nonZeroExits.length > 0 || detachSelfNotCalled).toBe(true);
+    expect(result !== 0 || detachSelfNotCalled).toBe(true);
   });
 });
 
@@ -266,25 +224,13 @@ describe("job wait subcommand registration", () => {
   });
 
   it("job wait exits with code 2 when slug positional is missing", async () => {
+    // Handler now returns exit code directly (T-05 contract change); no process.exit thrown.
     const waitHandler = COMMANDS["job"]!.children!["wait"]!.handler!;
-    const exitCodes: number[] = [];
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
-      exitCodes.push(code ?? 0);
-      throw new Error(`process.exit(${code})`);
+    const result = await waitHandler({
+      flags: {},
+      positional: undefined,
+      positionals: [],
     });
-
-    try {
-      await waitHandler({
-        flags: {},
-        positional: undefined,
-        positionals: [],
-      });
-    } catch {
-      // expected
-    } finally {
-      exitSpy.mockRestore();
-    }
-
-    expect(exitCodes.some((c) => c === 2)).toBe(true);
+    expect(result).toBe(2);
   });
 });

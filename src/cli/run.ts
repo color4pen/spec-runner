@@ -113,10 +113,4 @@ export async function runRunCore(
   }
 }
 
-export async function runRun(
-  requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number; inboxOrigin?: boolean; onFeatureBranchCreated?: (baseOid: string, branchName: string) => Promise<void> },
-): Promise<void> {
-  process.exit(await runRunCore(requestMdPath, options));
-}
 

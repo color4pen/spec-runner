@@ -1,19 +1,19 @@
 /**
  * Tests for --apply-canon flag in `job resume` handler.
  *
- * TC-015: --apply-canon フラグが applyCanon: true として runResume に伝達される
+ * TC-015: --apply-canon フラグが applyCanon: true として runResumeCore に伝達される
  * TC-017 (should): 既存 resume フラグが --apply-canon 追加後もリグレッションしない
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// T-20: Mock resume.js with only the primitive runResume.
+// T-20: Mock resume.js with only the primitive runResumeCoreCore.
 // The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
-// Mocking runResume lets us assert on argument forwarding from the real handler.
+// Mocking runResumeCoreCore lets us assert on argument forwarding from the real handler.
 vi.mock("../resume.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../resume.js")>();
   return {
     ...actual,
-    runResume: vi.fn().mockResolvedValue(undefined),
+    runResumeCore: vi.fn().mockResolvedValue(0),
   };
 });
 
@@ -40,13 +40,13 @@ vi.mock("../../core/command/detach.js", () => ({
 
 import { COMMANDS } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
-import { runResume } from "../resume.js";
+import { runResumeCore } from "../resume.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getResumeHandler(): (parsed: ParsedArgs) => Promise<void> {
+function getResumeHandler(): (parsed: ParsedArgs) => Promise<number> {
   return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
@@ -63,10 +63,10 @@ function makeParsedArgs(overrides: Partial<ParsedArgs> = {}): ParsedArgs {
 // TC-015: --apply-canon フラグが ResumeCommand まで伝達される
 // ---------------------------------------------------------------------------
 
-describe("TC-015: --apply-canon flag reaches runResume as applyCanon: true", () => {
+describe("TC-015: --apply-canon flag reaches runResumeCore as applyCanon: true", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(runResume).mockResolvedValue(undefined);
+    vi.mocked(runResumeCore).mockResolvedValue(0);
   });
 
   it("TC-015: job resume --apply-canon parses without error", async () => {
@@ -75,17 +75,17 @@ describe("TC-015: --apply-canon flag reaches runResume as applyCanon: true", () 
     // Should not throw during handler execution
     await expect(
       handler(makeParsedArgs({ flags: { "apply-canon": true } }))
-    ).resolves.toBeUndefined();
+    ).resolves.toBeTypeOf("number");
   });
 
-  it("TC-015: applyCanon: true is passed to runResume when --apply-canon is specified", async () => {
+  it("TC-015: applyCanon: true is passed to runResumeCore when --apply-canon is specified", async () => {
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { "apply-canon": true } }));
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [slug, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [slug, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     expect(slug).toBe("my-slug");
-    // The options passed to runResume must include applyCanon: true
+    // The options passed to runResumeCore must include applyCanon: true
     expect((options as Record<string, unknown>)["applyCanon"]).toBe(true);
   });
 
@@ -93,8 +93,8 @@ describe("TC-015: --apply-canon flag reaches runResume as applyCanon: true", () 
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: {} }));
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     // applyCanon should be false or undefined when flag is not given
     expect(!!(options as Record<string, unknown>)["applyCanon"]).toBe(false);
   });
@@ -107,14 +107,14 @@ describe("TC-015: --apply-canon flag reaches runResume as applyCanon: true", () 
 describe("TC-017: existing resume flags continue to work without regression after --apply-canon added", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(runResume).mockResolvedValue(undefined);
+    vi.mocked(runResumeCore).mockResolvedValue(0);
   });
 
   it("TC-017: --force flag still passes as force: true", async () => {
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { force: true } }));
 
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     expect((options as Record<string, unknown>)["force"]).toBe(true);
   });
 
@@ -122,7 +122,7 @@ describe("TC-017: existing resume flags continue to work without regression afte
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { json: true } }));
 
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     expect((options as Record<string, unknown>)["json"]).toBe(true);
   });
 
@@ -130,7 +130,7 @@ describe("TC-017: existing resume flags continue to work without regression afte
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { "no-worktree": true } }));
 
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     expect((options as Record<string, unknown>)["noWorktree"]).toBe(true);
   });
 
@@ -138,7 +138,7 @@ describe("TC-017: existing resume flags continue to work without regression afte
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { verbose: true } }));
 
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     // logLevel is derived from verbose/quiet flags via resolveLogLevel
     expect(options).toBeDefined();
   });
@@ -147,7 +147,7 @@ describe("TC-017: existing resume flags continue to work without regression afte
     const handler = getResumeHandler();
     await expect(
       handler(makeParsedArgs({ flags: { quiet: true } }))
-    ).resolves.toBeUndefined();
+    ).resolves.toBeTypeOf("number");
   });
 
   it("TC-017: all flags combined — --apply-canon + --force + --json + --no-worktree parse correctly", async () => {
@@ -161,7 +161,7 @@ describe("TC-017: existing resume flags continue to work without regression afte
       },
     }));
 
-    const [slug, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [slug, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     const opts = options as Record<string, unknown>;
     expect(slug).toBe("my-slug");
     expect(opts["applyCanon"]).toBe(true);

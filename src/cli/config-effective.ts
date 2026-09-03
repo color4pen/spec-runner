@@ -136,13 +136,13 @@ function formatSource(source: TracedStepConfigSource): string {
 
 /**
  * CLI handler for `specrunner config effective`.
- * Extracted from command-registry.ts inline handler (T-11).
+ * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
  */
 /* c8 ignore next 7 */
-export async function handleConfigEffective(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  process.exit(await runConfigEffective({
+export async function handleConfigEffective(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
+  return await runConfigEffective({
     requestType: parsed.flags["type"] as string | undefined,
     json: !!parsed.flags["json"],
     repoRoot: ctx?.repoRoot,
-  }));
+  });
 }

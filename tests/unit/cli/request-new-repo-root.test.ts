@@ -36,8 +36,8 @@ vi.mock("../../../src/util/repo-root.js", () => ({
 
 // Mock doctor and other heavy CLI modules that are not under test
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn().mockResolvedValue(0), handleDoctor: vi.fn(), handleDoctorRepair: vi.fn(), buildExecFile: vi.fn() }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRunCore: vi.fn().mockResolvedValue(0), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResumeCore: vi.fn().mockResolvedValue(0), handleJobResume: vi.fn() }));
 vi.mock("../../../src/cli/archive.js", () => ({ runArchive: vi.fn(), handleJobArchive: vi.fn(), ARCHIVE_USAGE: "Archive the completed change folder" }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));

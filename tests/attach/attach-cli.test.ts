@@ -103,25 +103,18 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 describe("TC-CLI-001: --branch flag missing → arg error (exit 2)", () => {
   it("command-registry exits 2 when --branch is omitted", async () => {
-    // We test that the registry handler calls process.exit(2) when --branch is absent.
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {
-      throw new Error("process.exit called");
-    }) as never);
-
+    // Handler returns EXIT_CODE.ARG_ERROR (2) when --branch is absent.
     const { COMMANDS } = await import("../../src/cli/command-registry.js");
     const attachHandler = COMMANDS["job"]!.children!["attach"]!.handler!;
 
     // Call handler with no --branch flag (branch = undefined)
-    await expect(
-      attachHandler({
-        flags: {},
-        positionals: [],
-      }),
-    ).rejects.toThrow("process.exit called");
+    const result = await attachHandler({
+      flags: {},
+      positionals: [],
+    });
 
-    // Should have been called with EXIT_CODE.ARG_ERROR = 2
-    expect(exitSpy).toHaveBeenCalledWith(2);
-    exitSpy.mockRestore();
+    // Should return EXIT_CODE.ARG_ERROR = 2
+    expect(result).toBe(2);
   });
 });
 

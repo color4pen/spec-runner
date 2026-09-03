@@ -149,9 +149,9 @@ export async function runPs(
 
 /**
  * CLI handler for `specrunner job ls`.
- * Extracted from command-registry.ts inline handler (T-06).
+ * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
  */
-export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   let githubClient = null;
   try {
     let githubHost = "github.com";
@@ -168,7 +168,7 @@ export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Pro
   } catch {
     // No token available — PR merge check will be skipped
   }
-  process.exit(await runPs(
+  return await runPs(
     {
       active: !!parsed.flags["active"],
       all: !!parsed.flags["all"],
@@ -177,13 +177,13 @@ export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Pro
       repoRoot: ctx!.repoRoot ?? ctx!.invokerCwd,
     },
     githubClient,
-  ));
+  );
 }
 
 /**
  * CLI handler for `specrunner job stats`.
- * Extracted from command-registry.ts inline handler (T-06).
+ * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
  */
-export async function handleJobStats(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  process.exit(await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] }));
+export async function handleJobStats(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
+  return await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] });
 }
