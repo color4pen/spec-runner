@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e40e1f4-6988-48a8-8ab0-54249ac47766",
   "createdAt": "2026-09-02T13:13:05.155Z",
-  "updatedAt": "2026-09-03T01:40:50.931Z",
+  "updatedAt": "2026-09-03T01:42:23.071Z",
   "request": {
     "title": "refactor: CommandSpec registry から inline handler を command module へ抽出する",
     "type": "refactoring",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/command-registry-handler-extraction-8e40e1f4",
-  "error": null,
+  "error": {
+    "code": "CONFORMANCE_RETRIES_EXHAUSTED",
+    "message": "conformance did not approve after 2 iterations",
+    "hint": "Review conformance-result-002.md and fix the implementation manually."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -95,7 +99,8 @@
     "fefe124465898d6aba439d839338cc5b69bf1e44",
     "e930d6c8285deb572771c10a60301f242a7a759c",
     "2a5c4f9ea8ad76a6713dfd9091ba05204d8e9d3a",
-    "71eae66d336e2939267a8790b29f320fa9579e05"
+    "71eae66d336e2939267a8790b29f320fa9579e05",
+    "ce63cb52db82c25b577cf9fddc8e438f0f39c9af"
   ],
   "touchedFiles": {
     "request-review": [],
@@ -143,7 +148,12 @@
       "src/cli/__tests__/architecture-ratchet.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "conformance did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-exhausted"
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -187,7 +197,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 160,
+    "historyCount": 163,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -201,7 +211,7 @@
       "cross-boundary-invariants": 3,
       "scale-tolerance": 3,
       "custom-reviewers": 3,
-      "regression-gate": 3,
+      "regression-gate": 4,
       "conformance": 2
     }
   }
