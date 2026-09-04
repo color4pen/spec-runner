@@ -1,7 +1,7 @@
 /**
  * Provider lifecycle parity contract — ratchet test suite.
  *
- * Twelve structural ratchets that must pass at all times:
+ * Thirteen structural ratchets that must pass at all times:
  *
  *  1. ID ratchet         — CONTRACT_CASES IDs ⊆ REQUIRED_CASE_IDS and vice versa
  *  2. Duplicate ratchet  — no duplicate IDs in CONTRACT_CASES
@@ -15,6 +15,7 @@
  * 10. No-skip ratchet    — no test.skip/it.skip/describe.skip/it.todo/.only in contract files (TC-023)
  * 11. SDK containment    — shared contract modules do not import provider adapters or SDKs (TC-028/TC-029)
  * 12. D5 isolation       — case-table.ts does not import case-ids.ts (TC-040)
+ * 13. case-ids isolation — case-ids.ts has zero import statements (TC-031)
  *
  * The field matrix ratchet (9) uses the TypeScript compiler API to parse
  * src/core/port/agent-runner.ts and extract AgentRunResult member names.
@@ -154,14 +155,14 @@ describe("ratchet:shared", () => {
     expect(violations).toHaveLength(0);
   });
 
-  test("shared case count equals 20", () => {
+  test("shared case count equals 19", () => {
     const shared = CONTRACT_CASES.filter((c) => c.classification === "shared");
-    expect(shared).toHaveLength(20);
+    expect(shared).toHaveLength(19);
   });
 
-  test("provider-specific case count equals 11", () => {
+  test("provider-specific case count equals 12", () => {
     const specific = CONTRACT_CASES.filter((c) => c.classification === "provider-specific");
-    expect(specific).toHaveLength(11);
+    expect(specific).toHaveLength(12);
   });
 });
 
@@ -419,6 +420,20 @@ describe("ratchet:d5-isolation", () => {
       "case-table.ts must not import from case-ids.ts — Design D5 requires the dependency " +
         "to flow only ratchet→{case-table, case-ids}. The ratchet enforces ID and area " +
         "constraints at runtime; the compile-time narrowing is redundant.",
+    ).toBe(false);
+  });
+
+  test("case-ids.ts has zero import statements (TC-031)", () => {
+    const caseIdsPath = resolve(_thisDir, "case-ids.ts");
+    const content = readFileSync(caseIdsPath, "utf8");
+    // Match any import statement at the start of a line (including type imports).
+    // case-ids.ts is the leaf node of the dependency graph; the file comment explicitly
+    // states 'No imports in this file (including type imports) — the ratchet enforces this.'
+    const hasImport = /^\s*import\b/m.test(content);
+    expect(
+      hasImport,
+      "case-ids.ts must have zero import statements — it is the leaf node of the " +
+        "dependency graph. See the file header comment and TC-031.",
     ).toBe(false);
   });
 });

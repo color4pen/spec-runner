@@ -2,20 +2,20 @@
  * Provider lifecycle parity contract case table.
  *
  * 31 cases × 2 providers = 62 test combinations.
- *   shared:           20 cases (both providers "supported" with aligned expectations)
- *   provider-specific: 11 cases (expectations differ non-trivially, or one provider is "absent")
+ *   shared:           19 cases (both providers "supported" with aligned expectations)
+ *   provider-specific: 12 cases (expectations differ non-trivially, or one provider is "absent")
  *
  * Case ID allocation (from REQUIRED_CASE_IDS):
  *   main-work        2 shared
  *   report           3 shared + 2 provider-specific
  *   post-work        2 shared
  *   output-repair    3 shared
- *   transient        4 shared
+ *   transient        3 shared + 1 provider-specific  (budget-exhausted: divergent errorCodes)
  *   timeout          3 shared
  *   metrics          1 shared + 5 provider-specific
  *   context          0 shared + 3 provider-specific
  *   completion-error 2 shared + 1 provider-specific
- *   total:          20 shared + 11 provider-specific = 31
+ *   total:          19 shared + 12 provider-specific = 31
  *
  * Import rules: no provider SDK imports. Only scenario.ts and src/ types.
  * case-ids.ts must NOT be imported here — Design D5 / TC-040 require the dependency
@@ -163,6 +163,18 @@ export interface ProviderExpectation {
 
   /** Expected number of SDK invocations (provider-level calls to queryFn / runStreamed) */
   sdkInvocations?: number;
+
+  // -------------------------------------------------------------------
+  // Emitted domain events (Design D8)
+  // -------------------------------------------------------------------
+
+  /**
+   * Domain event names that must have been emitted ≥once via ctx.emit() during the run.
+   * Used to assert that D8-observable lifecycle events (e.g. "step:retry",
+   * "step:rollover") are emitted in the expected scenarios.
+   * Each entry is matched with expect(emittedEvents).toContain(name).
+   */
+  emittedEvents?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -592,6 +604,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         transientRetryAttempts: 1,
         sdkInvocations: 2,
+        emittedEvents: ["step:retry"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -599,6 +612,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         transientRetryAttempts: 1,
         sdkInvocations: 2,
+        emittedEvents: ["step:retry"],
         errorMustBeAbsent: true,
       },
     },
@@ -607,7 +621,10 @@ export const CONTRACT_CASES: ContractCase[] = [
   {
     id: "transient.budget-exhausted",
     area: "transient",
-    classification: "shared",
+    // provider-specific: same semantic scenario (retry budget exhausted) but divergent
+    // errorCodes — CLAUDE_CODE_QUERY_FAILED vs CODEX_SDK_ERROR. D3 shared guarantee
+    // requires identical observable results; different error codes violate that.
+    classification: "provider-specific",
     scenario: {
       // maxRetries=1: attempt 0 + 1 retry = 2 failures → budget exhausted.
       turns: [{ type: "fail-transient" }],
@@ -620,17 +637,23 @@ export const CONTRACT_CASES: ContractCase[] = [
     expectations: {
       "claude-code": {
         support: "supported",
+        reason:
+          "ClaudeCodeRunner wraps all SDK query errors (including those that exhaust the transient retry budget) with errorCode=CLAUDE_CODE_QUERY_FAILED. The error code is the same whether it is the first failure or the last retry.",
         completionReason: "error",
         transientRetryAttempts: 1,
         errorCode: "CLAUDE_CODE_QUERY_FAILED",
         sdkInvocations: 2,
+        emittedEvents: ["step:retry"],
       },
       codex: {
         support: "supported",
+        reason:
+          "CodexAgentRunner classifies all unhandled SDK errors (transient or non-transient) as CODEX_SDK_ERROR. When the transient retry budget is exhausted the final error carries this generic code rather than a budget-specific code.",
         completionReason: "error",
         transientRetryAttempts: 1,
         errorCode: "CODEX_SDK_ERROR",
         sdkInvocations: 2,
+        emittedEvents: ["step:retry"],
       },
     },
   },
@@ -1019,6 +1042,7 @@ export const CONTRACT_CASES: ContractCase[] = [
           "ClaudeCodeRunner implements a fresh-session rollover loop for the implementer step: on CONTEXT_WINDOW_EXHAUSTED with rollover budget remaining, it discards the exhausted session and starts a new query. sessionRollovers records the discarded session ID.",
         completionReason: "success",
         sessionRolloversLength: 1,
+        emittedEvents: ["step:rollover"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -1057,6 +1081,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "error",
         errorCode: "CONTEXT_WINDOW_EXHAUSTED",
         sessionRolloversLength: 1,
+        emittedEvents: ["step:rollover"],
       },
       codex: {
         support: "absent",

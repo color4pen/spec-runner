@@ -81,12 +81,14 @@ const _observedFields: Map<string, Set<string>> = new Map(
 
 /**
  * Assert a single provider's expectations against an AgentRunResult.
- * Also applies universal invariants (error↔completionReason coherence).
+ * Also applies universal invariants (error↔completionReason coherence) and
+ * the RESULT_FIELD_MATRIX absent-field contract.
  */
 function assertExpectations(
   result: AgentRunResult,
   exp: ProviderExpectation,
   getInvocationCount: () => number,
+  emittedEventNames: readonly string[],
   caseId: string,
   providerId: string,
 ): void {
@@ -254,6 +256,17 @@ function assertExpectations(
     expect(getInvocationCount(), `${tag}: sdkInvocations`).toBe(exp.sdkInvocations);
   }
 
+  // --- Emitted domain events (Design D8) ---
+
+  if (exp.emittedEvents) {
+    for (const expectedEvent of exp.emittedEvents) {
+      expect(
+        emittedEventNames,
+        `${tag}: expected domain event "${expectedEvent}" to have been emitted via ctx.emit()`,
+      ).toContain(expectedEvent);
+    }
+  }
+
   // --- Matrix-universal absent field check (Design D4, D7, TC-015) ---
   //
   // For every field that RESULT_FIELD_MATRIX marks as "absent" for this provider,
@@ -315,9 +328,11 @@ describe("provider-lifecycle-parity", () => {
               // no-op: fake timers handle delays for fake-timer scenarios;
               // real scenarios have no sleep in the happy path
             };
-            const emit = (() => {}) as AgentRunResult["error"] extends infer _E
-              ? (..._args: unknown[]) => void
-              : never;
+            // Collecting emit: records each emitted event name for D8 assertions (Design D8).
+            const emittedEventNames: string[] = [];
+            const emit = (event: string, _payload: Record<string, unknown>): void => {
+              emittedEventNames.push(event);
+            };
 
             const harness = PROVIDER_HARNESSES[providerId]!;
             const { runner, getInvocationCount } = harness.build(scenario, {
@@ -369,6 +384,7 @@ describe("provider-lifecycle-parity", () => {
               result,
               expectation,
               getInvocationCount,
+              emittedEventNames,
               contractCase.id,
               providerId,
             );
