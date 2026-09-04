@@ -279,7 +279,7 @@ export async function runJobWait(
 
 /**
  * CLI handler for `specrunner job wait <slug>`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobWait(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const slug = parsed.positional;

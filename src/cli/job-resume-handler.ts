@@ -23,7 +23,7 @@ import { runResumeFromIssue } from "./resume-from-issue.js";
 
 /**
  * CLI handler for `specrunner job resume`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobResume(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   if (parsed.flags["detach"] && parsed.flags["json"]) {

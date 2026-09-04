@@ -149,7 +149,7 @@ export async function runPs(
 
 /**
  * CLI handler for `specrunner job ls`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   let githubClient = null;
@@ -182,7 +182,7 @@ export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Pro
 
 /**
  * CLI handler for `specrunner job stats`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobStats(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   return await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] });

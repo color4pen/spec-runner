@@ -109,7 +109,7 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
 
 /**
  * CLI handler for `specrunner inbox run`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 13 */
 export async function handleInboxRun(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {

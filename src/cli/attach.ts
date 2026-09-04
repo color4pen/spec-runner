@@ -175,7 +175,7 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
 
 /**
  * CLI handler for `specrunner job attach --branch <branch>`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobAttach(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const branch = parsed.flags["branch"] as string | undefined;

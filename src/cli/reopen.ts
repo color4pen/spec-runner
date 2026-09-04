@@ -68,7 +68,7 @@ export async function runReopenCore(slug: string, options: ReopenOptions): Promi
 
 /**
  * CLI handler for `specrunner job reopen`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 export async function handleJobReopen(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const reason = parsed.flags["reason"] as string | undefined;

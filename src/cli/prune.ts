@@ -106,7 +106,7 @@ export async function runPrune(opts: RunPruneOptions): Promise<number> {
 
 /**
  * CLI handler for `specrunner job prune`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 6 */
 export async function handleJobPrune(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {

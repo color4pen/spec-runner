@@ -231,7 +231,7 @@ export async function runDoctor(opts: {
 
 /**
  * CLI handler for `specrunner doctor`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  * The catch is kept (not deleted) because doctor uses a flat Fatal:/1 for all errors,
  * not the SpecRunnerError-aware two-branch conversion that the dispatch boundary provides.
  */
@@ -252,7 +252,7 @@ export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Pr
 
 /**
  * CLI handler for `specrunner doctor repair <slug>`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  * Dynamic import is maintained (not converted to static import).
  */
 /* c8 ignore next 17 */

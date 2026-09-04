@@ -319,7 +319,7 @@ async function createNewEnvironment(
 
 /**
  * CLI handler for `specrunner runtime setup`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
 export async function handleRuntimeSetup(): Promise<number> {
@@ -328,7 +328,7 @@ export async function handleRuntimeSetup(): Promise<number> {
 
 /**
  * CLI handler for `specrunner runtime status`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
 export async function handleRuntimeStatus(): Promise<number> {
@@ -337,7 +337,7 @@ export async function handleRuntimeStatus(): Promise<number> {
 
 /**
  * CLI handler for `specrunner runtime reset`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
 export async function handleRuntimeReset(parsed: ParsedArgs): Promise<number> {

@@ -93,7 +93,7 @@ export async function runCredentialsSet(name: string, opts?: CredentialsSetOpts)
 
 /**
  * CLI handler for `specrunner credentials set <name>`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
 export async function handleCredentialsSet(parsed: ParsedArgs): Promise<number> {

@@ -151,7 +151,7 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
 
 /**
  * CLI handler for `specrunner login`.
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
 export async function handleLogin(parsed: ParsedArgs): Promise<number> {

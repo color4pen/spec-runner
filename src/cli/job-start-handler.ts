@@ -62,7 +62,7 @@ export function resolveSlugForDetach(input: string, cwd: string): string | null 
 
 /**
  * CLI handler for `specrunner job start` (and its `run` alias).
- * Returns the exit code; caller (dispatch boundary) is responsible for process.exit().
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  * The startWithIssueLink dynamic import (../core/issue-target/start.js) is intentionally
  * retained because it is a ../core module (not a ./ module) and is not part of any cycle.
  */
