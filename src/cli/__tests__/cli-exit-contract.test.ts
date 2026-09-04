@@ -134,15 +134,53 @@ afterAll(() => {
 
 // ---------------------------------------------------------------------------
 // Fixture completeness guard
+//
+// EXPECTED_IDS is hard-coded on purpose and must NOT be derived from
+// EXIT_CONTRACT_CASES: removing a case from both the case table and the
+// fixture would otherwise go unnoticed.  Adding or removing a contract case
+// requires editing this list explicitly.
 // ---------------------------------------------------------------------------
 
-const EXPECTED_IDS = EXIT_CONTRACT_CASES.map((c) => c.id);
+const EXPECTED_IDS: readonly string[] = [
+  "EC-01-success-zero",
+  "EC-02-primitive-nonzero",
+  "EC-03-handler-usage-error",
+  "EC-04-handler-semantic-error",
+  "EC-05-flag-parse-error",
+  "EC-06-specrunner-error-exit2",
+  "EC-07-specrunner-error-exit1",
+  "EC-08-unexpected-error",
+  "EC-09-top-level-help",
+  "EC-10-command-help",
+  "EC-11-version",
+  "EC-12-no-args",
+  "EC-13-unknown-command",
+  "EC-14-unknown-subcommand",
+  "EC-15-needs-subcommand",
+  "EC-16-worktree-guard",
+  "EC-17-repo-guard",
+  "EC-18-start-from-issue-positional-exclusive",
+  "EC-19-start-from-issue-issue-exclusive",
+  "EC-20-start-detach-json-exclusive",
+  "EC-21-resume-from-issue-positional-exclusive",
+  "EC-22-archive-slug-from-issue-exclusive",
+  "EC-23-resume-missing-slug",
+];
 
 describe("cli-exit-contract fixture completeness", () => {
-  it("fixture key set matches expected case ID list exactly", () => {
+  it("hard-coded expected ID list has 23 unique entries", () => {
+    expect(EXPECTED_IDS).toHaveLength(23);
+    expect(new Set(EXPECTED_IDS).size).toBe(23);
+  });
+
+  it("case table ID set matches the hard-coded expected ID list exactly", () => {
+    const tableIds = EXIT_CONTRACT_CASES.map((c) => c.id).sort();
+    expect(tableIds).toEqual([...EXPECTED_IDS].sort());
+  });
+
+  it("fixture key set matches the hard-coded expected ID list exactly", () => {
     const fixtureKeys = Object.keys(baseFixture).sort();
-    const expectedKeys = [...EXPECTED_IDS].sort();
-    expect(fixtureKeys).toEqual(expectedKeys);
+    expect(fixtureKeys).toEqual([...EXPECTED_IDS].sort());
   });
 });
 

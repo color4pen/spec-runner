@@ -13,6 +13,7 @@ import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
 import { getVersion } from "../src/cli/version.js";
 import { buildCommandContext } from "../src/cli/command-context.js";
+import { maskSensitive } from "../src/logger/stdout.js";
 
 
 function emitHelp(usage: string | undefined): never {
@@ -99,11 +100,11 @@ export async function main(): Promise<void> {
     parsed = parseFlags(restArgs, spec.flags ?? {}, positionalDef);
   } catch (e) {
     if (e instanceof FlagParseError) {
-      process.stderr.write(e.message + "\n");
-      process.stderr.write(spec.help?.detail ?? USAGE);
+      process.stderr.write(maskSensitive(e.message + "\n"));
+      process.stderr.write(maskSensitive(spec.help?.detail ?? USAGE));
       process.exit(2);
     }
-    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+    process.stderr.write(maskSensitive(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`));
     process.exit(1);
   }
 
@@ -117,21 +118,23 @@ export async function main(): Promise<void> {
   }
 
   // Dispatch — handler returns exit code; process.exit is called once, outside the try/catch.
+  // Error boundary output is masked in place (maskSensitive on the exact byte sequence that
+  // was written before) so the write units, wording, and newlines stay identical.
   let code: number;
   try {
     code = await spec.handler!(parsed, ctx);
   } catch (e) {
     if (e instanceof FlagParseError) {
-      process.stderr.write(e.message + "\n");
-      process.stderr.write(spec.help?.detail ?? USAGE);
+      process.stderr.write(maskSensitive(e.message + "\n"));
+      process.stderr.write(maskSensitive(spec.help?.detail ?? USAGE));
       process.exit(2);
     }
     if (e instanceof SpecRunnerError) {
-      process.stderr.write(`Error: ${e.message}\n`);
-      process.stderr.write(`Hint: ${e.hint}\n`);
+      process.stderr.write(maskSensitive(`Error: ${e.message}\n`));
+      process.stderr.write(maskSensitive(`Hint: ${e.hint}\n`));
       process.exit(e.exitCode);
     }
-    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+    process.stderr.write(maskSensitive(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`));
     process.exit(1);
   }
   process.exit(code);
