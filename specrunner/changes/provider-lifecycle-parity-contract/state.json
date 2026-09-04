@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T09:41:09.750Z",
+  "updatedAt": "2026-09-04T09:53:49.212Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -73,7 +73,8 @@
     "c791b949620cc327a931d80ffd1b989c4177a1e6",
     "505c53c383ee9e9e383c03b0fecf4683567b2b6c",
     "d2f85d81db58e159bd0d371a15138118c0045fa0",
-    "163aec98dc1e067260c9b26111b1a36ae91fe6ac"
+    "163aec98dc1e067260c9b26111b1a36ae91fe6ac",
+    "a402cdb342acd44803d19ba122fc95fbb10b3854"
   ],
   "touchedFiles": {
     "request-review": [
@@ -139,17 +140,13 @@
     ],
     "code-fixer": [
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
       "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
-      "tests/unit/contract/provider-lifecycle/harness/types.ts",
-      "tests/unit/contract/provider-lifecycle/case-table.ts",
-      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
-      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
-      "tests/unit/contract/provider-lifecycle/case-ids.ts",
-      "src/core/port/agent-runner.ts"
+      "tests/unit/contract/provider-lifecycle/case-table.ts"
     ]
   },
   "_journal": {
-    "historyCount": 40,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -159,7 +156,7 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1
+      "code-fixer": 2
     }
   }
 }
