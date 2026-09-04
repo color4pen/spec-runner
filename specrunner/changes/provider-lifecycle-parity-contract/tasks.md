@@ -173,12 +173,13 @@
       `emittedEvents?`（含むべき event 名）/ `fieldPresence?`（capability field → `present` | `absent`）
 - [x] `case-table.ts` は `case-ids.ts` を import **しない**（ID 正典との突合は ratchet が行う）
 - [x] 31 件の case を T-01 の ID 一覧どおりに定義する。分類の内訳は次を満たす:
-      - `shared` 20 件: `main-work` 2、`report` 3（first-turn-success /
+      - `shared` 19 件: `main-work` 2、`report` 3（first-turn-success /
         follow-up-recovers / follow-up-budget-exhausted）、`post-work` 2、`output-repair` 3、
-        `transient` 4、`timeout` 3、`metrics` 1（session-rollovers-absent-without-rollover）、
+        `transient` 3、`timeout` 3、`metrics` 1（session-rollovers-absent-without-rollover）、
         `completion-error` 2（result-file-not-found / success-field-coherence）
-      - `provider-specific` 11 件: `report` 2（settle-on-abort-with-captured-report /
-        parse-failure-diagnostics）、`context` 3、`metrics` 5（model-usage-populated /
+      - `provider-specific` 12 件: `report` 2（settle-on-abort-with-captured-report /
+        parse-failure-diagnostics）、`transient` 1（budget-exhausted: errorCode が
+        `CLAUDE_CODE_QUERY_FAILED` / `CODEX_SDK_ERROR` で異なる）、`context` 3、`metrics` 5（model-usage-populated /
         invocation-metrics-presence / context-metrics-presence / touched-files-presence /
         added-turns-invariant）、`completion-error` 1（generic-sdk-failure-code）
 - [x] 各 provider-specific case の各 provider 期待値に **理由**を書く。最低限、次の内容を含める:
@@ -398,23 +399,24 @@
 | 分類 | 件数 |
 |------|------|
 | 総数 | 31 |
-| shared（両 provider とも supported） | 20 |
-| provider-specific（片方以上が absent または理由付き） | 11 |
-| absent 期待値（skip されるテスト） | 8（codex 6、claude-code 2） |
+| shared（両 provider とも supported） | 19 |
+| provider-specific（片方以上が absent または理由付き） | 12 |
+| absent 期待値（skip せず absent 挙動をアサートして実行） | 8（codex 7、claude-code 1） |
 
 コマンド: `bun run test -- tests/unit/contract/provider-lifecycle/ --reporter=verbose 2>&1 | grep "Tests "`
 
 ### Claude / Codex それぞれの実行 case 数
 
-| provider | 実行 case 数（passed）| skip 数 |
-|----------|----------------------|---------|
-| claude-code | 31 | 2 |
-| codex | 23 | 8 |
+| provider | 実行 case 数（passed）| うち absent 期待値 | skip 数 |
+|----------|----------------------|--------------------|---------|
+| claude-code | 31 | 1 | 0 |
+| codex | 31 | 7 | 0 |
 
-注: parity driver の `Tests  54 passed | 8 skipped (62)` から計算。
-claude-code: 31 cases × 1 = 31 passed, 2 absent → 0 run (0 skipped in claude-code side)。
-実際: 31 cases のうち claude-code absent = 2、codex absent = 6。
-claude-code passed = 31 - 2 = 29、codex passed = 31 - 6 = 25。総 54 passed ✓（29+25=54）
+注: parity driver の `Tests  64 passed (64)` から計算（31 cases × 2 providers = 62 pair +
+ledger テスト 2 件）。absent 期待値の pair も skip せず実行し absent 挙動をアサートする（TC-012 / TC-042）。
+31 cases のうち claude-code absent = 1（report.parse-failure-diagnostics）、
+codex absent = 7（report.settle-on-abort-with-captured-report / context 系 2 / metrics 系 4）。
+supported pair = claude-code 30 + codex 24 = 54、absent pair = 1 + 7 = 8、合計 62 pair ✓
 
 コマンド: `bun run test -- tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts 2>&1 | tail -5`
 
