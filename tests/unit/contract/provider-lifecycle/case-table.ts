@@ -87,12 +87,6 @@ export interface ProviderExpectation {
     outputRepair: number;
   } | "absent";
 
-  /**
-   * When true: assert that addedTurns.reportRetry + addedTurns.outputRepair === followUpAttempts.
-   * Claude only; requires addedTurns to be defined.
-   */
-  assertAddedTurnsInvariant?: boolean;
-
   // -------------------------------------------------------------------
   // Result content
   // -------------------------------------------------------------------
@@ -1271,7 +1265,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         followUpAttempts: 1,
         addedTurns: { reportRetry: 1, postWork: 0, outputRepair: 0 },
-        assertAddedTurnsInvariant: true,
+        // addedTurns invariant is now applied universally by the driver (Design D7)
       },
       codex: {
         support: "absent",

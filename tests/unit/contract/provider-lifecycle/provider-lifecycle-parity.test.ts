@@ -147,14 +147,15 @@ function assertExpectations(
     }
   }
 
-  // --- addedTurns invariant: reportRetry + outputRepair === followUpAttempts ---
-
-  if (exp.assertAddedTurnsInvariant) {
-    expect(result.addedTurns, `${tag}: addedTurns must be defined for invariant check`).toBeDefined();
-    const { reportRetry = 0, outputRepair = 0 } = result.addedTurns ?? {};
+  // --- addedTurns invariant: reportRetry + outputRepair === followUpAttempts (Design D7, universal) ---
+  //
+  // Applied to every run result where addedTurns is defined, not opt-in.
+  // postWork does NOT count toward followUpAttempts.
+  if (result.addedTurns !== undefined) {
+    const { reportRetry = 0, outputRepair = 0 } = result.addedTurns;
     expect(
       reportRetry + outputRepair,
-      `${tag}: addedTurns.reportRetry + addedTurns.outputRepair must equal followUpAttempts`,
+      `${tag} [universal]: addedTurns.reportRetry + addedTurns.outputRepair must equal followUpAttempts`,
     ).toBe(result.followUpAttempts);
   }
 
