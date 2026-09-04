@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T12:34:12.765Z",
+  "updatedAt": "2026-09-04T12:44:09.085Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
   "pipelineId": "standard",
@@ -88,7 +88,9 @@
     "97f16bfe01e881cffa6c5b681a580ced6da6ccb9",
     "80f5e0293cfecf701cb0cf6d352b8b8366a9fa50",
     "219d1add19f0c78f57f0c0e58fd0fe4be36905bf",
-    "71b236c8b30cd3cd9d21746c587919fcfaa5b0c3"
+    "71b236c8b30cd3cd9d21746c587919fcfaa5b0c3",
+    "75796118ec80f4ea0f20c3561cce0f9d600445b7",
+    "27f7967898db3c829119614af8b3c22e01eb6fb4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,12 +136,11 @@
     ],
     "conformance": [
       "tests/unit/contract/provider-lifecycle/case-ids.ts",
-      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
       "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
+      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
       "tests/unit/contract/provider-lifecycle/case-table.ts",
-      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
-      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts"
+      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts"
     ]
   },
   "reviewerStatuses": [
@@ -173,8 +174,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1117",
+    "number": 1117,
+    "createdAt": "2026-09-04T12:44:08.396Z"
+  },
   "_journal": {
-    "historyCount": 122,
+    "historyCount": 136,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -182,14 +188,16 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 2,
-      "verification": 3,
+      "verification": 4,
       "code-review": 5,
       "code-fixer": 5,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 3,
-      "conformance": 2
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
