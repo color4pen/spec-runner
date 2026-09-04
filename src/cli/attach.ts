@@ -175,35 +175,23 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
 
 /**
  * CLI handler for `specrunner job attach --branch <branch>`.
- * Extracted from command-registry.ts inline handler (T-09).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
-export async function handleJobAttach(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobAttach(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const branch = parsed.flags["branch"] as string | undefined;
   if (!branch) {
     logError("--branch <branch> is required for 'job attach'.");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
   const logLevel = resolveLogLevel({
     quiet: !!parsed.flags["quiet"],
     verbose: !!parsed.flags["verbose"],
     debug: !!parsed.flags["debug"],
   });
-  try {
-    process.exit(
-      await runAttach({
-        branch,
-        cwd: ctx!.invokerCwd,
-        repoRoot: ctx!.repoRoot!,
-        logLevel,
-      }),
-    );
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${err.message}`);
-      stderrWrite(`Hint: ${err.hint}`);
-      process.exit(err.exitCode);
-    }
-    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
+  return await runAttach({
+    branch,
+    cwd: ctx!.invokerCwd,
+    repoRoot: ctx!.repoRoot!,
+    logLevel,
+  });
 }

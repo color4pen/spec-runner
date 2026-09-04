@@ -103,7 +103,4 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   }
 }
 
-export async function runResume(slug: string, options: ResumeOptions): Promise<void> {
-  process.exit(await runResumeCore(slug, options));
-}
 

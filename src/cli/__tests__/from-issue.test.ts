@@ -39,7 +39,6 @@ vi.mock("../../core/command/detach.js", () => ({
 // The real handleJobStart is now in job-start-handler.ts and imported by command-registry.ts.
 // Mocking run.js here allows asserting on runRunCore calls from the real handler.
 vi.mock("../run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
   runRunCore: vi.fn().mockResolvedValue(0),
 }));
 
@@ -142,31 +141,20 @@ function exitSpy() {
 describe("TC-005: --from-issue と positional の併用は usage エラー", () => {
   it("TC-005: exits with ARG_ERROR (2) when --from-issue and positional are both given", async () => {
     const handler = getJobStartHandler();
-    const spy = exitSpy();
-    try {
-      await expect(
-        handler(
-          { flags: { "from-issue": 5 }, positional: "some-slug", positionals: ["some-slug"] },
-          makeCtx(),
-        ),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      spy.mockRestore();
-    }
+    const result = await handler(
+      { flags: { "from-issue": 5 }, positional: "some-slug", positionals: ["some-slug"] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 
   it("TC-005: --from-issue + positional logs a usage error", async () => {
     const handler = getJobStartHandler();
-    const spy = exitSpy();
     vi.mocked(logError).mockClear();
-    try {
-      await handler(
-        { flags: { "from-issue": 5 }, positional: "some-slug", positionals: ["some-slug"] },
-        makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
+    await handler(
+      { flags: { "from-issue": 5 }, positional: "some-slug", positionals: ["some-slug"] },
+      makeCtx(),
+    );
     const calls = vi.mocked(logError).mock.calls.map((c) => String(c[0]));
     expect(calls.some((m) => m.includes("mutually exclusive"))).toBe(true);
   });
@@ -179,31 +167,20 @@ describe("TC-005: --from-issue と positional の併用は usage エラー", () 
 describe("TC-006: --from-issue と --issue の併用は usage エラー", () => {
   it("TC-006: exits with ARG_ERROR (2) when both --from-issue and --issue are given", async () => {
     const handler = getJobStartHandler();
-    const spy = exitSpy();
-    try {
-      await expect(
-        handler(
-          { flags: { "from-issue": 5, issue: 6 }, positional: undefined, positionals: [] },
-          makeCtx(),
-        ),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      spy.mockRestore();
-    }
+    const result = await handler(
+      { flags: { "from-issue": 5, issue: 6 }, positional: undefined, positionals: [] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 
   it("TC-006: --from-issue + --issue logs a usage error mentioning both flags", async () => {
     const handler = getJobStartHandler();
-    const spy = exitSpy();
     vi.mocked(logError).mockClear();
-    try {
-      await handler(
-        { flags: { "from-issue": 5, issue: 6 }, positional: undefined, positionals: [] },
-        makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
+    await handler(
+      { flags: { "from-issue": 5, issue: 6 }, positional: undefined, positionals: [] },
+      makeCtx(),
+    );
     const calls = vi.mocked(logError).mock.calls.map((c) => String(c[0]));
     expect(calls.some((m) => m.includes("mutually exclusive"))).toBe(true);
   });
@@ -216,17 +193,11 @@ describe("TC-006: --from-issue と --issue の併用は usage エラー", () => 
 describe("TC-012: --from-issue も positional も指定なしで usage エラー", () => {
   it("TC-012: exits with ARG_ERROR (2) when neither --from-issue nor positional is given", async () => {
     const handler = getJobStartHandler();
-    const spy = exitSpy();
-    try {
-      await expect(
-        handler(
-          { flags: {}, positional: undefined, positionals: [] },
-          makeCtx(),
-        ),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      spy.mockRestore();
-    }
+    const result = await handler(
+      { flags: {}, positional: undefined, positionals: [] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 });
 

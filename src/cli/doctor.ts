@@ -100,8 +100,8 @@ export const buildExecFile = (
  * @param opts.invokerCwd  - The actual working directory from which the command was invoked.
  *                           Defaults to process.cwd() when not provided (role (a) default).
  * @returns Exit code: 0 (all pass/warn) or 1 (any fail).
- *          The caller (bin/specrunner.ts) is responsible for process.exit().
- *          Exit code 2 (crash) is handled by the outer try/catch in bin/specrunner.ts.
+ *          Caller returns this exit code to the dispatch boundary (bin/specrunner.ts).
+ *          Unexpected errors propagate to `handleDoctor`, which catches them and returns 1.
  */
 export async function runDoctor(opts: {
   json: boolean;
@@ -231,45 +231,46 @@ export async function runDoctor(opts: {
 
 /**
  * CLI handler for `specrunner doctor`.
- * Extracted from command-registry.ts inline handler (T-13).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
+ * The catch is kept (not deleted) because doctor uses a flat Fatal:/1 for all errors,
+ * not the SpecRunnerError-aware two-branch conversion that the dispatch boundary provides.
  */
 /* c8 ignore next 13 */
-export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleDoctor(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   // default action: run diagnostics
   try {
-    process.exit(await runDoctor({
+    return await runDoctor({
       json: !!parsed.flags["json"],
       repoRoot: ctx?.repoRoot,
       invokerCwd: ctx?.invokerCwd,
-    }));
+    });
   } catch (err: unknown) {
     stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(EXIT_CODE.GENERAL_ERROR);
+    return EXIT_CODE.GENERAL_ERROR;
   }
 }
 
 /**
  * CLI handler for `specrunner doctor repair <slug>`.
- * Extracted from command-registry.ts inline handler (T-13).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  * Dynamic import is maintained (not converted to static import).
  */
-/* c8 ignore next 19 */
-export async function handleDoctorRepair(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+/* c8 ignore next 17 */
+export async function handleDoctorRepair(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const slug = parsed.positional;
   if (!slug) {
     stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
     stderrWrite("Usage: specrunner doctor repair <slug>\n");
-    process.exit(2);
-    return;
+    return 2;
   }
   const repoRoot = ctx?.repoRoot ?? process.cwd();
   try {
     const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
     const result = await repairSlugOccupancySidecar(repoRoot, slug);
     stderrWrite(result.message + "\n");
-    process.exit(0);
+    return 0;
   } catch (err: unknown) {
     stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
-    process.exit(EXIT_CODE.GENERAL_ERROR);
+    return EXIT_CODE.GENERAL_ERROR;
   }
 }

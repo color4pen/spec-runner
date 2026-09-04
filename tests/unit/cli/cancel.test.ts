@@ -197,3 +197,47 @@ describe("T-047: restoreDraft forwarded to cancelSingleJob", () => {
     }));
   });
 });
+
+// T-handle-cancel-invalid-id: handleJobCancel returns ARG_ERROR (2) for invalid jobId chars
+describe("T-handle-cancel-invalid-id: handleJobCancel returns ARG_ERROR for invalid jobId", () => {
+  it("returns 2 and writes error to stderr when jobId contains invalid chars", async () => {
+    const { handleJobCancel } = await import("../../../src/cli/cancel.js");
+
+    const parsed = { positional: "../../invalid!", flags: {}, positionals: ["../../invalid!"] };
+    const ctx = { repoRoot: "/repo", invokerCwd: "/repo" };
+
+    const result = await handleJobCancel(parsed, ctx);
+
+    expect(result).toBe(2);
+    expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("invalid jobId format"));
+  });
+});
+
+// T-handle-cancel-flags: handleJobCancel forwards parsed flags to runCancel and returns its exit code
+describe("T-handle-cancel-flags: handleJobCancel forwards flags and returns runCancel exit code", () => {
+  it("returns exit code from underlying runCancel and passes flags correctly", async () => {
+    const cancelRunner = await import("../../../src/core/cancel/runner.js");
+    (cancelRunner.cancelSingleJob as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exitCode: 5,
+      message: "Canceled with code 5.",
+      info: [],
+      warnings: [],
+    });
+
+    const { handleJobCancel } = await import("../../../src/cli/cancel.js");
+
+    const parsed = {
+      positional: "abc123",
+      positionals: ["abc123"],
+      flags: { "force": true, "purge": true, "all-terminated": false, "yes": false, "restore-draft": false },
+    };
+    const ctx = { repoRoot: "/repo", invokerCwd: "/repo" };
+
+    const result = await handleJobCancel(parsed, ctx);
+
+    expect(result).toBe(5);
+    expect(cancelRunner.cancelSingleJob).toHaveBeenCalledWith(
+      expect.objectContaining({ force: true, purge: true }),
+    );
+  });
+});

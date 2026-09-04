@@ -1,0 +1,218 @@
+{
+  "version": 2,
+  "jobId": "61bd403d-a2d9-4bd6-b4f7-0de1df4c2b94",
+  "createdAt": "2026-09-03T13:03:55.638Z",
+  "updatedAt": "2026-09-03T16:00:56.188Z",
+  "request": {
+    "title": "refactor: CommandHandlerをexit code返却契約へ変更しprocess.exitをdispatch境界へ集約する",
+    "type": "refactoring",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "refactor/cli-handler-exit-boundary-61bd403d",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1111,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "da97151422ebdd5979dfad6fd63067bd170964bd",
+    "ea644de2c46ffca1cbd41e11c695df60ce8e2623",
+    "187a1dc335e43d94499d31a7bb05689d86aaff6a",
+    "3adc3c1cf829987d9a718fe970cba9c32dae5612",
+    "4da1355e8c4fec00565081a8af4756708191b612",
+    "535c18c5506553b4fa4214c6b8fa8f6c3efeebf5",
+    "ec22b1444b512882cf0267071d76a6fd98949c03",
+    "1e0223e998aadf7bd4c354da4030f940250990d2",
+    "82a61b2bbc830c663a4b9491b02b82e695a1f821",
+    "dc68d122c1029b91d658d2b991bdb10361fe2320",
+    "e2356422b5f43f7183f5cd77ecf39217b314b048",
+    "977d93cd2748e215bd2ea95a5029ef14b0ce918c",
+    "5ef267fb9686b9ffdfee09e9006e0693640a7208",
+    "c93b1828d1a7011a8562fb68a785f2f139839a8b",
+    "b73d6f0283743348f25b027c4f33c16b7beb32d2",
+    "560d375b765d4a30d295c032db9f0308849d440c",
+    "1f28642da8f8842f1ffb9965e3b3637af7fb26d3",
+    "57a625941de38c91530a9cdc6367f40763ab7ffd",
+    "944bf0e37ba2611658e20c648d0ad5441d23708f"
+  ],
+  "touchedFiles": {
+    "request-review": [],
+    "design": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/__tests__/cli-contract-normalize.ts",
+      "src/cli/reopen.ts",
+      "src/cli/job-archive-handler.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/command-handler.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-contract-snapshot.test.ts",
+      "src/cli/job-start-handler.ts",
+      "src/cli/reopen.ts",
+      "src/cli/job-archive-handler.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/cli/cancel.ts",
+      "tests/unit/cli/cancel.test.ts",
+      "src/logger/stdout.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-context.ts"
+    ],
+    "code-review": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-exit-contract.test.ts",
+      "src/cli/job-resume-handler.ts",
+      "src/cli/job-archive-handler.ts",
+      "src/cli/doctor.ts",
+      "src/cli/reopen.ts",
+      "src/cli/prune.ts",
+      "src/cli/attach.ts",
+      "src/cli/__tests__/exit-contract-harness.ts",
+      "src/cli/__tests__/exit-contract-cases.ts",
+      "src/cli/__tests__/fixtures/cli-exit-contract.base.json",
+      "src/cli/cancel.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/generate-exit-contract-fixture.test.ts",
+      "src/cli/__tests__/command-registry-adopt-commits.test.ts",
+      "src/cli/job-start-handler.ts"
+    ],
+    "code-fixer": [
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/exit-contract-harness.ts"
+    ],
+    "regression-gate": [
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/exit-contract-harness.ts"
+    ],
+    "conformance": [
+      "src/cli/command-handler.ts",
+      "bin/specrunner.ts",
+      "src/cli/__tests__/architecture-ratchet.test.ts",
+      "src/cli/__tests__/cli-exit-contract.test.ts",
+      "src/cli/__tests__/fixtures/cli-exit-contract.base.json",
+      "src/cli/__tests__/generate-exit-contract-fixture.test.ts"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "verification iter 3 は changed-line-coverage のみ失敗（build / typecheck / test / lint は pass）。対象は src/cli/cancel.ts の handleJobCancel で、process.exit を return に置き換えた行がどのテストからも実行されていない。既存の tests/unit/cli/cancel.test.ts は runCancel だけを直接呼んでいる。対応: handleJobCancel を直接呼ぶ単体テストを追加する（不正な jobId → EXIT_CODE.ARG_ERROR(2) を返し logError が呼ばれる / 正常時 → runCancel を mock してその返り値を透過し、flags が正しく渡ることを確認）。production コードは変更しない。他の既存テストの期待値も変更しない。lint（--max-warnings 0）に通るよう未使用 import を残さないこと。",
+      "step": "implementer",
+      "recordedAt": "2026-09-03T15:32:09.221Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1112",
+    "number": 1112,
+    "createdAt": "2026-09-03T16:00:55.352Z"
+  },
+  "_journal": {
+    "historyCount": 87,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 4,
+      "verification": 5,
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

@@ -10,14 +10,14 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as fsPromises from "node:fs/promises";
 
-// T-20: Mock resume.js with only the primitive runResume.
+// T-20: Mock resume.js with only the primitive runResumeCore.
 // The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
-// Mocking only runResume lets us assert on warning output from the real handler.
+// Mocking only runResumeCore lets us assert on warning output from the real handler.
 vi.mock("../resume.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../resume.js")>();
   return {
     ...actual,
-    runResume: vi.fn().mockResolvedValue(undefined),
+    runResumeCore: vi.fn().mockResolvedValue(0),
   };
 });
 
@@ -45,11 +45,11 @@ vi.mock("../../core/command/detach.js", () => ({
 import { COMMANDS } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { runResume } from "../resume.js";
+import { runResumeCore } from "../resume.js";
 
 const WARNING_SUBSTRING = "--prompt の内容は agent prompt に直接注入";
 
-function getResumeHandler(): (parsed: ParsedArgs) => Promise<void> {
+function getResumeHandler(): (parsed: ParsedArgs) => Promise<number> {
   return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
@@ -67,7 +67,7 @@ describe("job resume handler — prompt injection warning", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.mocked(runResume).mockResolvedValue(undefined);
+    vi.mocked(runResumeCore).mockResolvedValue(0);
     tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "resume-warning-test-"));
   });
 

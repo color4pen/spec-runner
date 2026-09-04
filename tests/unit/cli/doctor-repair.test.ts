@@ -30,17 +30,18 @@ vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
 vi.mock("../../../src/cli/run.js", () => ({
-  runRun: vi.fn().mockResolvedValue(undefined),
+  runRunCore: vi.fn().mockResolvedValue(0),
   handlePostPipelineState: vi.fn(),
   handleJobStart: vi.fn(),
 }));
 vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn().mockResolvedValue(undefined), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResumeCore: vi.fn().mockResolvedValue(0), handleJobResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));
 // doctor.js: provide a real-enough handleDoctorRepair stub for TC-DR-002/003 which call
 // the handler directly. Dynamic import of repair.js hits the mock at line 76-78.
+// Handler now returns a number (exit code) instead of calling process.exit().
 vi.mock("../../../src/cli/doctor.js", () => ({
   runDoctor: vi.fn().mockResolvedValue(0),
   handleDoctor: vi.fn(),
@@ -50,18 +51,17 @@ vi.mock("../../../src/cli/doctor.js", () => ({
     if (!slug) {
       process.stderr.write("Error: specrunner doctor repair requires a <slug> argument\n");
       process.stderr.write("Usage: specrunner doctor repair <slug>\n");
-      process.exit(2);
-      return;
+      return 2;
     }
     const repoRoot = ctx?.repoRoot ?? process.cwd();
     try {
       const { repairSlugOccupancySidecar } = await import("../../../src/core/occupancy/repair.js");
       const result = await repairSlugOccupancySidecar(repoRoot, slug);
       process.stderr.write(result.message + "\n");
-      process.exit(0);
+      return 0;
     } catch (err: unknown) {
       process.stderr.write(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
-      process.exit(1);
+      return 1;
     }
   }),
 }));
@@ -148,11 +148,10 @@ async function runMain(args: string[]): Promise<string | undefined> {
 
 /**
  * Call the doctor repair child handler directly with given slug positionals (excluding "repair" token).
- * Returns the process.exit code that was thrown (as a string like "process.exit(2)"),
- * or undefined if the handler returned normally.
+ * Returns the exit code number from the handler (new contract: handler returns number, not process.exit).
  * Used for TC-DR-002/003 where direct handler call avoids dispatch exit-code remapping.
  */
-async function callRepairHandler(slugArgs: string[]): Promise<string | undefined> {
+async function callRepairHandler(slugArgs: string[]): Promise<number | undefined> {
   const { COMMANDS } = await import("../../../src/cli/command-registry.js");
   const repairSpec = COMMANDS["doctor"]!.children!["repair"]!;
   const parsed: ParsedArgs = {
@@ -160,19 +159,14 @@ async function callRepairHandler(slugArgs: string[]): Promise<string | undefined
     positionals: slugArgs,
     positional: slugArgs[0],
   };
-  try {
-    await repairSpec.handler!(parsed, undefined);
-    return undefined;
-  } catch (err) {
-    return (err as Error).message;
-  }
+  return await repairSpec.handler!(parsed, undefined);
 }
 
 function getStderrOutput(): string {
   return stderrSpy.mock.calls.map((c: unknown[]) => String(c[0])).join("");
 }
 
-function getExitCodes(): (string | number | undefined)[] {
+function _getExitCodes(): (string | number | undefined)[] {
   return exitSpy.mock.calls.map((c: unknown[]) => c[0] as string | number | undefined);
 }
 
@@ -200,9 +194,9 @@ describe("TC-DR-001: doctor repair without slug argument", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-DR-002: doctor repair <slug> exits with 0 on success", () => {
-  it("calls process.exit(0) when repair succeeds", async () => {
-    await callRepairHandler(["my-slug"]);
-    expect(getExitCodes()).toContain(0);
+  it("returns exit code 0 when repair succeeds", async () => {
+    const result = await callRepairHandler(["my-slug"]);
+    expect(result).toBe(0);
   });
 
   it("writes the repair result message to stderr", async () => {
@@ -217,11 +211,11 @@ describe("TC-DR-002: doctor repair <slug> exits with 0 on success", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-DR-003: doctor repair <slug> exits with 1 when repair throws", () => {
-  it("calls process.exit(1) when repairSlugOccupancySidecar throws", async () => {
+  it("returns exit code 1 when repairSlugOccupancySidecar throws", async () => {
     mockRepairFn.mockRejectedValueOnce(new Error("ambiguous: multiple non-terminal jobs"));
 
-    await callRepairHandler(["my-slug"]);
-    expect(getExitCodes()).toContain(1);
+    const result = await callRepairHandler(["my-slug"]);
+    expect(result).toBe(1);
   });
 
   it("writes the thrown error message to stderr", async () => {

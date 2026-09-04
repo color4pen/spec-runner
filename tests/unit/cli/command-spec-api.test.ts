@@ -245,12 +245,12 @@ describe("TC-010: child inherits parent requiresRepo from fixture spec", () => {
       path: ["parent"],
       summary: "Parent with requiresRepo: true",
       requiresRepo: true,
-      handler: async () => {},
+      handler: async () => 0,
       children: {
         childA: {
           path: ["parent", "childA"],
           summary: "Child A — no explicit requiresRepo, inherits from parent",
-          handler: async () => {},
+          handler: async () => 0,
         },
       },
     },
@@ -275,13 +275,13 @@ describe("TC-011: child overrides parent requiresRepo from fixture spec", () => 
       path: ["parent"],
       summary: "Parent with requiresRepo: true",
       requiresRepo: true,
-      handler: async () => {},
+      handler: async () => 0,
       children: {
         childB: {
           path: ["parent", "childB"],
           summary: "Child B — overrides to false",
           requiresRepo: false,
-          handler: async () => {},
+          handler: async () => 0,
         },
       },
     },
@@ -394,8 +394,8 @@ vi.mock("../../../src/cli/cancel.js", () => ({
     await mockRunCancel({});
   }),
 }));
-vi.mock("../../../src/cli/run.js", () => ({ runRun: vi.fn(), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
-vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn(), handleJobResume: vi.fn() }));
+vi.mock("../../../src/cli/run.js", () => ({ runRunCore: vi.fn().mockResolvedValue(0), handlePostPipelineState: vi.fn(), handleJobStart: vi.fn() }));
+vi.mock("../../../src/cli/resume.js", () => ({ runResumeCore: vi.fn().mockResolvedValue(0), handleJobResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(0), handleJobLs: vi.fn(), handleJobStats: vi.fn() }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn().mockResolvedValue(0), handleInit: vi.fn() }));
 vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0), handleLogin: vi.fn() }));

@@ -40,32 +40,30 @@ export const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
 /**
  * CLI handler for `specrunner job cancel`.
- * Extracted from command-registry.ts inline handler (T-07).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
-export async function handleJobCancel(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobCancel(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const jobId = parsed.positional;
   if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
     logError("invalid jobId format");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
   // SpecRunnerError propagates to bin/specrunner.ts unified catch
-  process.exit(
-    await runCancel({
-      jobId,
-      force: !!parsed.flags["force"],
-      purge: !!parsed.flags["purge"],
-      allTerminated: !!parsed.flags["all-terminated"],
-      yes: !!parsed.flags["yes"],
-      restoreDraft: !!parsed.flags["restore-draft"],
-      repoRoot: ctx!.repoRoot!,
-    }),
-  );
+  return await runCancel({
+    jobId,
+    force: !!parsed.flags["force"],
+    purge: !!parsed.flags["purge"],
+    allTerminated: !!parsed.flags["all-terminated"],
+    yes: !!parsed.flags["yes"],
+    restoreDraft: !!parsed.flags["restore-draft"],
+    repoRoot: ctx!.repoRoot!,
+  });
 }
 
 /**
  * Run the cancel command.
  * Returns exit code: 0 (success), 1 (error), 2 (arg error).
- * Caller (bin/specrunner.ts) is responsible for process.exit().
+ * Caller returns this exit code to the dispatch boundary (bin/specrunner.ts).
  */
 export async function runCancel(opts: RunCancelOptions): Promise<number> {
   const { jobId, force, purge, allTerminated, yes, restoreDraft, repoRoot } = opts;

@@ -1,27 +1,27 @@
 /**
  * Tests for --adopt-commits flag in `job resume` handler.
  *
- * TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume
+ * TC-014: --adopt-commits CLI flag is parsed and forwarded to runResumeCoreCore
  *
  * Source: tasks.md T-07
  *
  * Tests that:
- *   - `job resume <slug> --adopt-commits` passes adoptCommits: true to runResume
- *   - `job resume <slug>` without the flag passes falsey adoptCommits to runResume
- *   - Combined flags --adopt-commits --apply-canon --force all reach runResume correctly
+ *   - `job resume <slug> --adopt-commits` passes adoptCommits: true to runResumeCoreCore
+ *   - `job resume <slug>` without the flag passes falsey adoptCommits to runResumeCoreCore
+ *   - Combined flags --adopt-commits --apply-canon --force all reach runResumeCoreCore correctly
  *     (no regression to existing flag wiring)
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// T-20: Mock resume.js with only the primitive runResume.
+// T-20: Mock resume.js with only the primitive runResumeCoreCore.
 // The real handleJobResume is in job-resume-handler.ts and imported by command-registry.ts.
-// Mocking runResume lets us assert on argument forwarding from the real handler.
+// Mocking runResumeCoreCore lets us assert on argument forwarding from the real handler.
 vi.mock("../resume.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../resume.js")>();
   return {
     ...actual,
-    runResume: vi.fn().mockResolvedValue(undefined),
+    runResumeCore: vi.fn().mockResolvedValue(0),
   };
 });
 
@@ -48,13 +48,13 @@ vi.mock("../../core/command/detach.js", () => ({
 
 import { COMMANDS } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
-import { runResume } from "../resume.js";
+import { runResumeCore } from "../resume.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getResumeHandler(): (parsed: ParsedArgs) => Promise<void> {
+function getResumeHandler(): (parsed: ParsedArgs) => Promise<number> {
   return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
@@ -68,31 +68,31 @@ function makeParsedArgs(overrides: Partial<ParsedArgs> = {}): ParsedArgs {
 }
 
 // ---------------------------------------------------------------------------
-// TC-014: --adopt-commits flag is parsed and forwarded to runResume
+// TC-014: --adopt-commits flag is parsed and forwarded to runResumeCore
 // Source: tasks.md T-07
 // ---------------------------------------------------------------------------
 
-describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume", () => {
+describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResumeCore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(runResume).mockResolvedValue(undefined);
+    vi.mocked(runResumeCore).mockResolvedValue(0);
   });
 
   it("TC-014: job resume <slug> --adopt-commits parses without error", async () => {
     const handler = getResumeHandler();
 
-    // Should not throw during handler execution
+    // Should not throw during handler execution; handler returns exit code (number)
     await expect(
       handler(makeParsedArgs({ flags: { "adopt-commits": true } }))
-    ).resolves.toBeUndefined();
+    ).resolves.toBeTypeOf("number");
   });
 
-  it("TC-014: adoptCommits: true is passed to runResume when --adopt-commits is specified", async () => {
+  it("TC-014: adoptCommits: true is passed to runResumeCore when --adopt-commits is specified", async () => {
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { "adopt-commits": true } }));
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [slug, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [slug, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     expect(slug).toBe("my-slug");
     expect((options as Record<string, unknown>)["adoptCommits"]).toBe(true);
   });
@@ -101,13 +101,13 @@ describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume"
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: {} }));
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     // adoptCommits must be false or undefined when flag is not given
     expect(!!(options as Record<string, unknown>)["adoptCommits"]).toBe(false);
   });
 
-  it("TC-014 (no-regression): --adopt-commits and --apply-canon and --force all reach runResume correctly", async () => {
+  it("TC-014 (no-regression): --adopt-commits and --apply-canon and --force all reach runResumeCore correctly", async () => {
     const handler = getResumeHandler();
     await handler(
       makeParsedArgs({
@@ -119,8 +119,8 @@ describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume"
       })
     );
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [slug, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [slug, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     const opts = options as Record<string, unknown>;
     expect(slug).toBe("my-slug");
     expect(opts["adoptCommits"]).toBe(true);
@@ -132,7 +132,7 @@ describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume"
     const handler = getResumeHandler();
     await handler(makeParsedArgs({ flags: { "adopt-commits": true } }));
 
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     const opts = options as Record<string, unknown>;
     // applyCanon must be false/absent when only --adopt-commits is given
     expect(!!(opts["applyCanon"])).toBe(false);
@@ -152,8 +152,8 @@ describe("TC-014: --adopt-commits CLI flag is parsed and forwarded to runResume"
       })
     );
 
-    expect(runResume).toHaveBeenCalledOnce();
-    const [, options] = vi.mocked(runResume).mock.calls[0]!;
+    expect(runResumeCore).toHaveBeenCalledOnce();
+    const [, options] = vi.mocked(runResumeCore).mock.calls[0]!;
     const opts = options as Record<string, unknown>;
     expect(opts["adoptCommits"]).toBe(true);
     expect(opts["noWorktree"]).toBe(true);

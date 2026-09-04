@@ -93,9 +93,9 @@ export async function runCredentialsSet(name: string, opts?: CredentialsSetOpts)
 
 /**
  * CLI handler for `specrunner credentials set <name>`.
- * Wraps runCredentialsSet and calls process.exit with the returned code.
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 3 */
-export async function handleCredentialsSet(parsed: ParsedArgs): Promise<void> {
-  process.exit(await runCredentialsSet(parsed.positional!));
+export async function handleCredentialsSet(parsed: ParsedArgs): Promise<number> {
+  return await runCredentialsSet(parsed.positional!);
 }

@@ -28,6 +28,7 @@
     "build": "tsup",
     "postbuild": "! grep -qE \"from ['\\\"]zod|require\\\\(['\\\"]zod\" dist/specrunner.js",
     "test": "vitest run",
+    "exit-contract:generate": "vitest run --config vitest.exit-contract.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ./src ./tests --max-warnings 0",

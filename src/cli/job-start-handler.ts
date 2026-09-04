@@ -4,7 +4,7 @@
  * eliminate the value-import cycle that was previously hidden by await import().
  *
  * Dependency direction:
- *   job-start-handler → run.ts (runRun / runRunCore)
+ *   job-start-handler → run.ts (runRunCore)
  *   job-start-handler → from-issue.ts (runFromIssue)
  *   from-issue.ts     → run.ts (runRunCore)   ← existing, unchanged
  */
@@ -22,7 +22,7 @@ import { resolveGitHubHost, resolveGitHubApiBaseUrl } from "../config/github-hos
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
-import { runRun, runRunCore } from "./run.js";
+import { runRunCore } from "./run.js";
 import { runFromIssue } from "./from-issue.js";
 import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
@@ -62,35 +62,35 @@ export function resolveSlugForDetach(input: string, cwd: string): string | null 
 
 /**
  * CLI handler for `specrunner job start` (and its `run` alias).
- * Moved from run.ts (T-05 → T-19). Uses static imports for all ./src/cli modules.
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  * The startWithIssueLink dynamic import (../core/issue-target/start.js) is intentionally
  * retained because it is a ../core module (not a ./ module) and is not part of any cycle.
  */
-export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
   const hasPositional = parsed.positional !== undefined;
 
   // --- Presence check: need exactly one of positional or --from-issue ---
   if (fromIssue === undefined && !hasPositional) {
     logError("Usage error: 'job start' requires a <slug|file> positional or --from-issue <n>");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   // --- Exclusivity: --from-issue + positional ---
   if (fromIssue !== undefined && hasPositional) {
     logError("Usage error: --from-issue and positional <slug|file> are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   // --- Exclusivity: --from-issue + --issue ---
   if (fromIssue !== undefined && parsed.flags["issue"] !== undefined) {
     logError("Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   // --- Route --from-issue before generic detach branch ---
@@ -100,12 +100,11 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
       verbose: !!parsed.flags["verbose"],
       debug: !!parsed.flags["debug"],
     });
-    const code = await runFromIssue(
+    return await runFromIssue(
       fromIssue,
       { detach: !!parsed.flags["detach"], logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] },
       ctx,
     );
-    process.exit(code);
   }
 
   // --- Positional path (confirmed present) ---
@@ -116,15 +115,14 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
     const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
     if (!slug) {
       logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
+      return EXIT_CODE.GENERAL_ERROR;
     }
-    const code = await detachSelf({
+    return await detachSelf({
       args: process.argv.slice(2),
       repoRoot,
       slug,
       env: process.env as Record<string, string | undefined>,
     });
-    process.exit(code);
   }
 
   const logLevel = resolveLogLevel({
@@ -143,7 +141,7 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
       config = await loadConfigWithOverlay(repoRoot, repoRoot);
     } catch (err) {
       logError(`Failed to load config: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
+      return EXIT_CODE.GENERAL_ERROR;
     }
     const githubHost = resolveGitHubHost(config.github);
     const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
@@ -153,7 +151,7 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
       githubToken = result.token;
     } catch (err) {
       logError(`Failed to resolve GitHub token: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
+      return EXIT_CODE.GENERAL_ERROR;
     }
     let owner: string;
     let repo: string;
@@ -163,11 +161,11 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
       repo = origin.name;
     } catch (err) {
       logError(`Failed to resolve git origin: ${(err as Error).message}`);
-      process.exit(EXIT_CODE.GENERAL_ERROR);
+      return EXIT_CODE.GENERAL_ERROR;
     }
     const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
     const { startWithIssueLink } = await import("../core/issue-target/start.js");
-    const code = await startWithIssueLink({
+    return await startWithIssueLink({
       repoRoot,
       requestMdPath,
       issueNumber: issue,
@@ -179,8 +177,7 @@ export async function handleJobStart(parsed: ParsedArgs, ctx?: CommandContext): 
       startPrimitive: (p, opts) =>
         runRunCore(p, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
     });
-    process.exit(code);
   }
 
-  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
+  return await runRunCore(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
 }

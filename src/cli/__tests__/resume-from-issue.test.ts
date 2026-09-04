@@ -45,7 +45,6 @@ vi.mock("../resume.js", async (importOriginal) => {
   return {
     ...actual,
     runResumeCore: vi.fn().mockResolvedValue(0),
-    runResume: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -159,7 +158,7 @@ function getResumeHandler() {
   return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
-function exitSpy() {
+function _exitSpy() {
   return vi.spyOn(process, "exit").mockImplementation((code?: number) => {
     throw new Error(`process.exit(${code})`);
   });
@@ -392,31 +391,22 @@ describe("TC-022: getIssue is never called during the CLI orchestrator path", ()
 describe("TC-012: positional slug and --from-issue together is a usage error", () => {
   it("TC-012: exits with ARG_ERROR (2) when positional + --from-issue given", async () => {
     const handler = getResumeHandler();
-    const spy = exitSpy();
-    try {
-      await expect(
-        handler(
-          { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
-          makeCtx(),
-        ),
-      ).rejects.toThrow("process.exit(2)");
-    } finally {
-      spy.mockRestore();
-    }
+    const result = await handler(
+      { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
+      makeCtx(),
+    );
+    expect(result).toBe(2);
   });
 
   it("TC-012: error message includes 'mutually exclusive'", async () => {
     const handler = getResumeHandler();
-    const spy = exitSpy();
     vi.mocked(logError).mockClear();
     try {
       await handler(
         { flags: { "from-issue": 5 }, positional: "my-slug", positionals: ["my-slug"] },
         makeCtx(),
-      ).catch(() => {});
-    } finally {
-      spy.mockRestore();
-    }
+      );
+    } finally { /* no spies to restore */ }
     const calls = vi.mocked(logError).mock.calls.map((c) => String(c[0]));
     expect(calls.some((m) => m.includes("mutually exclusive"))).toBe(true);
   });

@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:368332162b2dbbe5590e6a8caa39a40d85b0a4b2b0daf053a7dbd88d7d9736b5",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-handler.ts:11: CommandHandler = (parsed: ParsedArgs, ctx?: CommandContext) => Promise<void>",
+    "src/cli/command-registry.ts: handler: エントリ 30 件",
+    "src/cli/command-registry.ts: handler 所有 import モジュール 21 件",
+    "src/cli/**/*.ts (tests 除外): process.exit( 呼び出し 74 件 / 24 ファイル",
+    "bin/specrunner.ts: process.exit( 呼び出し 15 件"
+  ],
+  "sourceRevision": "de88d1b5cf74bc43a258e9629347da2356a308c3"
+}

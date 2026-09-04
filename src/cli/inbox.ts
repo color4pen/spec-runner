@@ -109,20 +109,18 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
 
 /**
  * CLI handler for `specrunner inbox run`.
- * Extracted from command-registry.ts inline handler (T-11).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 13 */
-export async function handleInboxRun(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleInboxRun(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   // --limit is now validated as integer by the parser (min: 0)
   const limit = typeof parsed.flags["limit"] === "number" ? parsed.flags["limit"] : undefined;
-  process.exit(
-    await runInboxRun({
-      dryRun: !!parsed.flags["dry-run"],
-      limit,
-      json: !!parsed.flags["json"],
-      verbose: !!parsed.flags["verbose"],
-      quiet: !!parsed.flags["quiet"],
-      repoRoot: ctx!.repoRoot!,
-    }),
-  );
+  return await runInboxRun({
+    dryRun: !!parsed.flags["dry-run"],
+    limit,
+    json: !!parsed.flags["json"],
+    verbose: !!parsed.flags["verbose"],
+    quiet: !!parsed.flags["quiet"],
+    repoRoot: ctx!.repoRoot!,
+  });
 }

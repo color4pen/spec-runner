@@ -11,7 +11,7 @@ import * as nodeFsSync from "node:fs";
 import * as nodeFsPromises from "node:fs/promises";
 import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
-import { SpecRunnerError, EXIT_CODE } from "../errors.js";
+import { SpecRunnerError } from "../errors.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
@@ -27,7 +27,7 @@ export interface RunPruneOptions {
 /**
  * Run the prune command.
  * Returns exit code: 0 (success), 1 (error).
- * Caller (command-registry.ts) is responsible for process.exit().
+ * Caller returns this exit code to the dispatch boundary (bin/specrunner.ts).
  *
  * Note: pruneOrphanWorktrees and pruneOrphanSidecars are imported lazily (via
  * dynamic import) so that vi.mock factory closures in tests are evaluated after
@@ -106,26 +106,14 @@ export async function runPrune(opts: RunPruneOptions): Promise<number> {
 
 /**
  * CLI handler for `specrunner job prune`.
- * Extracted from command-registry.ts inline handler (T-11).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
-/* c8 ignore next 18 */
-export async function handleJobPrune(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  try {
-    process.exit(
-      await runPrune({
-        force: !!parsed.flags["force"],
-        repoRoot: ctx!.repoRoot!,
-      }),
-    );
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${err.message}`);
-      stderrWrite(`Hint: ${err.hint}`);
-      process.exit(err.exitCode);
-    }
-    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(EXIT_CODE.GENERAL_ERROR);
-  }
+/* c8 ignore next 6 */
+export async function handleJobPrune(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
+  return await runPrune({
+    force: !!parsed.flags["force"],
+    repoRoot: ctx!.repoRoot!,
+  });
 }
 
 /**

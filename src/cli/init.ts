@@ -171,13 +171,13 @@ export async function runInit(options: {
 
 /**
  * CLI handler for `specrunner init`.
- * Wraps runInit and calls process.exit with the returned code.
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
 /* c8 ignore next 7 */
-export async function handleInit(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleInit(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const runtimeRaw = parsed.flags["runtime"] as string | undefined;
   const runtime = runtimeRaw as "managed" | "local" | undefined;
   const providerRaw = parsed.flags["provider"] as string | undefined;
   const provider = providerRaw as "anthropic" | "openai" | undefined;
-  process.exit(await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! }));
+  return await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! });
 }

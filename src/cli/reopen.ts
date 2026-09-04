@@ -10,8 +10,8 @@
  */
 import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
-import { setLogLevel, logError, stderrWrite, resolveLogLevel, type LogLevel } from "../logger/stdout.js";
-import { SpecRunnerError, EXIT_CODE } from "../errors.js";
+import { setLogLevel, logError, resolveLogLevel, type LogLevel } from "../logger/stdout.js";
+import { EXIT_CODE } from "../errors.js";
 import { ReopenCommand } from "../core/command/reopen.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -66,20 +66,16 @@ export async function runReopenCore(slug: string, options: ReopenOptions): Promi
   }
 }
 
-export async function runReopen(slug: string, options: ReopenOptions): Promise<void> {
-  process.exit(await runReopenCore(slug, options));
-}
-
 /**
  * CLI handler for `specrunner job reopen`.
- * Extracted from command-registry.ts inline handler (T-09).
+ * Returns the exit code; process termination is owned by the dispatch boundary.
  */
-export async function handleJobReopen(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+export async function handleJobReopen(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
   const reason = parsed.flags["reason"] as string | undefined;
 
   if (!reason) {
     logError("--reason <text> is required for 'job reopen'.");
-    process.exit(EXIT_CODE.ARG_ERROR);
+    return EXIT_CODE.ARG_ERROR;
   }
 
   const logLevel = resolveLogLevel({
@@ -88,22 +84,12 @@ export async function handleJobReopen(parsed: ParsedArgs, ctx?: CommandContext):
     debug: !!parsed.flags["debug"],
   });
 
-  try {
-    await runReopen(parsed.positional!, {
-      reason,
-      logLevel,
-      cwd: ctx!.invokerCwd,
-      repoRoot: ctx?.repoRoot,
-      json: !!parsed.flags["json"],
-      noWorktree: !!parsed.flags["no-worktree"],
-    });
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) {
-      stderrWrite(`Error: ${err.message}`);
-      stderrWrite(`Hint: ${err.hint}`);
-      process.exit(err.exitCode);
-    }
-    stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
+  return await runReopenCore(parsed.positional!, {
+    reason,
+    logLevel,
+    cwd: ctx!.invokerCwd,
+    repoRoot: ctx?.repoRoot,
+    json: !!parsed.flags["json"],
+    noWorktree: !!parsed.flags["no-worktree"],
+  });
 }
