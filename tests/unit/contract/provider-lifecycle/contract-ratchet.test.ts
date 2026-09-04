@@ -1,23 +1,26 @@
 /**
  * Provider lifecycle parity contract — ratchet test suite.
  *
- * Nine structural ratchets that must pass at all times:
+ * Twelve structural ratchets that must pass at all times:
  *
  *  1. ID ratchet         — CONTRACT_CASES IDs ⊆ REQUIRED_CASE_IDS and vice versa
  *  2. Duplicate ratchet  — no duplicate IDs in CONTRACT_CASES
- *  3. Area ratchet       — all CONTRACT_CASES areas ∈ LIFECYCLE_AREAS
+ *  3. Area ratchet       — all CONTRACT_CASES areas ∈ LIFECYCLE_AREAS; every area has ≥1 case
  *  4. Shared ratchet     — for shared cases, both providers have support="supported"
  *  5. Reason ratchet     — support="absent" expectations always have a reason (≥40 chars)
  *  6. UNEXPLAINED ratchet— provider-specific cases with both providers supported must have reasons
  *  7. Skip ratchet       — every case has at least one supported provider (no all-absent cases)
  *  8. Registry ratchet   — PROVIDER_HARNESSES keys equal CONTRACT_PROVIDERS exactly
  *  9. Field matrix ratchet— RESULT_FIELD_MATRIX keys equal AgentRunResult interface fields
+ * 10. No-skip ratchet    — no test.skip/it.skip/describe.skip/it.todo/.only in contract files (TC-023)
+ * 11. SDK containment    — shared contract modules do not import provider adapters or SDKs (TC-028/TC-029)
+ * 12. D5 isolation       — case-table.ts does not import case-ids.ts (TC-040)
  *
  * The field matrix ratchet (9) uses the TypeScript compiler API to parse
  * src/core/port/agent-runner.ts and extract AgentRunResult member names.
  */
 import { describe, test, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as ts from "typescript";
@@ -303,5 +306,119 @@ describe("ratchet:field-matrix", () => {
       }
     }
     expect(violations).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. No-skip ratchet (TC-023, Design D9 item 5)
+// ---------------------------------------------------------------------------
+
+describe("ratchet:no-skip", () => {
+  test("contract source files contain no test.skip, it.skip, describe.skip, it.todo, test.todo, or .only markers", () => {
+    // Collect all .ts files under the contract directory, excluding this ratchet file
+    // (which contains the pattern strings as string/regex literals).
+    function collectTs(dir: string): string[] {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      const files: string[] = [];
+      for (const entry of entries) {
+        const full = resolve(dir, entry.name);
+        if (entry.isDirectory()) {
+          files.push(...collectTs(full));
+        } else if (entry.name.endsWith(".ts")) {
+          // Exclude this ratchet file — its own source contains the pattern strings.
+          if (full !== resolve(_thisDir, "contract-ratchet.test.ts")) {
+            files.push(full);
+          }
+        }
+      }
+      return files;
+    }
+
+    // Patterns that must not appear in any contract source file.
+    // Using string matching to avoid regex self-reference issues.
+    const FORBIDDEN = [
+      { label: "test.skip", test: (s: string) => s.includes("test.skip") },
+      { label: "it.skip", test: (s: string) => s.includes("it.skip") },
+      { label: "describe.skip", test: (s: string) => s.includes("describe.skip") },
+      { label: "it.todo", test: (s: string) => s.includes("it.todo") },
+      { label: "test.todo", test: (s: string) => s.includes("test.todo") },
+      { label: ".only", test: (s: string) => /\.(only)\b/.test(s) },
+    ];
+
+    const violations: string[] = [];
+    for (const filePath of collectTs(_thisDir)) {
+      const content = readFileSync(filePath, "utf8");
+      const relPath = filePath.slice(_thisDir.length + 1);
+      for (const { label, test: check } of FORBIDDEN) {
+        if (check(content)) {
+          violations.push(`${relPath}: contains forbidden marker "${label}"`);
+        }
+      }
+    }
+    expect(violations, violations.join("\n")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. SDK containment ratchet (TC-028, TC-029, Design D9 item 6)
+// ---------------------------------------------------------------------------
+
+describe("ratchet:sdk-containment", () => {
+  test("shared contract modules do not import from adapter/claude-code/, adapter/codex/, or provider SDK packages", () => {
+    // These files are "shared" — they must not take provider-specific dependencies.
+    const sharedModules = [
+      "case-ids.ts",
+      "scenario.ts",
+      "case-table.ts",
+      "result-field-matrix.ts",
+      "harness/types.ts",
+      "provider-lifecycle-parity.test.ts",
+    ].map((f) => resolve(_thisDir, f));
+
+    // Forbidden import path fragments (matched against import/from strings).
+    const FORBIDDEN_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
+      { label: "adapter/claude-code", pattern: /from\s+["'][^"']*adapter\/claude-code/ },
+      { label: "adapter/codex", pattern: /from\s+["'][^"']*adapter\/codex/ },
+      { label: "@anthropic-ai/", pattern: /from\s+["']@anthropic-ai\// },
+      { label: "openai package", pattern: /from\s+["']openai\b/ },
+      { label: "@openai/", pattern: /from\s+["']@openai\// },
+    ];
+
+    const violations: string[] = [];
+    for (const filePath of sharedModules) {
+      let content: string;
+      try {
+        content = readFileSync(filePath, "utf8");
+      } catch {
+        violations.push(`${filePath}: could not be read`);
+        continue;
+      }
+      const relPath = filePath.slice(_thisDir.length + 1);
+      for (const { label, pattern } of FORBIDDEN_PATTERNS) {
+        if (pattern.test(content)) {
+          violations.push(`${relPath}: contains forbidden import from "${label}"`);
+        }
+      }
+    }
+    expect(violations, violations.join("\n")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 12. D5 isolation ratchet (TC-040)
+// ---------------------------------------------------------------------------
+
+describe("ratchet:d5-isolation", () => {
+  test("case-table.ts does not import from case-ids.ts (Design D5 / TC-040)", () => {
+    const caseTablePath = resolve(_thisDir, "case-table.ts");
+    const content = readFileSync(caseTablePath, "utf8");
+    // Any import (type or value) from ./case-ids or ./case-ids.js is forbidden.
+    const hasImport = /from\s+["']\.\/case-ids(\.js)?["']/.test(content);
+    expect(
+      hasImport,
+      "case-table.ts must not import from case-ids.ts — Design D5 requires the dependency " +
+        "to flow only ratchet→{case-table, case-ids}. The ratchet enforces ID and area " +
+        "constraints at runtime; the compile-time narrowing is redundant.",
+    ).toBe(false);
   });
 });

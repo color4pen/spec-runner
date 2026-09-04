@@ -17,10 +17,12 @@
  *   completion-error 2 shared + 1 provider-specific
  *   total:          20 shared + 11 provider-specific = 31
  *
- * Import rules: no provider SDK imports. Only scenario.ts, case-ids.ts, and src/ types.
+ * Import rules: no provider SDK imports. Only scenario.ts and src/ types.
+ * case-ids.ts must NOT be imported here — Design D5 / TC-040 require the dependency
+ * to flow only in the direction ratchet→{case-table, case-ids}. The ratchet enforces
+ * the ID and area constraints at runtime; the compile-time narrowing is redundant.
  */
 import type { LifecycleScenario } from "./scenario.js";
-import type { REQUIRED_CASE_IDS, LIFECYCLE_AREAS } from "./case-ids.js";
 import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 
 // ---------------------------------------------------------------------------
@@ -36,8 +38,10 @@ import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 export interface ProviderExpectation {
   /**
    * "supported" — run the test and assert expectations.
-   * "absent"    — the provider does not implement this behavior; skip the test.
-   *               `reason` must be set (≥40 chars).
+   * "absent"    — the provider does not implement this behavior; the test still
+   *               runs and asserts absent-behavior (TC-012 / TC-042). `reason`
+   *               must be set (≥40 chars). Add completionReason, errorCode, and/or
+   *               fieldPresence to assert the expected absent-provider outcome.
    */
   support: "supported" | "absent";
 
@@ -166,11 +170,18 @@ export interface ProviderExpectation {
 // ---------------------------------------------------------------------------
 
 export interface ContractCase {
-  /** Case identifier — must be one of REQUIRED_CASE_IDS */
-  id: (typeof REQUIRED_CASE_IDS)[number];
+  /**
+   * Case identifier — must match one of REQUIRED_CASE_IDS.
+   * Typed as string (not (typeof REQUIRED_CASE_IDS)[number]) per Design D5: this module
+   * must not import case-ids.ts. The ratchet enforces the constraint at runtime.
+   */
+  id: string;
 
-  /** Lifecycle area — must be one of LIFECYCLE_AREAS */
-  area: (typeof LIFECYCLE_AREAS)[number];
+  /**
+   * Lifecycle area — must match one of LIFECYCLE_AREAS.
+   * Typed as string per Design D5 (same reason as id above).
+   */
+  area: string;
 
   /**
    * shared:            both providers "supported"; driver generates 2 tests
@@ -903,6 +914,10 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "absent",
         reason:
           "CodexAgentRunner has no mid-stream report capture; there is no grace settle mechanism. The completion report is extracted from the finalResponse at turn end, not from an MCP tool call mid-stream. stallAfterReport is ignored by the Codex harness and the turn completes normally, making this grace-settle scenario untestable for Codex.",
+        // Absent-behavior assertions: Codex ignores stallAfterReport and completes turn 0 normally.
+        completionReason: "success",
+        toolResult: { ok: true },
+        errorMustBeAbsent: true,
       },
     },
   },
@@ -1010,6 +1025,10 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "absent",
         reason:
           "CodexAgentRunner has no context rollover mechanism; there is no CONTEXT_WINDOW_EXHAUSTED detection code and no rollover loop. Context exhaustion always terminates with CODEX_SDK_ERROR. The contextRollover.maxRollovers config field is read only by ClaudeCodeRunner.",
+        // Absent-behavior assertions: Codex throws on context exhaustion without rollover.
+        completionReason: "error",
+        errorCode: "CODEX_SDK_ERROR",
+        fieldPresence: { sessionRollovers: "absent" },
       },
     },
   },
@@ -1043,6 +1062,10 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "absent",
         reason:
           "CodexAgentRunner has no context rollover mechanism; context exhaustion always terminates immediately with CODEX_SDK_ERROR regardless of the contextRollover.maxRollovers configuration value.",
+        // Absent-behavior assertions: both exhaustion attempts terminate with the same error.
+        completionReason: "error",
+        errorCode: "CODEX_SDK_ERROR",
+        fieldPresence: { sessionRollovers: "absent" },
       },
     },
   },

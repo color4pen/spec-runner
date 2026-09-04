@@ -78,9 +78,9 @@ export const RESULT_FIELD_MATRIX: Record<string, FieldCapability> = {
       "Claude captures session_id from SDK result; Codex uses the thread ID. Both set sessionId when available.",
   },
   agentBranch: {
-    providers: { "claude-code": "supported", codex: "supported" },
+    providers: { "claude-code": "absent", codex: "absent" },
     reason:
-      "agentBranch is set via register_branch tool (managed runtime) or git state. Local adapters may leave it undefined but the field is technically supported by both.",
+      "Neither ClaudeCodeRunner nor CodexAgentRunner sets agentBranch; the field is populated only by ManagedAgentRunner via the register_branch tool. Since the parity contract suite exercises only local adapters, agentBranch is always undefined in all contract test results. Source: grep 'agentBranch' src/adapter/claude-code/agent-runner.ts src/adapter/codex/agent-runner.ts returns no results.",
   },
   error: {
     providers: { "claude-code": "supported", codex: "supported" },

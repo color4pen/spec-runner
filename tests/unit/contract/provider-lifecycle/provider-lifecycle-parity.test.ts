@@ -3,7 +3,8 @@
  *
  * For each ContractCase × CONTRACT_PROVIDERS, this file generates one test.
  * - shared cases:           both providers run (2 tests per case)
- * - provider-specific cases: "absent" provider gets test.skip; "supported" runs
+ * - provider-specific cases: all providers run; absent cases assert absent-behavior
+ *                            (TC-012 / TC-042; skip markers are prohibited — enforced by ratchet:no-skip)
  *
  * Test structure per combination:
  *   1. Setup: fake timers (if usesFakeTimers), tempDir creation, result file creation
@@ -51,6 +52,28 @@ import { CONTRACT_CASES, type ProviderExpectation } from "./case-table.js";
 import { PROVIDER_HARNESSES } from "./harness/registry.js";
 import { CONTRACT_PROVIDERS } from "./case-ids.js";
 import { buildBaseContext } from "./scenario.js";
+import { RESULT_FIELD_MATRIX } from "./result-field-matrix.js";
+
+// ---------------------------------------------------------------------------
+// Execution ledger — TC-024 (pair coverage) and TC-016 (field observation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Tracks which (caseId × providerId) pairs have produced a runner result.
+ * Populated inside each test after runner.run() completes.
+ * Verified by the ledger describe block after all case tests.
+ */
+const _executedPairs = new Set<string>();
+
+/**
+ * For each provider, tracks which AgentRunResult field names were non-undefined
+ * in at least one test result.
+ * Populated inside each test after runner.run() completes.
+ * Verified by the ledger describe block (TC-016).
+ */
+const _observedFields: Map<string, Set<string>> = new Map(
+  CONTRACT_PROVIDERS.map((p) => [p, new Set<string>()]),
+);
 
 // ---------------------------------------------------------------------------
 // Assertion helper
@@ -230,10 +253,27 @@ function assertExpectations(
   if (exp.sdkInvocations !== undefined) {
     expect(getInvocationCount(), `${tag}: sdkInvocations`).toBe(exp.sdkInvocations);
   }
+
+  // --- Matrix-universal absent field check (Design D4, D7, TC-015) ---
+  //
+  // For every field that RESULT_FIELD_MATRIX marks as "absent" for this provider,
+  // the result field must be undefined regardless of per-case fieldPresence entries.
+  // This is a provider-level contract that holds across the entire test suite.
+  for (const [field, capability] of Object.entries(RESULT_FIELD_MATRIX)) {
+    const providerStatus =
+      capability.providers[providerId as keyof typeof capability.providers];
+    if (providerStatus === "absent") {
+      const value = (result as unknown as Record<string, unknown>)[field];
+      expect(
+        value,
+        `${tag} [matrix]: result.${field} must be undefined — RESULT_FIELD_MATRIX marks this field as absent for ${providerId}`,
+      ).toBeUndefined();
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Test generation
+// Main test generation — 62 tests (31 cases × 2 providers)
 // ---------------------------------------------------------------------------
 
 describe("provider-lifecycle-parity", () => {
@@ -243,10 +283,10 @@ describe("provider-lifecycle-parity", () => {
         const expectation = contractCase.expectations[providerId];
         const testName = `[${providerId}]`;
 
-        // Absent cases run and assert — spec TC-012 requires absent behavior to be
-        // verified, not skipped. The assertExpectations helper applies only the
-        // assertion fields that are present in the expectation object (e.g. fieldPresence)
-        // plus the universal invariants. test.skip is prohibited by TC-042.
+        // Absent cases run and assert — TC-012 requires absent behavior to be verified.
+        // The assertExpectations helper applies the assertion fields present in the
+        // expectation object (e.g. fieldPresence) plus universal invariants.
+        // Skip markers are prohibited by TC-042/TC-023; enforced by ratchet:no-skip.
         const runTest = test;
 
         runTest(testName, async () => {
@@ -316,6 +356,14 @@ describe("provider-lifecycle-parity", () => {
               result = await runner.run(ctx);
             }
 
+            // --- Record execution for ledger (TC-024, TC-016) ---
+            // Recorded after runner.run() completes (a crash would leave the pair unrecorded).
+            _executedPairs.add(`${contractCase.id}×${providerId}`);
+            const _obs = _observedFields.get(providerId)!;
+            for (const [k, v] of Object.entries(result as Record<string, unknown>)) {
+              if (v !== undefined) _obs.add(k);
+            }
+
             // --- Assert expectations ---
             assertExpectations(
               result,
@@ -331,4 +379,48 @@ describe("provider-lifecycle-parity", () => {
       }
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Execution ledger — TC-042 requires ≥64 tests (62 case + ≥2 ledger it blocks)
+// ---------------------------------------------------------------------------
+
+describe("provider-lifecycle-parity:ledger", () => {
+  /**
+   * TC-024: All (caseId × provider) pairs must have produced a runner result.
+   * A pair is absent if the test crashed before runner.run() returned, indicating
+   * a setup failure that silently dropped coverage.
+   */
+  test("all (caseId × provider) pairs executed — TC-024", () => {
+    const expected = CONTRACT_CASES.flatMap((c) =>
+      CONTRACT_PROVIDERS.map((p) => `${c.id}×${p}`),
+    );
+    const missing = expected.filter((pair) => !_executedPairs.has(pair));
+    expect(
+      missing,
+      `Pairs that did not produce a runner result: ${missing.join(", ")}`,
+    ).toHaveLength(0);
+  });
+
+  /**
+   * TC-016: For each (provider, field) pair marked "supported" in RESULT_FIELD_MATRIX,
+   * at least one test result must have had that field non-undefined.
+   * A zero-observation count means the "supported" matrix entry is an empty promise.
+   */
+  test("each matrix-supported field observed ≥once per provider — TC-016", () => {
+    const violations: string[] = [];
+    for (const [field, capability] of Object.entries(RESULT_FIELD_MATRIX)) {
+      for (const [providerId, status] of Object.entries(capability.providers)) {
+        if (status === "supported") {
+          const observed = _observedFields.get(providerId) ?? new Set<string>();
+          if (!observed.has(field)) {
+            violations.push(
+              `${providerId}.${field}: marked "supported" in RESULT_FIELD_MATRIX but never observed as non-undefined across all ${CONTRACT_CASES.length} cases`,
+            );
+          }
+        }
+      }
+    }
+    expect(violations, violations.join("\n")).toHaveLength(0);
+  });
 });
