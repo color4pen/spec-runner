@@ -169,3 +169,10 @@
 {"type":"transition","ts":"2026-09-04T12:30:23.058Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-09-04T12:30:23.059Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-09-04T12:30:23.061Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-09-04T12:34:12.758Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"4994e550-b682-4ce3-87aa-edc7b67b04a8","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/provider-lifecycle-parity-contract/regression-gate-result-003.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":26,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-09-04T12:30:23.098Z","endedAt":"2026-09-04T12:34:11.095Z","commitOid":"71b236c8b30cd3cd9d21746c587919fcfaa5b0c3"}
+{"type":"lineage","step":"regression-gate","ts":"2026-09-04T12:34:11.095Z","outputs":[{"path":"specrunner/changes/provider-lifecycle-parity-contract/regression-gate-result-003.md","hash":"sha256:c1847b5a82b6d6dad3a5dd37710481db754301246675d2611e47373557545cc7"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-09-04T12:34:12.762Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-09-04T12:34:12.762Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-09-04T12:34:12.763Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-04T12:34:12.765Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
