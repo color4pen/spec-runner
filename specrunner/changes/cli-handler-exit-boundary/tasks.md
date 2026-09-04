@@ -171,10 +171,10 @@
   - `let code: number;` を宣言し、`try { code = await spec.handler!(parsed, ctx); } catch (e) { ...共通変換して process.exit... }` とする
   - **`process.exit(code)` を try/catch の外側**に置く。try block の内側で `process.exit` を呼ばない
 - [x] dispatch の catch は現行の 3 分岐（`FlagParseError` → message + `spec.help?.detail ?? USAGE` + exit 2 / `SpecRunnerError` → `Error:` + `Hint:` + `e.exitCode` / その他 → `Fatal:` + exit 1）を文言・改行・出力先・順序ともに維持する
-- [x] error boundary の stderr 書き込みを `src/logger/stdout.js` の mask seam 経由に変更する（design D5）。対象は次の 3 変換のみ
+- [x] error boundary の各 stderr 書き込みに `src/logger/stdout.js` の `maskSensitive` を**その場で**適用する（design D5 改訂 2。改行を自動付与する `stderrWrite` は使わず、出力単位と改行を維持する）。対象は次の 3 変換のみ
   - `parseFlags` の catch 内 `FlagParseError` message / `Fatal:` 行
   - dispatch catch 内の `Error:` / `Hint:` / `Fatal:` 行
-  - usage 本文（`spec.help?.detail ?? USAGE`）の書き込みも同じ seam を通す
+  - usage 本文（`spec.help?.detail ?? USAGE`）の書き込みも同様に `maskSensitive` を通す（末尾改行は付け足さない）
   - help / version / no-args / unknown command / unknown subcommand / needs-subcommand / guard の各出力は**変更しない**
 - [x] `emitHelp` / 各 guard / `resolveCommand` 分岐の `process.exit` はそのまま維持する（design D4）
 - [x] `main()` の signature（`Promise<void>`）と末尾の `main().catch(...)` を変更しない

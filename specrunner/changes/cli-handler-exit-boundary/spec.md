@@ -60,7 +60,7 @@ Production `src/cli/**/*.ts`（テストを除く）は `process.exit` を呼び
 
 ### Requirement: 共通の error-to-exit 変換は dispatch error boundary に一本化される
 
-`FlagParseError` / `SpecRunnerError` / 予期しない error の共通変換 SHALL be performed only by the dispatch error boundary in `bin/specrunner.ts`。handler 内で同一の表示と exit だけを行っていた catch は削除され、error は上位へ伝播する。境界が出力する stderr は `maskSensitive` seam を経由し、secret を含まないメッセージについては現行と同一の文言・改行・出力先・順序で出力される。
+`FlagParseError` / `SpecRunnerError` / 予期しない error の共通変換 SHALL be performed only by the dispatch error boundary in `bin/specrunner.ts`。handler 内で同一の表示と exit だけを行っていた catch は削除され、error は上位へ伝播する。境界が出力する stderr は `maskSensitive` seam を経由し、secret を含まないメッセージについては現行と同一の文言・改行・出力先・順序で出力される。マスクは境界の各 write に対してその場で適用され、出力単位と改行は変更しない。従来 raw 出力だった `parseFlags` の catch（entrypoint 経路）でも secret 形状の値がマスクされるようになる点は、安全側への意図的な変更である。
 
 #### Scenario: FlagParseError が境界で変換される
 

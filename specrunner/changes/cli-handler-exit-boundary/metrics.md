@@ -10,7 +10,7 @@ before = base `de88d1b5`（main, R3a 取り込み後）/ after = 本 PR head。
 | `CommandHandler` return type | `Promise<void>` | `Promise<number>` | `src/cli/command-handler.ts` / ratchet Check 8 |
 | 移行済み handler 数 / 全 handler 数 | 0 / 30 | 30 / 30 | §B（`COMMANDS` tree 走査）＋ ratchet Check 8（`Promise<void>` の `handle*` export = 0） |
 | production `src/cli` 内の `process.exit` call 数 / 対象ファイル数（AST） | 70 / 23 | 0 / 0 | §A `cliExit` / `cliExitFiles`、ratchet Check 7 |
-| （参考）同 text grep `process.exit(` 行数 / ファイル数 | 74 / 24 | 21 / 17 | §C。after の 21 行はすべて JSDoc コメント |
+| （参考）同 text grep `process.exit(` 行数 / ファイル数 | 74 / 24 | 0 / 0 | §C。JSDoc の `process.exit()` 言及も新契約の文言へ書き換え済み |
 | `bin/specrunner.ts` 内の `process.exit` call 数（AST） | 15 | 16 | §A `binExit`。+1 は dispatch 後の `process.exit(code)` |
 | handler 内で共通 error-to-exit 変換だけを行う catch 数 | 5 | 0 | §A `catchSre` 差分（26 → 21）。削除 5 件は §D に列挙 |
 | （参考）handler 内で `process.exit` を呼ぶ catch 数 | 11 | 0 | §A `catchExit` |
@@ -92,8 +92,8 @@ grep -rln "process\.exit(" src/cli --include="*.ts" | grep -v __tests__ | wc -l
 grep -c "process\.exit(" bin/specrunner.ts
 ```
 
-before: 74 行 / 24 ファイル / bin 15 行。after: 21 行 / 17 ファイル / bin 17 行（bin の非 call 2 行はコメント）。
-after の `src/cli` 21 行はすべて `* Returns the exit code; caller (dispatch boundary) is responsible for process.exit().` 系の JSDoc であり、AST では 0 件（ratchet Check 7 が comment を除外して検証する）。
+before: 74 行 / 24 ファイル / bin 15 行。after: 0 行 / 0 ファイル / bin 17 行（bin の非 call 1 行はコメント、call 16 は §A `binExit` と一致）。
+`src/cli` の JSDoc にあった `caller (dispatch boundary) is responsible for process.exit().` 系の記述は `Returns the exit code; process termination is owned by the dispatch boundary.` へ書き換え、text grep でも Goals 2 の「text 基準でも 0 件」と一致させた（AST 基準は ratchet Check 7 が comment を除外して検証する）。
 
 ## D. 削除した「共通変換のみ」の catch（5 件、§A `catchSreFiles` の before − after）
 

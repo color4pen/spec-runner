@@ -162,7 +162,7 @@ request.md の「74 件 / 24 ファイル」は text 一致（grep）の値で�
 
 **停止条件との関係**: 本判断は「stdout / stderr の文言変更」には当たらない（非 secret 入力に対して出力は同一）。ただし secret 混入時のみ出力が変わるため、design 上の明示判断として記録し、PR 本文にも記載する。
 
-**改訂（PR #1112 レビュー、operator 裁定）: D5 は撤回し、境界は base と同一の生 `process.stderr.write` を維持する。** 理由は 2 点。(1) `stderrWrite` は常に末尾へ改行を付加するため、改行終端の usage 文字列を渡すと `FlagParseError` 時の stderr 末尾が `\n` → `\n\n` に変わり、request の「文言・改行を含む observable behavior を完全維持」と T-12 の停止条件に抵触した。(2) 生出力だった entrypoint 経路へ `maskSensitive` を適用することは token 形状入力時の出力変更であり、本 refactoring に黙って含めるべき変更ではない。mask 境界の拡張は別 Issue / request として切り出して判断する。したがって集約後の境界出力は base の `bin/specrunner.ts` とバイト一致し、archive / attach / prune / reopen / resume の 5 command で handler 側 catch が行っていた mask は境界集約により失われる（既知の後退として別 Issue へ記録）。
+**改訂 2（PR #1112 レビュー round 2）: D5 の目的（境界出力の secret マスク）は維持し、実現手段のみ変更する。** round 1 では `stderrWrite` 経由にしたことで、改行を自動付与する同関数へ改行終端の usage を渡し `FlagParseError` 時の stderr 末尾が `\n` → `\n\n` に変わったため一旦撤回したが、撤回は B-7 invariant の後退（archive / attach / prune / reopen / resume の 5 command で mask が失われる）であり canon（spec 要件・TC-012）とも食い違うと指摘された。改訂後は `src/logger/stdout.js` の書き込み関数を経由せず、境界の各 `process.stderr.write` に `maskSensitive` を**その場で**適用する（`process.stderr.write(maskSensitive(e.message + "\n"))` 等）。出力単位・文言・改行・順序は base と同一のバイト列に対してマスクを掛けるだけなので、secret 形状を含まない入力では出力がバイト一致し（D6 の contract test 全 23 ケースが担保）、secret 形状を含む入力でのみ token 本体が `<prefix>...` に置き換わる。従来 raw 出力だった entrypoint 経路（`parseFlags` の catch）の secret 形状出力もマスクされる点は安全側の意図的変更であり、spec 要件と PR 本文に明記する。対象は error boundary の 3 変換（`FlagParseError` message + usage / `Error:` + `Hint:` / `Fatal:`）のみで、help / usage / unknown command / guard の各出力は変更しない。
 
 ### D6: 終了契約の base / candidate 比較は「in-process dispatch harness ＋ 先に採取した base fixture」で行う
 
@@ -257,7 +257,7 @@ base fixture を「production 変更前に、最終形の harness で採取し�
 
 ## Open Questions
 
-1. **D5（境界の mask seam 化）を採るか否か**は operator 判断の余地がある。採らない場合、5 command で `SpecRunnerError` / 予期しない error の secret マスクが失われる。本 design は「採る」を既定とし、採らない選択をする場合は要件 3 の一本化を維持したまま security 後退を PR 本文で申告する必要がある。
+1. **D5（境界の mask seam 化）を採るか否か**は operator 判断の余地がある。採らない場合、5 command で `SpecRunnerError` / 予期しない error の secret マスクが失われる。本 design は「採る」を既定とし、採らない選択をする場合は要件 3 の一本化を維持したまま security 後退を PR 本文で申告する必要がある。→ **解決（PR #1112 round 2）**: 採る。手段は D5 改訂 2（直接 `maskSensitive`）。
 2. **`handleDoctor` の catch が `SpecRunnerError` を `Fatal:`/1 に落としている**のは、`doctor.ts:104` の JSDoc（「exit code 2（crash）は bin の外側 try/catch が扱う」）と食い違う既存の不整合である。本 request では behavior 維持のため catch をそのまま残すが、どちらが意図された挙動かは未解決であり、修正するなら別 request にすべきである（本 request で直すと exit code が変わり停止条件に抵触する）。
 3. **`tests/unit/architecture/arch-allowlist.ts` の `scaffold-handlers.ts` 向け 2 エントリ**（`executeRulesNew(..., process.cwd())` / `executeReviewersNew(..., process.cwd())`）は現行実装（`ctx!.invokerCwd`）と一致しない stale entry に見える。本 request は cwd 解決に触れないため放置するが、実装中に架空 entry を検出する仕組み（あれば）が失敗した場合は、スコープを広げず報告する。
 4. 「handler 内で共通 error-to-exit 変換だけを行う catch 数」は本 design の実測で **5** としたが、PR 本文には実装後に同一基準で再計測した値を載せる。判定は D8 の基準に従う（自動計測ではなく基準に基づく手作業計測であることを PR 本文に明記する）。
