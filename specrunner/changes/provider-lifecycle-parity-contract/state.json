@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T09:53:49.212Z",
+  "updatedAt": "2026-09-04T10:05:45.860Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -74,7 +74,8 @@
     "505c53c383ee9e9e383c03b0fecf4683567b2b6c",
     "d2f85d81db58e159bd0d371a15138118c0045fa0",
     "163aec98dc1e067260c9b26111b1a36ae91fe6ac",
-    "a402cdb342acd44803d19ba122fc95fbb10b3854"
+    "a402cdb342acd44803d19ba122fc95fbb10b3854",
+    "7b4e446b1fe2d5872d83fe2e55ba25345bc93e79"
   ],
   "touchedFiles": {
     "request-review": [
@@ -128,15 +129,13 @@
     "code-review": [
       "tests/unit/contract/provider-lifecycle/case-ids.ts",
       "tests/unit/contract/provider-lifecycle/scenario.ts",
-      "tests/unit/contract/provider-lifecycle/harness/types.ts",
-      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
       "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
-      "tests/unit/contract/provider-lifecycle/case-table.ts",
       "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
       "tests/unit/contract/provider-lifecycle/harness/codex.ts",
-      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts",
-      "tests/unit/contract/provider-lifecycle/harness/registry.ts"
+      "tests/unit/contract/provider-lifecycle/case-table.ts",
+      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts"
     ],
     "code-fixer": [
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
@@ -145,8 +144,37 @@
       "tests/unit/contract/provider-lifecycle/case-table.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 44,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -155,8 +183,11 @@
       "spec-fixer": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 2,
-      "code-fixer": 2
+      "code-review": 3,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
