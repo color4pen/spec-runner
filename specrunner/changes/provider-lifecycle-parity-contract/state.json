@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T08:01:22.769Z",
+  "updatedAt": "2026-09-04T09:21:34.120Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -68,7 +68,9 @@
     "e03a220e4b8424b4d23bdce00c966e52efb910e5",
     "a4e56986ca58154c3e98854419484e4078050709",
     "24f1e9310ed521d82c70ca662368ee3fe9047675",
-    "0f1b02e7b8c3337eee86dc03c4cf18ca53e25a9f"
+    "0f1b02e7b8c3337eee86dc03c4cf18ca53e25a9f",
+    "a2e1bb8cb74002bfeff3ab43fbf337c3ff6113b1",
+    "c791b949620cc327a931d80ffd1b989c4177a1e6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,16 +83,55 @@
     "spec-review": [
       "src/core/port/agent-runner.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/port/agent-runner.ts",
+      "tests/unit/contract/agent-runner-contracts.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/unit/architecture/value-import-scc.test.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/config/step-config.ts",
+      "src/config/schema/types.ts",
+      "src/core/port/output-contract.ts",
+      "src/adapter/shared/follow-up.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/types.ts",
+      "tests/unit/contract/provider-lifecycle/case-ids.ts",
+      "tests/unit/contract/provider-lifecycle/scenario.ts",
+      "tests/unit/contract/provider-lifecycle/harness/types.ts",
+      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
+      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts",
+      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
+      "tests/unit/contract/provider-lifecycle/harness/registry.ts",
+      "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
+      "tests/unit/contract/provider-lifecycle/case-table.ts",
+      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/logger/diagnostic.ts",
+      "src/util/retry.ts",
+      "src/adapter/shared/artifact-bundle.ts",
+      "src/config/schema/resolution.ts",
+      "node_modules/vitest/dist/chunks/test.DNmyFkvJ.js",
+      "tests/unit/adapter/managed-agent/completion-verbose-log.test.ts",
+      "tasks.md"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 28,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
