@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:79221ccbd78c8a335e0369f40195b5c6b9da9bd7b8b4c7754cfaf95fad8783bf",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:1678 (total lines)",
+    "src/adapter/claude-code/agent-runner.ts:495 (ClaudeCodeRunner.run() start line)",
+    "src/adapter/codex/agent-runner.ts:888 (total lines)",
+    "src/adapter/codex/agent-runner.ts:343 (CodexAgentRunner.run() start line)",
+    "src/core/port/agent-runner.ts:AgentRunner.run(context): Promise<AgentRunResult> interface",
+    "src/core/port/agent-runner.ts:AgentRunResult.completionReportDiagnostics (Codex-only)",
+    "src/core/port/agent-runner.ts:AgentRunResult.addedTurns (ClaudeCodeRunner-only)",
+    "src/core/port/agent-runner.ts:AgentRunResult.contextMetrics (ClaudeCodeRunner-only)",
+    "src/core/port/agent-runner.ts:AgentRunResult.invocationMetrics (ClaudeCodeRunner-only)",
+    "src/core/port/agent-runner.ts:AgentRunResult.touchedFiles (ClaudeCodeRunner-only)",
+    "src/core/port/agent-runner.ts:AgentRunResult.sessionRollovers (rollover-absent = unsupported)"
+  ],
+  "sourceRevision": "1c6cb70b40e750ce413f42f09f0e77dab5b19e25"
+}
