@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T07:35:25.738Z",
+  "updatedAt": "2026-09-04T07:37:44.422Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -63,10 +63,18 @@
   "issueNumber": 1114,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "a3598c0cc0758008d6c0b04bb07898d594a8ea90"
+    "a3598c0cc0758008d6c0b04bb07898d594a8ea90",
+    "72a91829795905f49e1c48359a253c003e3309ea"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/port/agent-runner.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
