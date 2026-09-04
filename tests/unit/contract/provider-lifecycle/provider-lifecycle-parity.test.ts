@@ -189,7 +189,28 @@ function assertExpectations(
     expect(result.error, `${tag}: error must be absent on success`).toBeUndefined();
   }
 
+  if (exp.errorHintPresent === true) {
+    expect(result.error, `${tag}: error must be defined for errorHintPresent assertion`).toBeDefined();
+    expect(
+      result.error?.hint,
+      `${tag}: error.hint must be a non-empty string (errorHintPresent=true)`,
+    ).toBeTruthy();
+  } else if (exp.errorHintPresent === false) {
+    // Explicit false: assert hint is absent even when error is defined.
+    expect(
+      result.error?.hint,
+      `${tag}: error.hint must be absent (errorHintPresent=false)`,
+    ).toBeUndefined();
+  }
+
   // --- Universal invariants (always applied) ---
+
+  // completionReason value-domain check (Design D7): must be one of the three allowed values.
+  const VALID_COMPLETION_REASONS = ["success", "error", "timeout"] as const;
+  expect(
+    VALID_COMPLETION_REASONS as readonly string[],
+    `${tag} [universal]: completionReason="${result.completionReason}" is not one of success | error | timeout`,
+  ).toContain(result.completionReason);
 
   if (result.completionReason === "success") {
     expect(result.error, `${tag} [universal]: error must be absent when completionReason=success`).toBeUndefined();

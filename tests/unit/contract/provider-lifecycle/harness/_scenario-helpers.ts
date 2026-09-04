@@ -10,7 +10,7 @@ import type { AgentRunPolicy } from "../../../../../src/core/port/agent-runner.j
 import type { ReportToolSpec, FollowUpPolicy } from "../../../../../src/core/port/report-result.js";
 import { parseBaseReportInput } from "../../../../../src/core/port/report-result.js";
 import type { OutputVerificationPolicy } from "../../../../../src/core/port/output-contract.js";
-import { boolean } from "zod/v4-mini";
+import { z } from "zod";
 import type { LifecycleScenario } from "../scenario.js";
 
 // ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ import type { LifecycleScenario } from "../scenario.js";
 export const CONTRACT_REPORT_TOOL: ReportToolSpec = {
   name: "report_result",
   description: "Report step completion",
-  zodSchema: { ok: boolean() },
+  zodSchema: { ok: z.boolean() },
   parseInput: parseBaseReportInput,
 };
 

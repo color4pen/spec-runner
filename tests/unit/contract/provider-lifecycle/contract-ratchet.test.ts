@@ -107,6 +107,18 @@ describe("ratchet:duplicate", () => {
     }
     expect(duplicates, `Duplicate case IDs: ${duplicates.join(", ")}`).toHaveLength(0);
   });
+
+  test("no duplicate IDs in REQUIRED_CASE_IDS (new Set(...).size === 31)", () => {
+    // T-01 acceptance criterion: REQUIRED_CASE_IDS itself must not contain duplicates.
+    // A duplicate entry here would be absorbed by the set comparison in ratchet:id and
+    // go undetected without this explicit check.
+    const unique = new Set<string>(REQUIRED_CASE_IDS);
+    expect(
+      unique.size,
+      `REQUIRED_CASE_IDS contains ${REQUIRED_CASE_IDS.length - unique.size} duplicate(s): ` +
+        `${REQUIRED_CASE_IDS.filter((id, i) => REQUIRED_CASE_IDS.indexOf(id) !== i).join(", ")}`,
+    ).toBe(REQUIRED_CASE_IDS.length);
+  });
 });
 
 // ---------------------------------------------------------------------------

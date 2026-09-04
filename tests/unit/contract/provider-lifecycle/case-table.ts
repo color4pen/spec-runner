@@ -111,6 +111,17 @@ export interface ProviderExpectation {
   /** When true: result.error must be undefined (success path) */
   errorMustBeAbsent?: boolean;
 
+  /**
+   * Expected presence of error.hint (Design D3, T-05).
+   *   true  — result.error.hint must be a non-empty string
+   *   false — result.error.hint must be absent (undefined)
+   *
+   * timeout.* cases: tracker.timeoutHint() is guaranteed by the port doc comment to
+   * populate error.hint; set errorHintPresent: true to verify that guarantee in the
+   * contract table.
+   */
+  errorHintPresent?: boolean;
+
   // -------------------------------------------------------------------
   // Metrics / diagnostics
   // -------------------------------------------------------------------
