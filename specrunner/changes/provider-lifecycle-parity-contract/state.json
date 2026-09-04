@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T11:14:36.073Z",
+  "updatedAt": "2026-09-04T12:22:27.001Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/provider-lifecycle-parity-contract/tasks.md, title: \"tasks.md 実測値の shared/provider-specific 件数と absent 内訳が実装と乖離\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -173,13 +169,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/provider-lifecycle-parity-contract/tasks.md, title: \"tasks.md 実測値の shared/provider-specific 件数と absent 内訳が実装と乖離\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 99,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
