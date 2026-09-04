@@ -19,8 +19,6 @@ export interface HarnessBuildOpts {
   sleepFn: (ms: number) => Promise<void>;
   /** Emit function for collecting domain events emitted during the run. */
   emit: (event: string, payload: Record<string, unknown>) => void;
-  /** Result file content: path → content. Written to tempDir before run(). */
-  resultFileContent?: { path: string; content: string } | null;
 }
 
 /**

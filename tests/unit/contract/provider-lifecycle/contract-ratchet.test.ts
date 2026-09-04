@@ -116,6 +116,15 @@ describe("ratchet:area", () => {
     ).toHaveLength(0);
   });
 
+  test("every LIFECYCLE_AREA has at least one case", () => {
+    const caseAreas = new Set(CONTRACT_CASES.map((c) => c.area));
+    const missing = LIFECYCLE_AREAS.filter((area) => !caseAreas.has(area));
+    expect(
+      missing,
+      `LIFECYCLE_AREAS with no cases: ${missing.join(", ")}`,
+    ).toHaveLength(0);
+  });
+
   test("total case count equals 31", () => {
     expect(CONTRACT_CASES).toHaveLength(31);
   });

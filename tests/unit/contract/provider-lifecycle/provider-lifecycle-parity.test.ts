@@ -243,8 +243,11 @@ describe("provider-lifecycle-parity", () => {
         const expectation = contractCase.expectations[providerId];
         const testName = `[${providerId}]`;
 
-        // Skip absent cases — provider does not implement this behavior.
-        const runTest = expectation.support === "absent" ? test.skip : test;
+        // Absent cases run and assert — spec TC-012 requires absent behavior to be
+        // verified, not skipped. The assertExpectations helper applies only the
+        // assertion fields that are present in the expectation object (e.g. fieldPresence)
+        // plus the universal invariants. test.skip is prohibited by TC-042.
+        const runTest = test;
 
         runTest(testName, async () => {
           const scenario = contractCase.scenario;

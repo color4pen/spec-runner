@@ -21,6 +21,7 @@
  */
 import type { LifecycleScenario } from "./scenario.js";
 import type { REQUIRED_CASE_IDS, LIFECYCLE_AREAS } from "./case-ids.js";
+import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 
 // ---------------------------------------------------------------------------
 // Expectation types
@@ -146,9 +147,11 @@ export interface ProviderExpectation {
 
   /**
    * Spot-check specific result fields as present (defined) or absent (undefined).
-   * Keys are AgentRunResult field names.
+   * Keys are AgentRunResult field names. Typed as keyof AgentRunResult so that
+   * field name typos are caught at compile time rather than silently producing
+   * no assertion.
    */
-  fieldPresence?: Partial<Record<string, "present" | "absent">>;
+  fieldPresence?: Partial<Record<keyof AgentRunResult, "present" | "absent">>;
 
   // -------------------------------------------------------------------
   // Invocation count
