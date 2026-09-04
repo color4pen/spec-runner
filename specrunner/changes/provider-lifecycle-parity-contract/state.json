@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T11:07:19.861Z",
+  "updatedAt": "2026-09-04T11:14:36.073Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/provider-lifecycle-parity-contract/tasks.md, title: \"tasks.md 実測値の shared/provider-specific 件数と absent 内訳が実装と乖離\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -84,7 +88,8 @@
     "baf58ed0bd9842eda76d46f28d363c037e03e962",
     "25f13db8f60a7a490cb8f883808884f882ac8a61",
     "f61543172c57cb4342d03c54f49071c901a78cbb",
-    "4cb3b6bdd0947c261516506ca862175e8011b718"
+    "4cb3b6bdd0947c261516506ca862175e8011b718",
+    "97f16bfe01e881cffa6c5b681a580ced6da6ccb9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,13 +109,14 @@
     ],
     "code-review": [
       "tests/unit/contract/provider-lifecycle/case-ids.ts",
-      "tests/unit/contract/provider-lifecycle/scenario.ts",
-      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
       "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
+      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/case-table.ts",
       "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
       "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
       "tests/unit/contract/provider-lifecycle/harness/codex.ts",
-      "tests/unit/contract/provider-lifecycle/case-table.ts",
+      "tests/unit/contract/provider-lifecycle/scenario.ts",
+      "tests/unit/contract/provider-lifecycle/harness/types.ts",
       "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts"
     ],
     "code-fixer": [
@@ -167,8 +173,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/provider-lifecycle-parity-contract/tasks.md, title: \"tasks.md 実測値の shared/provider-specific 件数と absent 内訳が実装と乖離\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 99,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -177,7 +188,7 @@
       "spec-fixer": 1,
       "implementer": 2,
       "verification": 3,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
