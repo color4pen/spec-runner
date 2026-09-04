@@ -8,7 +8,7 @@ before = base `de88d1b5`（main, R3a 取り込み後）/ after = 本 PR head。
 | 項目 | before | after | 採取方法 |
 |---|---|---|---|
 | `CommandHandler` return type | `Promise<void>` | `Promise<number>` | `src/cli/command-handler.ts` / ratchet Check 8 |
-| 移行済み handler 数 / 全 handler 数 | 0 / 30 | 30 / 30 | §B（`COMMANDS` tree 走査）＋ ratchet Check 8（`Promise<void>` の `handle*` export = 0） |
+| 移行済み handler 数 / 全 handler 数 | 0 / 30 | 30 / 30 | §B（`COMMANDS` tree 走査）＋ ratchet Check 8（registry AST から収集した 30 handler の戻り型注釈が厳密に `Promise<number>`、収集数 = tree 上の handler 数） |
 | production `src/cli` 内の `process.exit` call 数 / 対象ファイル数（AST） | 70 / 23 | 0 / 0 | §A `cliExit` / `cliExitFiles`、ratchet Check 7 |
 | （参考）同 text grep `process.exit(` 行数 / ファイル数 | 74 / 24 | 0 / 0 | §C。JSDoc の `process.exit()` 言及も新契約の文言へ書き換え済み |
 | `bin/specrunner.ts` 内の `process.exit` call 数（AST） | 15 | 16 | §A `binExit`。+1 は dispatch 後の `process.exit(code)` |
@@ -16,6 +16,7 @@ before = base `de88d1b5`（main, R3a 取り込み後）/ after = 本 PR head。
 | （参考）handler 内で `process.exit` を呼ぶ catch 数 | 11 | 0 | §A `catchExit` |
 | migration shim / adapter 数 | 3 | 0 | §E（`runRun` / `runResume` / `runReopen` の `Promise<void>` ラッパー） |
 | CLI 終了契約の base / candidate 比較ケース数 | — | 23 | `src/cli/__tests__/exit-contract-cases.ts`、fixture は `de88d1b5` から採取（provenance 参照） |
+| value-import SCC 数（`src/` 全体） | 0 | 0 | `tests/unit/architecture/value-import-scc.test.ts`（Tarjan、size ≥ 2 の SCC = 0） |
 | value-import SCC 数（`src/cli`） | 0 | 0 | ratchet Check 5 |
 
 ## A. AST 集計スクリプト
@@ -82,7 +83,7 @@ console.log("handlers:", n, "distinct:", names.size, "anonymous:", [...names].fi
 ```
 
 before / after ともに `handlers: 30 distinct: 30 anonymous: 0`。
-「移行済み」は ratchet Check 8（`src/cli` の exported `handle*` に `Promise<void>` 注釈が無い）で判定し、before は 0 / 30（`CommandHandler` 自体が `Promise<void>`）、after は 30 / 30。
+「移行済み」は ratchet Check 8 で判定する。`command-registry.ts` の AST から `handler:` の識別子と import 元を収集し（30 件、tree 走査の handler 数と一致）、各 module の同名 export 関数の戻り型注釈が厳密に `Promise<number>` であることを検証する（`Promise<void>` / `Promise<string>` / 型 alias / 注釈なしはすべて違反）。before は 0 / 30（全 handler が `Promise<void>`）、after は 30 / 30。
 
 ## C. text grep（参考）
 
