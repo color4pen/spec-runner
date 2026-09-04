@@ -245,7 +245,19 @@
       `` `${caseId}::${providerId}` `` を登録する
 - [ ] case ごとに tempDir を 1 つ作り、`resultFile` 指定があればその内容を書く。終了時に削除する
 - [ ] `emit` を収集関数にして、emit された event 名を記録する
-- [ ] 宣言された期待値のみを assert する（未宣言 field は assert しない）
+- [ ] 宣言された期待値のみを assert する（未宣言 field は assert しない）。
+      各期待値フィールドのアサーション変換ルールは以下のとおり:
+      - `transientRetryAttempts` / `addedTurns` が数値 → `expect(result.X).toBe(数値)`
+      - `transientRetryAttempts` / `addedTurns` が `"absent"` →
+        `expect(result.X).toBeUndefined()`（文字列 `"absent"` と比較してはならない）
+      - `fieldPresence` の各エントリ `{ [field]: "present" | "absent" }` は
+        case 固有の spot-check であり、capability matrix による全 case 横断の `absent` 検証
+        （universal invariant 内の "capability matrix で `absent` の field が `undefined`"）と
+        役割が異なる:
+          - `fieldPresence[field] === "present"` → `expect(result[field]).toBeDefined()`
+          - `fieldPresence[field] === "absent"` → `expect(result[field]).toBeUndefined()`
+        （D4 capability matrix の全 case 横断 assert と重複しても構わないが、
+        case 固有 `fieldPresence` が `absent` を宣言した場合は必ず `toBeUndefined()` を呼ぶ）
 - [ ] 全実行結果に universal invariant を適用する（design D7）:
       - `completionReason` が `success` / `error` / `timeout` のいずれか
       - `followUpAttempts` が 0 以上の整数
@@ -269,7 +281,8 @@
 
 **Acceptance Criteria**:
 - `bunx vitest run tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts` が green
-- 実行される test 件数が 62 + 台帳検査分であり、skip 0 件である
+- 実行される test 件数が 62 + 台帳検査分（最低 64 件以上）であり、skip 0 件である
+  （台帳検査 `describe` は "実行ペア完全一致" と "supported field 観測記録" の最低 2 `it` を持つ）
 - 同コマンドを 3 回連続実行して結果が変わらない（timeout case が flaky でない）
 - driver が `loadClaudeAgentSdk` / `loadCodexSdk` / 実 SDK パッケージを import していない
 

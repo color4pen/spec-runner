@@ -393,7 +393,8 @@ T-10 verification: `git diff --name-status <base>` で `src/adapter/*/__tests__/
 
 **GIVEN** `provider-lifecycle-parity.test.ts` が 31 case × 2 provider の全組み合わせを実行するよう実装されている
 **WHEN** `bunx vitest run tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts` を実行する
-**THEN** 実行される test 件数が 62 + 台帳検査分であり、skip が 0 件である
+**THEN** 実行される test 件数が 64 件以上（62 case test + 台帳検査 `it` 最低 2 件）であり、skip が 0 件である
+（台帳検査は "実行ペア完全一致" と "supported field 観測記録" の少なくとも 2 `it` で構成される）
 
 ---
 
