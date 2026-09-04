@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T09:29:10.311Z",
+  "updatedAt": "2026-09-04T09:33:16.294Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -71,7 +71,8 @@
     "0f1b02e7b8c3337eee86dc03c4cf18ca53e25a9f",
     "a2e1bb8cb74002bfeff3ab43fbf337c3ff6113b1",
     "c791b949620cc327a931d80ffd1b989c4177a1e6",
-    "505c53c383ee9e9e383c03b0fecf4683567b2b6c"
+    "505c53c383ee9e9e383c03b0fecf4683567b2b6c",
+    "d2f85d81db58e159bd0d371a15138118c0045fa0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,10 +135,20 @@
       "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
       "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts",
       "tests/unit/contract/provider-lifecycle/harness/registry.ts"
+    ],
+    "code-fixer": [
+      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
+      "tests/unit/contract/provider-lifecycle/harness/types.ts",
+      "tests/unit/contract/provider-lifecycle/case-table.ts",
+      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
+      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
+      "tests/unit/contract/provider-lifecycle/case-ids.ts",
+      "src/core/port/agent-runner.ts"
     ]
   },
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 36,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -146,7 +157,8 @@
       "spec-fixer": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
