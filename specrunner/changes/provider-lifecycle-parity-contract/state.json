@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T10:49:13.664Z",
+  "updatedAt": "2026-09-04T10:59:48.078Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -80,7 +80,9 @@
     "c2e6216f564aac30ad1a293cc285ba4973e3a255",
     "82f0831b430bf667b91dd790a4e7aaaadaac36d1",
     "9d6fc97b158a12a1fea5f61ab16e65e4ff0767ba",
-    "eef98be80ca0c1bb8ab62f155184f2b5677d4859"
+    "eef98be80ca0c1bb8ab62f155184f2b5677d4859",
+    "baf58ed0bd9842eda76d46f28d363c037e03e962",
+    "25f13db8f60a7a490cb8f883808884f882ac8a61"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,8 +164,9 @@
       "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
       "tests/unit/contract/provider-lifecycle/result-field-matrix.ts",
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
-      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
-      "tests/unit/contract/provider-lifecycle/case-table.ts"
+      "tests/unit/contract/provider-lifecycle/case-table.ts",
+      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
+      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts"
     ]
   },
   "reviewerStatuses": [
@@ -196,7 +199,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -204,14 +207,14 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 3,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }

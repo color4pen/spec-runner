@@ -24,7 +24,7 @@
  * src/core/port/agent-runner.ts and extract AgentRunResult member names.
  */
 import { describe, test, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, type Dirent } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as ts from "typescript";
@@ -309,9 +309,9 @@ describe("ratchet:registry", () => {
     const contractSet = new Set<string>(CONTRACT_PROVIDERS);
     const violations: string[] = [];
 
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent<string>[];
     try {
-      entries = readdirSync(adapterDir, { withFileTypes: true });
+      entries = readdirSync(adapterDir, { withFileTypes: true, encoding: "utf8" });
     } catch {
       violations.push(`src/adapter/ directory not found at expected path: ${adapterDir}`);
       expect(violations, violations.join("\n")).toHaveLength(0);
@@ -496,9 +496,9 @@ describe("ratchet:sdk-containment", () => {
 
     // Recursively collect all .ts files under src/.
     function collectSrcTs(dir: string): string[] {
-      let entries: ReturnType<typeof readdirSync>;
+      let entries: Dirent<string>[];
       try {
-        entries = readdirSync(dir, { withFileTypes: true });
+        entries = readdirSync(dir, { withFileTypes: true, encoding: "utf8" });
       } catch {
         return [];
       }

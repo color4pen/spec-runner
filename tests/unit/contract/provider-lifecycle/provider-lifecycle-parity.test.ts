@@ -376,7 +376,7 @@ describe("provider-lifecycle-parity", () => {
             // Recorded after runner.run() completes (a crash would leave the pair unrecorded).
             _executedPairs.add(`${contractCase.id}×${providerId}`);
             const _obs = _observedFields.get(providerId)!;
-            for (const [k, v] of Object.entries(result as Record<string, unknown>)) {
+            for (const [k, v] of Object.entries(result as unknown as Record<string, unknown>)) {
               if (v !== undefined) _obs.add(k);
             }
 
