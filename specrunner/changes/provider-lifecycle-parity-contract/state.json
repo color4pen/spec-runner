@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "efcaecb2-6559-4bd9-958e-452ffff63cd6",
   "createdAt": "2026-09-04T07:35:22.639Z",
-  "updatedAt": "2026-09-04T12:28:16.144Z",
+  "updatedAt": "2026-09-04T12:30:23.061Z",
   "request": {
     "title": "refactor: Claude / Codex provider lifecycleのparity contractを固定する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/provider-lifecycle-parity-contract-efcaecb2",
   "error": null,
@@ -86,7 +86,8 @@
     "f61543172c57cb4342d03c54f49071c901a78cbb",
     "4cb3b6bdd0947c261516506ca862175e8011b718",
     "97f16bfe01e881cffa6c5b681a580ced6da6ccb9",
-    "80f5e0293cfecf701cb0cf6d352b8b8366a9fa50"
+    "80f5e0293cfecf701cb0cf6d352b8b8366a9fa50",
+    "219d1add19f0c78f57f0c0e58fd0fe4be36905bf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -116,13 +117,11 @@
       "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts"
     ],
     "code-fixer": [
-      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
       "tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts",
+      "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
+      "tests/unit/contract/provider-lifecycle/harness/_scenario-helpers.ts",
       "tests/unit/contract/provider-lifecycle/case-table.ts",
-      "tests/unit/contract/provider-lifecycle/harness/claude-code.ts",
-      "tests/unit/contract/provider-lifecycle/harness/codex.ts",
-      "src/adapter/claude-code/sdk-loader.ts",
-      "src/adapter/codex/sdk-loader.ts"
+      "src/core/port/agent-runner.ts"
     ],
     "regression-gate": [
       "tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts",
@@ -172,7 +171,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 106,
+    "historyCount": 117,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -182,10 +181,10 @@
       "implementer": 2,
       "verification": 3,
       "code-review": 5,
-      "code-fixer": 4,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 2
     }
