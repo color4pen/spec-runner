@@ -65,7 +65,14 @@ export const specReviewEffectiveFixer: (f: Finding) => FixTarget = () => "spec-f
  * A finding is "unroutable" when ALL of the following hold:
  *   1. resolution === "fixable"
  *   2. finding.file is in scope.canonPaths
- *   3. The effective fixer's declared write set does NOT include finding.file
+ *   3. The effective fixer's declared write set does NOT include finding.file,
+ *      OR any remediation.site whose file is in scope.canonPaths is NOT in the
+ *      fixer's declared write set (secondary-site canon violation).
+ *
+ * The secondary-site check ensures that a finding whose primary path is writable
+ * but whose remediation contract requires fixing an unwritable canon secondary site
+ * is escalated rather than passed to the fixer (which would produce a partial fix
+ * or a write-scope failure on the secondary site).
  *
  * @param findings            - All findings from the step result.
  * @param scope               - Canon write scope (canon paths + per-fixer writable sets).
@@ -82,7 +89,16 @@ export function selectUnroutableCanonFindings(
     if (!scope.canonPaths.has(f.file)) return false;
     const effectiveFixer = resolveEffectiveFixer(f);
     const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
-    return !writable.has(f.file);
+    // Primary site not writable → unroutable.
+    if (!writable.has(f.file)) return true;
+    // Primary site writable: check for unwritable secondary canon sites in the
+    // remediation contract. Any such site renders the full fix impossible.
+    if (f.remediation) {
+      return f.remediation.sites.some(
+        (site) => scope.canonPaths.has(site.file) && !writable.has(site.file),
+      );
+    }
+    return false;
   });
 }
 
@@ -93,6 +109,13 @@ export function selectUnroutableCanonFindings(
  *   1. resolution === "fixable"
  *   2. finding.file is in scope.canonPaths
  *   3. The effective fixer's declared write set INCLUDES finding.file
+ *   4. No remediation.site whose file is in scope.canonPaths is absent from the
+ *      fixer's declared write set (all secondary canon sites are writable).
+ *
+ * Condition 4 ensures that a finding whose primary path is writable but whose
+ * remediation contract names an unwritable secondary canon site is classified as
+ * unroutable (and escalated) rather than passed to a fixer that cannot complete
+ * all required site fixes.
  *
  * This is the complement of selectUnroutableCanonFindings for the same resolver.
  *
@@ -111,7 +134,15 @@ export function selectRoutableCanonFindings(
     if (!scope.canonPaths.has(f.file)) return false;
     const effectiveFixer = resolveEffectiveFixer(f);
     const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
-    return writable.has(f.file);
+    if (!writable.has(f.file)) return false;
+    // Ensure all secondary canon sites in the remediation contract are also writable.
+    if (f.remediation) {
+      const hasUnroutableSite = f.remediation.sites.some(
+        (site) => scope.canonPaths.has(site.file) && !writable.has(site.file),
+      );
+      if (hasUnroutableSite) return false;
+    }
+    return true;
   });
 }
 

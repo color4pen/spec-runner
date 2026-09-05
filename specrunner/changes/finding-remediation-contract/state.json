@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T13:52:46.151Z",
+  "updatedAt": "2026-09-05T13:58:20.905Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -71,7 +71,9 @@
     "c085c19e0d1a476a96e15edfe0674c9baa3c6fe0",
     "7ef5da86382963161d6234d267f169314271922d",
     "7c6591d6ce4346f68aaea922861bb8092293af3b",
-    "61ddb71804fa6b8f60cad61659e331aa7aa66429"
+    "61ddb71804fa6b8f60cad61659e331aa7aa66429",
+    "b64b617613fa7c4ca38b58972f99b37b1e572bb0",
+    "232b7729e07fdc5286ac2305b7f7038e0c514f6d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -179,10 +181,47 @@
       "tests/unit/step/fixer-findings.test.ts",
       "src/prompts/code-review-system.ts",
       "src/prompts/conformance-system.ts"
+    ],
+    "code-fixer": [
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "src/prompts/judge-rules.ts",
+      "src/core/step/code-fixer.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/prompts/__tests__/fragment-coverage.test.ts",
+      "src/core/step/types.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -191,7 +230,11 @@
       "spec-fixer": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }

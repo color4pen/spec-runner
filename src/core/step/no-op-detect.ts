@@ -44,9 +44,9 @@ export async function detectNoOp(
      * (exempt candidates). Changes to these paths are counted as real work even
      * when they fall under an ARTIFACT_PREFIX.
      *
-     * Caller (executor) derives this from collectRoutedFixerFindings(state).map(f => f.file)
-     * when step.noOpDetect === true, so it is always machine-derived — never agent
-     * self-reported.
+     * Caller (executor) derives this from collectRoutedFixerFindings(state) as the
+     * union of each finding's primary file and all remediation.sites paths, when
+     * step.noOpDetect === true.  Always machine-derived — never agent self-reported.
      *
      * exempt = findingTargetPaths − pipelineManagedPaths.
      * Omitting (or passing []) preserves the existing behaviour (exempt = ∅).
