@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T22:24:03.184Z",
+  "updatedAt": "2026-09-05T22:36:29.593Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -90,7 +90,9 @@
     "1522622dea302c66b7943949b7a1b1cb57ebabda",
     "fcf6c5336e8928a4b60e0509de816dd023a73e4b",
     "7931f70489a95a8db91c338079473d9677859219",
-    "f216a81f5a44427111d77f1c625d21fadda69d08"
+    "f216a81f5a44427111d77f1c625d21fadda69d08",
+    "75121e920eb17deec0435d1b0bb949d70f92656f",
+    "e5682a006d27aaecb074ac9955e7ec4e459bb77e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,6 +161,25 @@
       "src/core/snapshot/compare.ts",
       "src/core/artifact-output/artifact-writer.ts",
       "src/core/artifact-output/__tests__/artifact-writer.test.ts"
+    ],
+    "conformance": [
+      "src/core/artifact-output/run.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/guarded-spawn.ts",
+      "src/core/artifact-output/revision-binding.ts",
+      "src/core/snapshot/compare.ts",
+      "src/core/snapshot/collect.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/command/guide.ts",
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/artifact-output/patch.ts",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts",
+      "docs/artifact-output-profile.md",
+      "src/core/artifact-output/run-layout.ts",
+      "src/core/command/__tests__/guide.test.ts"
     ]
   },
   "resumePoint": null,
@@ -215,7 +236,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 123,
+    "historyCount": 132,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -223,13 +244,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 3,
-      "verification": 3,
+      "verification": 4,
       "code-review": 8,
       "code-fixer": 5,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
