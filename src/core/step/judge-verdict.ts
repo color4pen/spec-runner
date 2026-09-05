@@ -91,16 +91,15 @@ export function deriveSpecReviewVerdict(
   if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
   if (canonScope) {
-    const specRoutable = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
-    // 4a: fixable canon findings unroutable by spec-fixer → escalation
-    const specRoutableFiles = new Set(specRoutable.map((f) => f.file));
-    const fixableCanon = findings.filter(
-      (f) => f.resolution === "fixable" && canonScope.canonPaths.has(f.file),
-    );
-    if (fixableCanon.some((f) => !specRoutableFiles.has(f.file))) {
-      return "escalation";
-    }
+    // 4a: any fixable finding that spec-fixer cannot fully address → escalation.
+    // Uses selectUnroutableCanonFindings which applies the general predicate for findings
+    // with remediation (checks primary + all secondary sites against spec-fixer's write scope,
+    // including non-canon secondary sites) and the legacy predicate for findings without
+    // remediation (checks only primary canon files against spec-fixer's declared write set).
+    const specUnroutable = selectUnroutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
+    if (specUnroutable.length > 0) return "escalation";
     // 4b: spec-fixer-routable critical|high → needs-fix; low|medium → fall through to approved
+    const specRoutable = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
     if (specRoutable.some((f) => f.severity === "critical" || f.severity === "high")) {
       return "needs-fix";
     }

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T14:07:22.017Z",
+  "updatedAt": "2026-09-05T14:46:26.341Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
-  "error": {
-    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
-    "message": "custom reviewers did not approve after 2 iterations",
-    "hint": "Review the latest reviewer results and address findings manually. (iteration 003)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -223,14 +219,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "custom reviewers did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定: cross-boundary-invariants reviewer の iteration 3 F-001 は妥当。これまで 3 回の finding はすべて同じ不変条件（fixer に routing する finding は、主 file と remediation.sites の全 site が effective fixer の宣言 write scope に入っていなければならない）の一部だけを塞いだために収束していない。今回は指摘された具体例だけを直すのではなく、一般化した判定として実装すること。\n\n必須の修正方針:\n1. 共有 predicate を 1 つ設ける（例: canon-escalation.ts または write-scope.ts に `isFindingWithinFixerWriteScope(finding, effectiveFixer, scope)`）。主 `finding.file` と全 `remediation.sites[].file` の和集合を取り、その全 path が effective fixer の宣言 write scope（canon path なら scope.writableByFixer、非 canon path なら fixer の宣言 write set / src 書込可否）に入る場合だけ routable とする。canonPaths に含まれる path のみを検査する現在の判定を一般判定として流用しない。\n2. selectUnroutableCanonFindings / selectRoutableCanonFindings を同じ predicate で補集合関係になるように書き換え、judge-verdict.ts（deriveConformanceVerdict を含む）と findings-ledger.ts の filtering も同じ分類結果を使う。少なくとも spec-fixer の change-folder write set 外の site（`src/**` など）を持つ finding は fail-closed に escalation する。\n3. remediation を持たない legacy finding の挙動は維持する。\n4. 追加テスト: 主 site spec.md + 副 site src/** + fixTarget spec-fixer が unroutable になること、主 file 非 canon + 副 site 保護 canon が unroutable になること、全 site writable なら routable になること、legacy finding が従来どおりであること。\n\nreviewer の iteration 3 の Sites（canon-escalation.ts:100/143、judge-verdict.ts:173/94、write-scope.ts:94）をすべて同一 iteration で修正すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-05T14:46:25.877Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

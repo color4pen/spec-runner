@@ -5,17 +5,24 @@
  * TC-010: selectUnroutableCanonFindings は resolution=fixable 以外を除外する
  * TC-011: selectUnroutableCanonFindings は実効 fixer が書ける正典 finding を除外する
  * TC-012: buildCanonEscalationReason は CANON_FINDING_ESCALATION prefix を含む
- *
- * RED: implementation (src/core/step/canon-escalation.ts) does not exist yet.
+ * TC-030: 主 site canon + 副 site src/** + spec-fixer → unroutable (non-canon secondary not in broadWriteFixers)
+ * TC-031: 主 file 非 canon + 副 site 保護 canon + spec-fixer → unroutable
+ * TC-032: 全 site writable (spec-fixer) → routable
+ * TC-033: legacy finding (remediation なし) は従来どおりの挙動を維持する
+ * TC-034: code-fixer + non-canon secondary site (remediation) → NOT unroutable (broad write)
+ * TC-035: isFindingWithinFixerWriteScope is exported from canon-escalation.ts
  */
 import { describe, it, expect } from "vitest";
 import {
   selectUnroutableCanonFindings,
+  selectRoutableCanonFindings,
   buildCanonEscalationReason,
   judgeEffectiveFixer,
   conformanceEffectiveFixer,
+  specReviewEffectiveFixer,
   type CanonWriteScope,
 } from "../../../../src/core/step/canon-escalation.js";
+import * as canonEscalationNS from "../../../../src/core/step/canon-escalation.js";
 import type { Finding, FixTarget } from "../../../../src/kernel/report-result.js";
 
 // ---------------------------------------------------------------------------
@@ -40,14 +47,17 @@ function makeFixableFinding(overrides: Partial<Finding> = {}): Finding {
  *
  * canonPaths: set of protected canonical paths
  * writableByFixer: map from FixTarget to the set of canon paths that fixer can write
+ * broadWriteFixers: optional set of fixers with broad non-canon write access
  */
 function makeCanonScope(
   canonPaths: string[],
   writableByFixer: Array<[FixTarget, string[]]> = [],
+  broadWriteFixers?: FixTarget[],
 ): CanonWriteScope {
   return {
     canonPaths: new Set(canonPaths),
     writableByFixer: new Map(writableByFixer.map(([k, v]) => [k, new Set(v)])),
+    ...(broadWriteFixers !== undefined ? { broadWriteFixers: new Set(broadWriteFixers) } : {}),
   };
 }
 
@@ -287,5 +297,304 @@ describe("TC-008 / TC-012: buildCanonEscalationReason", () => {
     expect(reason).toContain("Category 誤分類");
     expect(reason).toContain(`specrunner/changes/${SLUG}/request.md`);
     expect(reason).toContain("Request 記述ミス");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-035: isFindingWithinFixerWriteScope is exported from canon-escalation.ts
+// ---------------------------------------------------------------------------
+
+describe("TC-035: isFindingWithinFixerWriteScope is exported", () => {
+  it("TC-035: isFindingWithinFixerWriteScope is a function export", () => {
+    const fn = (canonEscalationNS as Record<string, unknown>).isFindingWithinFixerWriteScope;
+    expect(fn).toBeDefined();
+    expect(typeof fn).toBe("function");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-030: 主 site canon (spec-fixer writable) + 副 site src/** + spec-fixer → unroutable
+// Operator 裁定: spec-fixer の change-folder write set 外の site (src/**) を持つ finding は
+// fail-closed に escalation する。
+// ---------------------------------------------------------------------------
+
+describe("TC-030: 主 site spec.md + 副 site src/** + spec-fixer → unroutable", () => {
+  const SPEC_MD = `specrunner/changes/${SLUG}/spec.md`;
+  const DESIGN_MD = `specrunner/changes/${SLUG}/design.md`;
+
+  function makeScopeWithBroad(): CanonWriteScope {
+    return makeCanonScope(
+      TEST_CANON_PATHS,
+      [
+        ["spec-fixer", [SPEC_MD, DESIGN_MD]],
+        ["implementer", [`specrunner/changes/${SLUG}/tasks.md`]],
+        ["code-fixer", []],
+      ],
+      ["code-fixer", "implementer"], // broadWriteFixers
+    );
+  }
+
+  it("TC-030: spec.md primary + src/** secondary + spec-fixer → unroutable (spec-fixer cannot write non-canon)", () => {
+    const finding = makeFixableFinding({
+      file: SPEC_MD,
+      resolution: "fixable",
+      remediation: {
+        invariant: "Spec and implementation must stay in sync",
+        sites: [
+          { file: SPEC_MD },
+          { file: "src/core/foo.ts" }, // non-canon, spec-fixer cannot write
+        ],
+        approach: "Fix spec and update implementation",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(1);
+    expect(unroutable[0]?.file).toBe(SPEC_MD);
+  });
+
+  it("TC-030: the same finding is NOT in selectRoutableCanonFindings (complement holds)", () => {
+    const finding = makeFixableFinding({
+      file: SPEC_MD,
+      resolution: "fixable",
+      remediation: {
+        invariant: "Spec and implementation must stay in sync",
+        sites: [
+          { file: SPEC_MD },
+          { file: "src/core/foo.ts" },
+        ],
+        approach: "Fix spec and update implementation",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const routable = selectRoutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(routable).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-031: 主 file 非 canon + 副 site 保護 canon + spec-fixer → unroutable
+// ---------------------------------------------------------------------------
+
+describe("TC-031: 主 file 非 canon + 副 site 保護 canon + spec-fixer → unroutable", () => {
+  const SPEC_MD = `specrunner/changes/${SLUG}/spec.md`;
+  const REQUEST_MD = `specrunner/changes/${SLUG}/request.md`;
+
+  function makeScopeWithBroad(): CanonWriteScope {
+    return makeCanonScope(
+      TEST_CANON_PATHS,
+      [
+        ["spec-fixer", [SPEC_MD, `specrunner/changes/${SLUG}/design.md`]],
+        ["implementer", [`specrunner/changes/${SLUG}/tasks.md`]],
+        ["code-fixer", []],
+      ],
+      ["code-fixer", "implementer"],
+    );
+  }
+
+  it("TC-031: non-canon primary + protected canon secondary (request.md) + spec-fixer → unroutable", () => {
+    // Primary file is src/** (non-canon), secondary site is request.md (canon, not writable by spec-fixer)
+    const finding = makeFixableFinding({
+      file: "src/handler.ts", // non-canon
+      resolution: "fixable",
+      remediation: {
+        invariant: "Handler must reflect request spec",
+        sites: [
+          { file: "src/handler.ts" },
+          { file: REQUEST_MD }, // canon, NOT in spec-fixer's writable set
+        ],
+        approach: "Update handler and fix request spec",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(1);
+  });
+
+  it("TC-031: non-canon primary + non-canon secondary + spec-fixer → unroutable (spec-fixer not in broadWriteFixers)", () => {
+    // Both primary and secondary are non-canon; spec-fixer cannot write either
+    const finding = makeFixableFinding({
+      file: "src/foo.ts",
+      resolution: "fixable",
+      remediation: {
+        invariant: "foo and bar must agree",
+        sites: [
+          { file: "src/foo.ts" },
+          { file: "src/bar.ts" },
+        ],
+        approach: "Fix both files",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-032: 全 site writable (spec-fixer) → routable
+// ---------------------------------------------------------------------------
+
+describe("TC-032: 全 site writable なら routable", () => {
+  const SPEC_MD = `specrunner/changes/${SLUG}/spec.md`;
+  const DESIGN_MD = `specrunner/changes/${SLUG}/design.md`;
+  const TASKS_MD = `specrunner/changes/${SLUG}/tasks.md`;
+
+  function makeScopeWithBroad(): CanonWriteScope {
+    return makeCanonScope(
+      TEST_CANON_PATHS,
+      [
+        ["spec-fixer", [SPEC_MD, DESIGN_MD, TASKS_MD]],
+        ["implementer", [TASKS_MD]],
+        ["code-fixer", []],
+      ],
+      ["code-fixer", "implementer"],
+    );
+  }
+
+  it("TC-032: all canon sites writable by spec-fixer → routable (not in unroutable)", () => {
+    const finding = makeFixableFinding({
+      file: SPEC_MD,
+      resolution: "fixable",
+      remediation: {
+        invariant: "spec.md and design.md must stay coherent",
+        sites: [
+          { file: SPEC_MD },
+          { file: DESIGN_MD },
+          { file: TASKS_MD },
+        ],
+        approach: "Fix spec, design, and tasks together",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(0);
+
+    const routable = selectRoutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(routable).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-033: legacy finding (remediation なし) は従来どおりの挙動を維持する
+// ---------------------------------------------------------------------------
+
+describe("TC-033: legacy finding (no remediation) — behavior unchanged", () => {
+  const SPEC_MD = `specrunner/changes/${SLUG}/spec.md`;
+  const REQUEST_MD = `specrunner/changes/${SLUG}/request.md`;
+
+  function makeScopeWithBroad(): CanonWriteScope {
+    return makeCanonScope(
+      TEST_CANON_PATHS,
+      [
+        ["spec-fixer", [SPEC_MD, `specrunner/changes/${SLUG}/design.md`]],
+        ["code-fixer", []],
+      ],
+      ["code-fixer", "implementer"],
+    );
+  }
+
+  it("TC-033: legacy canon finding on spec.md + spec-fixer → not unroutable (writable)", () => {
+    const finding = makeFixableFinding({
+      file: SPEC_MD,
+      resolution: "fixable",
+      // no remediation
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(0);
+  });
+
+  it("TC-033: legacy canon finding on request.md + spec-fixer → unroutable (not in writable set)", () => {
+    const finding = makeFixableFinding({
+      file: REQUEST_MD,
+      resolution: "fixable",
+      // no remediation
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(1);
+  });
+
+  it("TC-033: legacy non-canon finding (src/**) + spec-fixer → NOT unroutable (pass-through)", () => {
+    const finding = makeFixableFinding({
+      file: "src/core/foo.ts", // non-canon, no remediation
+      resolution: "fixable",
+    });
+    const scope = makeScopeWithBroad();
+
+    // Legacy: non-canon primary without remediation → pass-through (neither routable nor unroutable)
+    const unroutable = selectUnroutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(unroutable).toHaveLength(0);
+
+    const routable = selectRoutableCanonFindings([finding], scope, specReviewEffectiveFixer);
+    expect(routable).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-034: code-fixer + non-canon secondary site (remediation) → NOT unroutable (broad write)
+// ---------------------------------------------------------------------------
+
+describe("TC-034: code-fixer + non-canon secondary site (remediation) → NOT unroutable", () => {
+  const SPEC_MD = `specrunner/changes/${SLUG}/spec.md`;
+
+  function makeScopeWithBroad(): CanonWriteScope {
+    return makeCanonScope(
+      TEST_CANON_PATHS,
+      [
+        ["spec-fixer", [SPEC_MD, `specrunner/changes/${SLUG}/design.md`]],
+        ["code-fixer", []],
+        ["implementer", [`specrunner/changes/${SLUG}/tasks.md`]],
+      ],
+      ["code-fixer", "implementer"],
+    );
+  }
+
+  it("TC-034: code-fixer + non-canon primary + non-canon secondary → not unroutable (broadWriteFixers)", () => {
+    const finding = makeFixableFinding({
+      file: "src/foo.ts",
+      resolution: "fixable",
+      remediation: {
+        invariant: "foo and bar must agree",
+        sites: [
+          { file: "src/foo.ts" },
+          { file: "src/bar.ts" },
+        ],
+        approach: "Fix both",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    // code-fixer is in broadWriteFixers → can write non-canon files
+    const unroutable = selectUnroutableCanonFindings([finding], scope, judgeEffectiveFixer);
+    expect(unroutable).toHaveLength(0);
+  });
+
+  it("TC-034: implementer + non-canon primary + non-canon secondary → not unroutable (broadWriteFixers)", () => {
+    const finding = makeFixableFinding({
+      file: "src/handler.ts",
+      resolution: "fixable",
+      fixTarget: "implementer",
+      remediation: {
+        invariant: "handler and model must align",
+        sites: [
+          { file: "src/handler.ts" },
+          { file: "src/model.ts" },
+        ],
+        approach: "Align both",
+      },
+    });
+    const scope = makeScopeWithBroad();
+
+    const unroutable = selectUnroutableCanonFindings([finding], scope, conformanceEffectiveFixer);
+    expect(unroutable).toHaveLength(0);
   });
 });

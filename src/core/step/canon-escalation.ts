@@ -1,9 +1,9 @@
 /**
  * Pure judgment module for canon-finding escalation routing.
  *
- * Determines whether a fixable finding on a protected canon path cannot be
- * legally written by its effective routing fixer, and therefore must be
- * escalated to the operator rather than routed to a fixer session.
+ * Determines whether a fixable finding (primary file + all remediation.sites) cannot be
+ * legally written by its effective routing fixer, and therefore must be escalated to the
+ * operator rather than routed to a fixer session.
  *
  * Leaf module: imports ONLY types from kernel/report-result.js.
  * No write-scope, no slug, no I/O dependencies.
@@ -28,6 +28,89 @@ export interface CanonWriteScope {
    * Paths not in this set (for a given fixer) are NOT legally writable by that fixer.
    */
   writableByFixer: ReadonlyMap<FixTarget, ReadonlySet<string>>;
+  /**
+   * Fixers that have broad write access to non-canon paths (guarded-write steps).
+   * These fixers can write any file that is NOT in canonPaths.
+   * Fixers absent from this set can ONLY write paths listed in their writableByFixer entry.
+   *
+   * Optional for backward compatibility. When absent, DEFAULT_BROAD_WRITE_FIXERS is used.
+   */
+  broadWriteFixers?: ReadonlySet<FixTarget>;
+}
+
+// ---------------------------------------------------------------------------
+// Module-level constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Default broad-write fixers used when CanonWriteScope.broadWriteFixers is absent.
+ *
+ * Corresponds to the guarded-write pipeline steps that use git-add-all staging
+ * and therefore have unrestricted write access to non-canon paths:
+ *   - "code-fixer":   guarded mode, writes src/** freely
+ *   - "implementer":  guarded mode, writes src/** freely
+ *
+ * Defined inline (no import) to preserve the leaf-module constraint.
+ */
+const DEFAULT_BROAD_WRITE_FIXERS: ReadonlySet<FixTarget> = new Set<FixTarget>([
+  "code-fixer",
+  "implementer",
+]);
+
+// ---------------------------------------------------------------------------
+// Shared predicate
+// ---------------------------------------------------------------------------
+
+/**
+ * Determine whether a single file path is legally writable by the given fixer.
+ *
+ * - Canon path (in scope.canonPaths): writable only if listed in writableByFixer[fixer].
+ * - Non-canon path: writable only if the fixer is in scope.broadWriteFixers (or the module
+ *   default when broadWriteFixers is absent).
+ */
+function isFileWritableByFixer(
+  file: string,
+  effectiveFixer: FixTarget,
+  scope: CanonWriteScope,
+): boolean {
+  if (scope.canonPaths.has(file)) {
+    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
+    return writable.has(file);
+  }
+  // Non-canon path: writable only if fixer has broad write access.
+  const broad = scope.broadWriteFixers ?? DEFAULT_BROAD_WRITE_FIXERS;
+  return broad.has(effectiveFixer);
+}
+
+/**
+ * Determine whether a finding's complete site set (primary file + all remediation.sites)
+ * is entirely writable by the given effective fixer.
+ *
+ * This is the single shared predicate used by selectUnroutableCanonFindings and
+ * selectRoutableCanonFindings for findings that carry a remediation contract, guaranteeing
+ * the two selectors are exact complements for the remediation case.
+ *
+ * For each site:
+ *   - Canon path: writable iff it appears in scope.writableByFixer[effectiveFixer].
+ *   - Non-canon path: writable iff effectiveFixer is in scope.broadWriteFixers.
+ *
+ * Returns true when ALL sites are writable (finding is routable to the fixer).
+ * Returns false when ANY site is not writable (finding must escalate).
+ *
+ * Callers must only invoke this function for findings where f.remediation is defined.
+ */
+export function isFindingWithinFixerWriteScope(
+  finding: Finding,
+  effectiveFixer: FixTarget,
+  scope: CanonWriteScope,
+): boolean {
+  if (!isFileWritableByFixer(finding.file, effectiveFixer, scope)) return false;
+  if (finding.remediation) {
+    for (const site of finding.remediation.sites) {
+      if (!isFileWritableByFixer(site.file, effectiveFixer, scope)) return false;
+    }
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,24 +145,26 @@ export const specReviewEffectiveFixer: (f: Finding) => FixTarget = () => "spec-f
 /**
  * Select findings that are fixable but cannot be legally written by their effective fixer.
  *
- * A finding is "unroutable" when resolution === "fixable" AND any of the following:
- *   A. finding.file is in scope.canonPaths AND not in the fixer's declared write set.
- *   B. Any remediation.site.file is in scope.canonPaths AND not in the fixer's declared
- *      write set — regardless of whether finding.file itself is a canon path.
+ * Two code paths depending on whether the finding carries a remediation contract:
  *
- * Condition B covers the case where the primary path is a non-canon source file but the
- * remediation contract names a protected canon secondary site that the fixer cannot write.
- * Without this check the secondary canon site is passed to the fixer, which cannot fulfil
- * the full-site fix contract and produces a partial fix or a write-scope failure.
+ * With remediation (general path):
+ *   A finding is "unroutable" when isFindingWithinFixerWriteScope returns false, i.e.
+ *   ANY site (primary file or any remediation.site) is not writable by the effective fixer:
+ *   - Canon path: not in the fixer's declared write set → unroutable.
+ *   - Non-canon path: fixer is not in scope.broadWriteFixers → unroutable.
  *
- * Note: when finding.file is also in scope.canonPaths the primary-site check (A) fires first
- * and the secondary-site check (B) is redundant but correct — it would reach the same
- * conclusion via the auto-injected self-site entry in remediation.sites.
+ * Without remediation (legacy path — behavior unchanged):
+ *   A finding is "unroutable" only when its primary file is in scope.canonPaths AND not in
+ *   the fixer's declared write set. Non-canon primary files are ignored (pass-through).
  *
- * @param findings            - All findings from the step result.
- * @param scope               - Canon write scope (canon paths + per-fixer writable sets).
+ * The two selectors (selectUnroutableCanonFindings / selectRoutableCanonFindings) are exact
+ * complements for fixable findings that have a remediation contract: every such finding is
+ * classified as either routable or unroutable, never both.
+ *
+ * @param findings              - All findings from the step result.
+ * @param scope                 - Canon write scope (canon paths + per-fixer writable sets + broadWriteFixers).
  * @param resolveEffectiveFixer - Maps each finding to its effective FixTarget.
- * @returns                   Subset of findings where at least one site is an unwritable canon path.
+ * @returns                     Subset of fixable findings where at least one site is not writable.
  */
 export function selectUnroutableCanonFindings(
   findings: Finding[],
@@ -89,43 +174,45 @@ export function selectUnroutableCanonFindings(
   return findings.filter((f) => {
     if (f.resolution !== "fixable") return false;
     const effectiveFixer = resolveEffectiveFixer(f);
-    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
-    // A: Primary site in canon and not writable → unroutable.
-    if (scope.canonPaths.has(f.file) && !writable.has(f.file)) return true;
-    // B: Any secondary (or primary-duplicate) canon site not writable → unroutable.
-    // Runs regardless of whether f.file is in canon, capturing the case where the
-    // primary path is a non-canon source file but the remediation contract requires
-    // writing a protected canon secondary site.
+
     if (f.remediation) {
-      return f.remediation.sites.some(
-        (site) => scope.canonPaths.has(site.file) && !writable.has(site.file),
-      );
+      // General path: use shared predicate to check primary + all secondary sites.
+      return !isFindingWithinFixerWriteScope(f, effectiveFixer, scope);
     }
-    return false;
+
+    // Legacy path (no remediation): only flag if primary file is an unwritable canon path.
+    if (!scope.canonPaths.has(f.file)) return false;
+    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
+    return !writable.has(f.file);
   });
 }
 
 /**
  * Select findings that are fixable AND can be legally written by their effective fixer.
  *
- * A finding is "routable" when ALL of the following hold:
+ * Two code paths depending on whether the finding carries a remediation contract:
+ *
+ * With remediation (general path):
+ *   A finding is "routable" when isFindingWithinFixerWriteScope returns true, i.e.
+ *   ALL sites (primary file + every remediation.site) are writable by the effective fixer:
+ *   - Canon path: appears in the fixer's declared write set.
+ *   - Non-canon path: fixer is in scope.broadWriteFixers.
+ *
+ * Without remediation (legacy path — behavior unchanged):
+ *   A finding is "routable" only when:
  *   1. resolution === "fixable"
  *   2. finding.file is in scope.canonPaths
  *   3. The effective fixer's declared write set INCLUDES finding.file
- *   4. No remediation.site whose file is in scope.canonPaths is absent from the
- *      fixer's declared write set (all secondary canon sites are writable).
+ *   Non-canon primary files are excluded (pass-through, not classified).
  *
- * Condition 4 ensures that a finding whose primary path is writable but whose
- * remediation contract names an unwritable secondary canon site is classified as
- * unroutable (and escalated) rather than passed to a fixer that cannot complete
- * all required site fixes.
+ * This is the exact complement of selectUnroutableCanonFindings for fixable findings
+ * with a remediation contract. For legacy findings (no remediation), non-canon primary
+ * files fall into neither selector (maintaining the pre-remediation pass-through behavior).
  *
- * This is the complement of selectUnroutableCanonFindings for the same resolver.
- *
- * @param findings            - All findings from the step result.
- * @param scope               - Canon write scope (canon paths + per-fixer writable sets).
+ * @param findings              - All findings from the step result.
+ * @param scope                 - Canon write scope (canon paths + per-fixer writable sets + broadWriteFixers).
  * @param resolveEffectiveFixer - Maps each finding to its effective FixTarget.
- * @returns                   Subset of findings that meet all three conditions.
+ * @returns                     Subset of fixable findings where all sites are writable.
  */
 export function selectRoutableCanonFindings(
   findings: Finding[],
@@ -134,18 +221,17 @@ export function selectRoutableCanonFindings(
 ): Finding[] {
   return findings.filter((f) => {
     if (f.resolution !== "fixable") return false;
-    if (!scope.canonPaths.has(f.file)) return false;
     const effectiveFixer = resolveEffectiveFixer(f);
-    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
-    if (!writable.has(f.file)) return false;
-    // Ensure all secondary canon sites in the remediation contract are also writable.
+
     if (f.remediation) {
-      const hasUnroutableSite = f.remediation.sites.some(
-        (site) => scope.canonPaths.has(site.file) && !writable.has(site.file),
-      );
-      if (hasUnroutableSite) return false;
+      // General path: use shared predicate to check primary + all secondary sites.
+      return isFindingWithinFixerWriteScope(f, effectiveFixer, scope);
     }
-    return true;
+
+    // Legacy path (no remediation): primary file must be in canonPaths AND writable.
+    if (!scope.canonPaths.has(f.file)) return false;
+    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
+    return writable.has(f.file);
   });
 }
 
