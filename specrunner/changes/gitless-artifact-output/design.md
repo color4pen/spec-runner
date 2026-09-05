@@ -255,8 +255,10 @@ capability id（`git-revision` / `git-commit-attribution` / `git-remote-publish`
 `DynamicContext` の `gitLog` / `diffStat` に相当する枠へ、snapshot 由来の provenance block を入れる純関数を用意する: baseline digest / candidate digest / profile 名 / 変更 entry の要約（path・change・kind・patch 分類） / patch の抜粋（上限付き） / unsupported entry 一覧。履歴が存在しないことは「空文字」ではなく「この profile には revision 履歴が存在しない」と明示的に書く。
 
 - Rationale: 設計要求 4。空文字を渡すと agent は「変更なし / 履歴なし」と解釈しうる（fail-open の人間版）。明示文言により、reviewer は「文脈が取得できなかった」と「文脈として存在しない」を区別できる。
+- 既知の制約（verification 時点の変更 entry 要約）: change set の導出は verification 後に凍結した candidate snapshot を入力とするため、verification seam に渡す context block の時点では change set は**未導出**である。この場合、変更 entry 要約を「変更なし」と読める空 list として渡してはならず、「change set は verification 時点では未導出（導出は verification 完了後）」と明示的に書く（上記 Rationale と同じ fail-open 回避）。review seam に渡す context block には導出済みの change set を載せる。verification が変更 path を必要とする用途（targeted test 等）のために verification 前へ暫定 change set の導出を追加するかは本 change のスコープ外とし、OQ-4 で扱う。
 - Alternatives considered:
   - (a) `collectDynamicContext` に profile 分岐を入れる — `src/git/` は shared-kernel であり profile を知るべきでない。却下。
+  - (b) verification 前に暫定 change set を導出して context に載せる — snapshot 取得と比較が 1 回増え、authoritative な change set（verification 後の凍結 snapshot 由来）と暫定値の二重管理になる。最小縦断では注入 seam が変更 path を必要としないため、本 change では採らない（OQ-4）。
 
 ### D15: 説明面（CLI / README）は capability テーブルから導出する。`--source` は設計のみ
 
@@ -293,7 +295,7 @@ capability id（`git-revision` / `git-commit-attribution` / `git-remote-publish`
 - OQ-1: exclusion 規則の設定入口。最小縦断では呼び出し側が明示引数で渡す。CLI 配線時に `.specrunner/config.json` の設定にするか flag にするかは次段階 Issue で決める。
 - OQ-2: 実 agent adapter を artifact-output profile に配線する際、pipeline 成果物（step result / rules.md / request の写し）を candidate 内に overlay する必要があるか。必要な場合の除外契約と、それが artifact の意味に与える影響。実測後に判断する。
 - OQ-3: artifact の配布形態（directory のまま / 単一 archive へ集約）。D9 は directory を採用したが、CI 環境間で受け渡す用途では単一 file が要求される可能性がある。
-- OQ-4: verification の実行 cwd と依存解決（source に依存物が含まれない場合の扱い）。最小縦断では注入 executor で回避するため未確定。
+- OQ-4: verification の実行 cwd と依存解決（source に依存物が含まれない場合の扱い）。最小縦断では注入 executor で回避するため未確定。あわせて、verification 時点では change set が未導出（D14 既知の制約）であるため、targeted test 等で変更 path が必要になった場合に verification 前へ暫定 change set の導出を追加するかも未確定。
 - OQ-5: 同一 machine resume を次段階で提供する場合の candidate 再利用安全条件（candidate digest と `run.json` の記録一致を再開の前提にできるか）。
 - OQ-6: `--source` 指定時の profile 選択を暗黙にする（`--source` があれば artifact-output）か、明示 flag を要求するか。
 
