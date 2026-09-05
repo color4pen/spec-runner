@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T12:45:06.047Z",
+  "updatedAt": "2026-09-05T12:55:44.546Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -64,7 +64,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "2e8ad53a9326beafabb8fb3e41c9075ec29c0a9d",
-    "d58decb9ef489c2cbdf1ae0f5fa0c094f460f7ec"
+    "d58decb9ef489c2cbdf1ae0f5fa0c094f460f7ec",
+    "fd27d7c688879e91ea8b7ee215c8ce543539fb50"
   ],
   "touchedFiles": {
     "request-review": [
@@ -79,12 +80,30 @@
       "src/prompts/custom-reviewer-system.ts",
       "src/state/schema/types.ts",
       "src/core/step/spec-fixer.ts"
+    ],
+    "design": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/step-completion.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/core/decision/decision-ledger.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
