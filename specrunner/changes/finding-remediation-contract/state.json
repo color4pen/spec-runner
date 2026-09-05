@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T15:08:32.082Z",
+  "updatedAt": "2026-09-05T15:20:54.879Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -79,7 +79,9 @@
     "cd40712800b5614148c7feac8acf3d83de3cfcf3",
     "b58b3d1dac36b4062376a8271232fdfdb034ff23",
     "838f1bf2c479263cbe76b76294c06d56aef65d65",
-    "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796"
+    "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796",
+    "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
+    "e1de55a898c2e1a7e17dce5dfeca66cca51d0cfc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -189,27 +191,18 @@
       "src/prompts/conformance-system.ts"
     ],
     "code-fixer": [
-      "src/core/step/canon-escalation.ts",
-      "src/core/step/fixer-helpers.ts",
-      "src/core/step/write-scope.ts",
       "src/core/step/judge-verdict.ts",
-      "src/core/step/canon-write-scope.ts",
-      "src/core/step/__tests__/judge-verdict.test.ts",
-      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
-      "src/core/pipeline/findings-ledger.ts",
-      "tests/unit/core/step/canon-escalation.test.ts",
-      "src/kernel/report-result.ts",
-      "tests/unit/core/step/judge-verdict-canon.test.ts",
-      "tests/core/steps/spec-review.test.ts",
-      "tests/helpers/pipeline-mock-client.ts",
-      "tests/pipeline-integration.test.ts"
+      "src/core/review-routing.ts",
+      "src/core/step/spec-fixer.ts",
+      "tests/unit/core/step/judge-verdict-conformance.test.ts",
+      "tests/unit/core/step/judge-verdict-canon.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -219,7 +212,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/finding-remediation-contract/design.md:sha256:854138cbcb490711fe6455f1d0960ffe8633dcb120e0ee0e059deb7e6d4965ff|specrunner/changes/finding-remediation-contract/request.md:sha256:73836da144d339cdda49186c4063163098cec368888c203bca2e15d507b3eaaf|specrunner/changes/finding-remediation-contract/spec.md:sha256:4a01ce0c4b8c35d3dab121bf2bc2f3923659fd931296f005e01d534cc9645e75|specrunner/changes/finding-remediation-contract/tasks.md:sha256:7f075096addbf72b1f484d00723fe6ef9b2d79c95b66812c38eb0c4606c80f80|specrunner/changes/finding-remediation-contract/test-cases.md:sha256:158a353c32c4449a6efd2de25684aa05be3e506d2c25cf166a0c83c16b8f851f"
     },
     {
       "name": "scale-tolerance",
@@ -244,7 +238,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -254,10 +248,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 4,
-      "cross-boundary-invariants": 4,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 4
+      "custom-reviewers": 5
     }
   }
 }
