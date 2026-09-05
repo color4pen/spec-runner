@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T15:51:04.105Z",
+  "updatedAt": "2026-09-05T15:52:26.114Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -87,7 +87,8 @@
     "8ae6252afe9f944c7838d2ae69aa0cbffb12a385",
     "8c00a14e2b2c888b50d20d674627327c9d1d5049",
     "9e584fb49958a538ff8a5975379722b23e81c114",
-    "279724eaeb8737948c44862afa6128c64bd41565"
+    "279724eaeb8737948c44862afa6128c64bd41565",
+    "a7fe2ae0456f7ee2fd92d56491100d6f02243dcb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,11 +160,8 @@
       "src/prompts/__tests__/fragment-coverage.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/judge-verdict.ts",
-      "src/core/review-routing.ts",
-      "src/core/step/spec-fixer.ts",
-      "tests/unit/core/step/judge-verdict-conformance.test.ts",
-      "tests/unit/core/step/judge-verdict-canon.test.ts"
+      "src/prompts/__tests__/fragment-coverage.test.ts",
+      "src/prompts/judge-rules.ts"
     ],
     "regression-gate": [
       "src/core/port/__tests__/remediation-parse.test.ts",
@@ -192,7 +190,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
+      "approvedAtCommit": "a7fe2ae0456f7ee2fd92d56491100d6f02243dcb",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -228,7 +226,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 103,
+    "historyCount": 110,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -238,10 +236,10 @@
       "implementer": 2,
       "verification": 3,
       "code-review": 2,
-      "code-fixer": 5,
+      "code-fixer": 6,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 5,
+      "custom-reviewers": 6,
       "regression-gate": 1,
       "conformance": 1
     }
