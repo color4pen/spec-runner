@@ -1,0 +1,525 @@
+/**
+ * Provider Lifecycle Parity Contract — main test driver.
+ *
+ * For each ContractCase × CONTRACT_PROVIDERS, this file generates one test.
+ * - shared cases:           both providers run (2 tests per case)
+ * - provider-specific cases: all providers run; absent cases assert absent-behavior
+ *                            (TC-012 / TC-042; skip markers are prohibited — enforced by ratchet:no-skip)
+ *
+ * Test structure per combination:
+ *   1. Setup: fake timers (if usesFakeTimers), tempDir creation, result file creation
+ *   2. Harness build: PROVIDER_HARNESSES[provider].build(scenario, opts)
+ *   3. Context build: buildBaseContext + step.resultFilePath override
+ *   4. Run: runner.run(ctx) — with timer advance for fake-timer scenarios
+ *   5. Assert: completionReason, toolResult, followUpAttempts, field presence, etc.
+ *   6. Cleanup: vi.useRealTimers(), rm(tempDir)
+ *
+ * Universal invariants (applied to every successful run):
+ *   - On completionReason=success: error must be undefined
+ *   - On completionReason=error|timeout: error must be defined
+ *   - followUpAttempts must be a non-negative integer
+ *   - session trace length equals the SDK invocation count, and every "continue"
+ *     invocation targets the sessionId of the invocation immediately before it
+ *
+ * Ledger: test name format "[<providerId>] <caseId>" so grep/filter works.
+ *
+ * buildArtifactBundle stub rationale (fake-timer cases ONLY):
+ *   Both runners call buildArtifactBundle (real file I/O) before armReportGrace() is called.
+ *   With fake timers, vi.advanceTimersByTimeAsync uses originalSetTimeout internally
+ *   (sinon/fake-timers tickAsync), which fires in the event-loop timers phase — BEFORE the
+ *   I/O phase. This means the real buildArtifactBundle I/O completes TOO LATE: doTick(60001)
+ *   advances the fake clock before the grace timer is scheduled, causing the grace timer to be
+ *   scheduled at clock+60000 which is unreachable.
+ *
+ *   The stub returns "" immediately (no real I/O), so the async chain from runner.run() to
+ *   armReportGrace() completes as microtasks — which all drain BEFORE any event-loop timer
+ *   fires. This ensures armReportGrace schedules the grace fake-timer BEFORE doTick advances
+ *   the clock, allowing vi.advanceTimersByTimeAsync(60_001) to fire it correctly.
+ *
+ *   Scope: the stub is active only while a `usesFakeTimers` case is running (the
+ *   `artifactBundleStub.active` flag is set around runner.run() in the driver below).
+ *   Real-timer cases go through the production buildArtifactBundle so the contract keeps
+ *   observing the production entry path — the tempDir has no artifact files, so it returns "".
+ *   Artifact bundle CONTENT is not an observation target of this contract (design.md D8
+ *   「契約にしない」); only the lifecycle around it is.
+ */
+// vi.hoisted: the flag must exist before the hoisted vi.mock factory runs.
+const artifactBundleStub = vi.hoisted(() => ({ active: false }));
+
+// Hoisted vi.mock: must appear before imports that transitively load the module.
+// Delegates to the production implementation unless the fake-timer stub is active.
+vi.mock("../../../../src/adapter/shared/artifact-bundle.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../src/adapter/shared/artifact-bundle.js")>();
+  return {
+    ...actual,
+    buildArtifactBundle: async (cwd: string, slug: string): Promise<string> =>
+      artifactBundleStub.active ? "" : actual.buildArtifactBundle(cwd, slug),
+  };
+});
+
+import { describe, test, expect, vi } from "vitest";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
+import { CONTRACT_CASES, type ProviderExpectation } from "./case-table.js";
+import { PROVIDER_HARNESSES } from "./harness/registry.js";
+import type { SessionInvocationRecord } from "./harness/types.js";
+import { CONTRACT_PROVIDERS } from "./case-ids.js";
+import { buildBaseContext } from "./scenario.js";
+import { RESULT_FIELD_MATRIX } from "./result-field-matrix.js";
+
+// ---------------------------------------------------------------------------
+// Execution ledger — TC-024 (pair coverage) and TC-016 (field observation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Tracks which (caseId × providerId) pairs have produced a runner result.
+ * Populated inside each test after runner.run() completes.
+ * Verified by the ledger describe block after all case tests.
+ */
+const _executedPairs = new Set<string>();
+
+/**
+ * For each provider, tracks which AgentRunResult field names were non-undefined
+ * in at least one test result.
+ * Populated inside each test after runner.run() completes.
+ * Verified by the ledger describe block (TC-016).
+ */
+const _observedFields: Map<string, Set<string>> = new Map(
+  CONTRACT_PROVIDERS.map((p) => [p, new Set<string>()]),
+);
+
+// ---------------------------------------------------------------------------
+// Assertion helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Assert a single provider's expectations against an AgentRunResult.
+ * Also applies universal invariants (error↔completionReason coherence) and
+ * the RESULT_FIELD_MATRIX absent-field contract.
+ */
+function assertExpectations(
+  result: AgentRunResult,
+  exp: ProviderExpectation,
+  getInvocationCount: () => number,
+  getSessionTrace: () => readonly SessionInvocationRecord[],
+  emittedEventNames: readonly string[],
+  caseId: string,
+  providerId: string,
+): void {
+  const tag = `[${providerId}] ${caseId}`;
+
+  // --- Core result fields ---
+
+  if (exp.completionReason !== undefined) {
+    expect(result.completionReason, `${tag}: completionReason`).toBe(exp.completionReason);
+  }
+
+  if (exp.toolResult !== undefined) {
+    if (exp.toolResult === null) {
+      expect(result.toolResult, `${tag}: toolResult should be null`).toBeNull();
+    } else {
+      expect(result.toolResult, `${tag}: toolResult should be defined`).toBeDefined();
+      expect(
+        (result.toolResult as unknown as Record<string, unknown>)["ok"],
+        `${tag}: toolResult.ok`,
+      ).toBe(exp.toolResult.ok);
+    }
+  }
+
+  if (exp.followUpAttempts !== undefined) {
+    expect(result.followUpAttempts, `${tag}: followUpAttempts`).toBe(exp.followUpAttempts);
+  }
+
+  // --- transientRetryAttempts ---
+
+  if (exp.transientRetryAttempts !== undefined) {
+    if (exp.transientRetryAttempts === "absent") {
+      expect(result.transientRetryAttempts, `${tag}: transientRetryAttempts should be absent`).toBeUndefined();
+    } else {
+      expect(result.transientRetryAttempts, `${tag}: transientRetryAttempts`).toBe(
+        exp.transientRetryAttempts,
+      );
+    }
+  }
+
+  // --- addedTurns ---
+
+  if (exp.addedTurns !== undefined) {
+    if (exp.addedTurns === "absent") {
+      expect(result.addedTurns, `${tag}: addedTurns should be absent`).toBeUndefined();
+    } else {
+      expect(result.addedTurns, `${tag}: addedTurns should be defined`).toBeDefined();
+      expect(result.addedTurns?.reportRetry, `${tag}: addedTurns.reportRetry`).toBe(
+        exp.addedTurns.reportRetry,
+      );
+      expect(result.addedTurns?.postWork, `${tag}: addedTurns.postWork`).toBe(
+        exp.addedTurns.postWork,
+      );
+      expect(result.addedTurns?.outputRepair, `${tag}: addedTurns.outputRepair`).toBe(
+        exp.addedTurns.outputRepair,
+      );
+    }
+  }
+
+  // --- addedTurns invariant: reportRetry + outputRepair === followUpAttempts (Design D7, universal) ---
+  //
+  // Applied to every run result where addedTurns is defined, not opt-in.
+  // postWork does NOT count toward followUpAttempts.
+  if (result.addedTurns !== undefined) {
+    const { reportRetry = 0, outputRepair = 0 } = result.addedTurns;
+    expect(
+      reportRetry + outputRepair,
+      `${tag} [universal]: addedTurns.reportRetry + addedTurns.outputRepair must equal followUpAttempts`,
+    ).toBe(result.followUpAttempts);
+  }
+
+  // --- resultContent ---
+
+  if (exp.resultContent !== undefined) {
+    if (exp.resultContent === null) {
+      expect(result.resultContent, `${tag}: resultContent should be null`).toBeNull();
+    } else {
+      expect(result.resultContent, `${tag}: resultContent should contain substring`).toContain(
+        exp.resultContent,
+      );
+    }
+  }
+
+  if (exp.resultContentExact !== undefined) {
+    expect(result.resultContent, `${tag}: resultContent exact value`).toBe(exp.resultContentExact);
+  }
+
+  // --- Error fields ---
+
+  if (exp.errorCode !== undefined) {
+    expect(result.error, `${tag}: error should be defined for errorCode assertion`).toBeDefined();
+    expect(result.error?.code, `${tag}: error.code`).toBe(exp.errorCode);
+  }
+
+  if (exp.errorMessagePattern !== undefined) {
+    expect(result.error, `${tag}: error should be defined for message pattern assertion`).toBeDefined();
+    expect(result.error?.message ?? "", `${tag}: error.message pattern`).toContain(
+      exp.errorMessagePattern,
+    );
+  }
+
+  if (exp.errorMustBeAbsent) {
+    expect(result.error, `${tag}: error must be absent on success`).toBeUndefined();
+  }
+
+  if (exp.errorHintPresent === true) {
+    expect(result.error, `${tag}: error must be defined for errorHintPresent assertion`).toBeDefined();
+    expect(
+      result.error?.hint,
+      `${tag}: error.hint must be a non-empty string (errorHintPresent=true)`,
+    ).toBeTruthy();
+  } else if (exp.errorHintPresent === false) {
+    // Explicit false: assert hint is absent even when error is defined.
+    expect(
+      result.error?.hint,
+      `${tag}: error.hint must be absent (errorHintPresent=false)`,
+    ).toBeUndefined();
+  }
+
+  // --- Universal invariants (always applied) ---
+
+  // completionReason value-domain check (Design D7): must be one of the three allowed values.
+  const VALID_COMPLETION_REASONS = ["success", "error", "timeout"] as const;
+  expect(
+    VALID_COMPLETION_REASONS as readonly string[],
+    `${tag} [universal]: completionReason="${result.completionReason}" is not one of success | error | timeout`,
+  ).toContain(result.completionReason);
+
+  if (result.completionReason === "success") {
+    expect(result.error, `${tag} [universal]: error must be absent when completionReason=success`).toBeUndefined();
+  } else {
+    expect(result.error, `${tag} [universal]: error must be defined when completionReason=${result.completionReason}`).toBeDefined();
+  }
+
+  expect(result.followUpAttempts, `${tag} [universal]: followUpAttempts must be a non-negative integer`).toBeGreaterThanOrEqual(0);
+
+  // --- Metrics / diagnostics ---
+
+  if (exp.modelUsageDefined) {
+    expect(result.modelUsage, `${tag}: modelUsage should be defined`).toBeDefined();
+    expect(Object.keys(result.modelUsage ?? {}).length, `${tag}: modelUsage should have at least 1 entry`).toBeGreaterThan(0);
+  }
+
+  if (exp.contextWindowTokens !== undefined) {
+    expect(result.contextMetrics, `${tag}: contextMetrics should be defined`).toBeDefined();
+    expect(result.contextMetrics?.contextWindowTokens, `${tag}: contextMetrics.contextWindowTokens`).toBe(
+      exp.contextWindowTokens,
+    );
+  }
+
+  if (exp.invocationMetricsNumTurns !== undefined) {
+    expect(result.invocationMetrics, `${tag}: invocationMetrics should be defined`).toBeDefined();
+    expect(result.invocationMetrics?.numTurns, `${tag}: invocationMetrics.numTurns`).toBe(
+      exp.invocationMetricsNumTurns,
+    );
+  }
+
+  if (exp.completionReportDiagnosticsPresent) {
+    expect(
+      result.completionReportDiagnostics,
+      `${tag}: completionReportDiagnostics should be defined and non-empty`,
+    ).toBeDefined();
+    expect(
+      (result.completionReportDiagnostics ?? []).length,
+      `${tag}: completionReportDiagnostics should have at least 1 entry`,
+    ).toBeGreaterThan(0);
+  }
+
+  if (exp.sessionRolloversLength !== undefined) {
+    expect(result.sessionRollovers, `${tag}: sessionRollovers should be defined`).toBeDefined();
+    expect(result.sessionRollovers?.length, `${tag}: sessionRollovers.length`).toBe(
+      exp.sessionRolloversLength,
+    );
+  }
+
+  // --- Field presence checks ---
+
+  if (exp.fieldPresence) {
+    for (const [field, presence] of Object.entries(exp.fieldPresence)) {
+      const value = (result as unknown as Record<string, unknown>)[field];
+      if (presence === "present") {
+        expect(value, `${tag}: result.${field} should be defined (present)`).toBeDefined();
+      } else {
+        expect(value, `${tag}: result.${field} should be undefined (absent)`).toBeUndefined();
+      }
+    }
+  }
+
+  // --- SDK invocation count ---
+
+  if (exp.sdkInvocations !== undefined) {
+    expect(getInvocationCount(), `${tag}: sdkInvocations`).toBe(exp.sdkInvocations);
+  }
+
+  // --- Session trace (same session vs fresh session per SDK invocation) ---
+
+  const sessionTrace = getSessionTrace();
+
+  // Universal: the trace is recorded at the same SDK boundary as the invocation count.
+  expect(
+    sessionTrace.length,
+    `${tag} [universal]: session trace length must equal the SDK invocation count`,
+  ).toBe(getInvocationCount());
+
+  // Universal: a "continue" invocation must target the session of the invocation right
+  // before it. This is what makes "continue" mean "same session" rather than "some resume".
+  for (let i = 0; i < sessionTrace.length; i++) {
+    const rec = sessionTrace[i]!;
+    if (rec.kind !== "continue") continue;
+    const prev = sessionTrace[i - 1];
+    expect(
+      prev,
+      `${tag} [universal]: invocation #${i} is "continue" but there is no preceding invocation`,
+    ).toBeDefined();
+    expect(
+      rec.sessionId,
+      `${tag} [universal]: invocation #${i} is "continue" but carries no sessionId`,
+    ).toBeDefined();
+    expect(
+      rec.sessionId,
+      `${tag} [universal]: invocation #${i} continues session "${rec.sessionId}" but invocation #${i - 1} was bound to "${prev?.sessionId}"`,
+    ).toBe(prev?.sessionId);
+  }
+
+  if (exp.sessionTrace !== undefined) {
+    expect(
+      sessionTrace.map((r) => r.kind),
+      `${tag}: sessionTrace (fresh/continue per SDK invocation)`,
+    ).toEqual(exp.sessionTrace);
+  }
+
+  // --- Emitted domain events (Design D8) ---
+
+  if (exp.emittedEvents) {
+    for (const expectedEvent of exp.emittedEvents) {
+      expect(
+        emittedEventNames,
+        `${tag}: expected domain event "${expectedEvent}" to have been emitted via ctx.emit()`,
+      ).toContain(expectedEvent);
+    }
+  }
+
+  // --- Matrix-universal absent field check (Design D4, D7, TC-015) ---
+  //
+  // For every field that RESULT_FIELD_MATRIX marks as "absent" for this provider,
+  // the result field must be undefined regardless of per-case fieldPresence entries.
+  // This is a provider-level contract that holds across the entire test suite.
+  for (const [field, capability] of Object.entries(RESULT_FIELD_MATRIX)) {
+    const providerStatus =
+      capability.providers[providerId as keyof typeof capability.providers];
+    if (providerStatus === "absent") {
+      const value = (result as unknown as Record<string, unknown>)[field];
+      expect(
+        value,
+        `${tag} [matrix]: result.${field} must be undefined — RESULT_FIELD_MATRIX marks this field as absent for ${providerId}`,
+      ).toBeUndefined();
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main test generation — 62 tests (31 cases × 2 providers)
+// ---------------------------------------------------------------------------
+
+describe("provider-lifecycle-parity", () => {
+  for (const contractCase of CONTRACT_CASES) {
+    describe(contractCase.id, () => {
+      for (const providerId of CONTRACT_PROVIDERS) {
+        const expectation = contractCase.expectations[providerId];
+        const testName = `[${providerId}]`;
+
+        // Absent cases run and assert — TC-012 requires absent behavior to be verified.
+        // The assertExpectations helper applies the assertion fields present in the
+        // expectation object (e.g. fieldPresence) plus universal invariants.
+        // Skip markers are prohibited by TC-042/TC-023; enforced by ratchet:no-skip.
+        const runTest = test;
+
+        runTest(testName, async () => {
+          const scenario = contractCase.scenario;
+
+          // --- Real-timer setup: all I/O before fake timers are installed ---
+          const tempDir = await mkdtemp(join(tmpdir(), "parity-"));
+
+          try {
+            // --- Create result file if needed ---
+            let resultFilePath: string | null = null;
+            const resultFile = scenario.resultFile;
+            if (resultFile !== null) {
+              const fullPath = join(tempDir, resultFile.path);
+              // Only write the file when content is provided.
+              // When content is undefined, the driver sets step.resultFilePath
+              // but deliberately does NOT create the file (result-file-not-found case).
+              if (resultFile.content !== undefined) {
+                await writeFile(fullPath, resultFile.content, "utf8");
+              }
+              resultFilePath = fullPath;
+            }
+
+            // --- Build harness (sync) ---
+            const sleepFn = async (_ms: number): Promise<void> => {
+              // no-op: fake timers handle delays for fake-timer scenarios;
+              // real scenarios have no sleep in the happy path
+            };
+            // Collecting emit: records each emitted event name for D8 assertions (Design D8).
+            const emittedEventNames: string[] = [];
+            const emit = (event: string, _payload: Record<string, unknown>): void => {
+              emittedEventNames.push(event);
+            };
+
+            const harness = PROVIDER_HARNESSES[providerId]!;
+            const { runner, getInvocationCount, getSessionTrace } = harness.build(scenario, {
+              tempDir,
+              sleepFn,
+              emit: emit as unknown as Parameters<(typeof harness)["build"]>[1]["emit"],
+            });
+
+            // --- Build context (sync) ---
+            const baseCtx = buildBaseContext(tempDir);
+            const ctx = {
+              ...baseCtx,
+              step: {
+                ...baseCtx.step,
+                resultFilePath: (): string | null => resultFilePath,
+              },
+            };
+
+            // --- Run ---
+            let result: AgentRunResult;
+            if (scenario.usesFakeTimers) {
+              // Install fake timers AFTER all real I/O setup is complete.
+              // This ensures that all I/O operations (mkdtemp, writeFile) resolve
+              // via real timers, while the runner's internal timers are properly faked.
+              vi.useFakeTimers();
+              // Stub buildArtifactBundle only for this fake-timer run (see header comment).
+              artifactBundleStub.active = true;
+              try {
+                // Start the run in the background, then advance fake timers.
+                const runPromise = runner.run(ctx);
+                const advanceMs = scenario.timerAdvanceMs ?? 900_001;
+                await vi.advanceTimersByTimeAsync(advanceMs);
+                result = await runPromise;
+              } finally {
+                artifactBundleStub.active = false;
+                vi.useRealTimers();
+              }
+            } else {
+              result = await runner.run(ctx);
+            }
+
+            // --- Record execution for ledger (TC-024, TC-016) ---
+            // Recorded after runner.run() completes (a crash would leave the pair unrecorded).
+            _executedPairs.add(`${contractCase.id}×${providerId}`);
+            const _obs = _observedFields.get(providerId)!;
+            for (const [k, v] of Object.entries(result as unknown as Record<string, unknown>)) {
+              if (v !== undefined) _obs.add(k);
+            }
+
+            // --- Assert expectations ---
+            assertExpectations(
+              result,
+              expectation,
+              getInvocationCount,
+              getSessionTrace,
+              emittedEventNames,
+              contractCase.id,
+              providerId,
+            );
+          } finally {
+            await rm(tempDir, { recursive: true, force: true });
+          }
+        });
+      }
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Execution ledger — TC-042 requires ≥64 tests (62 case + ≥2 ledger it blocks)
+// ---------------------------------------------------------------------------
+
+describe("provider-lifecycle-parity:ledger", () => {
+  /**
+   * TC-024: All (caseId × provider) pairs must have produced a runner result.
+   * A pair is absent if the test crashed before runner.run() returned, indicating
+   * a setup failure that silently dropped coverage.
+   */
+  test("all (caseId × provider) pairs executed — TC-024", () => {
+    const expected = CONTRACT_CASES.flatMap((c) =>
+      CONTRACT_PROVIDERS.map((p) => `${c.id}×${p}`),
+    );
+    const missing = expected.filter((pair) => !_executedPairs.has(pair));
+    expect(
+      missing,
+      `Pairs that did not produce a runner result: ${missing.join(", ")}`,
+    ).toHaveLength(0);
+  });
+
+  /**
+   * TC-016: For each (provider, field) pair marked "supported" in RESULT_FIELD_MATRIX,
+   * at least one test result must have had that field non-undefined.
+   * A zero-observation count means the "supported" matrix entry is an empty promise.
+   */
+  test("each matrix-supported field observed ≥once per provider — TC-016", () => {
+    const violations: string[] = [];
+    for (const [field, capability] of Object.entries(RESULT_FIELD_MATRIX)) {
+      for (const [providerId, status] of Object.entries(capability.providers)) {
+        if (status === "supported") {
+          const observed = _observedFields.get(providerId) ?? new Set<string>();
+          if (!observed.has(field)) {
+            violations.push(
+              `${providerId}.${field}: marked "supported" in RESULT_FIELD_MATRIX but never observed as non-undefined across all ${CONTRACT_CASES.length} cases`,
+            );
+          }
+        }
+      }
+    }
+    expect(violations, violations.join("\n")).toHaveLength(0);
+  });
+});
