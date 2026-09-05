@@ -151,9 +151,10 @@
 
 ## T-07: patch・manifest・artifact writer（atomic finalize）を実装する
 
-- [x] `src/core/artifact-output/patch.ts` を新規作成し、変更集合 + 内容読み取り seam から `changes.patch` 文字列と entry ごとの patch 分類（`included` / `included:deletion` / `omitted:binary` / `omitted:binary-deletion` / `omitted:size` / `not-applicable`）を返す関数を実装する。分類は D8 テーブルに厳密に従い、manifest の分類値と patch 実内容が 1:1 対応することを型で強制する。size 上限は定数として宣言し manifest に出力する
+- [x] `src/core/artifact-output/patch.ts` を新規作成し、変更集合 + 内容読み取り seam から `changes.patch` 文字列と entry ごとの patch 分類（`included` / `included:deletion` / `omitted:binary` / `omitted:binary-deletion` / `omitted:size` / `omitted:size-deletion` / `omitted:unreadable` / `not-applicable`）を返す関数を実装する。分類は D8 テーブルに厳密に従い、manifest の分類値と patch 実内容が 1:1 対応することを型で強制する。size 上限は定数として宣言し manifest に出力する
 - [x] 削除された text file（旧側が UTF-8 text かつ size 上限内）は `included:deletion` に分類し、削除 hunk として patch に含める
 - [x] 削除された binary file（旧側が binary）は `omitted:binary-deletion` に分類し、patch にも payload にも含めない
+- [x] 削除された text file で size 上限超過のもの（旧側が UTF-8 text かつ size 上限超過）は `omitted:size-deletion` に分類し、patch にも payload にも含めない。内容の readFile が I/O error で失敗した entry は `omitted:unreadable` に分類し、manifest に必ず現れる（D8）
 - [x] `src/core/artifact-output/manifest.ts` を新規作成し、`buildManifest(input): ArtifactManifest` を純関数として実装する。必須欄は design D9 の一覧（schemaVersion / profile / runId / source root と exclusions / baseline digest / candidate digest / 変更 entry 配列 / unsupported 配列 / patch coverage と size 上限 / verification 参照と束縛 digest / review 参照と束縛 digest / resume 可否 / unsupported operation 一覧）
 - [x] `src/core/artifact-output/artifact-writer.ts` を新規作成し、`finalizeArtifact(...)` を実装する:
   - `artifact.staging/` に `manifest.json`・`changes.patch`・`payload/`（added / modified の candidate 内容を path 構造のまま）・`verification.json`・`review.json`・`APPLY.md` を書く
@@ -170,6 +171,7 @@
 - binary 変更（added/modified）が patch から除外され、payload に candidate bytes が存在し、manifest に `omitted:binary` として現れる
 - 削除 text file が manifest に `included:deletion` として現れ、`changes.patch` に削除 hunk が含まれる
 - 削除 binary file が manifest に `omitted:binary-deletion` として現れ、`changes.patch` にも payload にも含まれない
+- 削除 text file で size 上限超過のものが manifest に `omitted:size-deletion` として現れ、`changes.patch` にも payload にも含まれない
 - symlink 変更・mode のみの変更が manifest に `not-applicable` + metadata（target / mode）付きで現れる
 - 表現不能 entry がある場合 finalize が失敗し `artifact/` が作られない
 - `APPLY.md` に「自動適用しない」「baseline digest 一致が前提」の記述がある

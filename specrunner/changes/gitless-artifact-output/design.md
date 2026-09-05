@@ -160,12 +160,14 @@ baseline / candidate の entry map を突き合わせ `added` / `modified` / `de
 | `omitted:binary` | change=added/modified かつ NUL byte を含む / UTF-8 decode 不可 | 含まない | 含む（candidate bytes） |
 | `omitted:binary-deletion` | change=deleted かつ 旧側が binary（NUL byte を含む / UTF-8 decode 不可） | 含まない（binary 内容を unified diff に含めない） | なし（candidate が存在しない） |
 | `omitted:size` | change=added/modified かつ size 上限超過 | 含まない | 含む（candidate bytes） |
+| `omitted:size-deletion` | change=deleted かつ kind=file かつ 旧側が UTF-8 text（NUL byte なし）かつ size 上限超過 | 含まない | なし（candidate が存在しない） |
+| `omitted:unreadable` | change=added/modified/deleted で内容の読み取り（readFile）が I/O error で失敗した（symlink / dir / mode のみの変更ではない） | 含まない | 保証しない（entry は manifest に必ず現れる。added/modified は payload 収録を試みるが読めない以上 fail-closed に扱う） |
 | `not-applicable` | kind が symlink / dir、または mode のみの変更 | 含まない | metadata として manifest に記録（symlink target を含む） |
 | `unsupported` | payload としても表現できない（fifo 等） | — | — → **artifact を finalize しない**（fail-closed） |
 
 削除 entry に `not-applicable` を使わないことで、manifest の `patch` フィールド値から `changes.patch` の実内容が 1:1 で推定できる（`included` / `included:deletion` → patch に hunk あり、それ以外 → patch に hunk なし）。manifest には全変更 entry が必ず現れ、`patch` 欄で分類を明示する。「patch に出なかったので変更なし」は構造的に起こらない。
 
-- Rationale: 設計要求 4 / AC の中核。unified diff は text 変更のための表現であり、それを唯一の payload にすると binary / mode / symlink / 削除が落ちる。削除 text ファイルを専用分類 `included:deletion` とすることで、manifest の分類と `changes.patch` の実内容の対応が 1:1 になり consumer が patch 内容を分類から確実に推定できる。削除 binary ファイルに `omitted:binary-deletion` を設けることで、「binary 削除」の未定義状態を解消する（binary 内容は unified diff に含めず、存在しない candidate は payload に収録しない）。unsupported を黙って落とさず finalize 拒否にするのは、Stop Condition の裏返し（契約を定義できるなら fail-closed で通す）。
+- Rationale: 設計要求 4 / AC の中核。unified diff は text 変更のための表現であり、それを唯一の payload にすると binary / mode / symlink / 削除が落ちる。削除 text ファイルを専用分類 `included:deletion` とすることで、manifest の分類と `changes.patch` の実内容の対応が 1:1 になり consumer が patch 内容を分類から確実に推定できる。削除 binary ファイルに `omitted:binary-deletion` を設けることで、「binary 削除」の未定義状態を解消する（binary 内容は unified diff に含めず、存在しない candidate は payload に収録しない）。size 上限超過についても binary と同じ対称構造（added/modified → `omitted:size`、deleted → `omitted:size-deletion`）とし、大きな削除 text ファイルを意味の異なる分類（`omitted:unreadable` 等）に流用しない。`omitted:unreadable` は readFile の I/O 失敗（内容そのものが取得できない）専用の分類であり、コードが emit しうる分類値はすべてこの表で定義する（表にない値を emit することは契約違反）。unsupported を黙って落とさず finalize 拒否にするのは、Stop Condition の裏返し（契約を定義できるなら fail-closed で通す）。
 - Alternatives considered:
   - (a) binary を base64 で patch へ埋める（git binary patch 相当） — 独自 patch 方言になり適用ツールが SpecRunner 専用になる。payload で完全性は担保済み。却下。
   - (b) 全部 bundle にして patch を出さない — 「表現可能な text 変更の unified diff」は artifact 契約の必須要素。却下。
@@ -280,7 +282,7 @@ capability id（`git-revision` / `git-commit-attribution` / `git-remote-publish`
 
 - [Risk] 大規模 source（`node_modules` を含む tree 等）で baseline / candidate / 終了時照合の複数回走査が支配的コストになる → Mitigation: 既定 exclusion は最小（`.git/` のみ、D3 で digest 入力に記録）とし、追加 exclusion は呼び出し側が明示宣言できる形にする。コストは D16 の metrics で実測し、incremental snapshot の要否判断材料として記録する（先回り最適化はしない）。
 - [Risk] candidate に SpecRunner の pipeline 成果物を置かない設計（D5）は、cwd 相対に result file を書く実 agent adapter と噛み合わない可能性 → Mitigation: 最小縦断は injected runner で成立させ、実 agent 配線時の overlay 要否を OQ-2 として実測後に判断する。overlay が必要になった場合も「overlay prefix は manifest に記録し、変更集合から除外した事実を明示する」ことを前提とする。
-- [Risk] unified diff を自前実装するため、大きな text file で計算量・メモリが問題になる → Mitigation: size 上限を超えた entry は `omitted:size` として patch から外し payload で表現する（D8）。上限値は manifest に記録し、利用者が「なぜ patch に出ないか」を追跡できる。
+- [Risk] unified diff を自前実装するため、大きな text file で計算量・メモリが問題になる → Mitigation: size 上限を超えた entry は `omitted:size`（削除は `omitted:size-deletion`）として patch から外し、added/modified は payload で表現する（D8）。上限値は manifest に記録し、利用者が「なぜ patch に出ないか」を追跡できる。
 - [Risk] `.git` を既定 exclusion にすることが「Git を暗黙に特別扱いしている」と読まれうる → Mitigation: exclusion は authority ではなくデータ（digest 入力に含まれ manifest に出力される）であり、Git を参照する処理は一切ないことを doc と test で示す。`.git` を含めたい利用者は exclusion を空にできる。
 - [Risk] 新規 module 群が production 経路から薄くしか参照されず（guide topic の capability テーブルのみ）、実質 dead code に見える → Mitigation: preview として位置づけ、docs に次段階 Issue（CLI 配線）を明記する。縦断テストが常時実行されるため behavior は固定される。
 - [Trade-off] resume 非対応（D13）は Git profile より durability が明確に低い。これは「暗黙の保証低下」ではなく、preflight・`run.json`・guide topic の 3 箇所で明示する仕様上の差分として扱う。

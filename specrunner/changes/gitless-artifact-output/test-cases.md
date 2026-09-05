@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 79 cases
-- **Automated** (unit/integration/gate): 78
+- **Total**: 80 cases
+- **Automated** (unit/integration/gate): 79
 - **Manual**: 1
-- **Priority**: must: 63, should: 15, could: 1
+- **Priority**: must: 64, should: 15, could: 1
 
 ---
 
@@ -451,6 +451,18 @@
 **GIVEN** patch.ts の size 上限定数を超えるサイズの text ファイルが変更された変更集合
 **WHEN** `buildPatch` 相当の関数を呼ぶ
 **THEN** そのエントリの patch 分類は `"omitted:size"` であり `changes.patch` にそのパスの hunk が含まれない; payload には candidate bytes が含まれる
+
+### TC-080: size 上限超過の text ファイル削除が `omitted:size-deletion` に分類されパッチにも payload にも含まれない
+
+**Category**: unit
+**Priority**: must
+**Source**: tasks.md > T-07 / design.md > D8
+
+**GIVEN** 旧側（baseline）が NUL byte を含まない UTF-8 text で、かつ patch.ts の size 上限定数を超えるサイズのファイルが削除された変更集合
+**WHEN** `buildPatch` 相当の関数を呼ぶ
+**THEN** そのエントリの patch 分類は `"omitted:size-deletion"` であり、`"omitted:unreadable"` でも `"omitted:size"` でもない
+**AND** `changes.patch` にそのパスの hunk が含まれない
+**AND** payload にそのパスの内容が含まれない（candidate が存在しない）
 
 ### TC-060: manifest の patch coverage フィールドに size 上限定数が記録される
 
