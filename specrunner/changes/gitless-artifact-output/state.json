@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T18:19:10.981Z",
+  "updatedAt": "2026-09-05T22:10:08.524Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -146,11 +146,7 @@
       "src/core/artifact-output/__tests__/artifact-writer.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -167,10 +163,15 @@
       "text": "Operator ruling for review-feedback-006. Address ALL THREE findings in this single iteration; do not widen scope beyond them.\n\nF-01 (high, src/core/artifact-output/run.ts ~420-463): source mutation on the success path must make runArtifactOutput return { kind: \"failed\" } and leave run.json with status \"failed\" (spec.md D6 fail-closed). Check guardResult.kind !== \"unchanged\" directly and return failed with the source-mutated reason before status is ever set to \"completed\" (or equivalently set status after the check so the guard fires). Strengthen the TC-006 test to assert result.kind === \"failed\" AND runJson.status === \"failed\", not only runJson.error includes \"source-mutated\".\n\nF-02 (medium, src/core/artifact-output/artifact-writer.ts ~193-198): writePayload must be fail-closed. For non-deletion entries classified omitted:unreadable, propagate the copyFile failure (throw) so finalizeArtifact fails and artifact/ is never created. Deletion entries keep no payload (unchanged). Add the TC-022 test: candidate file removed after classification but before finalize -> finalizeArtifact throws and artifact/ does not exist.\n\nF-03 (low): add src/core/artifact-output/__tests__/artifact-writer.test.ts with at least TC-062: fake writeFile/rename that throws right after manifest.json is written -> artifact/ directory does not exist afterward.\n\nKeep the D8 classification table as the single source of emitted classification values; do not introduce new classification values. Run the full test suite before finishing.",
       "step": "code-fixer",
       "recordedAt": "2026-09-05T17:59:11.465Z"
+    },
+    {
+      "text": "Operator ruling for review-feedback-007 (code-review escalation). Address everything below in this single iteration; do not widen scope beyond it.\n\nDecision 1 (verification seam receives empty changes list): RESOLVED as option 1 (document as known constraint). The operator has already committed the design.md change (commit 5da39ac7: D14 gained a known-constraint bullet + alternative (b) rejected, OQ-4 extended). Do NOT edit design.md. One small code change follows from D14's existing rationale (an empty list must not read as 'no changes'): in src/core/artifact-output/context.ts, when the change set has not been derived yet (verification-time call from run.ts, currently changes: []), the context block's Changed files section must explicitly say that the change set is not yet derived at verification time (derived after verification), instead of '(no changes)'. Implement this via an explicit input flag/mode (e.g. changeSetState: 'not-yet-derived' | 'derived'), keep the review-time call passing the derived change set, and add a unit test for the wording.\n\nDecision 2 (computeSymlinkDigest lacks D3 kind tag): RESOLVED as option 1. In src/core/snapshot/digest.ts hash the input with a 'symlink:' kind-tag prefix followed by the target bytes, so the digest is reproducible from the D3 text. This profile is an unwired preview with no persisted snapshots, so no schema version bump is needed; update tests that derive expectations (they call computeSymlinkDigest, so no hardcoded digests should break) and add one assertion that the digest differs from plain sha256 of the target string.\n\nFixable [MEDIUM] checkSourceUnchanged fail-open when writeRunJson throws (src/core/artifact-output/run.ts): implement the reviewer's Option B: compute mutated/unverifiable/exception -> mutated=true first, then attempt writeRunJson best-effort inside its own try/catch, and always return the correct boolean; a thrown guard also counts as mutated (fail-closed). Add a unit test where writeRunJson (or the fs write) throws after mutation is detected and assert result.kind === 'failed'.\n\nFixable [LOW] ArtifactManifest missing file-level unsupported array (src/core/artifact-output/manifest.ts): add `unsupported: readonly SnapshotFailure[]` (D9 'unsupported 配列') and emit [] from buildManifest; keep unsupportedOperations as is. Update manifest tests/schema assertions accordingly.\n\nFixable [LOW] naming inconsistency SnapshotResult kind 'ok' vs ChangeSetResult kind 'success': align ChangeSetResult to kind: 'ok' (SnapshotResult is the more foundational type) and update all call sites.\n\nRun the full test suite, typecheck and lint before finishing.",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T22:10:08.212Z"
     }
   ],
   "_journal": {
-    "historyCount": 100,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
