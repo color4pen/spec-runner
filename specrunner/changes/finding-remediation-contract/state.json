@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T15:23:18.619Z",
+  "updatedAt": "2026-09-05T15:33:44.659Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -82,7 +82,9 @@
     "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796",
     "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
     "e1de55a898c2e1a7e17dce5dfeca66cca51d0cfc",
-    "0db4993f6306241afdbdb51542c9c5cb674323b0"
+    "0db4993f6306241afdbdb51542c9c5cb674323b0",
+    "eda1e37a224d1cdf44a2f3cd13ff2f67137f0668",
+    "8ae6252afe9f944c7838d2ae69aa0cbffb12a385"
   ],
   "touchedFiles": {
     "request-review": [
@@ -204,6 +206,21 @@
       "src/core/step/canon-escalation.ts",
       "src/core/step/executor.ts",
       "src/core/step/judge-verdict.ts"
+    ],
+    "conformance": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/pipeline/findings-ledger.ts"
     ]
   },
   "reviewerStatuses": [
@@ -246,7 +263,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 90,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -254,13 +271,14 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 5,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
       "custom-reviewers": 5,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
