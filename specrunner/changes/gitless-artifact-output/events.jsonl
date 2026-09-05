@@ -172,3 +172,10 @@
 {"type":"transition","ts":"2026-09-05T22:19:06.943Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-09-05T22:19:06.945Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-09-05T22:19:06.946Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-09-05T22:24:03.176Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"76384c57-bd88-4e5b-b0bb-355a7e6245a2","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/gitless-artifact-output/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":52,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-09-05T22:19:06.988Z","endedAt":"2026-09-05T22:24:01.962Z","commitOid":"f216a81f5a44427111d77f1c625d21fadda69d08"}
+{"type":"lineage","step":"regression-gate","ts":"2026-09-05T22:24:01.962Z","outputs":[{"path":"specrunner/changes/gitless-artifact-output/regression-gate-result-001.md","hash":"sha256:a1815a7556aa6fca9b77dded57a933137984eecf5dccea894c3fd9fb8901c616"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-09-05T22:24:03.181Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-09-05T22:24:03.181Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-09-05T22:24:03.182Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-05T22:24:03.184Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
