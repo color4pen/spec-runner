@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T12:55:44.546Z",
+  "updatedAt": "2026-09-05T12:58:31.032Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "2e8ad53a9326beafabb8fb3e41c9075ec29c0a9d",
     "d58decb9ef489c2cbdf1ae0f5fa0c094f460f7ec",
-    "fd27d7c688879e91ea8b7ee215c8ce543539fb50"
+    "fd27d7c688879e91ea8b7ee215c8ce543539fb50",
+    "a73dbe77a3925b623ee3a965d239773339d899ff"
   ],
   "touchedFiles": {
     "request-review": [
@@ -97,13 +98,15 @@
       "src/core/step/step-completion.ts",
       "src/adapter/managed-agent/agent-runner.ts",
       "src/core/decision/decision-ledger.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
