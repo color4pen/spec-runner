@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T18:10:45.598Z",
+  "updatedAt": "2026-09-05T18:19:10.981Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -86,7 +86,8 @@
     "47a670285fbcd06e653ce1fc7f1542e4d8896f82",
     "75078bf1a9d3b800c1e119e71eb79dd6779fdead",
     "00c41e5cffc56ad4d0a081f408be539ffdce60a3",
-    "f70469eb1f902c8f5a234df9eb79ec67492b1e60"
+    "f70469eb1f902c8f5a234df9eb79ec67492b1e60",
+    "1522622dea302c66b7943949b7a1b1cb57ebabda"
   ],
   "touchedFiles": {
     "request-review": [
@@ -117,25 +118,22 @@
     ],
     "code-review": [
       "src/core/artifact-output/run.ts",
-      "src/core/artifact-output/revision-binding.ts",
       "src/core/snapshot/collect.ts",
-      "src/core/artifact-output/source-guard.ts",
       "src/core/artifact-output/artifact-writer.ts",
-      "src/core/artifact-output/patch.ts",
-      "tests/artifact-output-vertical.test.ts",
+      "src/core/artifact-output/revision-binding.ts",
       "tests/unit/architecture/artifact-output-git-free.test.ts",
-      "src/core/artifact-output/preflight.ts",
+      "tests/artifact-output-vertical.test.ts",
       "src/core/artifact-output/execution-profile.ts",
-      "src/core/artifact-output/manifest.ts",
+      "src/core/artifact-output/preflight.ts",
+      "src/core/artifact-output/source-guard.ts",
       "src/core/artifact-output/context.ts",
-      "src/core/artifact-output/__tests__/run.test.ts",
-      "src/core/artifact-output/__tests__/patch.test.ts",
-      "src/util/unified-diff.ts",
       "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/__tests__/preflight.test.ts",
-      "src/core/artifact-output/__tests__/context-binding.test.ts",
+      "src/core/artifact-output/patch.ts",
+      "src/core/artifact-output/manifest.ts",
       "src/core/snapshot/digest.ts",
-      "src/core/artifact-output/run-layout.ts"
+      "src/core/snapshot/__tests__/digest.test.ts",
+      "src/core/artifact-output/__tests__/run.test.ts",
+      "docs/artifact-output-profile.md"
     ],
     "code-fixer": [
       "src/core/artifact-output/run.ts",
@@ -148,7 +146,11 @@
       "src/core/artifact-output/__tests__/artifact-writer.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -168,7 +170,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -177,7 +179,7 @@
       "spec-fixer": 2,
       "implementer": 3,
       "verification": 3,
-      "code-review": 6,
+      "code-review": 7,
       "code-fixer": 4
     }
   }
