@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:2840418cecb730c133aa8691c7d76a56e8dbdd7734246a5fe8f5382bf00a8ce4",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:setupWorkspaceNoWorktree calls git status --porcelain, git checkout -b, git add, git commit, git rev-parse HEAD",
+    "src/core/worktree/manager.ts:121 manager.create spawns 'git worktree add'",
+    "src/core/runtime/local.ts:927 listChangedFiles uses 'git diff --name-only <baseBranch>...HEAD'",
+    "src/core/runtime/local.ts:688 captureHeadSha uses 'git rev-parse HEAD'",
+    "src/core/runtime/local.ts:1404-1409 validateStepInputs has artifact: 'gitState' type using 'git rev-parse --git-dir'",
+    "src/core/pipeline/runtime-capability-gate.ts:72-88 assertRuntimeSupportsScope preflight capability gate exists",
+    "src/core/runtime/workspace-materializer.ts:30-47 WorktreeMaterializationPlan has no artifact-output variant",
+    "src/state/profile.ts STANDARD_PROFILE is pipeline assurance profile, not runtime isolation profile",
+    "src/cli/job-start-handler.ts:97-103 --from-issue is routed separately before generic job start",
+    "--source <dir> flag is not implemented in src/cli/flag-parser.ts or src/cli/command-registry.ts"
+  ],
+  "sourceRevision": "71ca0e3c8b3fc2be986752df8e414c9d2dd4e6e2"
+}
