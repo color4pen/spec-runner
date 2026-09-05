@@ -552,6 +552,72 @@ specrunner config effective --type spec-change
 `,
   },
   {
+    name: "artifact-output",
+    summary: "git 不要の artifact-output プロファイル: 使い方・制限・適用手順",
+    body: `# guide: artifact-output — Git-free 実行プロファイル
+
+## 概要
+
+artifact-output プロファイルは Git リポジトリが存在しない環境で SpecRunner を実行するための
+実行プロファイルです。PR 作成や GitHub API の代わりに、ポータブルなアーティファクトを
+ファイルシステムに出力します。
+
+詳細: \`docs/artifact-output-profile.md\`
+
+## 出力構造
+
+成功した run では以下のアーティファクトが生成されます:
+
+\`\`\`
+<run-parent-dir>/<run-id>/artifact/
+  manifest.json       # run metadata + change summary
+  changes.patch       # unified diff (text files のみ)
+  verification.json   # verification 結果
+  review.json         # review 結果
+  payload/            # candidate workspace のコピー
+  APPLY.md            # 手動適用ガイド (自動適用されない)
+\`\`\`
+
+## 制限事項 (サポート外操作)
+
+以下の操作は artifact-output プロファイルではサポートされません:
+
+| 操作 | 理由 |
+|------|------|
+| PR 作成・マージ | GitHub API 依存 |
+| branch checkpoint | Git 依存 |
+| commit 採択 | Git 依存 |
+| issue 起点 entry | GitHub API 依存 |
+| remote reattach | Git 依存 |
+| archive / egress ledger | Git 依存 |
+
+## 手動適用手順
+
+APPLY.md の手順に従い、candidate workspace の変更を手動でソースに適用してください:
+
+1. artifact/APPLY.md を読む (baseline digest の事前条件を確認)
+2. \`changes.patch\` を git apply または patch コマンドで適用する
+3. \`payload/\` の内容を必要に応じてコピーする
+
+## 適合パイプライン
+
+design-only 等の Git 操作を含まないパイプラインのみ実行可能です。
+standard / fast パイプラインは pr-create ステップを含むため非対応です。
+
+## スナップショット方式
+
+リビジョン識別に Git commit OID の代わりに SHA-256 ディレクトリダイジェストを使用します:
+- .git/ ディレクトリは自動的に除外されます
+- symlink は follow せず lstat ベースで記録されます
+- I/O failure → fail-closed (snapshot unavailable, "no change" とは絶対にならない)
+
+## resume
+
+artifact-output プロファイルは resume をサポートしません。
+run.json の \`resume.supported\` は常に \`false\` です。
+`,
+  },
+  {
     name: "inbox",
     summary: "無人運用: 承認ラベル発火・/resume・cron",
     body: `# guide: inbox — 無人運用

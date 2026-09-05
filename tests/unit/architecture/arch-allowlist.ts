@@ -111,6 +111,33 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   },
 
 
+  // ── B-9: RunJson.status in artifact-output/run.ts — not JobState.status ──────
+  //
+  // The B-9 pattern matches `status: "running"` and similar literals. These two
+  // occurrences are in the RunJson interface (a private DTO) and its initialisation
+  // in runArtifactOutput. RunJson is entirely unrelated to JobState and does NOT
+  // touch the transitionJob lifecycle table. Allowlisted as structural-carve-out.
+  {
+    file: "src/core/artifact-output/run.ts",
+    pattern: "| \"completed\" | \"halted\" | \"failed\";",
+    invariant: "B-9",
+    tracking: "B9-artifact-output-run-json-type",
+    comment:
+      "RunJson interface field type union (not JobState): " +
+      "status: \"running\" | \"completed\" | \"halted\" | \"failed\". " +
+      "This is a private DTO for run.json output, completely separate from JobState.status.",
+  },
+  {
+    file: "src/core/artifact-output/run.ts",
+    pattern: "status: \"running\",",
+    invariant: "B-9",
+    tracking: "B9-artifact-output-run-json-init",
+    comment:
+      "RunJson object initialisation (not JobState): the initial value of RunJson.status " +
+      "is set to 'running' at run start. RunJson is a private DTO written to run.json, " +
+      "never stored in the job state lifecycle table.",
+  },
+
   // ── B-3: shared-kernel / persistence must not import domain (core/) ──────────
   //
   // B-3 (model.md §4): upward edges from shared-kernel (parser/, config/,

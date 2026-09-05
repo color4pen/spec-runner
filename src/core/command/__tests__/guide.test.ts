@@ -2,7 +2,7 @@
  * Tests for specrunner guide command — operator-guide feature
  *
  * TC-001: 引数なしで topic 一覧を出力する
- * TC-002: 全 9 topic の body が非空 (iterable 検証)
+ * TC-002: 全 10 topic の body が非空 (iterable 検証)
  * TC-003: repo 外でも動作する (unit test — requiresRepo なし)
  * TC-004: 未知 topic はエラーコード 2 を返す
  * TC-005: 一覧が registry から導出される (単一ソース drift-guard)
@@ -14,7 +14,7 @@
  * TC-011: 薄いトリガー化
  * TC-012: 廃止 skill とコマンド文字列の不在
  * TC-013: 本文コマンドが registry で解決される
- * TC-014: GUIDE_TOPICS が 9 件を宣言順で持つ
+ * TC-014: GUIDE_TOPICS が 10 件を宣言順で持つ
  * TC-015: renderTopicList() が全 topic の name と summary を含む
  * TC-016: findTopic が escalation topic を返す
  * TC-017: buildClaudeMdSnippet() が GUIDE_TOPICS 全 name を map 導出で含む
@@ -22,6 +22,8 @@
  * TC-019: canon-escalation.ts が guide.ts を import しない (leaf 制約)
  * TC-020: jobs topic body が並列起動 stagger 記述を含む
  * TC-021: escalation topic body が後片付けコマンドを含む
+ * TC-074: GUIDE_TOPICS が 10 件 (artifact-output 追加後)
+ * TC-075: artifact-output topic が制限事項・出力構造を本文に含む
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -61,10 +63,10 @@ import { COMMANDS, USAGE, resolveCommand } from "../../../cli/command-registry.j
 const importedSnippet = buildClaudeMdSnippet;
 
 // ============================================================================
-// TC-014: GUIDE_TOPICS が 9 件を宣言順で持つ
+// TC-014 / TC-074: GUIDE_TOPICS が 10 件を宣言順で持つ (artifact-output 追加後)
 // ============================================================================
 
-describe("TC-014: GUIDE_TOPICS が 9 件を宣言順で持つ", () => {
+describe("TC-014 / TC-074: GUIDE_TOPICS が 10 件を宣言順で持つ", () => {
   const EXPECTED_ORDER = [
     "jobs",
     "merge",
@@ -74,23 +76,24 @@ describe("TC-014: GUIDE_TOPICS が 9 件を宣言順で持つ", () => {
     "request",
     "review",
     "inject",
+    "artifact-output",
     "inbox",
   ];
 
-  it("TC-014: GUIDE_TOPICS has exactly 9 entries", () => {
-    expect(GUIDE_TOPICS.length).toBe(9);
+  it("TC-014/TC-074: GUIDE_TOPICS has exactly 10 entries", () => {
+    expect(GUIDE_TOPICS.length).toBe(10);
   });
 
-  it("TC-014: GUIDE_TOPICS entries are in declared order", () => {
+  it("TC-014/TC-074: GUIDE_TOPICS entries are in declared order", () => {
     expect(GUIDE_TOPICS.map((t) => t.name)).toEqual(EXPECTED_ORDER);
   });
 });
 
 // ============================================================================
-// TC-002: 全 9 topic の body が非空 (iterable 検証)
+// TC-002: 全 10 topic の body が非空 (iterable 検証)
 // ============================================================================
 
-describe("TC-002: 全 9 topic の body が非空 (iterable 検証)", () => {
+describe("TC-002: 全 10 topic の body が非空 (iterable 検証)", () => {
   for (const topic of GUIDE_TOPICS) {
     it(`TC-002: topic "${topic.name}" body is non-empty`, () => {
       expect(topic.body.trim().length).toBeGreaterThan(0);
@@ -121,9 +124,9 @@ describe("TC-015: renderTopicList() が全 topic の name と summary を含む"
 // ============================================================================
 
 describe("TC-001: 引数なしで topic 一覧を出力する", () => {
-  it("TC-001: renderTopicList() returns all 9 topic names", () => {
+  it("TC-001: renderTopicList() returns all 10 topic names", () => {
     const list = renderTopicList();
-    const EXPECTED_NAMES = ["jobs", "merge", "audit", "setup", "escalation", "request", "review", "inject", "inbox"];
+    const EXPECTED_NAMES = ["jobs", "merge", "audit", "setup", "escalation", "request", "review", "inject", "artifact-output", "inbox"];
     for (const name of EXPECTED_NAMES) {
       expect(list).toContain(name);
     }
@@ -253,7 +256,7 @@ describe("TC-017: buildClaudeMdSnippet() が GUIDE_TOPICS 全 name を map 導�
     }
   });
 
-  it("TC-017: snippet contains all 9 topic names in one contiguous section", () => {
+  it("TC-017: snippet contains all 10 topic names in one contiguous section", () => {
     const names = GUIDE_TOPICS.map((t) => t.name);
     // The snippet should have a topic list line with all names
     const allPresent = names.every((n) => snippet.includes(n));
@@ -1029,5 +1032,67 @@ describe("TC-036: ADR 実状態整合", () => {
     );
     const content = fs.readFileSync(adrPath, "utf-8");
     expect(content).not.toContain("tombstone を置いて実質削除する");
+  });
+});
+
+// ============================================================================
+// TC-074: GUIDE_TOPICS が 10 件 (artifact-output 追加後)
+// TC-075: artifact-output topic が制限事項・出力構造を本文に含む
+// ============================================================================
+
+describe("TC-074: artifact-output topic は 10 番目 (inbox の前)", () => {
+  it("TC-074: GUIDE_TOPICS.length === 10", () => {
+    expect(GUIDE_TOPICS.length).toBe(10);
+  });
+
+  it("TC-074: artifact-output topic exists", () => {
+    const topic = findTopic("artifact-output");
+    expect(topic).toBeDefined();
+  });
+
+  it("TC-074: artifact-output appears before inbox in GUIDE_TOPICS", () => {
+    const names = GUIDE_TOPICS.map((t) => t.name);
+    const aoIdx = names.indexOf("artifact-output");
+    const inboxIdx = names.indexOf("inbox");
+    expect(aoIdx).toBeGreaterThan(-1);
+    expect(inboxIdx).toBeGreaterThan(-1);
+    expect(aoIdx).toBeLessThan(inboxIdx);
+  });
+});
+
+describe("TC-075: artifact-output topic body contains required sections", () => {
+  const topic = findTopic("artifact-output");
+
+  it("TC-075: topic exists", () => {
+    expect(topic).toBeDefined();
+  });
+
+  it("TC-075: body contains 'manifest.json'", () => {
+    expect(topic!.body).toContain("manifest.json");
+  });
+
+  it("TC-075: body contains 'APPLY.md' (not auto-applied)", () => {
+    expect(topic!.body).toContain("APPLY.md");
+  });
+
+  it("TC-075: body contains unsupported operations table", () => {
+    expect(topic!.body).toContain("PR 作成・マージ");
+  });
+
+  it("TC-075: body contains resume.supported = false note", () => {
+    expect(topic!.body).toContain("resume.supported");
+    expect(topic!.body).toContain("false");
+  });
+
+  it("TC-075: body contains 'changes.patch' reference", () => {
+    expect(topic!.body).toContain("changes.patch");
+  });
+
+  it("TC-075: body contains 'verification.json' reference", () => {
+    expect(topic!.body).toContain("verification.json");
+  });
+
+  it("TC-075: body is non-empty and longer than 100 chars", () => {
+    expect(topic!.body.trim().length).toBeGreaterThan(100);
   });
 });

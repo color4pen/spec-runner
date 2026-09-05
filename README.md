@@ -139,6 +139,40 @@ Scaffold a definition: `specrunner reviewers new <name>`.
 
 The extensible surface is the review chain. The pipeline shape is code, not configuration.
 
+## Artifact-Output Profile (Git-Free Mode)
+
+The `artifact-output` execution profile runs SpecRunner without a Git repository. Instead of
+creating a pull request, it writes a portable artifact bundle to the local filesystem.
+
+```bash
+specrunner job start my-request.md \
+  --profile artifact-output \
+  --pipeline design-only \
+  --source-root /path/to/source \
+  --run-parent-dir /path/to/output
+```
+
+**Output structure** (on success):
+
+```
+<run-parent-dir>/<run-id>/artifact/
+  manifest.json       # run metadata + baseline/candidate digests + change summary
+  changes.patch       # unified diff (text files; binary files omitted)
+  verification.json   # verification outcome
+  review.json         # review outcome
+  payload/            # final candidate workspace
+  APPLY.md            # manual apply instructions (changes are NOT applied automatically)
+```
+
+**Constraints:**
+- Only pipelines without `pr-create` (e.g. `design-only`) are supported.
+- `--from-issue` and `issueLinked` entry routes are rejected at preflight.
+- `run.json` always declares `resume.supported: false`.
+- Source directory is never mutated; any mutation detected post-run marks the run as failed.
+
+See [`docs/artifact-output-profile.md`](docs/artifact-output-profile.md) for the full reference,
+or `specrunner guide artifact-output` for a quick operator summary.
+
 ## Automation with GitHub Issues
 
 For unattended operation, SpecRunner can poll GitHub issues instead of running from drafts.
