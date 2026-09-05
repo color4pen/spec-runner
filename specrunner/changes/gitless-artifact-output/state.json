@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T12:42:33.780Z",
+  "updatedAt": "2026-09-05T12:59:22.708Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -64,7 +64,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "a3c211c08c7a388634778a5fdeecfac0a807e9b7",
-    "7a4cd816689856fec71030137740ec75f386e9b9"
+    "7a4cd816689856fec71030137740ec75f386e9b9",
+    "bc3e76109addf7047b419d18e7ca696cc3ed9d65"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,12 +82,14 @@
       "src/core/command/runner.ts",
       "src/cli/job-start-handler.ts",
       "src/core/runtime/workspace-materializer.ts"
-    ]
+    ],
+    "design": []
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
