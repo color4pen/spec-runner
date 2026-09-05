@@ -1,0 +1,269 @@
+{
+  "version": 2,
+  "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
+  "createdAt": "2026-09-05T12:39:23.630Z",
+  "updatedAt": "2026-09-05T22:43:57.498Z",
+  "request": {
+    "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/gitless-artifact-output-24a45cdc",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1115,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "a3c211c08c7a388634778a5fdeecfac0a807e9b7",
+    "7a4cd816689856fec71030137740ec75f386e9b9",
+    "bc3e76109addf7047b419d18e7ca696cc3ed9d65",
+    "0a892931c5821b56be1031f7eb00e98c8b90ebed",
+    "59c4e7648f2fdf7eadfd84605210b735762e5068",
+    "33a1aae4ce440e68d813a3d6e29ef269bbd0b11b",
+    "862522180617aa809863944f4b7ae7efd123919f",
+    "4485602c5a76a58739791b9b3ba4e16de4b23e43",
+    "afca3f05d9c0a391665527597c52a3679737965e",
+    "51e13ee13a2c98e6f0a31364063006aa37a7b54a",
+    "09a68daa7fd86afa147d2eec042cf3c7a9b15d9b",
+    "2d0f6d29644034ba7caac60d60b21014778a7902",
+    "f9b4827d1c2a0bef22aae697d9ed684d9eaa59d5",
+    "3d752d43a63e4a446e13089958f7a4c56870bf26",
+    "7a0528e6ff6ea6a2cfc993946a20fd423336c9c6",
+    "4888812ddd42cb4474ffdd39b369b04b64220a55",
+    "a41fa0b15285a80bccf8ef25e430d7692d92e01c",
+    "9f3c8073ad34fde1fca332dcc23c6d9d814a2f6e",
+    "582f0c341c52bec92214f9c826f19d8918b46d82",
+    "b6d0d5fbea82a3e05af24f860e63ccf52255fd4f",
+    "47a670285fbcd06e653ce1fc7f1542e4d8896f82",
+    "75078bf1a9d3b800c1e119e71eb79dd6779fdead",
+    "00c41e5cffc56ad4d0a081f408be539ffdce60a3",
+    "f70469eb1f902c8f5a234df9eb79ec67492b1e60",
+    "1522622dea302c66b7943949b7a1b1cb57ebabda",
+    "fcf6c5336e8928a4b60e0509de816dd023a73e4b",
+    "7931f70489a95a8db91c338079473d9677859219",
+    "f216a81f5a44427111d77f1c625d21fadda69d08",
+    "75121e920eb17deec0435d1b0bb949d70f92656f",
+    "e5682a006d27aaecb074ac9955e7ec4e459bb77e",
+    "747ab7b16831c754ab5fd14766a031be2c9dc438"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/worktree/manager.ts",
+      "src/core/runtime/local.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/scope.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/state/profile.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/types.ts",
+      "src/cli/flag-parser.ts",
+      "src/core/command/runner.ts",
+      "src/cli/job-start-handler.ts",
+      "src/core/runtime/workspace-materializer.ts"
+    ],
+    "design": [],
+    "test-case-gen": [],
+    "spec-review": [],
+    "spec-fixer": [],
+    "implementer": [
+      "tests/artifact-output-vertical.test.ts",
+      "src/core/snapshot/collect.ts",
+      "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/__tests__/guarded-spawn.test.ts",
+      "src/core/artifact-output/__tests__/run.test.ts"
+    ],
+    "code-review": [
+      "src/core/artifact-output/context.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/snapshot/compare.ts",
+      "src/core/artifact-output/__tests__/context-binding.test.ts",
+      "src/core/snapshot/__tests__/digest.test.ts",
+      "src/core/artifact-output/__tests__/run.test.ts",
+      "src/core/artifact-output/__tests__/manifest.test.ts",
+      "src/core/snapshot/types.ts",
+      "src/core/snapshot/__tests__/compare.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/snapshot/compare.ts",
+      "src/core/snapshot/__tests__/compare.test.ts",
+      "src/core/snapshot/__tests__/digest.test.ts",
+      "src/core/artifact-output/__tests__/manifest.test.ts",
+      "src/core/artifact-output/__tests__/context-binding.test.ts",
+      "src/core/snapshot/types.ts"
+    ],
+    "regression-gate": [
+      "src/core/artifact-output/patch.ts",
+      "src/core/artifact-output/__tests__/patch.test.ts",
+      "tests/artifact-output-vertical.test.ts",
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/artifact-output/run.ts",
+      "src/core/command/guide.ts",
+      "README.md",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/snapshot/compare.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts"
+    ],
+    "conformance": [
+      "src/core/artifact-output/run.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/guarded-spawn.ts",
+      "src/core/artifact-output/revision-binding.ts",
+      "src/core/snapshot/compare.ts",
+      "src/core/snapshot/collect.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/command/guide.ts",
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/artifact-output/patch.ts",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts",
+      "docs/artifact-output-profile.md",
+      "src/core/artifact-output/run-layout.ts",
+      "src/core/command/__tests__/guide.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-29-remove-bite-evidence.md",
+      "specrunner/adr/2026-09-05-gitless-artifact-output.md"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定（code-review escalation の Decision 1）: 選択肢 1 を採用する。D8 を拡張し `omitted:size-deletion`（change=deleted かつ kind=file かつ旧側が UTF-8 text かつ size 上限超過。patch に含めない。payload なし）を追加する。\n\n理由: D8 は既に binary について added/modified 用 `omitted:binary` と deleted 用 `omitted:binary-deletion` を対で定義しており、size についても同じ対称構造（`omitted:size` / `omitted:size-deletion`）にするのが D8 の「manifest の patch 分類から changes.patch の実内容を 1:1 で推定できる」原則に最も整合する。選択肢 3 は D8 が `included:deletion` に size 上限を明示している設計と矛盾し、選択肢 2 は意味の違う値を overload したまま残すので採らない。\n\n実施事項:\n1. design.md D8 の表に `omitted:size-deletion` 行を追加し、Rationale に size 対称性を一文追記する。manifest schema / 型定義 / test-cases.md / APPLY.md の分類一覧を同期する。\n2. src/core/artifact-output/patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更する。\n3. `omitted:unreadable`（I/O 失敗時）も現状 D8 表に未定義の値である。この値を残すなら D8 表に「readFile 失敗（added/modified/deleted 共通）。fail-closed のため patch に含めず、payload 収録も保証しない」として行を追加し、コードが emit しうる全分類値が D8 表に定義されている状態にする。D8 の unsupported（finalize 拒否）へ倒す方が設計に忠実と判断する場合はそちらでもよいが、どちらにしても未定義の分類値を残さないこと。\n4. 上記の分類ごとにテストを追加・更新する（large text deletion → size-deletion、binary deletion → binary-deletion、通常 text deletion → included:deletion）。\n\nスコープはこの分類整合に限定し、他の設計変更は行わない。",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T15:46:39.776Z"
+    },
+    {
+      "text": "operator 裁定（CANON_FINDING_ESCALATION 復帰）: code-review iter 3 の F-03（design.md D8 表）は operator-apply commit 9741d862 で対応済み。D8 表に `omitted:size-deletion`（deleted / 旧側 text / size 上限超過。patch にも payload にも含めない）と `omitted:unreadable`（readFile の I/O 失敗専用。manifest には必ず現れる）を定義し、tasks.md T-07 と test-cases.md TC-080（size 上限超過 text 削除 → omitted:size-deletion）を同期した。保護正典はこれ以上変更しない。\n\n残りの finding（iter 3 F-01 / F-02 / F-04 〜 F-09）はすべて src / tests / README の修正で code-fixer が解消する:\n- F-01/F-02: patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更し、PatchClassification 型に追加する。`omitted:unreadable` は I/O 失敗専用として残す。artifact-writer.ts / context.ts / APPLY.md 生成の分類一覧と file 先頭の doc comment も D8 表と一致させる（size-deletion は payload なし）\n- F-04: TC-080 に対応する unit test を patch.test.ts に追加する\n- F-05: deleted 分岐の到達不能な重複 binary check を削除する\n- F-06 〜 F-09: iter 2 からの持越し（_assertNoGitAbove 未使用、README の preview 注記、TC-027 統合テスト、TC-071 / TC-072）を今回すべて同一 iteration で解消する。前回は F-01〜F-04 だけを直して持越しが残ったので、今回は 9 件すべてを対象にすること。",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T16:53:44.533Z"
+    },
+    {
+      "text": "Operator ruling for review-feedback-006. Address ALL THREE findings in this single iteration; do not widen scope beyond them.\n\nF-01 (high, src/core/artifact-output/run.ts ~420-463): source mutation on the success path must make runArtifactOutput return { kind: \"failed\" } and leave run.json with status \"failed\" (spec.md D6 fail-closed). Check guardResult.kind !== \"unchanged\" directly and return failed with the source-mutated reason before status is ever set to \"completed\" (or equivalently set status after the check so the guard fires). Strengthen the TC-006 test to assert result.kind === \"failed\" AND runJson.status === \"failed\", not only runJson.error includes \"source-mutated\".\n\nF-02 (medium, src/core/artifact-output/artifact-writer.ts ~193-198): writePayload must be fail-closed. For non-deletion entries classified omitted:unreadable, propagate the copyFile failure (throw) so finalizeArtifact fails and artifact/ is never created. Deletion entries keep no payload (unchanged). Add the TC-022 test: candidate file removed after classification but before finalize -> finalizeArtifact throws and artifact/ does not exist.\n\nF-03 (low): add src/core/artifact-output/__tests__/artifact-writer.test.ts with at least TC-062: fake writeFile/rename that throws right after manifest.json is written -> artifact/ directory does not exist afterward.\n\nKeep the D8 classification table as the single source of emitted classification values; do not introduce new classification values. Run the full test suite before finishing.",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-05T17:59:11.465Z"
+    },
+    {
+      "text": "Operator ruling for review-feedback-007 (code-review escalation). Address everything below in this single iteration; do not widen scope beyond it.\n\nDecision 1 (verification seam receives empty changes list): RESOLVED as option 1 (document as known constraint). The operator has already committed the design.md change (commit 5da39ac7: D14 gained a known-constraint bullet + alternative (b) rejected, OQ-4 extended). Do NOT edit design.md. One small code change follows from D14's existing rationale (an empty list must not read as 'no changes'): in src/core/artifact-output/context.ts, when the change set has not been derived yet (verification-time call from run.ts, currently changes: []), the context block's Changed files section must explicitly say that the change set is not yet derived at verification time (derived after verification), instead of '(no changes)'. Implement this via an explicit input flag/mode (e.g. changeSetState: 'not-yet-derived' | 'derived'), keep the review-time call passing the derived change set, and add a unit test for the wording.\n\nDecision 2 (computeSymlinkDigest lacks D3 kind tag): RESOLVED as option 1. In src/core/snapshot/digest.ts hash the input with a 'symlink:' kind-tag prefix followed by the target bytes, so the digest is reproducible from the D3 text. This profile is an unwired preview with no persisted snapshots, so no schema version bump is needed; update tests that derive expectations (they call computeSymlinkDigest, so no hardcoded digests should break) and add one assertion that the digest differs from plain sha256 of the target string.\n\nFixable [MEDIUM] checkSourceUnchanged fail-open when writeRunJson throws (src/core/artifact-output/run.ts): implement the reviewer's Option B: compute mutated/unverifiable/exception -> mutated=true first, then attempt writeRunJson best-effort inside its own try/catch, and always return the correct boolean; a thrown guard also counts as mutated (fail-closed). Add a unit test where writeRunJson (or the fs write) throws after mutation is detected and assert result.kind === 'failed'.\n\nFixable [LOW] ArtifactManifest missing file-level unsupported array (src/core/artifact-output/manifest.ts): add `unsupported: readonly SnapshotFailure[]` (D9 'unsupported 配列') and emit [] from buildManifest; keep unsupportedOperations as is. Update manifest tests/schema assertions accordingly.\n\nFixable [LOW] naming inconsistency SnapshotResult kind 'ok' vs ChangeSetResult kind 'success': align ChangeSetResult to kind: 'ok' (SnapshotResult is the more foundational type) and update all call sites.\n\nRun the full test suite, typecheck and lint before finishing.",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T22:10:08.212Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1122",
+    "number": 1122,
+    "createdAt": "2026-09-05T22:43:56.956Z"
+  },
+  "_journal": {
+    "historyCount": 137,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "spec-fixer": 2,
+      "implementer": 3,
+      "verification": 4,
+      "code-review": 8,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

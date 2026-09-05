@@ -6,6 +6,7 @@
  * No network, no repo state, no I/O in builders.
  */
 import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
+import { UNSUPPORTED_OPERATIONS } from "../artifact-output/execution-profile.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,6 +16,23 @@ export interface GuideTopic {
   name: string;
   summary: string;
   body: string;
+}
+
+// ---------------------------------------------------------------------------
+// Derived content builders (single source of truth, no hand-written duplication)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the unsupported-operations Markdown table for the artifact-output guide topic.
+ * Derived from UNSUPPORTED_OPERATIONS — no hand-written enumeration.
+ * TC-037: all unsupported operations from the capability table must appear here.
+ */
+function buildUnsupportedOperationsTable(): string {
+  const header = "| 操作 | 理由 |\n|------|------|";
+  const rows = UNSUPPORTED_OPERATIONS.map(
+    (op) => `| ${op.displayName} | ${op.reason} |`,
+  ).join("\n");
+  return `${header}\n${rows}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -549,6 +567,84 @@ frontmatter の \`paths\` / \`requestTypes\` で起動条件を宣言できる�
 specrunner config effective
 specrunner config effective --type spec-change
 \`\`\`
+`,
+  },
+  {
+    name: "artifact-output",
+    summary: "git 不要の artifact-output プロファイル: 使い方・制限・適用手順",
+    body: `# guide: artifact-output — Git-free 実行プロファイル
+
+## 概要
+
+artifact-output プロファイルは Git リポジトリが存在しない環境で SpecRunner を実行するための
+実行プロファイルです。PR 作成や GitHub API の代わりに、ポータブルなアーティファクトを
+ファイルシステムに出力します。
+
+詳細: \`docs/artifact-output-profile.md\`
+
+## 出力構造
+
+成功した run では以下のアーティファクトが生成されます:
+
+\`\`\`
+<run-parent-dir>/<run-id>/artifact/
+  manifest.json       # run metadata + change summary
+  changes.patch       # unified diff (text files のみ)
+  verification.json   # verification 結果
+  review.json         # review 結果
+  payload/            # candidate workspace のコピー
+  APPLY.md            # 手動適用ガイド (自動適用されない)
+\`\`\`
+
+## --no-worktree との違い
+
+\`--no-worktree\` は「現在の Git リポジトリ root で実行する」モードであり、Git 自体は引き続き
+必要です。artifact-output プロファイルとは根本的に異なります:
+
+| 観点 | --no-worktree | artifact-output |
+|------|--------------|-----------------|
+| Git 依存 | あり (repository が必要) | なし (.git 不要) |
+| worktree 作成 | なし (cwd で実行) | なし (candidate workspace を使用) |
+| 変更の帰属 | commit OID | snapshot digest |
+| 出力 | PR / branch | ファイルシステム artifact |
+| resume | Git branch 経由で可能 | サポートなし |
+| issue 起点 entry | サポート | 明示的 unsupported |
+| 入力 | Git repository | 任意のディレクトリ |
+
+**使い分け**: Git リポジトリ内で作業するなら \`--no-worktree\`、Git を持たない
+ディレクトリ (tarball 展開済み、非 VCS 環境等) を扱うなら artifact-output プロファイル。
+
+## 制限事項 (サポート外操作)
+
+以下の操作は artifact-output プロファイルではサポートされません
+(D12 capability テーブルから生成 — 手書き列挙ではない):
+
+${buildUnsupportedOperationsTable()}
+
+## 手動適用手順
+
+APPLY.md の手順に従い、candidate workspace の変更を手動でソースに適用してください:
+
+1. artifact/APPLY.md を読む (baseline digest の事前条件を確認)
+2. \`changes.patch\` を git apply または patch コマンドで適用する
+3. \`payload/\` の内容を必要に応じてコピーする
+
+## 適合パイプライン
+
+design-only 等の Git 操作を含まないパイプラインのみ実行可能です。
+standard / fast パイプラインは pr-create ステップを含むため非対応です。
+
+## スナップショット方式
+
+リビジョン識別に Git commit OID の代わりに SHA-256 ディレクトリダイジェストを使用します:
+- .git/ ディレクトリは自動的に除外されます
+- symlink は follow せず lstat ベースで記録されます
+- I/O failure → fail-closed (snapshot unavailable, "no change" とは絶対にならない)
+
+## resume
+
+artifact-output プロファイルは resume をサポートしません。
+run.json の \`resume.supported\` は常に \`false\` です。
 `,
   },
   {
