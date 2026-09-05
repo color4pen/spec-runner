@@ -18,6 +18,8 @@
  *   - On completionReason=success: error must be undefined
  *   - On completionReason=error|timeout: error must be defined
  *   - followUpAttempts must be a non-negative integer
+ *   - session trace length equals the SDK invocation count, and every "continue"
+ *     invocation targets the sessionId of the invocation immediately before it
  *
  * Ledger: test name format "[<providerId>] <caseId>" so grep/filter works.
  *
@@ -62,6 +64,7 @@ import { tmpdir } from "node:os";
 import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 import { CONTRACT_CASES, type ProviderExpectation } from "./case-table.js";
 import { PROVIDER_HARNESSES } from "./harness/registry.js";
+import type { SessionInvocationRecord } from "./harness/types.js";
 import { CONTRACT_PROVIDERS } from "./case-ids.js";
 import { buildBaseContext } from "./scenario.js";
 import { RESULT_FIELD_MATRIX } from "./result-field-matrix.js";
@@ -100,6 +103,7 @@ function assertExpectations(
   result: AgentRunResult,
   exp: ProviderExpectation,
   getInvocationCount: () => number,
+  getSessionTrace: () => readonly SessionInvocationRecord[],
   emittedEventNames: readonly string[],
   caseId: string,
   providerId: string,
@@ -181,6 +185,10 @@ function assertExpectations(
         exp.resultContent,
       );
     }
+  }
+
+  if (exp.resultContentExact !== undefined) {
+    expect(result.resultContent, `${tag}: resultContent exact value`).toBe(exp.resultContentExact);
   }
 
   // --- Error fields ---
@@ -290,6 +298,43 @@ function assertExpectations(
     expect(getInvocationCount(), `${tag}: sdkInvocations`).toBe(exp.sdkInvocations);
   }
 
+  // --- Session trace (same session vs fresh session per SDK invocation) ---
+
+  const sessionTrace = getSessionTrace();
+
+  // Universal: the trace is recorded at the same SDK boundary as the invocation count.
+  expect(
+    sessionTrace.length,
+    `${tag} [universal]: session trace length must equal the SDK invocation count`,
+  ).toBe(getInvocationCount());
+
+  // Universal: a "continue" invocation must target the session of the invocation right
+  // before it. This is what makes "continue" mean "same session" rather than "some resume".
+  for (let i = 0; i < sessionTrace.length; i++) {
+    const rec = sessionTrace[i]!;
+    if (rec.kind !== "continue") continue;
+    const prev = sessionTrace[i - 1];
+    expect(
+      prev,
+      `${tag} [universal]: invocation #${i} is "continue" but there is no preceding invocation`,
+    ).toBeDefined();
+    expect(
+      rec.sessionId,
+      `${tag} [universal]: invocation #${i} is "continue" but carries no sessionId`,
+    ).toBeDefined();
+    expect(
+      rec.sessionId,
+      `${tag} [universal]: invocation #${i} continues session "${rec.sessionId}" but invocation #${i - 1} was bound to "${prev?.sessionId}"`,
+    ).toBe(prev?.sessionId);
+  }
+
+  if (exp.sessionTrace !== undefined) {
+    expect(
+      sessionTrace.map((r) => r.kind),
+      `${tag}: sessionTrace (fresh/continue per SDK invocation)`,
+    ).toEqual(exp.sessionTrace);
+  }
+
   // --- Emitted domain events (Design D8) ---
 
   if (exp.emittedEvents) {
@@ -369,7 +414,7 @@ describe("provider-lifecycle-parity", () => {
             };
 
             const harness = PROVIDER_HARNESSES[providerId]!;
-            const { runner, getInvocationCount } = harness.build(scenario, {
+            const { runner, getInvocationCount, getSessionTrace } = harness.build(scenario, {
               tempDir,
               sleepFn,
               emit: emit as unknown as Parameters<(typeof harness)["build"]>[1]["emit"],
@@ -421,6 +466,7 @@ describe("provider-lifecycle-parity", () => {
               result,
               expectation,
               getInvocationCount,
+              getSessionTrace,
               emittedEventNames,
               contractCase.id,
               providerId,

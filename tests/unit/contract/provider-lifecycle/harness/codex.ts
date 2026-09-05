@@ -23,11 +23,22 @@
  *   while streaming, then abort fires" state cannot occur in Codex.
  *
  * Invocation count: increments on every CodexThread.runStreamed() call.
+ *
+ * Session trace: startThread() creates a distinct thread object (id "mock-codex-thread-N")
+ * whose first runStreamed() is recorded as "fresh"; every later runStreamed() on the same
+ * thread, and any runStreamed() on a thread returned by resumeThread(threadId), is
+ * recorded as "continue" with sessionId = thread.id. This is what lets the contract tell
+ * "follow-up on the same thread" apart from "a new thread per follow-up".
  */
 import { CodexAgentRunner } from "../../../../../src/adapter/codex/agent-runner.js";
 import type { CodexThread, CodexInstance } from "../../../../../src/adapter/codex/agent-runner.js";
 import type { AgentRunContext, AgentRunResult } from "../../../../../src/core/port/agent-runner.js";
-import type { ProviderHarness, HarnessBuildOpts, HarnessBuildResult } from "./types.js";
+import type {
+  ProviderHarness,
+  HarnessBuildOpts,
+  HarnessBuildResult,
+  SessionInvocationRecord,
+} from "./types.js";
 import type { LifecycleScenario, TurnBehavior, UsageHints } from "../scenario.js";
 import { buildScenarioConfig, buildScenarioPolicy } from "./_scenario-helpers.js";
 
@@ -56,117 +67,145 @@ function makeUsage(hints?: UsageHints): Record<string, unknown> | undefined {
 // ---------------------------------------------------------------------------
 
 /**
- * Build a CodexThread whose runStreamed() replays scenario turns.
- * The N-th call uses turns[N-1], repeating the last turn when exhausted.
+ * Build a CodexInstance whose threads' runStreamed() replay scenario turns.
+ * The N-th runStreamed() call (across all threads) uses turns[N-1], repeating the
+ * last turn when exhausted. Each startThread() call yields a distinct thread object so
+ * the session trace can distinguish thread reuse from thread creation.
  */
-function buildCodexThread(
+function buildCodexInstance(
   scenario: LifecycleScenario,
-): { thread: CodexThread; getInvocationCount: () => number } {
+): {
+  codexInstance: CodexInstance;
+  getInvocationCount: () => number;
+  getSessionTrace: () => readonly SessionInvocationRecord[];
+} {
   let callCount = 0;
+  let threadSeq = 0;
+  const sessionTrace: SessionInvocationRecord[] = [];
 
   // CodexThreadEvent is not exported from agent-runner.ts, so we cast the stub object
   // through `unknown` rather than importing the type or trying to match the exact shape.
-  const thread = {
-    id: "mock-codex-thread",
-    runStreamed: async (
-      _prompt: string,
-      opts?: { signal?: AbortSignal; outputSchema?: unknown },
-    ) => {
-      const idx = callCount;
-      callCount++;
+  const makeThread = (id: string, firstRunKind: "fresh" | "continue"): CodexThread => {
+    let runs = 0;
+    return {
+      id,
+      runStreamed: async (
+        _prompt: string,
+        opts?: { signal?: AbortSignal; outputSchema?: unknown },
+      ) => {
+        const idx = callCount;
+        callCount++;
+        // Session trace: the first run on a startThread() thread is "fresh"; everything
+        // else (later runs on the same thread, any run on a resumeThread() thread) continues
+        // the session identified by thread.id.
+        sessionTrace.push({ kind: runs === 0 ? firstRunKind : "continue", sessionId: id });
+        runs++;
 
-      const turns = scenario.turns;
-      const turn: TurnBehavior =
-        idx < turns.length ? turns[idx]! : turns[turns.length - 1]!;
+        const turns = scenario.turns;
+        const turn: TurnBehavior =
+          idx < turns.length ? turns[idx]! : turns[turns.length - 1]!;
 
-      // Throw-based failures: throw immediately so retryWithBackoff can retry them.
-      if (turn.type === "fail-transient") {
-        throw new Error("ECONNREFUSED connection refused by server");
-      }
-      if (turn.type === "fail-non-transient") {
-        throw new Error("fatal non-transient error — unknown failure");
-      }
-      if (turn.type === "fail-context-exhaustion" && turn.throwVariant) {
-        throw new Error("Prompt is too long for this model's context window");
-      }
-
-      // Event-stream failures: return an async generator that emits turn.failed.
-      if (turn.type === "fail-context-exhaustion") {
-        async function* failContextStream() {
-          yield {
-            type: "turn.failed",
-            error: { message: "Prompt is too long for this model's context window" },
-          };
+        // Throw-based failures: throw immediately so retryWithBackoff can retry them.
+        if (turn.type === "fail-transient") {
+          throw new Error("ECONNREFUSED connection refused by server");
         }
-        return { events: failContextStream() };
-      }
+        if (turn.type === "fail-non-transient") {
+          throw new Error("fatal non-transient error — unknown failure");
+        }
+        if (turn.type === "fail-context-exhaustion" && turn.throwVariant) {
+          throw new Error("Prompt is too long for this model's context window");
+        }
 
-      if (turn.type === "stall-until-abort") {
-        const signal = opts?.signal;
-        // Destructure at the narrowing point to preserve types through the async closure.
-        const { toolName, toolTarget } = turn;
-
-        async function* stallStream() {
-          if (toolName) {
-            // item.started for a command_execution item: extractCodexProgress() maps it to
-            // tool "Bash" with the command as target, and the runner records it via
-            // tracker.onToolStart(). No item.completed follows → in-flight at timeout.
+        // Event-stream failures: return an async generator that emits turn.failed.
+        if (turn.type === "fail-context-exhaustion") {
+          async function* failContextStream() {
             yield {
-              type: "item.started",
-              item: { type: "command_execution", id: "item_stall", command: toolTarget ?? toolName },
+              type: "turn.failed",
+              error: { message: "Prompt is too long for this model's context window" },
             };
           }
-          // Block until abort fires.
-          await new Promise<void>((_, reject) => {
-            if (signal?.aborted) {
-              reject(signal.reason ?? new Error("AbortError"));
-              return;
-            }
-            signal?.addEventListener(
-              "abort",
-              () => reject(signal.reason ?? new Error("AbortError")),
-              { once: true },
-            );
-          });
-          // Never yields further
+          return { events: failContextStream() };
         }
-        return { events: stallStream() };
-      }
 
-      // Normal completion turns.
-      const isReport = turn.type === "complete-with-report";
-      // stallAfterReport is ignored for Codex (see module doc comment).
+        if (turn.type === "stall-until-abort") {
+          const signal = opts?.signal;
+          // Destructure at the narrowing point to preserve types through the async closure.
+          const { toolName, toolTarget } = turn;
 
-      const reportJson =
-        isReport
-          ? JSON.stringify({ ok: (turn as { payload?: { ok: boolean } }).payload?.ok ?? true })
-          : null;
+          async function* stallStream() {
+            if (toolName) {
+              // item.started for a command_execution item: extractCodexProgress() maps it to
+              // tool "Bash" with the command as target, and the runner records it via
+              // tracker.onToolStart(). No item.completed follows → in-flight at timeout.
+              yield {
+                type: "item.started",
+                item: { type: "command_execution", id: "item_stall", command: toolTarget ?? toolName },
+              };
+            }
+            // Block until abort fires.
+            await new Promise<void>((_, reject) => {
+              if (signal?.aborted) {
+                reject(signal.reason ?? new Error("AbortError"));
+                return;
+              }
+              signal?.addEventListener(
+                "abort",
+                () => reject(signal.reason ?? new Error("AbortError")),
+                { once: true },
+              );
+            });
+            // Never yields further
+          }
+          return { events: stallStream() };
+        }
 
-      const finalText =
-        isReport
-          ? reportJson!
-          : turn.type === "complete-with-unparseable-report"
-            ? "Task completed. No JSON here — this is plain prose."
-            : "";
+        // Normal completion turns.
+        const isReport = turn.type === "complete-with-report";
+        // stallAfterReport is ignored for Codex (see module doc comment).
 
-      const usageHints = (turn as { metrics?: UsageHints }).metrics;
-      const usage = makeUsage(usageHints);
+        const reportJson =
+          isReport
+            ? JSON.stringify({ ok: (turn as { payload?: { ok: boolean } }).payload?.ok ?? true })
+            : null;
 
-      async function* normalStream() {
-        yield {
-          type: "item.completed",
-          item: { type: "agent_message", text: finalText },
-        };
-        const completedEvent: Record<string, unknown> = { type: "turn.completed" };
-        if (usage !== undefined) completedEvent["usage"] = usage;
-        yield completedEvent;
-      }
+        const finalText =
+          isReport
+            ? reportJson!
+            : turn.type === "complete-with-unparseable-report"
+              ? "Task completed. No JSON here — this is plain prose."
+              : "";
 
-      return { events: normalStream() };
+        const usageHints = (turn as { metrics?: UsageHints }).metrics;
+        const usage = makeUsage(usageHints);
+
+        async function* normalStream() {
+          yield {
+            type: "item.completed",
+            item: { type: "agent_message", text: finalText },
+          };
+          const completedEvent: Record<string, unknown> = { type: "turn.completed" };
+          if (usage !== undefined) completedEvent["usage"] = usage;
+          yield completedEvent;
+        }
+
+        return { events: normalStream() };
+      },
+    } as unknown as CodexThread;
+  };
+
+  const codexInstance: CodexInstance = {
+    startThread: (_startOpts) => {
+      threadSeq++;
+      return makeThread(`mock-codex-thread-${threadSeq}`, "fresh");
     },
-  } as unknown as CodexThread;
+    resumeThread: (threadId) => makeThread(threadId, "continue"),
+  };
 
-  return { thread, getInvocationCount: () => callCount };
+  return {
+    codexInstance,
+    getInvocationCount: () => callCount,
+    getSessionTrace: () => sessionTrace,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -177,12 +216,7 @@ export const codexHarness: ProviderHarness = {
   id: "codex",
 
   build(scenario: LifecycleScenario, opts: HarnessBuildOpts): HarnessBuildResult {
-    const { thread, getInvocationCount } = buildCodexThread(scenario);
-
-    const codexInstance: CodexInstance = {
-      startThread: (_startOpts) => thread,
-      resumeThread: (_threadId) => thread,
-    };
+    const { codexInstance, getInvocationCount, getSessionTrace } = buildCodexInstance(scenario);
 
     const config = buildScenarioConfig(scenario);
     const policy = buildScenarioPolicy(scenario);
@@ -205,6 +239,6 @@ export const codexHarness: ProviderHarness = {
       },
     };
 
-    return { runner: wrappedRunner, getInvocationCount };
+    return { runner: wrappedRunner, getInvocationCount, getSessionTrace };
   },
 };

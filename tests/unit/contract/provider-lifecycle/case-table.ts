@@ -2,11 +2,11 @@
  * Provider lifecycle parity contract case table.
  *
  * 31 cases × 2 providers = 62 test combinations.
- *   shared:           19 cases (both providers "supported" with aligned expectations)
- *   provider-specific: 12 cases (expectations differ non-trivially, or one provider is "absent")
+ *   shared:           18 cases (both providers "supported" with aligned expectations)
+ *   provider-specific: 13 cases (expectations differ non-trivially, or one provider is "absent")
  *
  * Case ID allocation (from REQUIRED_CASE_IDS):
- *   main-work        2 shared
+ *   main-work        1 shared + 1 provider-specific (success-minimal: resultContent null vs "")
  *   report           3 shared + 2 provider-specific
  *   post-work        2 shared
  *   output-repair    3 shared
@@ -15,14 +15,24 @@
  *   metrics          1 shared + 5 provider-specific
  *   context          0 shared + 3 provider-specific
  *   completion-error 2 shared + 1 provider-specific
- *   total:          19 shared + 12 provider-specific = 31
+ *   total:          18 shared + 13 provider-specific = 31
+ *
+ * Terminology:
+ *   shared            — both providers are "supported" AND every declared expectation is
+ *                       identical for both (the case pins one cross-provider result).
+ *   provider-specific — at least one declared expectation differs between providers, or
+ *                       one provider is "absent". Every expectation in such a case carries
+ *                       a `reason` (≥40 chars) explaining the difference (ratchet:reason).
+ *   support "absent"  — the provider has no mechanism for the scenario's behavior. The pair
+ *                       still runs; the expectation declares the observed absent-provider
+ *                       outcome (typically completionReason / errorCode / fieldPresence).
  *
  * Import rules: no provider SDK imports. Only scenario.ts and src/ types.
  * case-ids.ts must NOT be imported here — Design D5 / TC-040 require the dependency
  * to flow only in the direction ratchet→{case-table, case-ids}. The ratchet enforces
  * the ID and area constraints at runtime; the compile-time narrowing is redundant.
  */
-import type { LifecycleScenario } from "./scenario.js";
+import type { LifecycleScenario, SessionInvocationKind } from "./scenario.js";
 import type { AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 
 // ---------------------------------------------------------------------------
@@ -98,6 +108,13 @@ export interface ProviderExpectation {
    */
   resultContent?: string | null;
 
+  /**
+   * Expected resultContent as an exact value (strict equality).
+   * Use instead of `resultContent` when the pinned value is the empty string —
+   * toContain("") is vacuously true, so only an exact assertion can pin "".
+   */
+  resultContentExact?: string;
+
   // -------------------------------------------------------------------
   // Error fields
   // -------------------------------------------------------------------
@@ -169,6 +186,18 @@ export interface ProviderExpectation {
   /** Expected number of SDK invocations (provider-level calls to queryFn / runStreamed) */
   sdkInvocations?: number;
 
+  /**
+   * Expected session usage of each SDK invocation, in invocation order
+   * (HarnessBuildResult.getSessionTrace, kinds only).
+   *   "fresh"    — a new provider session (Claude: no `resume`; Codex: startThread())
+   *   "continue" — continues the previous invocation's session (Claude: `resume`;
+   *                Codex: runStreamed() on the same thread / resumeThread())
+   * Pins "same session vs fresh session" independently of sdkInvocations. The driver
+   * additionally asserts, for every run, that each "continue" entry targets the
+   * sessionId of the immediately preceding entry.
+   */
+  sessionTrace?: SessionInvocationKind[];
+
   // -------------------------------------------------------------------
   // Emitted domain events (Design D8)
   // -------------------------------------------------------------------
@@ -222,13 +251,16 @@ export interface ContractCase {
 
 export const CONTRACT_CASES: ContractCase[] = [
   // ==========================================================================
-  // main-work (2 shared)
+  // main-work (1 shared + 1 provider-specific)
   // ==========================================================================
 
   {
     id: "main-work.success-minimal",
     area: "main-work",
-    classification: "shared",
+    // provider-specific: with no result file the two providers return different
+    // resultContent values (Claude null / Codex ""). Both are pinned exactly so a change
+    // on either side (e.g. Codex "" → null) is a red contract, not a silent drift.
+    classification: "provider-specific",
     scenario: {
       turns: [{ type: "complete-without-report" }],
       afterScript: "repeat-last",
@@ -240,20 +272,27 @@ export const CONTRACT_CASES: ContractCase[] = [
     expectations: {
       "claude-code": {
         support: "supported",
+        reason:
+          "ClaudeCodeRunner sets resultContent=null when step.resultFilePath() returns null; it never falls back to the assistant's final text. Source: src/adapter/claude-code/agent-runner.ts result-file read (resultContent stays null without a path).",
         completionReason: "success",
         toolResult: null,
         followUpAttempts: 0,
-        // Claude: resultContent=null (no result file → step.resultFilePath returns null)
+        sdkInvocations: 1,
+        sessionTrace: ["fresh"],
         resultContent: null,
         errorMustBeAbsent: true,
       },
       codex: {
         support: "supported",
+        reason:
+          "CodexAgentRunner falls back to turn.finalResponse when step.resultFilePath() returns null, so resultContent is the agent's final text — the empty string here because the turn emitted an empty agent_message. Source: src/adapter/codex/agent-runner.ts `resultContent = turn.finalResponse` branch.",
         completionReason: "success",
         toolResult: null,
         followUpAttempts: 0,
-        // Codex: resultContent=turn.finalResponse="" (no result file → use finalResponse text)
-        // Do NOT assert resultContent here — providers differ in their no-file behavior.
+        sdkInvocations: 1,
+        sessionTrace: ["fresh"],
+        // Exact "" (not a substring check — toContain("") would be vacuous).
+        resultContentExact: "",
         errorMustBeAbsent: true,
       },
     },
@@ -313,6 +352,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: { ok: true },
         followUpAttempts: 0,
         sdkInvocations: 1,
+        sessionTrace: ["fresh"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -321,6 +361,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: { ok: true },
         followUpAttempts: 0,
         sdkInvocations: 1,
+        sessionTrace: ["fresh"],
         errorMustBeAbsent: true,
       },
     },
@@ -349,6 +390,8 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: { ok: true },
         followUpAttempts: 1,
         sdkInvocations: 2,
+        // report retry continues the main-work session (Claude `resume` / Codex same thread)
+        sessionTrace: ["fresh", "continue"],
         addedTurns: { reportRetry: 1, postWork: 0, outputRepair: 0 },
         errorMustBeAbsent: true,
       },
@@ -358,6 +401,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: { ok: true },
         followUpAttempts: 1,
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
     },
@@ -383,6 +427,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: null,
         followUpAttempts: 1,
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "continue"],
         addedTurns: { reportRetry: 1, postWork: 0, outputRepair: 0 },
         errorMustBeAbsent: true,
       },
@@ -392,6 +437,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         toolResult: null,
         followUpAttempts: 1,
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
     },
@@ -423,6 +469,8 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         toolResult: { ok: true },
         sdkInvocations: 2,
+        // post-work prompt continues the main-work session
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -430,6 +478,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         toolResult: { ok: true },
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
     },
@@ -501,6 +550,8 @@ export const CONTRACT_CASES: ContractCase[] = [
         followUpAttempts: 1,
         addedTurns: { reportRetry: 0, postWork: 0, outputRepair: 1 },
         sdkInvocations: 2,
+        // output repair continues the main-work session
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -508,6 +559,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         followUpAttempts: 1,
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "continue"],
         errorMustBeAbsent: true,
       },
     },
@@ -536,6 +588,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         followUpAttempts: 2,
         addedTurns: { reportRetry: 0, postWork: 0, outputRepair: 2 },
         sdkInvocations: 3,
+        sessionTrace: ["fresh", "continue", "continue"],
         errorMustBeAbsent: true,
       },
       codex: {
@@ -543,6 +596,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         followUpAttempts: 2,
         sdkInvocations: 3,
+        sessionTrace: ["fresh", "continue", "continue"],
         errorMustBeAbsent: true,
       },
     },
@@ -609,6 +663,10 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         transientRetryAttempts: 1,
         sdkInvocations: 2,
+        // transient retry of the main-work turn starts a fresh session: the failed
+        // attempt yielded no session_id, so nothing is resumed (Claude) / a new thread is
+        // started per attempt (Codex).
+        sessionTrace: ["fresh", "fresh"],
         emittedEvents: ["step:retry"],
         errorMustBeAbsent: true,
       },
@@ -617,6 +675,7 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "success",
         transientRetryAttempts: 1,
         sdkInvocations: 2,
+        sessionTrace: ["fresh", "fresh"],
         emittedEvents: ["step:retry"],
         errorMustBeAbsent: true,
       },
@@ -1060,6 +1119,9 @@ export const CONTRACT_CASES: ContractCase[] = [
           "ClaudeCodeRunner implements a fresh-session rollover loop for the implementer step: on CONTEXT_WINDOW_EXHAUSTED with rollover budget remaining, it discards the exhausted session and starts a new query. sessionRollovers records the discarded session ID.",
         completionReason: "success",
         sessionRolloversLength: 1,
+        sdkInvocations: 2,
+        // rollover discards the exhausted session and starts a fresh one (no `resume`)
+        sessionTrace: ["fresh", "fresh"],
         emittedEvents: ["step:rollover"],
         errorMustBeAbsent: true,
       },
@@ -1070,6 +1132,8 @@ export const CONTRACT_CASES: ContractCase[] = [
         // Absent-behavior assertions: Codex throws on context exhaustion without rollover.
         completionReason: "error",
         errorCode: "CODEX_SDK_ERROR",
+        sdkInvocations: 1,
+        sessionTrace: ["fresh"],
         fieldPresence: { sessionRollovers: "absent" },
       },
     },
@@ -1099,15 +1163,19 @@ export const CONTRACT_CASES: ContractCase[] = [
         completionReason: "error",
         errorCode: "CONTEXT_WINDOW_EXHAUSTED",
         sessionRolloversLength: 1,
+        sdkInvocations: 2,
+        sessionTrace: ["fresh", "fresh"],
         emittedEvents: ["step:rollover"],
       },
       codex: {
         support: "absent",
         reason:
           "CodexAgentRunner has no context rollover mechanism; context exhaustion always terminates immediately with CODEX_SDK_ERROR regardless of the contextRollover.maxRollovers configuration value.",
-        // Absent-behavior assertions: both exhaustion attempts terminate with the same error.
+        // Absent-behavior assertions: no rollover → a single fresh invocation, then error.
         completionReason: "error",
         errorCode: "CODEX_SDK_ERROR",
+        sdkInvocations: 1,
+        sessionTrace: ["fresh"],
         fieldPresence: { sessionRollovers: "absent" },
       },
     },

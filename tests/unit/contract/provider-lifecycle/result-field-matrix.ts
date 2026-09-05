@@ -30,7 +30,8 @@ export interface FieldCapability {
  *
  * Classification sources (from src/core/port/agent-runner.ts):
  *   completionReason   — both: always present.
- *   resultContent      — both: always present (null when resultFilePath is null).
+ *   resultContent      — both: always present. When resultFilePath is null: claude-code → null,
+ *                        codex → turn.finalResponse (the agent's final text, possibly "").
  *   toolResult         — both: always present (null when tool not called).
  *   followUpAttempts   — both: always present (0 when no retries needed).
  *   transientRetryAttempts — both: present when maxRetries > 0, absent when disabled.
@@ -55,7 +56,7 @@ export const RESULT_FIELD_MATRIX: Record<string, FieldCapability> = {
   resultContent: {
     providers: { "claude-code": "supported", codex: "supported" },
     reason:
-      "Both providers read the result file from the local filesystem; null when resultFilePath is null.",
+      "Both providers read the result file from the local filesystem when resultFilePath is set. When it is null they differ: ClaudeCodeRunner leaves resultContent null, while CodexAgentRunner falls back to turn.finalResponse (the agent's final text, which may be the empty string). Pinned by main-work.success-minimal (provider-specific). Source: src/adapter/codex/agent-runner.ts `resultContent = turn.finalResponse` else-branch.",
   },
   toolResult: {
     providers: { "claude-code": "supported", codex: "supported" },

@@ -45,6 +45,23 @@ export interface UsageHints {
 }
 
 /**
+ * Provider-neutral classification of one SDK-level invocation's session usage.
+ *
+ *   "fresh"    — the invocation starts a new provider session
+ *                (Claude: query() without `options.resume`; Codex: runStreamed() on a
+ *                thread that startThread() just created).
+ *   "continue" — the invocation continues the session of an earlier invocation
+ *                (Claude: query() with `options.resume`; Codex: runStreamed() on an
+ *                already-used thread, or on a thread returned by resumeThread()).
+ *
+ * Observed at the SDK boundary by each harness (HarnessBuildResult.getSessionTrace)
+ * so that "retry continues the same session" vs "retry moves to a fresh session"
+ * is pinned independently of the invocation count (request.md 「retry時にsessionを
+ * 継続するかfresh sessionへ移るか」).
+ */
+export type SessionInvocationKind = "fresh" | "continue";
+
+/**
  * Behavior for a single SDK invocation turn.
  *
  * Identifiers match design D2 (scenario.ts):

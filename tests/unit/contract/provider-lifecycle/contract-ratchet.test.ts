@@ -7,9 +7,10 @@
  *  2. Duplicate ratchet  — no duplicate IDs in CONTRACT_CASES
  *  3. Area ratchet       — all CONTRACT_CASES areas ∈ LIFECYCLE_AREAS; every area has ≥1 case
  *  4. Shared ratchet     — for shared cases, both providers have support="supported"
- *  5. Reason ratchet     — support="absent" expectations always have a reason (≥40 chars)
- *  6. UNEXPLAINED ratchet— no reason starts with UNEXPLAINED: (Design D11); both-supported
- *                          provider-specific cases must have non-trivial reasons (≥40 chars)
+ *  5. Reason ratchet     — every expectation of a provider-specific case, and every
+ *                          support="absent" expectation, has a reason (≥40 chars)
+ *  6. UNEXPLAINED ratchet— no reason in CONTRACT_CASES or RESULT_FIELD_MATRIX starts with
+ *                          UNEXPLAINED: (Design D11)
  *  7. Skip ratchet       — every case has at least one supported provider (no all-absent cases)
  *  8. Registry ratchet   — PROVIDER_HARNESSES keys equal CONTRACT_PROVIDERS exactly;
  *                          every src/adapter/ dir with agent-runner.ts is registered or justified
@@ -195,14 +196,14 @@ describe("ratchet:shared", () => {
   // The shared / provider-specific split is pinned by literal counts on purpose: it is
   // the ratchet that detects a silent reclassification of a case. The total is derived
   // from REQUIRED_CASE_IDS (D5) so the two literals can never drift from the canon.
-  test("shared case count equals 19", () => {
+  test("shared case count equals 18", () => {
     const shared = CONTRACT_CASES.filter((c) => c.classification === "shared");
-    expect(shared).toHaveLength(19);
+    expect(shared).toHaveLength(18);
   });
 
-  test("provider-specific case count equals 12", () => {
+  test("provider-specific case count equals 13", () => {
     const specific = CONTRACT_CASES.filter((c) => c.classification === "provider-specific");
-    expect(specific).toHaveLength(12);
+    expect(specific).toHaveLength(13);
   });
 
   test("shared + provider-specific equals REQUIRED_CASE_IDS.length", () => {
@@ -217,21 +218,26 @@ describe("ratchet:shared", () => {
 // ---------------------------------------------------------------------------
 
 describe("ratchet:reason", () => {
-  test("absent expectations always have a reason of ≥40 chars", () => {
+  // Spec / T-08: a reason (≥40 chars) is required for EVERY provider expectation of a
+  // provider-specific case (both supported ones and the absent one) and for every
+  // support="absent" expectation. One check covers both conditions so that removing the
+  // supported side's reason in a mixed supported/absent case cannot slip through.
+  test("provider-specific case expectations and absent expectations have a reason of ≥40 chars", () => {
     const violations: string[] = [];
     for (const c of CONTRACT_CASES) {
       for (const providerId of CONTRACT_PROVIDERS) {
         const exp = c.expectations[providerId];
-        if (exp.support === "absent") {
-          if (!exp.reason || exp.reason.length < 40) {
-            violations.push(
-              `${c.id}[${providerId}]: absent but reason is missing or too short (got: "${exp.reason ?? ""}")`,
-            );
-          }
+        const requiresReason =
+          c.classification === "provider-specific" || exp.support === "absent";
+        if (!requiresReason) continue;
+        if (!exp.reason || exp.reason.length < 40) {
+          violations.push(
+            `${c.id}[${providerId}]: ${c.classification} / support="${exp.support}" requires a reason ≥40 chars (got: "${exp.reason ?? ""}")`,
+          );
         }
       }
     }
-    expect(violations).toHaveLength(0);
+    expect(violations, violations.join("\n")).toHaveLength(0);
   });
 });
 
@@ -240,42 +246,31 @@ describe("ratchet:reason", () => {
 // ---------------------------------------------------------------------------
 
 describe("ratchet:unexplained", () => {
-  test("provider-specific cases with both providers supported must have reasons", () => {
+  test("no reason in CONTRACT_CASES or RESULT_FIELD_MATRIX starts with UNEXPLAINED: — Design D11", () => {
+    // Design D11: the system must stop rather than normalize unexplained provider differences.
+    // Any reason that starts with "UNEXPLAINED:" signals a placeholder that was never
+    // resolved; a well-formed UNEXPLAINED: reason (≥40 chars) would pass the ≥40-char
+    // reason ratchet, so this separate ratchet is required to catch it.
+    // D11 targets both case-level reasons (case table) and field-level reasons (capability
+    // matrix); a field-level placeholder must stop the suite just like a case-level one.
+    const isUnexplained = (reason: string | undefined): boolean =>
+      reason !== undefined && reason.trimStart().startsWith("UNEXPLAINED:");
+
     const violations: string[] = [];
     for (const c of CONTRACT_CASES) {
-      if (c.classification !== "provider-specific") continue;
-      const bothSupported = CONTRACT_PROVIDERS.every(
-        (p) => c.expectations[p].support === "supported",
-      );
-      if (!bothSupported) continue;
-
-      // Both supported in a provider-specific case: each must explain the difference.
       for (const providerId of CONTRACT_PROVIDERS) {
-        const exp = c.expectations[providerId];
-        if (!exp.reason || exp.reason.length < 40) {
+        if (isUnexplained(c.expectations[providerId].reason)) {
           violations.push(
-            `${c.id}[${providerId}]: UNEXPLAINED — provider-specific with both supported but reason missing/short`,
+            `case ${c.id}[${providerId}]: reason starts with "UNEXPLAINED:" — resolve the divergence before committing`,
           );
         }
       }
     }
-    expect(violations).toHaveLength(0);
-  });
-
-  test("no reason starts with UNEXPLAINED: — Design D11", () => {
-    // Design D11: the system must stop rather than normalize unexplained provider differences.
-    // Any expectation reason that starts with "UNEXPLAINED:" signals a placeholder that was
-    // never resolved; a well-formed UNEXPLAINED: reason (≥40 chars) would pass the ≥40-char
-    // check above, so this separate ratchet is required to catch it.
-    const violations: string[] = [];
-    for (const c of CONTRACT_CASES) {
-      for (const providerId of CONTRACT_PROVIDERS) {
-        const exp = c.expectations[providerId];
-        if (exp.reason && exp.reason.trimStart().startsWith("UNEXPLAINED:")) {
-          violations.push(
-            `${c.id}[${providerId}]: reason starts with "UNEXPLAINED:" — resolve the divergence before committing`,
-          );
-        }
+    for (const [field, capability] of Object.entries(RESULT_FIELD_MATRIX)) {
+      if (isUnexplained(capability.reason)) {
+        violations.push(
+          `RESULT_FIELD_MATRIX[${field}]: reason starts with "UNEXPLAINED:" — resolve the field-level divergence before committing`,
+        );
       }
     }
     expect(

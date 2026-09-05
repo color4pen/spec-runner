@@ -15,11 +15,20 @@
  *   stall-until-abort                → optionally emit a tool_use content_block_start, then wait for abortController
  *
  * Invocation count: increments on every _queryFn call (main + retry + repair + postWork).
+ *
+ * Session trace: every _queryFn call is classified at the SDK boundary —
+ *   "continue" when params.options.resume is set (sessionId = that resume value),
+ *   "fresh"    otherwise (sessionId = the session_id the call yields; undefined on throw).
  */
 import { ClaudeCodeRunner } from "../../../../../src/adapter/claude-code/agent-runner.js";
 import type { QueryFn, CreateMcpServerFn } from "../../../../../src/adapter/claude-code/agent-runner.js";
 import type { AgentRunContext, AgentRunResult } from "../../../../../src/core/port/agent-runner.js";
-import type { ProviderHarness, HarnessBuildOpts, HarnessBuildResult } from "./types.js";
+import type {
+  ProviderHarness,
+  HarnessBuildOpts,
+  HarnessBuildResult,
+  SessionInvocationRecord,
+} from "./types.js";
 import type { LifecycleScenario, TurnBehavior, UsageHints } from "../scenario.js";
 import { buildScenarioConfig, buildScenarioPolicy } from "./_scenario-helpers.js";
 
@@ -91,19 +100,41 @@ function makeExhaustionResult(): Record<string, unknown> {
 /**
  * Build a QueryFn that replays the scenario turns on each call.
  * The N-th call uses turns[N-1] if available, otherwise repeats turns[last].
- * getInvocationCount() counts all calls.
+ * getInvocationCount() counts all calls; getSessionTrace() classifies each call
+ * as "fresh" / "continue" from the presence of options.resume.
  */
 function buildQueryFn(
   scenario: LifecycleScenario,
   getReportHandler: () => ((args: unknown) => Promise<unknown>) | null,
-): { queryFn: QueryFn; getInvocationCount: () => number } {
+): {
+  queryFn: QueryFn;
+  getInvocationCount: () => number;
+  getSessionTrace: () => readonly SessionInvocationRecord[];
+} {
   let callCount = 0;
+  const sessionTrace: SessionInvocationRecord[] = [];
 
   const queryFn: QueryFn = async function* claudeContractQuery(
     params: { prompt: string; options?: Record<string, unknown> },
   ) {
     const idx = callCount;
     callCount++;
+
+    // Session trace: `resume` is the only SDK-boundary signal that a query continues an
+    // existing session. Recorded before the turn body runs so a throwing turn still
+    // leaves a "fresh" entry (sessionId stays undefined — nothing was yielded).
+    const resumeId = params.options?.["resume"];
+    const record: SessionInvocationRecord =
+      typeof resumeId === "string"
+        ? { kind: "continue", sessionId: resumeId }
+        : { kind: "fresh", sessionId: undefined };
+    sessionTrace.push(record);
+    /** Bind the fresh record to the session_id of a yielded message. */
+    const bindSession = (msg: Record<string, unknown>): unknown => {
+      const sid = msg["session_id"];
+      if (record.kind === "fresh" && typeof sid === "string") record.sessionId = sid;
+      return msg as unknown;
+    };
 
     const turns = scenario.turns;
     const turn: TurnBehavior = idx < turns.length ? turns[idx]! : turns[turns.length - 1]!;
@@ -134,20 +165,20 @@ function buildQueryFn(
           // Never yields
           return;
         }
-        yield makeSuccessResult(turn.metrics) as unknown;
+        yield bindSession(makeSuccessResult(turn.metrics));
         return;
       }
 
       case "complete-without-report": {
         // Handler intentionally NOT called — agent skipped the report tool.
-        yield makeSuccessResult(turn.metrics) as unknown;
+        yield bindSession(makeSuccessResult(turn.metrics));
         return;
       }
 
       case "complete-with-unparseable-report": {
         // Handler NOT called; yield success so the runner sees a completed turn.
         // No JSON structure that could be mistaken for a valid report.
-        yield makeSuccessResult(turn.metrics) as unknown;
+        yield bindSession(makeSuccessResult(turn.metrics));
         return;
       }
 
@@ -167,7 +198,7 @@ function buildQueryFn(
           throw new Error("Prompt is too long for this model's context window");
         }
         // Result path: emit error result with exhaustion text in errors[].
-        yield makeExhaustionResult() as unknown;
+        yield bindSession(makeExhaustionResult());
         return;
       }
 
@@ -209,13 +240,17 @@ function buildQueryFn(
 
       default: {
         // Unreachable — TypeScript exhaustiveness
-        yield makeSuccessResult() as unknown;
+        yield bindSession(makeSuccessResult());
         return;
       }
     }
   } as QueryFn;
 
-  return { queryFn, getInvocationCount: () => callCount };
+  return {
+    queryFn,
+    getInvocationCount: () => callCount,
+    getSessionTrace: () => sessionTrace,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -240,7 +275,7 @@ export const claudeCodeHarness: ProviderHarness = {
       return {};
     };
 
-    const { queryFn, getInvocationCount } = buildQueryFn(
+    const { queryFn, getInvocationCount, getSessionTrace } = buildQueryFn(
       scenario,
       () => capturedHandler,
     );
@@ -272,6 +307,6 @@ export const claudeCodeHarness: ProviderHarness = {
       },
     };
 
-    return { runner: wrappedRunner, getInvocationCount };
+    return { runner: wrappedRunner, getInvocationCount, getSessionTrace };
   },
 };

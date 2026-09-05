@@ -169,20 +169,27 @@
 - [x] 期待値型を定義する: `support` (`supported` | `absent`) / `reason?`（非 shared・absent で必須）/
       `completionReason?` / `toolResult?` / `followUpAttempts?` / `transientRetryAttempts?`
       (数値 or `"absent"`) / `addedTurns?`（内訳 or `"absent"`）/ `resultContent?` /
+      `resultContentExact?`（空文字を固定するための完全一致）/
       `errorCode?` / `errorMessagePattern?` / `errorHintPresent?` / `sdkInvocations?` /
+      `sessionTrace?`（SDK 呼出ごとの `fresh` | `continue`。同一 session 継続 / fresh session を
+      呼出回数と独立に固定する）/
       `emittedEvents?`（含むべき event 名）/ `fieldPresence?`（capability field → `present` | `absent`）
 - [x] `case-table.ts` は `case-ids.ts` を import **しない**（ID 正典との突合は ratchet が行う）
 - [x] 31 件の case を T-01 の ID 一覧どおりに定義する。分類の内訳は次を満たす:
-      - `shared` 19 件: `main-work` 2、`report` 3（first-turn-success /
+      - `shared` 18 件: `main-work` 1（result-file-content）、`report` 3（first-turn-success /
         follow-up-recovers / follow-up-budget-exhausted）、`post-work` 2、`output-repair` 3、
         `transient` 3、`timeout` 3、`metrics` 1（session-rollovers-absent-without-rollover）、
         `completion-error` 2（result-file-not-found / success-field-coherence）
-      - `provider-specific` 12 件: `report` 2（settle-on-abort-with-captured-report /
+      - `provider-specific` 13 件: `main-work` 1（success-minimal: result file 無しの
+        `resultContent` が Claude `null` / Codex `""`（finalResponse fallback）で異なる。両実測値を
+        完全一致で固定）、`report` 2（settle-on-abort-with-captured-report /
         parse-failure-diagnostics）、`transient` 1（budget-exhausted: errorCode が
         `CLAUDE_CODE_QUERY_FAILED` / `CODEX_SDK_ERROR` で異なる）、`context` 3、`metrics` 5（model-usage-populated /
         invocation-metrics-presence / context-metrics-presence / touched-files-presence /
         added-turns-invariant）、`completion-error` 1（generic-sdk-failure-code）
 - [x] 各 provider-specific case の各 provider 期待値に **理由**を書く。最低限、次の内容を含める:
+      - `main-work.success-minimal`: Claude は `resultFilePath` が null なら `resultContent=null` /
+        Codex は `turn.finalResponse` へ fallback するため agent 最終テキスト（空文字）になる
       - `report.settle-on-abort-with-captured-report`: Claude は report 受領後 abort 時に
         `REPORT_SETTLE_GRACE_MS` 経路で success settle する / Codex は turn 完了後に
         `finalResponse` を parse するため「report 受領済みで stream 継続中」という状態が存在しない
@@ -399,8 +406,8 @@
 | 分類 | 件数 |
 |------|------|
 | 総数 | 31 |
-| shared（両 provider とも supported） | 19 |
-| provider-specific（片方以上が absent または理由付き） | 12 |
+| shared（両 provider とも supported） | 18 |
+| provider-specific（片方以上が absent または理由付き） | 13 |
 | absent 期待値（skip せず absent 挙動をアサートして実行） | 8（codex 7、claude-code 1） |
 
 コマンド: `bun run test -- tests/unit/contract/provider-lifecycle/ --reporter=verbose 2>&1 | grep "Tests "`

@@ -7,7 +7,7 @@
  *   - LifecycleScenario and buildBaseContext are imported from ../scenario.ts.
  */
 import type { AgentRunner } from "../../../../../src/core/port/agent-runner.js";
-import type { LifecycleScenario } from "../scenario.js";
+import type { LifecycleScenario, SessionInvocationKind } from "../scenario.js";
 
 /**
  * Options passed to ProviderHarness.build().
@@ -22,14 +22,34 @@ export interface HarnessBuildOpts {
 }
 
 /**
+ * One entry of the provider-neutral session invocation trace.
+ *
+ * kind:      whether this SDK invocation started a fresh session or continued one
+ *            (see SessionInvocationKind in scenario.ts).
+ * sessionId: the provider session identifier the invocation is bound to.
+ *            Claude: `options.resume` for "continue"; for "fresh" the `session_id` the
+ *            invocation yielded (undefined when it threw before yielding).
+ *            Codex: the thread id runStreamed() was called on.
+ *            The driver asserts that every "continue" entry targets the sessionId of
+ *            the immediately preceding entry (session continuity invariant).
+ */
+export interface SessionInvocationRecord {
+  kind: SessionInvocationKind;
+  sessionId: string | undefined;
+}
+
+/**
  * Result of ProviderHarness.build().
  * runner: ready-to-use AgentRunner (implements the port contract).
  * getInvocationCount: returns the total number of SDK-level invocations made
  *   (main + follow-up + repair turns, measured at the SDK boundary).
+ * getSessionTrace: returns one SessionInvocationRecord per SDK-level invocation, in
+ *   invocation order. Its length always equals getInvocationCount().
  */
 export interface HarnessBuildResult {
   runner: AgentRunner;
   getInvocationCount(): number;
+  getSessionTrace(): readonly SessionInvocationRecord[];
 }
 
 /**
@@ -50,4 +70,4 @@ export interface ProviderHarness {
   build(scenario: LifecycleScenario, opts: HarnessBuildOpts): HarnessBuildResult;
 }
 
-export type { LifecycleScenario };
+export type { LifecycleScenario, SessionInvocationKind };

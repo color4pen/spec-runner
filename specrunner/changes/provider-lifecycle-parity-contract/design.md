@@ -200,8 +200,12 @@ harness の責務は **翻訳のみ**:
 観測項目（宣言されたものだけを assert する。未宣言は「この case の関心事ではない」）:
 `completionReason` / `toolResult`（null か ok 値）/ `followUpAttempts` /
 `transientRetryAttempts`（数値 or `"absent"`）/ `addedTurns`（内訳 or `"absent"`）/
-`resultContent` / `errorCode` / `errorMessagePattern` / `errorHintPresent` /
-`sdkInvocations`（正確な回数）/ `emittedEvents`（含むべき安定 event 名）/
+`resultContent`（部分一致）/ `resultContentExact`（完全一致。空文字の固定用）/
+`errorCode` / `errorMessagePattern` / `errorHintPresent` /
+`sdkInvocations`（正確な回数）/ `sessionTrace`（SDK 呼出ごとの `fresh` | `continue`。
+report retry / post-work / output repair が同一 session を継続すること、transient retry と
+Claude の context rollover が fresh session へ移ることを、呼出回数とは独立に固定する）/
+`emittedEvents`（含むべき安定 event 名）/
 `fieldPresence`（capability field ごとの present / absent）。
 
 **全 case を全 provider で実行する**。ある provider が機能を持たない場合も skip せず、
@@ -317,7 +321,10 @@ case 側の宣言に加えて、driver が全実行結果に対して次を asse
 ### D8: 安定と見なす観測対象を限定する（不安定な実装詳細を契約にしない）
 
 **契約にする**: `AgentRunResult` の field 値と undefined / null semantics、
-SDK 呼び出し回数、`followUpAttempts` / `transientRetryAttempts` / `addedTurns` の値、
+SDK 呼び出し回数、各 SDK 呼び出しが session を継続するか fresh session を開くか
+（SDK 境界で観測: Claude は `options.resume` の有無、Codex は `startThread` / `resumeThread` と
+同一 thread での `runStreamed` 再呼出）、
+`followUpAttempts` / `transientRetryAttempts` / `addedTurns` の値、
 emit された event の **名前**（`step:progress` / `step:retry` / `step:rollover`）と
 「その event が発生したか」、error の `code` と `hint` の有無、
 error message の provider 別 **prefix パターン**（provider-specific 分類として固定）。
