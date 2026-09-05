@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T22:14:32.300Z",
+  "updatedAt": "2026-09-05T22:19:06.946Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -88,7 +88,8 @@
     "00c41e5cffc56ad4d0a081f408be539ffdce60a3",
     "f70469eb1f902c8f5a234df9eb79ec67492b1e60",
     "1522622dea302c66b7943949b7a1b1cb57ebabda",
-    "fcf6c5336e8928a4b60e0509de816dd023a73e4b"
+    "fcf6c5336e8928a4b60e0509de816dd023a73e4b",
+    "7931f70489a95a8db91c338079473d9677859219"
   ],
   "touchedFiles": {
     "request-review": [
@@ -132,13 +133,15 @@
     ],
     "code-fixer": [
       "src/core/artifact-output/run.ts",
-      "src/core/artifact-output/artifact-writer.ts",
-      "src/core/artifact-output/__tests__/run.test.ts",
-      "tests/artifact-output-vertical.test.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/snapshot/digest.ts",
       "src/core/artifact-output/manifest.ts",
-      "src/core/artifact-output/patch.ts",
       "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/__tests__/artifact-writer.test.ts"
+      "src/core/snapshot/__tests__/compare.test.ts",
+      "src/core/snapshot/__tests__/digest.test.ts",
+      "src/core/artifact-output/__tests__/manifest.test.ts",
+      "src/core/artifact-output/__tests__/context-binding.test.ts",
+      "src/core/snapshot/types.ts"
     ]
   },
   "resumePoint": null,
@@ -165,8 +168,37 @@
       "recordedAt": "2026-09-05T22:10:08.212Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 107,
+    "historyCount": 118,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -176,7 +208,10 @@
       "implementer": 3,
       "verification": 3,
       "code-review": 8,
-      "code-fixer": 4
+      "code-fixer": 5,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
