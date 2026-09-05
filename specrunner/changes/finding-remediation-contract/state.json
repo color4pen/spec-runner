@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T13:46:02.478Z",
+  "updatedAt": "2026-09-05T13:52:46.151Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -70,7 +70,8 @@
     "3394d54af66b20a9053b6076723a0f290bc1e405",
     "c085c19e0d1a476a96e15edfe0674c9baa3c6fe0",
     "7ef5da86382963161d6234d267f169314271922d",
-    "7c6591d6ce4346f68aaea922861bb8092293af3b"
+    "7c6591d6ce4346f68aaea922861bb8092293af3b",
+    "61ddb71804fa6b8f60cad61659e331aa7aa66429"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,10 +160,29 @@
       "tests/core/steps/spec-review.test.ts",
       "tests/custom-reviewers-e2e.test.ts",
       "tests/multi-layer-defense.test.ts"
+    ],
+    "code-review": [
+      "src/kernel/report-result.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/judge-rules.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "src/core/step/__tests__/fail-closed-drift-guard.test.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/prompts/code-review-system.ts",
+      "src/prompts/conformance-system.ts"
     ]
   },
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 32,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -170,7 +190,8 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }

@@ -20,7 +20,10 @@ import {
   parseRequestReviewReportInput,
 } from "../report-result.js";
 import { buildFindingsBlock, renderEvidenceReference } from "../../step/fixer-helpers.js";
+import { CodeFixerStep } from "../../step/code-fixer.js";
 import type { Finding } from "../../../kernel/report-result.js";
+import type { JobState, StepRun } from "../../../state/schema.js";
+import type { StepDeps } from "../../step/types.js";
 
 // ---------------------------------------------------------------------------
 // parseRemediation: valid inputs
@@ -496,6 +499,8 @@ describe("buildFindingsBlock — remediation expansion", () => {
     // TC-T10: reproduction fixture for cross-boundary-invariants-result-002 F-001
     // Invariant: exclusion filter より前に全 changed path に write-scope 検査を適用する
     // Sites: src/core/step/commit-push.ts:584, src/core/pipeline/parallel-review-round.ts:401
+    // Asserts against CodeFixerStep.buildMessage (end-to-end through selectFixerTargetFindings,
+    // buildFindingsBlock, and the wrapping template) to catch regressions in any layer.
     const f: Finding = {
       severity: "high",
       resolution: "fixable",
@@ -512,12 +517,55 @@ describe("buildFindingsBlock — remediation expansion", () => {
         approach: "Apply write-scope check before the exclusion filter in both code paths",
       },
     };
-    const block = buildFindingsBlock([f], "code-review");
-    // Both sites must appear simultaneously in the output
-    expect(block).toContain("src/core/step/commit-push.ts");
-    expect(block).toContain("src/core/pipeline/parallel-review-round.ts");
-    expect(block).toContain("commit-push.ts:584");
-    expect(block).toContain("parallel-review-round.ts:401");
+
+    const stepRun: StepRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: {
+        verdict: "needs-fix",
+        findingsPath: null,
+        error: null,
+        toolResult: { ok: true, findings: [f] },
+      },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:00:00.000Z",
+    };
+
+    const state: JobState = {
+      version: 1,
+      jobId: "test-job",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "code-fixer",
+      status: "running",
+      branch: "change/test-slug-abc123",
+      history: [],
+      error: null,
+      steps: { "code-review": [stepRun] },
+    };
+
+    const deps: StepDeps = {
+      config: { version: 1, agents: {} },
+      slug: "test-slug",
+      request: {
+        type: "feature",
+        title: "Test",
+        slug: "test-slug",
+        baseBranch: "main",
+        content: "content",
+        adr: false,
+      },
+    } as StepDeps;
+
+    const msg = CodeFixerStep.buildMessage!(state, deps);
+    // Both sites must appear simultaneously in the code-fixer buildMessage output
+    expect(msg).toContain("src/core/step/commit-push.ts");
+    expect(msg).toContain("src/core/pipeline/parallel-review-round.ts");
+    expect(msg).toContain("commit-push.ts:584");
+    expect(msg).toContain("parallel-review-round.ts:401");
   });
 });
 
