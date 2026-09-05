@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T13:58:20.905Z",
+  "updatedAt": "2026-09-05T14:04:08.831Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -73,7 +73,9 @@
     "7c6591d6ce4346f68aaea922861bb8092293af3b",
     "61ddb71804fa6b8f60cad61659e331aa7aa66429",
     "b64b617613fa7c4ca38b58972f99b37b1e572bb0",
-    "232b7729e07fdc5286ac2305b7f7038e0c514f6d"
+    "232b7729e07fdc5286ac2305b7f7038e0c514f6d",
+    "a72f9d16ae40722297b032e778aeddce6369cb96",
+    "78248d678bef13c62d63a218b66377a150e2f745"
   ],
   "touchedFiles": {
     "request-review": [
@@ -183,12 +185,13 @@
       "src/prompts/conformance-system.ts"
     ],
     "code-fixer": [
-      "src/core/port/__tests__/remediation-parse.test.ts",
-      "src/prompts/judge-rules.ts",
-      "src/core/step/code-fixer.ts",
-      "tests/unit/step/fixer-findings.test.ts",
-      "src/prompts/__tests__/fragment-coverage.test.ts",
-      "src/core/step/types.ts"
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -221,7 +224,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -231,10 +234,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
