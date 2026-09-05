@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T15:20:54.879Z",
+  "updatedAt": "2026-09-05T15:23:18.619Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -81,7 +81,8 @@
     "838f1bf2c479263cbe76b76294c06d56aef65d65",
     "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796",
     "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
-    "e1de55a898c2e1a7e17dce5dfeca66cca51d0cfc"
+    "e1de55a898c2e1a7e17dce5dfeca66cca51d0cfc",
+    "0db4993f6306241afdbdb51542c9c5cb674323b0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -196,6 +197,13 @@
       "src/core/step/spec-fixer.ts",
       "tests/unit/core/step/judge-verdict-conformance.test.ts",
       "tests/unit/core/step/judge-verdict-canon.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "src/prompts/judge-rules.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/judge-verdict.ts"
     ]
   },
   "reviewerStatuses": [
@@ -238,7 +246,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -251,7 +259,8 @@
       "code-fixer": 5,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 5
+      "custom-reviewers": 5,
+      "regression-gate": 1
     }
   }
 }
