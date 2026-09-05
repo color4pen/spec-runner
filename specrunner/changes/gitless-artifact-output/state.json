@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T15:46:40.052Z",
+  "updatedAt": "2026-09-05T15:52:54.225Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/gitless-artifact-output-24a45cdc",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/gitless-artifact-output/design.md, title: \"D8 table missing omitted:size-deletion and omitted:unreadable rows\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -79,7 +83,8 @@
     "3d752d43a63e4a446e13089958f7a4c56870bf26",
     "7a0528e6ff6ea6a2cfc993946a20fd423336c9c6",
     "4888812ddd42cb4474ffdd39b369b04b64220a55",
-    "a41fa0b15285a80bccf8ef25e430d7692d92e01c"
+    "a41fa0b15285a80bccf8ef25e430d7692d92e01c",
+    "9f3c8073ad34fde1fca332dcc23c6d9d814a2f6e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -109,25 +114,11 @@
       "src/core/artifact-output/__tests__/run.test.ts"
     ],
     "code-review": [
-      "src/core/snapshot/collect.ts",
-      "src/core/artifact-output/run.ts",
-      "src/core/snapshot/digest.ts",
-      "src/core/artifact-output/source-guard.ts",
-      "src/core/artifact-output/execution-profile.ts",
-      "src/core/artifact-output/revision-binding.ts",
       "src/core/artifact-output/patch.ts",
-      "tests/artifact-output-vertical.test.ts",
-      "src/core/artifact-output/preflight.ts",
+      "src/core/artifact-output/__tests__/patch.test.ts",
       "tests/unit/architecture/artifact-output-git-free.test.ts",
-      "src/core/artifact-output/materialize.ts",
-      "src/core/artifact-output/artifact-writer.ts",
-      "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/guarded-spawn.ts",
+      "tests/artifact-output-vertical.test.ts",
       "src/core/command/guide.ts",
-      "src/core/artifact-output/__tests__/run.test.ts",
-      "src/core/artifact-output/__tests__/context-binding.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/command/__tests__/guide.test.ts",
       "README.md"
     ],
     "code-fixer": [
@@ -142,7 +133,11 @@
       "src/core/artifact-output/__tests__/patch.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/gitless-artifact-output/design.md, title: \"D8 table missing omitted:size-deletion and omitted:unreadable rows\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -152,7 +147,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -161,7 +156,7 @@
       "spec-fixer": 2,
       "implementer": 3,
       "verification": 3,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 1
     }
   }
