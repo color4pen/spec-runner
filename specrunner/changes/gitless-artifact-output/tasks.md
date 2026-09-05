@@ -108,7 +108,7 @@
   - `UNSUPPORTED_OPERATIONS`: artifact-output profile で明示 unsupported とする operation の宣言データ（id・表示名・理由）。少なくとも push / PR create / merge、feature branch への archive record、commit 採択と commit egress ledger、branch checkpoint からの remote reattach、issue 起点の unattended managed runtime、commit OID を要する operation を含める
   - `UNSUPPORTED_ENTRY_ROUTES`: issue 起点 start（`--from-issue`）と issue linkage（`--issue`）
 - [ ] `src/core/artifact-output/preflight.ts` を新規作成し、`planEffectivePipeline(descriptor: PipelineDescriptor, profileId): EffectivePipelineReport` を実装する。`EffectivePipelineReport { profileId, pipelineId, supported: string[], unsupported: { step, missing: RuntimeCapabilityId[] }[], unsupportedOperations, executable: boolean }`
-- [ ] step → require する capability のテーブルを同 module に data として置く（`if` の散在を作らない）。step 名は `STEP_NAMES` を参照し、文字列 hardcode を避ける
+- [ ] step → require する capability のテーブルを同 module に data として置く（`if` の散在を作らない）。step 名は `STEP_NAMES` を参照し、文字列 hardcode を避ける。テーブルは D12 の骨格（`pr-create` → `git-remote-publish`+`github-api`、`merge` → `git-remote-publish`+`github-api`、`archive` → `git-commit-attribution`+`branch-borne-state`、`branch-checkpoint` → `branch-borne-state`+`git-revision`、`commit-adopt` → `git-commit-attribution`+`git-revision`、`egress-ledger` → `git-commit-attribution`+`branch-borne-state`、design/implementer/verification/code-review/conformance/adr-gen → 要求なし）を実装時の出発点とし、`STEP_NAMES` の実名と照合して完成させる
 - [ ] `assertEntryRouteSupported({ fromIssue?: boolean; issueLinked?: boolean }, profileId)` を実装し、unsupported な入力経路を fail-closed に拒否する
 - [ ] report を人間可読な文字列へ整形する `renderEffectivePipelineReport(report): string` を実装する（stdout へは書かない — 文字列を返すだけ）
 - [ ] `git-pr` profile では既存 3 pipeline（standard / fast / design-only）の unsupported が空になるようテーブルを組む
@@ -117,7 +117,8 @@
 **Acceptance Criteria**:
 - `planEffectivePipeline(STANDARD_DESCRIPTOR, "git-pr")` の `unsupported` が空で `executable === true`
 - `planEffectivePipeline(FAST_DESCRIPTOR, "git-pr")` / `DESIGN_ONLY_DESCRIPTOR` も同様に unsupported が空
-- artifact-output profile では pr-create step が unsupported に現れ、`missing` に publish 系 capability が入る
+- artifact-output profile では pr-create step が unsupported に現れ、`missing` に `git-remote-publish` / `github-api` が入る
+- artifact-output profile では merge / archive / branch-checkpoint / commit-adopt / egress-ledger の各 step が unsupported に現れ、対応する missing capability が入る（D12 マッピングテーブルの全 entry をカバー）
 - `assertEntryRouteSupported` が `--from-issue` / `--issue` を artifact-output profile で拒否し、`git-pr` profile では拒否しない
 - preflight module は fs / child_process を import しない
 - 既存 `src/core/pipeline/runtime-capability-gate.ts` に変更がない
@@ -150,8 +151,9 @@
 
 ## T-07: patch・manifest・artifact writer（atomic finalize）を実装する
 
-- [ ] `src/core/artifact-output/patch.ts` を新規作成し、変更集合 + 内容読み取り seam から `changes.patch` 文字列と entry ごとの patch 分類（`included` / `omitted:binary` / `omitted:size` / `not-applicable`）を返す関数を実装する。size 上限は定数として宣言し manifest に出力する
-- [ ] 削除された text file は削除 hunk として patch に含める
+- [ ] `src/core/artifact-output/patch.ts` を新規作成し、変更集合 + 内容読み取り seam から `changes.patch` 文字列と entry ごとの patch 分類（`included` / `included:deletion` / `omitted:binary` / `omitted:binary-deletion` / `omitted:size` / `not-applicable`）を返す関数を実装する。分類は D8 テーブルに厳密に従い、manifest の分類値と patch 実内容が 1:1 対応することを型で強制する。size 上限は定数として宣言し manifest に出力する
+- [ ] 削除された text file（旧側が UTF-8 text かつ size 上限内）は `included:deletion` に分類し、削除 hunk として patch に含める
+- [ ] 削除された binary file（旧側が binary）は `omitted:binary-deletion` に分類し、patch にも payload にも含めない
 - [ ] `src/core/artifact-output/manifest.ts` を新規作成し、`buildManifest(input): ArtifactManifest` を純関数として実装する。必須欄は design D9 の一覧（schemaVersion / profile / runId / source root と exclusions / baseline digest / candidate digest / 変更 entry 配列 / unsupported 配列 / patch coverage と size 上限 / verification 参照と束縛 digest / review 参照と束縛 digest / resume 可否 / unsupported operation 一覧）
 - [ ] `src/core/artifact-output/artifact-writer.ts` を新規作成し、`finalizeArtifact(...)` を実装する:
   - `artifact.staging/` に `manifest.json`・`changes.patch`・`payload/`（added / modified の candidate 内容を path 構造のまま）・`verification.json`・`review.json`・`APPLY.md` を書く
@@ -165,9 +167,10 @@
 **Acceptance Criteria**:
 - 成功時に `artifact/` へ manifest / patch / payload / verification record / review record / APPLY.md が揃う
 - finalize 途中で失敗させた場合 `artifact/` が存在せず、`artifact.staging/` の残骸が成功と誤認されない
-- binary 変更が patch から除外され、payload に candidate bytes が存在し、manifest に `omitted:binary` として現れる
-- symlink 変更・mode のみの変更が manifest に metadata（target / mode）付きで現れる
-- 削除 entry が manifest と patch の両方に現れる
+- binary 変更（added/modified）が patch から除外され、payload に candidate bytes が存在し、manifest に `omitted:binary` として現れる
+- 削除 text file が manifest に `included:deletion` として現れ、`changes.patch` に削除 hunk が含まれる
+- 削除 binary file が manifest に `omitted:binary-deletion` として現れ、`changes.patch` にも payload にも含まれない
+- symlink 変更・mode のみの変更が manifest に `not-applicable` + metadata（target / mode）付きで現れる
 - 表現不能 entry がある場合 finalize が失敗し `artifact/` が作られない
 - `APPLY.md` に「自動適用しない」「baseline digest 一致が前提」の記述がある
 
@@ -207,6 +210,7 @@
   6. verification（T-08 の revision 束縛で実行）
   7. 変更集合と patch の導出（T-04 / T-07）: **step 6 の revision 束縛が返した frozen candidate snapshot を再利用する（candidate を再走査しない）**。再走査を行うと step 6 終了〜step 7 間の第三者変更により change set 導出に用いる candidate digest と verification record の bound digest が乖離するため、構造的に禁止する
   8. reviewer へ snapshot 由来 context を提示（T-08 の revision 束縛で実行）
+  8.5. **cross-phase digest 一致チェック**: step 6 の verification bound digest と step 8 の review bound digest を照合する。不一致の場合は `revision-drift` として halt し、artifact を finalize しない。manifest の `candidateDigest` は step 6 の verification bound digest を正規値とする
   9. artifact finalize（T-07）→ 終了時の source 不変検証（T-06）
 - [ ] 各 phase の duration・entry 数・走査 byte 数・artifact / payload 容量・patch 行数を metrics として集計する
 - [ ] `run.json` に status（`running` → `completed` / `halted` / `failed`）・phase・digest・metrics・preflight report・`resume: { supported: false }` を書く。halt / failure でも必ず確定させる
@@ -223,6 +227,7 @@
 - run 内で spawn seam を使う経路はすべて guarded spawn 越しである
 - run module が GitHub client を型としても受け取らない
 - change set 導出に使った candidate digest が verification record の bound digest と等しい（step 6 の frozen snapshot を再利用し、step 7 で candidate を再走査しないことで構造的に保証）
+- verification bound digest と review bound digest が等しくない場合に run が `revision-drift` として halt し `artifact/` が作られない（step 8.5 の cross-phase 一致チェック）
 
 ---
 

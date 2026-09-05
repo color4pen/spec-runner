@@ -155,15 +155,17 @@ baseline / candidate の entry map を突き合わせ `added` / `modified` / `de
 
 | 分類 | 条件 | `changes.patch` | payload |
 |---|---|---|---|
-| `included` | kind=file かつ両側が UTF-8 text（NUL byte なし）かつ size 上限内 | unified diff を含む | 含む |
-| `omitted:binary` | NUL byte を含む / UTF-8 decode 不可 | 含まない | 含む |
-| `omitted:size` | size 上限超過 | 含まない | 含む |
-| `not-applicable` | kind が symlink / dir、または mode のみの変更、または削除 | 含まない（削除は unified diff にも出す） | metadata として manifest に記録（symlink target を含む） |
+| `included` | change=added/modified かつ kind=file かつ UTF-8 text（NUL byte なし）かつ size 上限内 | unified diff hunk を含む | 含む（candidate bytes） |
+| `included:deletion` | change=deleted かつ kind=file かつ 旧側が UTF-8 text（NUL byte なし）かつ size 上限内 | 削除 hunk を含む（`--- /dev/null` 形式） | なし（candidate が存在しない） |
+| `omitted:binary` | change=added/modified かつ NUL byte を含む / UTF-8 decode 不可 | 含まない | 含む（candidate bytes） |
+| `omitted:binary-deletion` | change=deleted かつ 旧側が binary（NUL byte を含む / UTF-8 decode 不可） | 含まない（binary 内容を unified diff に含めない） | なし（candidate が存在しない） |
+| `omitted:size` | change=added/modified かつ size 上限超過 | 含まない | 含む（candidate bytes） |
+| `not-applicable` | kind が symlink / dir、または mode のみの変更 | 含まない | metadata として manifest に記録（symlink target を含む） |
 | `unsupported` | payload としても表現できない（fifo 等） | — | — → **artifact を finalize しない**（fail-closed） |
 
-manifest には全変更 entry が必ず現れ、`patch` 欄で分類を明示する。「patch に出なかったので変更なし」は構造的に起こらない。
+削除 entry に `not-applicable` を使わないことで、manifest の `patch` フィールド値から `changes.patch` の実内容が 1:1 で推定できる（`included` / `included:deletion` → patch に hunk あり、それ以外 → patch に hunk なし）。manifest には全変更 entry が必ず現れ、`patch` 欄で分類を明示する。「patch に出なかったので変更なし」は構造的に起こらない。
 
-- Rationale: 設計要求 4 / AC の中核。unified diff は text 変更のための表現であり、それを唯一の payload にすると binary / mode / symlink / 削除が落ちる。unsupported を黙って落とさず finalize 拒否にするのは、Stop Condition の裏返し（契約を定義できるなら fail-closed で通す）。
+- Rationale: 設計要求 4 / AC の中核。unified diff は text 変更のための表現であり、それを唯一の payload にすると binary / mode / symlink / 削除が落ちる。削除 text ファイルを専用分類 `included:deletion` とすることで、manifest の分類と `changes.patch` の実内容の対応が 1:1 になり consumer が patch 内容を分類から確実に推定できる。削除 binary ファイルに `omitted:binary-deletion` を設けることで、「binary 削除」の未定義状態を解消する（binary 内容は unified diff に含めず、存在しない candidate は payload に収録しない）。unsupported を黙って落とさず finalize 拒否にするのは、Stop Condition の裏返し（契約を定義できるなら fail-closed で通す）。
 - Alternatives considered:
   - (a) binary を base64 で patch へ埋める（git binary patch 相当） — 独自 patch 方言になり適用ツールが SpecRunner 専用になる。payload で完全性は担保済み。却下。
   - (b) 全部 bundle にして patch を出さない — 「表現可能な text 変更の unified diff」は artifact 契約の必須要素。却下。
@@ -185,7 +187,9 @@ manifest には全変更 entry が必ず現れ、`patch` 欄で分類を明示�
 
 verification と review は次の順で実行する: candidate snapshot → digest 確定 → 実行 → 再 snapshot → digest 照合。digest が一致した場合のみ record に digest を束縛して有効とする。不一致（実行中に candidate が変わった）は `revision-drift` として halt し、artifact を finalize しない。
 
-- Rationale: 「digest が verification / review の対象 revision と一致すること」（設計要求 3）を、記録の書式ではなく**実行手順**で保証する。Git profile では commit OID が実行対象の固定を担っていたので、それを snapshot 側で置換する。Stop Condition「revision 不一致でも verification / review を有効として扱う必要がある」に抵触しないことをこの決定で示す。
+加えて、**cross-phase 一致チェック**を artifact finalize 直前に行う: verification record の bound digest と review record の bound digest が等しいことを確認し、不一致の場合は `revision-drift` として halt し finalize しない。これにより、verification フェーズ終了〜review フェーズ開始の間に外部プロセスが candidate を変更し各フェーズ単独の drift チェックは通過したが両 digest が乖離するシナリオを防ぐ。manifest の `candidateDigest` は verification bound digest（step 6 の frozen snapshot）を正規値として使用する。
+
+- Rationale: 「digest が verification / review の対象 revision と一致すること」（設計要求 3）を、記録の書式ではなく**実行手順**で保証する。Git profile では commit OID が実行対象の固定を担っていたので、それを snapshot 側で置換する。フェーズ単独の drift チェックだけでは cross-phase の乖離を検出できないため、cross-phase 一致チェックを finalize 前の最終防衛線として必須にする。Stop Condition「revision 不一致でも verification / review を有効として扱う必要がある」に抵触しないことをこの決定で示す。
 - Alternatives considered:
   - (a) 実行前 digest のみ記録 — verification が workspace を汚す（build 生成物等）ケースで record の digest が実際の対象と乖離する。却下。
   - (b) build 生成物を exclusion に足して drift を無視 — exclusion 規則が verification の副作用に引きずられ、識別子の意味が実行系依存になる。却下（利用者が明示 exclusion を宣言することは可能で、その場合 exclusion は digest 入力と manifest に記録される）。
@@ -206,6 +210,22 @@ verification と review は次の順で実行する: candidate snapshot → dige
 ### D12: preflight は「effective pipeline」を実行前に列挙し、実行可能範囲を先に表示する
 
 capability id（`git-revision` / `git-commit-attribution` / `git-remote-publish` / `github-api` / `branch-borne-state` / `changed-files` 等）を定義し、(a) profile が provide する集合、(b) step が require する集合をデータ表で宣言する。preflight は `PipelineDescriptor` × profile から `{ supported: step[], unsupported: { step, missing[] }[], executable: boolean }` を導出する純関数。artifact-output profile の初期 unsupported は request が挙げた 6 種（push / PR create / merge、feature branch への archive record、commit 採択と commit egress ledger、branch checkpoint からの remote reattach、issue 起点の unattended managed runtime、commit OID を要する operation）。加えて入力経路の gate として `--from-issue` / `--issue` を明示 unsupported とする。
+
+**step → required capability マッピング**（データ表の骨格。T-05 実装時は `STEP_NAMES` の実名と照合して完成させる）:
+
+| step | required capabilities |
+|---|---|
+| `pr-create` | `git-remote-publish`, `github-api` |
+| `merge` | `git-remote-publish`, `github-api` |
+| `archive` (branch-borne record) | `git-commit-attribution`, `branch-borne-state` |
+| `branch-checkpoint` | `branch-borne-state`, `git-revision` |
+| `commit-adopt` | `git-commit-attribution`, `git-revision` |
+| `egress-ledger` | `git-commit-attribution`, `branch-borne-state` |
+| `design` | なし（capability 要求なし） |
+| `implementer` / `agent` | なし |
+| `verification` / `code-review` / `conformance` / `adr-gen` | なし |
+
+上表で「なし」の step は artifact-output profile でも supported になる。「なし」以外の step が artifact-output profile に含まれる場合、preflight がその step を `unsupported` として列挙し `executable: false` を返す。このマッピングをデータとして `execution-profile.ts` に宣言することで、`if` 文の散在による leakage（本来 unsupported な step が supported と判定される fail-open）を構造的に防ぐ。
 
 `git-pr` profile は全 capability を provide するため、既存 3 pipeline（standard / fast / design-only）に対する unsupported は空集合になる（＝既存挙動不変をテストで固定する）。
 

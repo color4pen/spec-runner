@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 78 cases
-- **Automated** (unit/integration/gate): 77
+- **Total**: 79 cases
+- **Automated** (unit/integration/gate): 78
 - **Manual**: 1
-- **Priority**: must: 62, should: 15, could: 1
+- **Priority**: must: 63, should: 15, could: 1
 
 ---
 
@@ -602,6 +602,18 @@
 **WHEN** artifact-output guide topic の body 文字列と照合する
 **THEN** テーブルの全項目が body に存在し、手書き文字列との乖離がテストで禁止されている
 
+### TC-079: verification と review の bound digest が乖離すると cross-phase チェックで halt する
+
+**Category**: integration
+**Priority**: must
+**Source**: tasks.md > T-09 step 8.5 / design.md > D10
+
+**GIVEN** artifact-output run において、verification seam と review seam がそれぞれ独立した candidate snapshot を返す fake を注入し、各フェーズ単独の drift チェックはパスするが verification bound digest ≠ review bound digest になるシナリオを構成する
+**WHEN** step 8.5 の cross-phase 一致チェックが実行される
+**THEN** run が `revision-drift` として halt する
+**AND** `artifact/` ディレクトリが存在しない
+**AND** `run.json` が terminal status（`halted` または `failed`）として確定している
+
 ### TC-078: agent が candidate に追加した escape symlink が fail-closed で halt を引き起こす
 
 **Category**: integration
@@ -636,10 +648,10 @@
 
 ```yaml
 result: completed
-total: 78
-automated: 77
+total: 79
+automated: 78
 manual: 1
-must: 62
+must: 63
 should: 15
 could: 1
 blocked_reasons: []
