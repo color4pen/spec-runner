@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T13:12:15.399Z",
+  "updatedAt": "2026-09-05T13:15:20.631Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -67,7 +67,8 @@
     "7a4cd816689856fec71030137740ec75f386e9b9",
     "bc3e76109addf7047b419d18e7ca696cc3ed9d65",
     "0a892931c5821b56be1031f7eb00e98c8b90ebed",
-    "59c4e7648f2fdf7eadfd84605210b735762e5068"
+    "59c4e7648f2fdf7eadfd84605210b735762e5068",
+    "33a1aae4ce440e68d813a3d6e29ef269bbd0b11b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -90,15 +91,17 @@
     "spec-review": [
       "src/core/pipeline/runtime-capability-gate.ts",
       "src/state/profile.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
