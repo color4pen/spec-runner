@@ -89,9 +89,9 @@ async function traverseDir(
   entries: SnapshotEntry[],
   failures: SnapshotFailure[],
 ): Promise<void> {
-  let dirEntries: Awaited<ReturnType<typeof fs.readdir>>;
+  let dirEntries: string[];
   try {
-    dirEntries = await fs.readdir(dir);
+    dirEntries = await fs.readdir(dir) as string[];
   } catch {
     const relPath = toRelPosix(root, dir);
     failures.push({ path: relPath, reason: "io-error" });
