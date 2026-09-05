@@ -186,6 +186,25 @@ finding に無関係な変更（新機能追加・指摘外の大規模リファ
 **Then** 「初期メッセージの findings を正典とし、示された evidence file path は参照として読む」旨が書かれており、
 prompt に存在しないファイルの読み込みを前提としていない
 
+### Requirement: spec-fixer の「最小限」は全 site での不変条件成立を意味する
+
+spec-fixer の system prompt は、各 finding の invariant を列挙された全 site で成立させる最小の変更を行う旨を定義しなければならない（MUST）。
+また入力の記述は、初期メッセージに埋め込まれた findings を正典とし、result file path を参照として読む実際の受け渡しと一致させなければならない（MUST）。
+findings に記載されていない変更の禁止条項は維持する（SHALL）。
+
+#### Scenario: spec-fixer system prompt が全 site 成立を最小限の定義とする
+
+**Given** spec-fixer の system prompt
+**When** prompt を検査する
+**Then** 「各 finding の invariant を、列挙された全 site で成立させる最小の変更を行う」旨の定義が含まれている
+
+#### Scenario: spec-fixer system prompt の入力記述が実際の受け渡しと一致する
+
+**Given** spec-fixer の system prompt
+**When** Contract の入力記述を検査する
+**Then** 「初期メッセージの findings が正典であり、result file path は参照として読む」旨が書かれており、
+prompt に存在しないファイルの読み込みを前提としていない
+
 ### Requirement: regression-gate の ledger entry は sites を保持し全 site を検証対象にする
 
 regression-gate に渡す ledger entry は、remediation を持つ finding について invariant と全 sites を SHALL 提示し、

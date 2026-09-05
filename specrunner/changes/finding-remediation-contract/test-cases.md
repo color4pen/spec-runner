@@ -135,6 +135,17 @@
 
 ---
 
+### TC-T03-03b · must
+
+**Category**: Parse / Validation  
+**Source**: `tasks.md §T-03`
+
+**Given** persisted state から読み込んだ、不正形 remediation（例: `sites: []`）を持つ fixable finding の JSON  
+**When** `parseFindings(raw)` を引数なし（非 strict）で呼ぶ  
+**Then** parse が成功し、finding は採用されるが `finding.remediation` は設定されない（silent-drop）
+
+---
+
 ### TC-T03-04 · must
 
 **Category**: Parse / Validation  
@@ -265,7 +276,7 @@
 **Category**: Reviewer Prompt  
 **Source**: `tasks.md §T-04`
 
-**Given** `CODE_REVIEW_SYSTEM_PROMPT` / `SPEC_REVIEW_SYSTEM_PROMPT` / `CONFORMANCE_SYSTEM_PROMPT` / `REGRESSION_GATE_SYSTEM_PROMPT` の各文字列  
+**Given** `buildCustomReviewerSystemPrompt(anyDef)` の戻り値 / `CODE_REVIEW_SYSTEM_PROMPT` / `SPEC_REVIEW_SYSTEM_PROMPT` / `CONFORMANCE_SYSTEM_PROMPT` / `REGRESSION_GATE_SYSTEM_PROMPT` の各文字列  
 **When** それぞれを `FINDING_REMEDIATION_DEFINITION` の内容に対してサブストリング検索する  
 **Then** 全 prompt に `FINDING_REMEDIATION_DEFINITION` の全文が含まれる
 
