@@ -22,6 +22,7 @@ function buildApplyMd(manifest: ArtifactManifest): string {
       c.patchClassification === "omitted:binary" ||
       c.patchClassification === "omitted:binary-deletion" ||
       c.patchClassification === "omitted:size" ||
+      c.patchClassification === "omitted:size-deletion" ||
       c.patchClassification === "omitted:unreadable",
   );
 
@@ -57,7 +58,7 @@ do NOT apply — the patch may not apply cleanly and may corrupt your source.
 3. Copy files from \`payload/\` to their respective paths (binary / large files).
 4. Verify the result matches the candidate digest: ${manifest.candidate.digest}
 
-${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, `omitted:size`, or `omitted:unreadable` in manifest.json. These changes must be applied from `payload/` or handled separately.\n" : ""}
+${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, `omitted:size`, `omitted:size-deletion`, or `omitted:unreadable` in manifest.json. These changes must be applied from `payload/` or handled separately.\n" : ""}
 ## Profile: ${manifest.profile}
 
 Resume: NOT supported. If the run was interrupted, restart from the source directory.

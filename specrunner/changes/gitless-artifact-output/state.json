@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T17:02:25.413Z",
+  "updatedAt": "2026-09-05T17:10:22.021Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -82,7 +82,8 @@
     "a41fa0b15285a80bccf8ef25e430d7692d92e01c",
     "9f3c8073ad34fde1fca332dcc23c6d9d814a2f6e",
     "582f0c341c52bec92214f9c826f19d8918b46d82",
-    "b6d0d5fbea82a3e05af24f860e63ccf52255fd4f"
+    "b6d0d5fbea82a3e05af24f860e63ccf52255fd4f",
+    "47a670285fbcd06e653ce1fc7f1542e4d8896f82"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,11 +113,22 @@
       "src/core/artifact-output/__tests__/run.test.ts"
     ],
     "code-review": [
+      "src/core/artifact-output/run.ts",
       "src/core/artifact-output/patch.ts",
-      "src/core/artifact-output/__tests__/patch.test.ts",
+      "src/core/snapshot/collect.ts",
+      "src/core/snapshot/digest.ts",
+      "src/core/artifact-output/revision-binding.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/preflight.ts",
+      "src/core/artifact-output/source-guard.ts",
+      "src/util/unified-diff.ts",
       "tests/artifact-output-vertical.test.ts",
-      "README.md",
-      "tests/unit/architecture/artifact-output-git-free.test.ts"
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/artifact-output/manifest.ts",
+      "src/core/artifact-output/__tests__/run.test.ts",
+      "src/core/artifact-output/__tests__/patch.test.ts"
     ],
     "code-fixer": [
       "src/core/artifact-output/patch.ts",
@@ -143,7 +155,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 80,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -152,7 +164,7 @@
       "spec-fixer": 2,
       "implementer": 3,
       "verification": 3,
-      "code-review": 4,
+      "code-review": 5,
       "code-fixer": 2
     }
   }

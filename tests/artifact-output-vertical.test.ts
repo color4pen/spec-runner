@@ -410,6 +410,20 @@ describe("TC-023: successful run produces complete artifact", () => {
       const applyMd = await fs.readFile(path.join(artifactDir, "APPLY.md"), "utf-8");
       expect(applyMd.toLowerCase()).toMatch(/not applied automatically|not auto/);
       expect(applyMd).toContain("Baseline digest");
+
+      // TC-026: verification.json and review.json must carry a candidateDigest matching
+      // manifest.candidateDigest (must-priority end-to-end validation).
+      const manifestJson = JSON.parse(await fs.readFile(path.join(artifactDir, "manifest.json"), "utf-8")) as {
+        candidate: { digest: string };
+      };
+      const verificationJson = JSON.parse(await fs.readFile(path.join(artifactDir, "verification.json"), "utf-8")) as {
+        candidateDigest: string;
+      };
+      const reviewJson = JSON.parse(await fs.readFile(path.join(artifactDir, "review.json"), "utf-8")) as {
+        candidateDigest: string;
+      };
+      expect(verificationJson.candidateDigest).toBe(manifestJson.candidate.digest);
+      expect(reviewJson.candidateDigest).toBe(manifestJson.candidate.digest);
     }
   }, 30000);
 });
@@ -734,5 +748,74 @@ describe("TC-006: source mutation during run is detected and recorded in run.jso
       recordsMutation,
       `Expected run.json to record source mutation/unverifiable. status=${runJson.status}, error=${runJson.error ?? "(none)"}`,
     ).toBe(true);
+  }, 30000);
+});
+
+// ─── TC-021: deletion hunk in changes.patch and manifest ─────────────────────
+// ─── TC-019: binary change in payload but not in patch ───────────────────────
+
+describe("TC-021 / TC-019: deletion hunk in patch + binary change in payload", () => {
+  it("deleted text file produces deletion hunk in changes.patch and included:deletion in manifest", async () => {
+    const sourceDir = await mktemp("ao-src-");
+    const runParentDir = await mktemp("ao-run-");
+
+    // Source has text file (to be deleted) and binary file (to be modified)
+    await fs.writeFile(path.join(sourceDir, "will-be-deleted.txt"), "line one\nline two\n");
+    await fs.writeFile(path.join(sourceDir, "binary.dat"), Buffer.from([0x00, 0x01, 0x02, 0xFF]));
+    await fs.writeFile(path.join(sourceDir, "kept.txt"), "keep this\n");
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "test-run-021-019",
+      requestContent: "Test request",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeMutatingAgent(async (candidateRoot) => {
+        // TC-021: delete the text file
+        await fs.rm(path.join(candidateRoot, "will-be-deleted.txt"));
+        // TC-019: replace the binary file with different binary content
+        await fs.writeFile(
+          path.join(candidateRoot, "binary.dat"),
+          Buffer.from([0xFF, 0xFE, 0xFD, 0x00]),
+        );
+      }),
+      verify: makePassingVerify(),
+      review: makePassingReview(),
+      spawn: makeSpawnRecorder().spawn,
+    });
+
+    expect(result.kind).toBe("completed");
+    if (result.kind !== "completed") return;
+
+    const artifactDir = result.artifactPath;
+
+    // TC-021: changes.patch must contain a deletion hunk for will-be-deleted.txt
+    const patch = await fs.readFile(path.join(artifactDir, "changes.patch"), "utf-8");
+    expect(patch).toContain("--- will-be-deleted.txt");
+    expect(patch).toContain("+++ /dev/null");
+    expect(patch).toContain("-line one");
+    expect(patch).toContain("-line two");
+
+    // TC-021: manifest must classify the deleted file as included:deletion
+    const manifest = JSON.parse(await fs.readFile(path.join(artifactDir, "manifest.json"), "utf-8")) as {
+      changes: Array<{ path: string; patchClassification: string; change: string }>;
+    };
+    const deletedEntry = manifest.changes.find((c) => c.path === "will-be-deleted.txt");
+    expect(deletedEntry).toBeDefined();
+    expect(deletedEntry?.patchClassification).toBe("included:deletion");
+    expect(deletedEntry?.change).toBe("deleted");
+
+    // TC-019: binary.dat must be classified as omitted:binary (not in patch)
+    const binaryEntry = manifest.changes.find((c) => c.path === "binary.dat");
+    expect(binaryEntry).toBeDefined();
+    expect(binaryEntry?.patchClassification).toBe("omitted:binary");
+
+    // TC-019: binary.dat must appear in payload/ (candidate bytes for binary changes)
+    const payloadFiles = await fs.readdir(path.join(artifactDir, "payload"));
+    expect(payloadFiles).toContain("binary.dat");
+
+    // TC-019: changes.patch must NOT contain binary.dat diff
+    expect(patch).not.toContain("binary.dat");
   }, 30000);
 });

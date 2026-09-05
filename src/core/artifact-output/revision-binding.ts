@@ -53,14 +53,20 @@ export async function runBoundToCandidateRevision<T>(
   candidateRoot: string,
   execute: () => Promise<T>,
   collectOpts?: CollectSnapshotOptions,
+  preSnapshot?: DirectorySnapshot,
 ): Promise<RevisionBindingResult<T>> {
-  // Step 1: Pre-execution snapshot
-  const preResult = await collectSnapshot(candidateRoot, collectOpts);
-  if (preResult.kind === "unavailable") {
-    return { kind: "unavailable", reason: `Pre-execution snapshot failed: ${preResult.reason}` };
+  // Step 1: Pre-execution snapshot (skip if already taken by caller)
+  let preFrozen: DirectorySnapshot;
+  if (preSnapshot) {
+    preFrozen = preSnapshot;
+  } else {
+    const preResult = await collectSnapshot(candidateRoot, collectOpts);
+    if (preResult.kind === "unavailable") {
+      return { kind: "unavailable", reason: `Pre-execution snapshot failed: ${preResult.reason}` };
+    }
+    preFrozen = preResult.snapshot;
   }
 
-  const preFrozen = preResult.snapshot;
   const preDigest = preFrozen.digest;
 
   // Step 2: Execute

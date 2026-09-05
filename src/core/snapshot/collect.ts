@@ -82,6 +82,21 @@ export async function collectSnapshot(
 
 // ─── Internal traversal ───────────────────────────────────────────────────────
 
+// UTF-8 decoder in fatal mode: throws on non-UTF-8 byte sequences.
+const _utf8DecoderFatal = new TextDecoder("utf-8", { fatal: true });
+
+/**
+ * Try to decode a Buffer as a UTF-8 string.
+ * Returns the decoded string on success, or null if the bytes are not valid UTF-8.
+ */
+function decodeUtf8OrNull(buf: Buffer): string | null {
+  try {
+    return _utf8DecoderFatal.decode(buf);
+  } catch {
+    return null;
+  }
+}
+
 async function traverseDir(
   root: string,
   dir: string,
@@ -89,16 +104,28 @@ async function traverseDir(
   entries: SnapshotEntry[],
   failures: SnapshotFailure[],
 ): Promise<void> {
-  let dirEntries: string[];
+  let dirEntryBuffers: Buffer[];
   try {
-    dirEntries = await fs.readdir(dir) as string[];
+    // Use encoding: 'buffer' to get raw filename bytes for UTF-8 validation (D3/T-03).
+    dirEntryBuffers = await fs.readdir(dir, { encoding: "buffer" }) as Buffer[];
   } catch {
     const relPath = toRelPosix(root, dir);
     failures.push({ path: relPath, reason: "io-error" });
     return;
   }
 
-  for (const name of dirEntries) {
+  for (const nameBuf of dirEntryBuffers) {
+    const name = decodeUtf8OrNull(nameBuf);
+    if (name === null) {
+      // Non-UTF-8 filename: fail-closed (D3 requires path-not-utf8 failure).
+      // We cannot construct a valid relPath, so use a hex representation.
+      const hexName = nameBuf.toString("hex");
+      const dirRelPath = toRelPosix(root, dir);
+      const rawPath = dirRelPath ? `${dirRelPath}/<0x${hexName}>` : `<0x${hexName}>`;
+      failures.push({ path: rawPath, reason: "path-not-utf8" });
+      continue;
+    }
+
     const absPath = nodePath.join(dir, name);
     const relPath = toRelPosix(root, absPath);
 

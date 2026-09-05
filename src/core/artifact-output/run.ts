@@ -179,11 +179,12 @@ export async function runArtifactOutput(
     return { kind: "failed", runId, reason: "Failed to create run root", error: err, preflightReport };
   }
 
-  // Write initial run.json
+  // Write initial run.json — phases 1 (preflight) and 3 (baseline-snapshot) are complete;
+  // entering phase 4 (materialize). Phases 2-3 cannot be tracked before the run root exists.
   const runJson: RunJson = {
     runId,
     status: "running",
-    phase: "materialize",
+    phase: "baseline-snapshot",
     baselineDigest,
     resume: { supported: false, reason: "artifact-output profile does not support resume" },
     preflightReport,
@@ -193,7 +194,10 @@ export async function runArtifactOutput(
   // Write baseline snapshot evidence
   await writeJson(baselineSnapshotPath(runRoot), baselineSnapshot);
 
-  // Materialize candidate
+  // Phase 4: Materialize candidate
+  runJson.phase = "materialize";
+  await writeRunJson(runRoot, runJson);
+
   const candidateRoot = candidateDir(runRoot);
   try {
     await materializeCandidate(sourceRoot, candidateRoot, baselineSnapshot);
@@ -223,9 +227,20 @@ export async function runArtifactOutput(
   runJson.phase = "verification";
   await writeRunJson(runRoot, runJson);
 
+  // D14: take the pre-verification snapshot ourselves so we can build the context block
+  // with the actual candidate digest (not a placeholder).
+  const preVerifySnapshotResult = await collectSnapshot(candidateRoot, collectOpts);
+  if (preVerifySnapshotResult.kind === "unavailable") {
+    runJson.status = "halted";
+    runJson.error = `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`;
+    await writeRunJson(runRoot, runJson);
+    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+    return { kind: "halted", runId, runRoot, reason: `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`, preflightReport };
+  }
+
   const preVerifyContext = buildSnapshotContext({
     baselineDigest,
-    candidateDigest: "(pending verification)",
+    candidateDigest: preVerifySnapshotResult.snapshot.digest,
     changes: [],
   });
 
@@ -233,6 +248,7 @@ export async function runArtifactOutput(
     candidateRoot,
     () => input.verify.run(candidateRoot, preVerifyContext.contextBlock),
     collectOpts,
+    preVerifySnapshotResult.snapshot, // pass pre-snapshot to avoid redundant collection
   );
 
   if (verifyBound.kind === "unavailable") {
