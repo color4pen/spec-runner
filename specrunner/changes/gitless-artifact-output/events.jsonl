@@ -83,3 +83,9 @@
 {"type":"transition","ts":"2026-09-05T14:31:01.229Z","step":"code-review","status":"warning","message":"code-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-09-05T14:31:01.229Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-09-05T14:31:01.232Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-09-05T14:42:16.722Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"1ab7f183-536f-40a9-aa6d-9eaf8bf55701","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":1,"outputRepair":0}},"startedAt":"2026-09-05T14:31:01.272Z","endedAt":"2026-09-05T14:42:15.422Z","commitOid":"4888812ddd42cb4474ffdd39b369b04b64220a55"}
+{"type":"lineage","step":"code-fixer","ts":"2026-09-05T14:42:15.422Z","outputs":[{"path":"specrunner/changes/gitless-artifact-output","hash":null}],"inputs":[{"path":"specrunner/changes/gitless-artifact-output/review-feedback-001.md","hash":"sha256:c0927b9bda1e5ff3497453a21d399c3d17e6f08f6e2cdb533f219fb7c6bb8592"}]}
+{"type":"transition","ts":"2026-09-05T14:42:16.725Z","step":"step-transition","status":"ok","message":"code-fixer → code-review"}
+{"type":"transition","ts":"2026-09-05T14:42:16.726Z","step":"code-review","status":"started","message":"code-review iteration 2 started"}
+{"type":"transition","ts":"2026-09-05T14:42:16.727Z","step":"code-review-started","status":"started","message":"Starting code-review step"}

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T14:31:01.232Z",
+  "updatedAt": "2026-09-05T14:42:16.727Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -77,7 +77,8 @@
     "2d0f6d29644034ba7caac60d60b21014778a7902",
     "f9b4827d1c2a0bef22aae697d9ed684d9eaa59d5",
     "3d752d43a63e4a446e13089958f7a4c56870bf26",
-    "7a0528e6ff6ea6a2cfc993946a20fd423336c9c6"
+    "7a0528e6ff6ea6a2cfc993946a20fd423336c9c6",
+    "4888812ddd42cb4474ffdd39b369b04b64220a55"
   ],
   "touchedFiles": {
     "request-review": [
@@ -129,10 +130,21 @@
       "src/core/command/guide.ts",
       "src/core/artifact-output/guarded-spawn.ts",
       "src/core/command/__tests__/guide.test.ts"
+    ],
+    "code-fixer": [
+      "tests/artifact-output-vertical.test.ts",
+      "src/core/command/guide.ts",
+      "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/patch.ts",
+      "src/core/artifact-output/source-guard.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/artifact-output/__tests__/patch.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -141,7 +153,8 @@
       "spec-fixer": 2,
       "implementer": 3,
       "verification": 3,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
