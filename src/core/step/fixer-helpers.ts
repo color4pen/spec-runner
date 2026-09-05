@@ -52,6 +52,10 @@ export function isFixerContinuation(
 /**
  * Build a formatted findings block for embedding in fixer prompts.
  * Groups findings by severity for clear presentation.
+ * When any finding has a remediation contract, expands it inline and adds
+ * an all-sites simultaneous fix directive at the end of the block.
+ *
+ * Legacy behavior (no remediation): output is identical to the previous implementation.
  *
  * @param findings     - The findings to format.
  * @param reviewerName - Optional reviewer name for source identification (requirement 7).
@@ -60,6 +64,7 @@ export function isFixerContinuation(
 export function buildFindingsBlock(findings: Finding[], reviewerName?: string): string {
   const source = reviewerName ? `${reviewerName} review` : "review";
   const lines: string[] = [`## Findings from ${source}\n`];
+  let hasRemediation = false;
   for (const f of findings) {
     const location = f.line !== undefined ? `${f.file}:${f.line}` : f.file;
     lines.push(`### [${f.severity.toUpperCase()}] ${f.title}`);
@@ -67,9 +72,37 @@ export function buildFindingsBlock(findings: Finding[], reviewerName?: string): 
     lines.push(`- **Resolution**: ${f.resolution}`);
     lines.push(`- **Rationale**: ${f.rationale}`);
     lines.push(`- **Source**: ${source}`);
+    if (f.remediation) {
+      hasRemediation = true;
+      lines.push(`- **Invariant**: ${f.remediation.invariant}`);
+      lines.push(`- **Sites (fix all in this iteration)**:`);
+      for (const site of f.remediation.sites) {
+        const siteLoc = site.line !== undefined ? `${site.file}:${site.line}` : site.file;
+        lines.push(`  - ${siteLoc}`);
+      }
+      lines.push(`- **Approach**: ${f.remediation.approach}`);
+    }
+    lines.push("");
+  }
+  if (hasRemediation) {
+    lines.push("**全 site 同時修正指令**: 列挙された全 site を同一イテレーションで修正すること。approach より狭い修正を選ぶ場合は、その理由を出力（evidence）に残すこと。");
     lines.push("");
   }
   return lines.join("\n");
+}
+
+/**
+ * Build an evidence reference block listing result file paths.
+ * Used in fixer prompts to point the agent to the reviewer's evidence files.
+ *
+ * Returns an empty string when paths is empty.
+ * Returns a formatted block when 1 or more paths are provided.
+ * Includes a note that the files are read-only references — not for machine parse or modification.
+ */
+export function renderEvidenceReference(paths: string[]): string {
+  if (paths.length === 0) return "";
+  const pathLines = paths.map((p) => `- ${p}`).join("\n");
+  return `\n**Evidence file reference** （参照用。機械 parse はしない。この file は読み取り専用 — 書き換えない）:\n${pathLines}\n`;
 }
 
 /**
@@ -106,19 +139,29 @@ export function buildContinuationMessage(opts: {
   findings?: Finding[] | null;
   /** Reviewer name for findings source identification (requirement 7). */
   reviewerName?: string;
+  /**
+   * Evidence result file paths to surface to the fixer agent.
+   * When provided, overrides the default [findingsPath] used for evidence reference rendering.
+   * When absent, falls back to [findingsPath].
+   */
+  findingsPaths?: string[];
 }): string {
   // code-fixer は reviewer からの findings (reviewerName で識別)
   const source = opts.reviewerName
     ? `${opts.reviewerName} reviewer`
     : "reviewer";
 
+  // Resolve evidence paths: explicit findingsPaths takes precedence, else [findingsPath].
+  const evidencePaths = opts.findingsPaths ?? [opts.findingsPath];
+
   if (opts.findings && opts.findings.length > 0) {
     const findingsBlock = buildFindingsBlock(opts.findings, opts.reviewerName);
+    const evidenceRef = renderEvidenceReference(evidencePaths);
     return `<user-request>
 前回の修正に対して ${source} から新しい findings が出ました。
 
 ${findingsBlock}
-
+${evidenceRef}
 前回のセッションの文脈を踏まえて、上記の findings の指摘事項を修正してください。
 前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
 

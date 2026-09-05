@@ -65,12 +65,33 @@ const decisionOptionSchema = object({
 });
 
 /**
+ * Zod schema for the remediation site within a finding.
+ */
+const remediationSiteSchema = object({
+  file: string(),
+  line: optional(number()),
+});
+
+/**
+ * Zod schema for the remediation contract attached to a fixable finding.
+ * Required when resolution === "fixable".
+ * Enforcement at parse time (parseFindings strict + requireRemediation mode).
+ */
+const remediationSchema = object({
+  invariant: string(),
+  sites: array(remediationSiteSchema),
+  approach: string(),
+});
+
+/**
  * Zod schema for a single finding object.
  * Used by judge tools to report structured findings for CLI verdict derivation.
  *
  * `options` is required when `resolution` is `"decision-needed"` (at least two options).
  * For `"fixable"` findings, `options` must not be provided.
  * The hand-written `parseFindings` in report-result.ts enforces the ≥2 options rule at parse time.
+ * `remediation` is REQUIRED when `resolution` is `"fixable"` for judge steps;
+ * enforcement is at parse time (strict + requireRemediation mode).
  */
 const findingSchema = array(object({
   severity: union([literal("critical"), literal("high"), literal("medium"), literal("low")]),
@@ -83,6 +104,7 @@ const findingSchema = array(object({
   origin: optional(literal("scope")),
   fileMissing: optional(boolean()),
   ledgerRef: optional(string()),
+  remediation: optional(remediationSchema),
 }));
 
 /**
@@ -108,7 +130,7 @@ const observationSchema = array(object({
  */
 export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}], fileMissing?: boolean }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. Optional finding field: 'ledgerRef' (string) — regression-gate exclusive; only the regression-gate step populates this field (provenance ref echo). All other judge steps (spec-review, custom reviewers) must leave ledgerRef absent. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}], fileMissing?: boolean, remediation?: { invariant: string, sites: [{file: string, line?: number}], approach: string } }. When resolution is 'fixable', 'remediation' is REQUIRED: provide the broken invariant in one sentence, all sites sharing that invariant (including this finding's own file:line), and the recommended fix direction. Sites must include at least one entry. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. Optional finding field: 'ledgerRef' (string) — regression-gate exclusive; only the regression-gate step populates this field (provenance ref echo). All other judge steps (spec-review, custom reviewers) must leave ledgerRef absent. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
@@ -132,7 +154,7 @@ export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
  */
 export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}], fileMissing?: boolean }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}], fileMissing?: boolean, remediation?: { invariant: string, sites: [{file: string, line?: number}], approach: string } }. When resolution is 'fixable', 'remediation' is REQUIRED: provide the broken invariant in one sentence, all sites sharing that invariant (including this finding's own file:line), and the recommended fix direction. Sites must include at least one entry. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
@@ -149,6 +171,7 @@ export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
  * Zod schema for a single conformance finding object.
  * Extends the base findingSchema with the optional fixTarget field.
  * Used exclusively by CONFORMANCE_REPORT_TOOL.
+ * `remediation` is REQUIRED when `resolution` is `"fixable"` (enforced at parse time).
  */
 const conformanceFindingSchema = array(object({
   severity: union([literal("critical"), literal("high"), literal("medium"), literal("low")]),
@@ -162,6 +185,7 @@ const conformanceFindingSchema = array(object({
   origin: optional(literal("scope")),
   fileMissing: optional(boolean()),
   ledgerRef: optional(string()),
+  remediation: optional(remediationSchema),
 }));
 
 /**
@@ -181,7 +205,7 @@ const conformanceFindingSchema = array(object({
  */
 export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = {
   name: "report_result",
-  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}], fileMissing?: boolean }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. Findings are raised only when request.md / spec.md normative requirements are violated. fixTarget routing: 'spec-fixer' = root cause is an error in spec.md or design.md; 'implementer' = root cause is missing or incomplete implementation; 'code-fixer' = root cause is an isolated code-level issue; omit to default to 'implementer'. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; checked=0 is treated as indeterminate (判定不能). You MUST call this tool before ending your turn.",
+  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}], fileMissing?: boolean, remediation?: { invariant: string, sites: [{file: string, line?: number}], approach: string } }. When resolution is 'fixable', 'remediation' is REQUIRED: provide the broken invariant in one sentence, all sites sharing that invariant (including this finding's own file:line), and the recommended fix direction. Sites must include at least one entry. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. Findings are raised only when request.md / spec.md normative requirements are violated. fixTarget routing: 'spec-fixer' = root cause is an error in spec.md or design.md; 'implementer' = root cause is missing or incomplete implementation; 'code-fixer' = root cause is an isolated code-level issue; omit to default to 'implementer'. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; checked=0 is treated as indeterminate (判定不能). You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),

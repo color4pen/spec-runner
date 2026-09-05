@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:73836da144d339cdda49186c4063163098cec368888c203bca2e15d507b3eaaf",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/fixer-helpers.ts:buildFindingsBlock outputs severity/title/file:line/resolution/rationale/source per finding, no evidence file path",
+    "src/core/step/code-fixer.ts:buildMessage structured-findings branch (line 267) embeds findingsBlock without findingsPath",
+    "src/core/step/code-fixer.ts:buildMessage fallback branch (line 288) includes findingsPath via 'Review feedback: ${findingsPath}'",
+    "src/core/step/code-fixer.ts:buildContinuationMessage structured-findings branch (fixer-helpers.ts line 115) has no findingsPath",
+    "src/core/step/code-fixer.ts:reads() returns IoRef[] for executor validation only, not prompt injection",
+    "src/prompts/code-fixer-system.ts:Method 1 references review-feedback-NNN.md but user prompt omits path when structured findings present",
+    "src/kernel/report-result.ts:Finding interface has severity/resolution/file/line?/title/rationale/fixTarget?/options?/origin?/fileMissing?/ledgerRef? — no remediation field",
+    "src/core/step/report-tool.ts:findingSchema (lines 75-86) has same fields as Finding, no remediation",
+    "src/core/port/report-result.ts:parseFindings does not handle remediation field",
+    "src/state/schema/types.ts:toolResult.findings uses Finding from ../../kernel/report-result.js",
+    "src/core/pipeline/findings-ledger.ts:findingFingerprint = file|line|title (line 180)",
+    "src/core/pipeline/findings-ledger.ts:computeLedgerRef derives from findingFingerprint via SHA-256 (lines 247-250)",
+    "src/prompts/judge-rules.ts: no finding.remediation format defined",
+    "src/prompts/custom-reviewer-system.ts: Completion finding format (lines 84-94) has no remediation field",
+    "src/prompts/code-fixer-system.ts: 'min fix' defined as 最小限の機械的修正 in Method 3",
+    "specrunner/changes/archive/2026-08-29-exclusion-aware-publish-prediction/: cross-boundary-invariants-result-001 through 005 exist (5 iterations)",
+    "specrunner/changes/archive/2026-08-23-push-capability-preflight/: cross-boundary-invariants-result-001 through 006 exist (6 iterations)",
+    "src/core/step/spec-fixer.ts: structured-findings branch (lines 173-190) also omits findingsPath — contradicts request §3 'code-fixer 固有の欠落'"
+  ],
+  "sourceRevision": "71ca0e3c8b3fc2be986752df8e414c9d2dd4e6e2"
+}

@@ -1,0 +1,264 @@
+{
+  "version": 2,
+  "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
+  "createdAt": "2026-09-05T12:39:23.164Z",
+  "updatedAt": "2026-09-05T16:10:11.544Z",
+  "request": {
+    "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/finding-remediation-contract-d394de74",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1116,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "2e8ad53a9326beafabb8fb3e41c9075ec29c0a9d",
+    "d58decb9ef489c2cbdf1ae0f5fa0c094f460f7ec",
+    "fd27d7c688879e91ea8b7ee215c8ce543539fb50",
+    "a73dbe77a3925b623ee3a965d239773339d899ff",
+    "3394d54af66b20a9053b6076723a0f290bc1e405",
+    "c085c19e0d1a476a96e15edfe0674c9baa3c6fe0",
+    "7ef5da86382963161d6234d267f169314271922d",
+    "7c6591d6ce4346f68aaea922861bb8092293af3b",
+    "61ddb71804fa6b8f60cad61659e331aa7aa66429",
+    "b64b617613fa7c4ca38b58972f99b37b1e572bb0",
+    "232b7729e07fdc5286ac2305b7f7038e0c514f6d",
+    "a72f9d16ae40722297b032e778aeddce6369cb96",
+    "78248d678bef13c62d63a218b66377a150e2f745",
+    "cd40712800b5614148c7feac8acf3d83de3cfcf3",
+    "b58b3d1dac36b4062376a8271232fdfdb034ff23",
+    "838f1bf2c479263cbe76b76294c06d56aef65d65",
+    "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796",
+    "8f88a63c9ef4416ab2ddfd3ff1ece8534497067e",
+    "e1de55a898c2e1a7e17dce5dfeca66cca51d0cfc",
+    "0db4993f6306241afdbdb51542c9c5cb674323b0",
+    "eda1e37a224d1cdf44a2f3cd13ff2f67137f0668",
+    "8ae6252afe9f944c7838d2ae69aa0cbffb12a385",
+    "8c00a14e2b2c888b50d20d674627327c9d1d5049",
+    "9e584fb49958a538ff8a5975379722b23e81c114",
+    "279724eaeb8737948c44862afa6128c64bd41565",
+    "a7fe2ae0456f7ee2fd92d56491100d6f02243dcb",
+    "f51a0aaa548c9f5a2622117d1fc60355ffa11621",
+    "f0edd8bbf54e74ce9c2d8c82973376b38ca97fa9",
+    "286bca1c90008e2fce5e1a508741ce53cc738a0b",
+    "9946e3f37b8cbbfb4fdc32d2a54578a1d8353e7d"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/fixer-helpers.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/spec-fixer.ts"
+    ],
+    "design": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/step-completion.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/core/decision/decision-ledger.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/prompts/judge-rules.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/step/step-completion.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "tests/unit/step/write-scope-bypass-closure-integration.test.ts",
+      "src/core/verification/changed-line-coverage.ts"
+    ],
+    "code-review": [
+      "src/kernel/report-result.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "src/core/step/__tests__/fail-closed-drift-guard.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/prompts/__tests__/fragment-coverage.test.ts"
+    ],
+    "code-fixer": [
+      "src/prompts/__tests__/fragment-coverage.test.ts",
+      "src/prompts/judge-rules.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/prompts/judge-rules.ts",
+      "src/core/port/__tests__/remediation-parse.test.ts"
+    ],
+    "conformance": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "tests/unit/step/fixer-findings.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-04-step-io-contracts.md",
+      "specrunner/adr/2026-09-05-finding-remediation-contract.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "a7fe2ae0456f7ee2fd92d56491100d6f02243dcb",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/finding-remediation-contract/design.md:sha256:854138cbcb490711fe6455f1d0960ffe8633dcb120e0ee0e059deb7e6d4965ff|specrunner/changes/finding-remediation-contract/request.md:sha256:73836da144d339cdda49186c4063163098cec368888c203bca2e15d507b3eaaf|specrunner/changes/finding-remediation-contract/spec.md:sha256:4a01ce0c4b8c35d3dab121bf2bc2f3923659fd931296f005e01d534cc9645e75|specrunner/changes/finding-remediation-contract/tasks.md:sha256:7f075096addbf72b1f484d00723fe6ef9b2d79c95b66812c38eb0c4606c80f80|specrunner/changes/finding-remediation-contract/test-cases.md:sha256:158a353c32c4449a6efd2de25684aa05be3e506d2c25cf166a0c83c16b8f851f"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定: cross-boundary-invariants reviewer の iteration 3 F-001 は妥当。これまで 3 回の finding はすべて同じ不変条件（fixer に routing する finding は、主 file と remediation.sites の全 site が effective fixer の宣言 write scope に入っていなければならない）の一部だけを塞いだために収束していない。今回は指摘された具体例だけを直すのではなく、一般化した判定として実装すること。\n\n必須の修正方針:\n1. 共有 predicate を 1 つ設ける（例: canon-escalation.ts または write-scope.ts に `isFindingWithinFixerWriteScope(finding, effectiveFixer, scope)`）。主 `finding.file` と全 `remediation.sites[].file` の和集合を取り、その全 path が effective fixer の宣言 write scope（canon path なら scope.writableByFixer、非 canon path なら fixer の宣言 write set / src 書込可否）に入る場合だけ routable とする。canonPaths に含まれる path のみを検査する現在の判定を一般判定として流用しない。\n2. selectUnroutableCanonFindings / selectRoutableCanonFindings を同じ predicate で補集合関係になるように書き換え、judge-verdict.ts（deriveConformanceVerdict を含む）と findings-ledger.ts の filtering も同じ分類結果を使う。少なくとも spec-fixer の change-folder write set 外の site（`src/**` など）を持つ finding は fail-closed に escalation する。\n3. remediation を持たない legacy finding の挙動は維持する。\n4. 追加テスト: 主 site spec.md + 副 site src/** + fixTarget spec-fixer が unroutable になること、主 file 非 canon + 副 site 保護 canon が unroutable になること、全 site writable なら routable になること、legacy finding が従来どおりであること。\n\nreviewer の iteration 3 の Sites（canon-escalation.ts:100/143、judge-verdict.ts:173/94、write-scope.ts:94）をすべて同一 iteration で修正すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-05T14:46:25.877Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1121",
+    "number": 1121,
+    "createdAt": "2026-09-05T16:10:10.907Z"
+  },
+  "_journal": {
+    "historyCount": 129,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "verification": 4,
+      "code-review": 2,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 1,
+      "custom-reviewers": 6,
+      "regression-gate": 2,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

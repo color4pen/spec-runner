@@ -79,7 +79,11 @@ function buildDeps(opts: {
           type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id",
           input: verdict === "approved"
             ? { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } }
-            : { ok: true, approved: false, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Issue", rationale: "Fix required" }] },
+            // T-11: fixable findings require remediation in judge strict path.
+            // Finding must be on a spec-fixer-writable canon path (spec.md) — non-canon paths
+            // like src/** are outside spec-fixer's write scope and correctly escalate
+            // instead of routing to spec-fixer (isFindingWithinFixerWriteScope fix).
+            : { ok: true, approved: false, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [{ severity: "high", resolution: "fixable", file: "specrunner/changes/test-slug/spec.md", title: "Issue in spec", rationale: "Fix required", remediation: { invariant: "Issue invariant at spec.md", sites: [{ file: "specrunner/changes/test-slug/spec.md" }], approach: "Fix the spec issue" } }] },
         },
       ]),
       sendEvents: vi.fn().mockResolvedValue(undefined),

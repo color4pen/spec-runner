@@ -22,7 +22,7 @@ import { REGRESSION_GATE_SYSTEM_PROMPT } from "../regression-gate-system.js";
 import { REQUEST_REVIEW_SYSTEM_PROMPT, buildRequestReviewInitialMessage } from "../request-review-system.js";
 import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
 import { PIPELINE_RULES, COMPLETION_DIRECTIVE, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "../fragments.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "../judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, FINDING_REMEDIATION_DEFINITION } from "../judge-rules.js";
 import type { ReviewerSnapshot } from "../../kernel/reviewer-snapshot.js";
 
 // ---------------------------------------------------------------------------
@@ -253,6 +253,24 @@ describe("5 judge prompts contain OBSERVATION_DEFINITION (T-09 AC)", () => {
 
   it("REGRESSION_GATE_SYSTEM_PROMPT contains OBSERVATION_DEFINITION", () => {
     expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain(OBSERVATION_DEFINITION);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-T04-04: FINDING_REMEDIATION_DEFINITION scanning obligation — three-category phrase
+// ---------------------------------------------------------------------------
+
+describe("FINDING_REMEDIATION_DEFINITION scanning obligation (TC-T04-04)", () => {
+  it("contains '隣接関数' (first scanning category)", () => {
+    expect(FINDING_REMEDIATION_DEFINITION).toContain("隣接関数");
+  });
+
+  it("contains '並列経路' (second scanning category)", () => {
+    expect(FINDING_REMEDIATION_DEFINITION).toContain("並列経路");
+  });
+
+  it("contains '同じ検査を行う別レイヤ' (third scanning category)", () => {
+    expect(FINDING_REMEDIATION_DEFINITION).toContain("同じ検査を行う別レイヤ");
   });
 });
 

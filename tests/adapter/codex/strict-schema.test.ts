@@ -170,20 +170,28 @@ describe("toOpenAIStrictSchema — PRODUCER_REPORT_TOOL (union optional status)"
 // T-06: parseJudgeReportInput: line: null in findings is valid (kernel parser)
 // ---------------------------------------------------------------------------
 
+// T-11: Helper remediation fixture for fixable findings in judge strict path
+const strictRemediation = {
+  invariant: "Invariant must hold at a.ts",
+  sites: [{ file: "a.ts" }],
+  approach: "Fix the invariant",
+};
+
 describe("parseJudgeReportInput: line: null in findings is valid", () => {
   it("line: null in findings → same outcome as omitting line", () => {
+    // T-11: fixable findings require remediation in judge strict path
     const withNullLine = {
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
-        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
+        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null, remediation: strictRemediation },
       ],
     };
     const withoutLine = {
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
-        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r" },
+        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", remediation: strictRemediation },
       ],
     };
 
@@ -200,11 +208,12 @@ describe("parseJudgeReportInput: line: null in findings is valid", () => {
   });
 
   it("line: null → finding does not have line property", () => {
+    // T-11: fixable findings require remediation in judge strict path
     const input = {
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
-        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
+        { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null, remediation: strictRemediation },
       ],
     };
     const result = parseJudgeReportInput(input);
