@@ -99,6 +99,38 @@ export const EVIDENCE_COUNTS_DEFINITION =
 - \`checked === 0\` は「判定不能」として扱われます。何かしら検証した場合は checked に実測値を記入してください。`;
 
 /**
+ * Remediation contract definition for use in reviewer system prompts.
+ *
+ * Describes the required `remediation` field for fixable findings:
+ * - broken invariant (1 sentence)
+ * - all sites sharing the invariant (including the finding's own file:line)
+ * - recommended fix direction
+ * - scanning obligation: enumerate all adjacent paths sharing the same invariant
+ *
+ * Provider-neutral: must NOT contain the strings "report_result" or "end_turn".
+ * Inject via `${FINDING_REMEDIATION_DEFINITION}` in Completion sections of judge prompts.
+ */
+export const FINDING_REMEDIATION_DEFINITION =
+`**Remediation Contract** (\`resolution: "fixable"\` のとき必須):
+finding を 1 つ構成したら、必ず \`remediation\` フィールドを含めてください:
+\`\`\`json
+{
+  "remediation": {
+    "invariant": "破れた不変条件を 1 文で（例: write-scope 検査は filter より前に全 changed path に適用する）",
+    "sites": [
+      { "file": "src/core/step/commit-push.ts", "line": 584 },
+      { "file": "src/core/pipeline/parallel-review-round.ts", "line": 401 }
+    ],
+    "approach": "推奨する修正の方向（例: exclusion filter の適用前に write-scope 検査を走らせる）"
+  }
+}
+\`\`\`
+
+**走査義務**: finding を 1 つ構成したら、同じ不変条件を共有する隣接関数・並列経路を走査し、成立していない箇所をすべて \`sites\` に列挙してください。
+- \`sites\` には finding 自身の \`file:line\` を必ず含めること
+- 1 site しかない場合は、走査したうえで 1 件である旨を \`rationale\` か evidence file に記すこと`;
+
+/**
  * Verdict blocking rules for use in prompts and pipeline rules.
  *
  * Describes:

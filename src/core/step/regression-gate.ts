@@ -46,31 +46,47 @@ const DEFAULT_REVIEW_MODEL = "claude-sonnet-5";
 /**
  * Format a single ledger entry for the findings ledger block.
  * Includes the provenance ref alongside file, line, and title so the gate can echo it.
+ * When the finding has a remediation contract, also emits Invariant and Sites lines.
+ * Entries without remediation are rendered identically to the pre-remediation format.
  */
 function buildLedgerEntry(finding: Finding, index: number): string {
   const ref = computeLedgerRef(finding);
   const location = finding.line !== undefined ? `${finding.file}:${finding.line}` : finding.file;
-  return [
+  const lines = [
     `### [${index}] [${finding.severity.toUpperCase()}] ${finding.title}`,
     `- **File**: ${location}`,
     `- **Resolution**: ${finding.resolution}`,
     `- **Rationale**: ${finding.rationale}`,
     `- **Provenance Ref**: \`${ref}\``,
-    "",
-  ].join("\n");
+  ];
+  if (finding.remediation) {
+    lines.push(`- **Invariant**: ${finding.remediation.invariant}`);
+    lines.push(`- **Sites**:`);
+    for (const site of finding.remediation.sites) {
+      const siteLoc = site.line !== undefined ? `${site.file}:${site.line}` : site.file;
+      lines.push(`  - ${siteLoc}`);
+    }
+  }
+  lines.push("");
+  return lines.join("\n");
 }
 
 /**
  * Format the findings ledger for injection into the user message.
  * Empty ledger → single-line notice; non-empty → formatted block per finding,
  * each annotated with its machine-assigned provenance ref for verbatim echo.
+ * When any entry has Sites, the intro note instructs the gate to verify all sites.
  */
 function buildLedgerBlock(findings: Finding[]): string {
   if (findings.length === 0) {
     return "## Findings Ledger\n\nNo fixable findings were recorded in the reviewer chain. Approve immediately with an empty findings array.";
   }
+  const hasSites = findings.some((f) => f.remediation && f.remediation.sites.length > 0);
   const entries = findings.map((f, i) => buildLedgerEntry(f, i + 1)).join("\n");
-  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were identified by reviewers during this job. Not all may have been fixed. Verify each one to determine whether it is still present in the current code (i.e. whether it has regressed).\n\nEach entry includes a **Provenance Ref** — echo this ref verbatim into the \`ledgerRef\` field of your \`report_result\` finding when reporting a regression for that entry.\n\n${entries}`;
+  const sitesNote = hasSites
+    ? " Sites がある entry は列挙された全 site で不変条件が成立しているかを確認する。いずれかで破れていれば退行として報告する。"
+    : "";
+  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were identified by reviewers during this job. Not all may have been fixed. Verify each one to determine whether it is still present in the current code (i.e. whether it has regressed).${sitesNote}\n\nEach entry includes a **Provenance Ref** — echo this ref verbatim into the \`ledgerRef\` field of your \`report_result\` finding when reporting a regression for that entry.\n\n${entries}`;
 }
 
 /**

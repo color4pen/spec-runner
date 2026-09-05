@@ -178,7 +178,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
             },
           ]);
         } else {
-          // needs-fix: supply a high-severity fixable finding
+          // needs-fix: supply a high-severity fixable finding with remediation (T-11)
           return Promise.resolve([
             {
               type: "agent.custom_tool_use",
@@ -195,6 +195,11 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
                     file: "src/test.ts",
                     title: "Test issue",
                     rationale: "Fix required",
+                    remediation: {
+                      invariant: "Test invariant must hold at src/test.ts",
+                      sites: [{ file: "src/test.ts" }],
+                      approach: "Fix the test issue",
+                    },
                   },
                 ],
               },
@@ -219,7 +224,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
             },
           ]);
         } else {
-          // needs-fix
+          // needs-fix: supply a fixable finding with remediation (T-11)
           return Promise.resolve([
             {
               type: "agent.custom_tool_use",
@@ -236,6 +241,11 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
                     file: "src/test.ts",
                     title: "Code issue",
                     rationale: "Fix required",
+                    remediation: {
+                      invariant: "Code invariant must hold at src/test.ts",
+                      sites: [{ file: "src/test.ts" }],
+                      approach: "Fix the code issue",
+                    },
                   },
                 ],
               },

@@ -8,7 +8,7 @@
  */
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION, FINDING_REMEDIATION_DEFINITION } from "./judge-rules.js";
 import { changesDirRel } from "../util/paths.js";
 import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
 
@@ -89,7 +89,12 @@ ${COMPLETION_REPORT_LINE}
   "file": "worktree-relative/path/to/file.ts",
   "line": 42,  // optional
   "title": "短い説明（1 行）",
-  "rationale": "なぜ問題か、どう修正すべきかの根拠"
+  "rationale": "なぜ問題か、どう修正すべきかの根拠",
+  "remediation": {  // resolution: "fixable" のとき必須
+    "invariant": "破れた不変条件を 1 文で",
+    "sites": [{ "file": "...", "line": 42 }],
+    "approach": "推奨する修正の方向"
+  }
 }
 \`\`\`
 
@@ -98,6 +103,8 @@ ${SEVERITY_DEFINITION}
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能
 ${DECISION_NEEDED_DEFINITION}
+
+${FINDING_REMEDIATION_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
 

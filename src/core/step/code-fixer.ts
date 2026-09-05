@@ -10,7 +10,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, resolveReviewerResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts, renderEvidenceReference } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import { conformanceResultPath } from "../../util/paths.js";
@@ -141,9 +141,11 @@ export const CodeFixerStep: AgentStep = {
           slug: deps.slug,
           findings: conformanceFindings,
           reviewerName: "conformance",
+          findingsPaths: [findingsPath],
         }) + capabilityNotice;
       }
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
+      const evidenceRefConformance = renderEvidenceReference([findingsPath]);
       return `<user-request>
 You are the code-fixer for the following change:
 
@@ -153,7 +155,7 @@ Branch: ${branch}
 ## Conformance non-conformities (must resolve)
 
 ${findingsBlock}
-
+${evidenceRefConformance}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
@@ -172,6 +174,11 @@ ${deps.request.content}
       const canonScope = buildCanonWriteScope(state, deps);
       const aggregatedFindings = collectParallelFixerFindings(state, needsFixMembers, canonScope);
 
+      // Collect all member result paths for evidence reference
+      const memberPaths = needsFixMembers.map((name) =>
+        resolveReviewerResultPath(deps.slug, name, latestIteration(state, name)),
+      );
+
       if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
         // Continuation: use short prompt with aggregated findings
         const findingsPath = needsFixMembers.length > 0
@@ -183,11 +190,13 @@ ${deps.request.content}
           slug: deps.slug,
           findings: aggregatedFindings.length > 0 ? aggregatedFindings : null,
           reviewerName: "custom reviewers",
+          findingsPaths: memberPaths.length > 0 ? memberPaths : undefined,
         }) + capabilityNotice;
       }
 
       if (aggregatedFindings.length > 0) {
         const findingsBlock = buildFindingsBlock(aggregatedFindings, "custom reviewers");
+        const evidenceRefCoordinator = renderEvidenceReference(memberPaths);
         return `<user-request>
 You are the code-fixer for the following change:
 
@@ -195,7 +204,7 @@ Change folder: ${changeFolderPath(deps.slug)}
 Branch: ${branch}
 
 ${findingsBlock}
-
+${evidenceRefCoordinator}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
@@ -260,12 +269,14 @@ ${deps.request.content}
         slug: deps.slug,
         findings,
         reviewerName: reviewerNameForMessage,
+        findingsPaths: [findingsPath],
       }) + capabilityNotice;
     }
 
     // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
     if (findings && findings.length > 0) {
       const findingsBlock = buildFindingsBlock(findings, reviewerNameForMessage);
+      const evidenceRefNormal = renderEvidenceReference([findingsPath]);
       return `<user-request>
 You are the code-fixer for the following change:
 
@@ -273,7 +284,7 @@ Change folder: ${changeFolderPath(deps.slug)}
 Branch: ${branch}
 
 ${findingsBlock}
-
+${evidenceRefNormal}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。

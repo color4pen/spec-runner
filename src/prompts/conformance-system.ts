@@ -1,7 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION, FINDING_REMEDIATION_DEFINITION } from "./judge-rules.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -69,6 +69,8 @@ ${SEVERITY_DEFINITION}
 **Resolution 定義**:
 - \`fixable\`: コードや仕様の修正で解決可能
 ${DECISION_NEEDED_DEFINITION}
+
+${FINDING_REMEDIATION_DEFINITION}
 
 **Fix Routing（fixTarget）**:
 

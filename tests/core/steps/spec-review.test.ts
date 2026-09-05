@@ -79,7 +79,8 @@ function buildDeps(opts: {
           type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id",
           input: verdict === "approved"
             ? { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } }
-            : { ok: true, approved: false, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Issue", rationale: "Fix required" }] },
+            // T-11: fixable findings require remediation in judge strict path
+            : { ok: true, approved: false, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "Issue", rationale: "Fix required", remediation: { invariant: "Issue invariant at src/test.ts", sites: [{ file: "src/test.ts" }], approach: "Fix the issue" } }] },
         },
       ]),
       sendEvents: vi.fn().mockResolvedValue(undefined),
