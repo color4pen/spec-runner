@@ -207,6 +207,47 @@ describe("TC-062: large files are omitted from patch", () => {
   });
 });
 
+// ─── TC-080: large deleted text file → omitted:size-deletion ─────────────────
+
+describe("TC-080: large deleted text file is classified as omitted:size-deletion", () => {
+  it("deleted text file over 512 KiB is classified as omitted:size-deletion", async () => {
+    const changes: readonly ChangeEntry[] = [
+      { path: "large-deleted.txt", change: "deleted", previousKind: "file" },
+    ];
+
+    // Create a large text file (just over the limit, no NUL bytes → text)
+    const largeContent = new Uint8Array(PATCH_MAX_FILE_SIZE_BYTES + 1);
+    largeContent.fill(0x42); // 'B' — all printable, no NUL → classified as text
+
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/base/large-deleted.txt", largeContent);
+    fileMap.set("/cand/large-deleted.txt", null);
+
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "large-deleted.txt");
+    expect(entry?.classification).toBe("omitted:size-deletion");
+    expect(entry?.diffContribution).toBe("");
+  });
+
+  it("deleted text file exactly at 512 KiB limit is included as deletion", async () => {
+    const changes: readonly ChangeEntry[] = [
+      { path: "boundary-deleted.txt", change: "deleted", previousKind: "file" },
+    ];
+
+    // Exactly at the limit — should be included (not omitted)
+    const content = new Uint8Array(PATCH_MAX_FILE_SIZE_BYTES);
+    content.fill(0x43); // 'C' — text
+
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/base/boundary-deleted.txt", content);
+    fileMap.set("/cand/boundary-deleted.txt", null);
+
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "boundary-deleted.txt");
+    expect(entry?.classification).toBe("included:deletion");
+  });
+});
+
 // ─── Symlink and non-applicable entries ──────────────────────────────────────
 
 describe("Non-applicable: directories and symlinks are not-applicable in patch", () => {

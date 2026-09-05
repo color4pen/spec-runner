@@ -36,6 +36,8 @@ const tempDirs: string[] = [];
 async function mktemp(prefix: string): Promise<string> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), prefix));
   tempDirs.push(dir);
+  // T-10 AC: verify the fixture directory is not inside a git repository
+  _assertNoGitAbove(dir);
   return dir;
 }
 
@@ -581,6 +583,52 @@ describe("Snapshot unavailable: does not succeed as 'no change'", () => {
 
     // Must not succeed — must be failed or halted
     expect(["failed", "halted"]).toContain(result.kind);
+  }, 30000);
+});
+
+// ─── TC-027: verification-time candidate drift → halted ──────────────────────
+
+describe("TC-027: candidate drift during verification causes halted result", () => {
+  it("VerifySeam that mutates the candidate workspace causes revision-drift halt", async () => {
+    const sourceDir = await mktemp("ao-src-");
+    const runParentDir = await mktemp("ao-run-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "original content\n");
+
+    // A VerifySeam that writes to the candidate workspace during verification,
+    // causing the candidate digest at verification time to differ from the
+    // digest observed by the post-verify patch phase (revision-drift).
+    const driftingVerify: VerifySeam = {
+      async run(candidateRoot: string, contextBlock: string): Promise<VerificationRecord> {
+        // Mutate the candidate during verification to trigger drift detection
+        await fs.writeFile(
+          path.join(candidateRoot, "drift-injected.txt"),
+          "written by verifier — this causes candidate drift\n",
+        );
+        const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
+        const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
+        return {
+          candidateDigest,
+          outcome: "passed",
+          details: "Verification passed but mutated candidate (drift scenario)",
+        };
+      },
+    };
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "test-run-027",
+      requestContent: "Test request",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: driftingVerify,
+      review: makePassingReview(),
+      spawn: makeSpawnRecorder().spawn,
+    });
+
+    // Candidate was mutated during verification → revision-drift → must halt
+    expect(result.kind).toBe("halted");
   }, 30000);
 });
 

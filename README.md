@@ -152,6 +152,11 @@ specrunner job start my-request.md \
   --run-parent-dir /path/to/output
 ```
 
+> **Note (preview / not yet wired):** The flags `--profile artifact-output`, `--source-root`, and
+> `--run-parent-dir` shown above are not yet wired in the CLI flag parser (`src/cli/flag-parser.ts`).
+> CLI wiring is deferred to a follow-on issue (Design D2). The artifact-output profile is currently
+> exercisable only via the programmatic `runArtifactOutput` API.
+
 **Output structure** (on success):
 
 ```

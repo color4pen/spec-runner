@@ -7,8 +7,9 @@
  *   "included:deletion"   - text file deletion with deletion hunk
  *   "omitted:binary"      - binary file modification/addition (no diff; payload carries bytes)
  *   "omitted:binary-deletion" - binary file deletion (no diff; no payload)
- *   "omitted:size"        - text file too large for diff (added/modified only per D8)
- *   "omitted:unreadable"  - file could not be read (I/O error; not a symlink/dir/mode change)
+ *   "omitted:size"          - text file too large for diff (added/modified)
+ *   "omitted:size-deletion" - deleted text file too large for diff hunk (D8 operator decision)
+ *   "omitted:unreadable"    - file could not be read (I/O error; not a symlink/dir/mode change)
  *   "not-applicable"      - symlink/dir/mode-only change (no text diff possible)
  */
 import * as nodePath from "node:path";
@@ -28,6 +29,7 @@ export type PatchClassification =
   | "omitted:binary"
   | "omitted:binary-deletion"
   | "omitted:size"
+  | "omitted:size-deletion"
   | "omitted:unreadable"
   | "not-applicable";
 
@@ -128,14 +130,9 @@ async function classifyAndDiff(
     }
 
     if (bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
-      // Deleted file is too large for a text diff; not a D8 "omitted:size" (added/modified only),
-      // but the closest defined category for a large deletion.  Use omitted:unreadable to signal
-      // the deletion is unrepresentable rather than omitted:size (wrong change kind per D8).
-      return { path, classification: "omitted:unreadable", diffContribution: "" };
-    }
-
-    if (classifyContent(bytes) === "binary") {
-      return { path, classification: "omitted:binary-deletion", diffContribution: "" };
+      // Deleted text file is too large for a diff hunk (D8 operator decision: omitted:size-deletion
+      // for deleted text files exceeding the size limit).
+      return { path, classification: "omitted:size-deletion", diffContribution: "" };
     }
 
     // Text deletion: include as deletion hunk

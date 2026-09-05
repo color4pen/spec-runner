@@ -248,9 +248,109 @@ describe("TC-070: no src/adapter imports in new modules (B-1)", () => {
   });
 });
 
-// ─── TC-071: guarded-spawn itself does not call git/gh ───────────────────────
+// ─── TC-071: reverse-import gate — runtime/pipeline/step must not import artifact-output/snapshot ─
 
-describe("TC-071: guarded-spawn.ts itself does not call git/gh commands", () => {
+describe("TC-071: runtime, pipeline, and step modules do not import core/artifact-output or core/snapshot", () => {
+  const RUNTIME_DIR = path.join(ROOT, "src/core/runtime");
+  const PIPELINE_DIR = path.join(ROOT, "src/core/pipeline");
+  const STEP_DIR = path.join(ROOT, "src/core/step");
+
+  const FORBIDDEN_PATTERNS = [
+    /from\s+['"].*core\/artifact-output/,
+    /from\s+['"].*core\/snapshot/,
+  ];
+
+  function checkNoReverseImport(dir: string, label: string): void {
+    if (!fs.existsSync(dir)) return; // directory may not exist yet
+    const files = collectSrcFiles(dir);
+    const violations: string[] = [];
+    for (const file of files) {
+      const content = fs.readFileSync(file, "utf-8");
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        // Skip comment lines
+        if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) {
+          continue;
+        }
+        for (const pattern of FORBIDDEN_PATTERNS) {
+          if (pattern.test(line)) {
+            violations.push(`${file}:${i + 1}: ${trimmed}`);
+          }
+        }
+      }
+    }
+    expect(violations, `${label} must not import core/artifact-output or core/snapshot`).toHaveLength(0);
+  }
+
+  it("src/core/runtime does not import core/artifact-output or core/snapshot", () => {
+    checkNoReverseImport(RUNTIME_DIR, "core/runtime");
+  });
+
+  it("src/core/pipeline does not import core/artifact-output or core/snapshot", () => {
+    checkNoReverseImport(PIPELINE_DIR, "core/pipeline");
+  });
+
+  it("src/core/step does not import core/artifact-output or core/snapshot", () => {
+    checkNoReverseImport(STEP_DIR, "core/step");
+  });
+});
+
+// ─── TC-072: CLI command registry did not gain a --source flag ────────────────
+
+describe("TC-072: CLI flag-parser has no --source flag wired for artifact-output profile", () => {
+  it("src/cli/flag-parser.ts does not define a --source flag (RUN_JOB_FLAGS gate)", () => {
+    const flagParserPath = path.join(ROOT, "src/cli/flag-parser.ts");
+    if (!fs.existsSync(flagParserPath)) return;
+    const src = fs.readFileSync(flagParserPath, "utf-8");
+    const lines = src.split("\n");
+    const violations: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      // Skip comment lines
+      if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) {
+        continue;
+      }
+      // Check for --source-root or --source flag wiring (not just comments)
+      if (/['"]--source(?:-root)?['"]/.test(line) || /source[_-]root/.test(line)) {
+        violations.push(`flag-parser.ts:${i + 1}: ${trimmed}`);
+      }
+    }
+    expect(
+      violations,
+      "flag-parser.ts must not wire --source or --source-root (CLI wiring deferred to follow-on issue D2)",
+    ).toHaveLength(0);
+  });
+
+  it("src/cli/job-start-handler.ts does not reference sourceRoot as a parsed CLI flag", () => {
+    const handlerPath = path.join(ROOT, "src/cli/job-start-handler.ts");
+    if (!fs.existsSync(handlerPath)) return;
+    const src = fs.readFileSync(handlerPath, "utf-8");
+    const lines = src.split("\n");
+    const violations: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) {
+        continue;
+      }
+      // Wired means the handler reads flags.sourceRoot / flags["source-root"] from parsed CLI args
+      if (/flags\s*\.\s*sourceRoot/.test(line) || /flags\s*\[\s*['"]source-root['"]/.test(line)) {
+        violations.push(`job-start-handler.ts:${i + 1}: ${trimmed}`);
+      }
+    }
+    expect(
+      violations,
+      "job-start-handler.ts must not read sourceRoot from parsed CLI flags (wiring deferred)",
+    ).toHaveLength(0);
+  });
+});
+
+// ─── guarded-spawn internals (supplemental, not TC-071/TC-072) ───────────────
+
+describe("guarded-spawn.ts internals: does not call git/gh commands directly", () => {
   it("guarded-spawn.ts does not contain execSync('git')", () => {
     const guardedSpawnPath = path.join(ARTIFACT_OUTPUT_DIR, "guarded-spawn.ts");
     const src = fs.readFileSync(guardedSpawnPath, "utf-8");
@@ -273,9 +373,7 @@ describe("TC-071: guarded-spawn.ts itself does not call git/gh commands", () => 
   });
 });
 
-// ─── TC-072: guarded-spawn test confirms git blocking ────────────────────────
-
-describe("TC-072: guarded-spawn test confirms git invocation is blocked", () => {
+describe("guarded-spawn test confirms git invocation is blocked", () => {
   it("guarded-spawn test file exists", () => {
     const testPath = path.join(ARTIFACT_OUTPUT_DIR, "__tests__", "guarded-spawn.test.ts");
     expect(fs.existsSync(testPath)).toBe(true);
