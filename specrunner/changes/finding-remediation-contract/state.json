@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T15:46:18.374Z",
+  "updatedAt": "2026-09-05T15:51:04.105Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -86,7 +86,8 @@
     "eda1e37a224d1cdf44a2f3cd13ff2f67137f0668",
     "8ae6252afe9f944c7838d2ae69aa0cbffb12a385",
     "8c00a14e2b2c888b50d20d674627327c9d1d5049",
-    "9e584fb49958a538ff8a5975379722b23e81c114"
+    "9e584fb49958a538ff8a5975379722b23e81c114",
+    "279724eaeb8737948c44862afa6128c64bd41565"
   ],
   "touchedFiles": {
     "request-review": [
@@ -142,21 +143,20 @@
     "code-review": [
       "src/kernel/report-result.ts",
       "src/core/port/report-result.ts",
-      "src/core/step/report-tool.ts",
       "src/core/step/fixer-helpers.ts",
       "src/core/step/code-fixer.ts",
-      "src/core/step/spec-fixer.ts",
-      "src/prompts/code-fixer-system.ts",
       "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/step/report-tool.ts",
       "src/core/step/regression-gate.ts",
       "src/prompts/regression-gate-system.ts",
       "src/prompts/custom-reviewer-system.ts",
       "src/core/port/__tests__/remediation-parse.test.ts",
       "src/core/step/__tests__/fail-closed-drift-guard.test.ts",
-      "src/prompts/spec-fixer-system.ts",
       "tests/unit/step/fixer-findings.test.ts",
-      "src/prompts/code-review-system.ts",
-      "src/prompts/conformance-system.ts"
+      "src/core/step/spec-fixer.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/prompts/__tests__/fragment-coverage.test.ts"
     ],
     "code-fixer": [
       "src/core/step/judge-verdict.ts",
@@ -228,7 +228,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 99,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -237,7 +237,7 @@
       "spec-fixer": 1,
       "implementer": 2,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 5,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
