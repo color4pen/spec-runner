@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 76 cases
-- **Automated** (unit/integration/gate): 75
+- **Total**: 78 cases
+- **Automated** (unit/integration/gate): 77
 - **Manual**: 1
-- **Priority**: must: 60, should: 15, could: 1
+- **Priority**: must: 62, should: 15, could: 1
 
 ---
 
@@ -175,6 +175,17 @@
 **Category**: integration
 **Priority**: must
 **Source**: spec.md > Requirement: Verification and review records shall be bound to the candidate revision they evaluated > Scenario: Candidate mutation during verification halts the run
+
+### TC-077: review 中の candidate 変更で run が revision-drift として halt する
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: Verification and review records shall be bound to the candidate revision they evaluated > Scenario: Candidate mutation during review halts the run
+
+**GIVEN** artifact-output run において、review seam が candidate workspace を変更する fake を注入する
+**WHEN** review 後の snapshot が review 前に採取した frozen digest と比較される
+**THEN** run が `revision-drift` outcome で halt する
+**AND** finalize された artifact ディレクトリが存在しない
 
 ### TC-028: 非対応ステップが実行前に列挙される
 
@@ -591,6 +602,18 @@
 **WHEN** artifact-output guide topic の body 文字列と照合する
 **THEN** テーブルの全項目が body に存在し、手書き文字列との乖離がテストで禁止されている
 
+### TC-078: agent が candidate に追加した escape symlink が fail-closed で halt を引き起こす
+
+**Category**: integration
+**Priority**: must
+**Source**: tasks.md > T-10 / design.md > D10
+
+**GIVEN** fake agent が candidate root 外を指す symlink（`../` を使った相対ターゲット）を candidate 内に追加する
+**WHEN** verification の revision 束縛が post-execution snapshot を採取する
+**THEN** snapshot が `{ kind: "unavailable" }` を返し、run が halt する
+**AND** `artifact/` ディレクトリが存在しない
+**AND** source directory の digest が baseline と一致する（source 不変）
+
 ### TC-076: docs/artifact-output-profile.md が必須セクションをすべて含む
 
 **Category**: manual
@@ -613,10 +636,10 @@
 
 ```yaml
 result: completed
-total: 76
-automated: 75
+total: 78
+automated: 77
 manual: 1
-must: 60
+must: 62
 should: 15
 could: 1
 blocked_reasons: []

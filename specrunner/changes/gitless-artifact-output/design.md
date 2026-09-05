@@ -90,7 +90,7 @@ snapshot は「entry の集合」であり、digest はその正規化直列化�
 - 並び順: path の UTF-8 byte 昇順。`readdir` の返却順・inode 順・時刻・絶対 path は identity に混ぜない。
 - mode: 実行 bit のみを 2 値で保持（`100644` / `100755`）。symlink は `120000`、dir は `40000`。owner / group / umask / timestamps は identity に含めない。
 - content digest: file は内容 byte の SHA-256、symlink は link target 文字列の byte を kind tag 付きで SHA-256、dir は content digest なし。
-- snapshot digest: `schemaVersion` + 適用された exclusion 規則 + 各 entry の `kind \0 path \0 mode \0 contentDigest` を上記順で streaming hash した SHA-256。表記は `sha256:<hex>`（既存 `ArtifactRef.hash` / `MainCheckoutGuardSnapshot.hash` と同じ）。
+- snapshot digest: `schemaVersion` + 適用された exclusion 規則 + 各 entry の `kind \0 path \0 mode \0 contentDigest \n` を上記順で streaming hash した SHA-256。表記は `sha256:<hex>`（既存 `ArtifactRef.hash` / `MainCheckoutGuardSnapshot.hash` と同じ）。dir エントリは contentDigest を持たないが、**フィールド区切りの `\0` は保持し、contentDigest 部分を空文字列とする**。すなわち dir エントリの byte 列は `dir\0<path>\040000\0\n`（末尾の `\0` と `\n` を含む）と確定する。この表現を唯一の正規形とし、`\0` を省略した形（`dir\0<path>\040000\n`）は不正とする。
 - 空 directory は entry として保持する（Git は表現できないが、tarball 展開物では意味を持つため）。
 
 - Rationale: 「時刻・絶対 path・traversal 順を混ぜない」（設計要求 3）を満たしつつ、同一入力から誰でも digest を再計算できる（検証可能性）。`util/hash.ts` の `hashObject` を使わず専用 streaming hash にするのは、大規模 tree で巨大な canonical JSON 文字列を一度メモリに作らないため（Non-Goal の「先回り最適化」ではなく OOM を避ける下限要件）。

@@ -40,7 +40,7 @@
   - `SnapshotResult = { kind: "ok"; snapshot } | { kind: "unavailable"; reason: string; failures: readonly SnapshotFailure[] }`
 - [ ] `src/core/snapshot/digest.ts` に純関数を実装する:
   - `computeFileContentDigest(bytes)` / `computeSymlinkDigest(target)`（`sha256:<hex>`）
-  - `computeSnapshotDigest(schemaVersion, exclusions, entries)`: entry を path の UTF-8 byte 昇順に並べ、`kind \0 path \0 mode \0 contentDigest \n` を streaming で SHA-256 に流す。巨大な中間文字列を作らない
+  - `computeSnapshotDigest(schemaVersion, exclusions, entries)`: entry を path の UTF-8 byte 昇順に並べ、`kind \0 path \0 mode \0 contentDigest \n` を streaming で SHA-256 に流す。巨大な中間文字列を作らない。dir エントリは contentDigest を持たないが **フィールド区切りの `\0` は保持し contentDigest を空文字列**とする（`dir\0<path>\040000\0\n`）。この形式を唯一の正規形として実装し、`\0` を省略した形式と混在させない
   - mode 表現: file は `100644` / `100755`、symlink は `120000`、dir は `40000`
 - [ ] digest 入力に時刻・絶対 path・inode・owner・umask・traversal 順を含めない
 - [ ] unit test を `src/core/snapshot/__tests__/digest.test.ts` に置く
@@ -144,6 +144,7 @@
 - `assertSourceUnchanged` が変更を検出し、snapshot 不能時は `unverifiable` を返す（`unchanged` にしない）
 - `createGitDenyingSpawn` が `git` / `gh` を実行せず error を投げ、他の command は inner に委譲する
 - 新規 module に `node:child_process` の import が無い
+- materialize 後の candidate に candidate root 外を指す symlink が存在しない（baseline snapshot の symlink-escape failure が materialize 前に fail-closed で停止することで保証。T-03 の path 正規化への暗黙依存ではなく、本 AC として明示）
 
 ---
 
@@ -204,7 +205,7 @@
   4. run root / candidate 作成 + materialize（T-06）
   5. agent 実行（candidate に対して追加・変更・削除）
   6. verification（T-08 の revision 束縛で実行）
-  7. 変更集合と patch の導出（T-04 / T-07）
+  7. 変更集合と patch の導出（T-04 / T-07）: **step 6 の revision 束縛が返した frozen candidate snapshot を再利用する（candidate を再走査しない）**。再走査を行うと step 6 終了〜step 7 間の第三者変更により change set 導出に用いる candidate digest と verification record の bound digest が乖離するため、構造的に禁止する
   8. reviewer へ snapshot 由来 context を提示（T-08 の revision 束縛で実行）
   9. artifact finalize（T-07）→ 終了時の source 不変検証（T-06）
 - [ ] 各 phase の duration・entry 数・走査 byte 数・artifact / payload 容量・patch 行数を metrics として集計する
@@ -221,6 +222,7 @@
 - `run.json` に `resume.supported === false` が記録される
 - run 内で spawn seam を使う経路はすべて guarded spawn 越しである
 - run module が GitHub client を型としても受け取らない
+- change set 導出に使った candidate digest が verification record の bound digest と等しい（step 6 の frozen snapshot を再利用し、step 7 で candidate を再走査しないことで構造的に保証）
 
 ---
 
@@ -235,17 +237,20 @@
 - [ ] 成功ケース: 9 phase 完走 → artifact 一式の存在 → manifest の added / modified / deleted → binary / symlink / mode 変更の欠落なし → verification / review record の digest が manifest の candidate digest と一致 → source digest が baseline と一致
 - [ ] 失敗ケース: verification を失敗させ、`artifact/` 不在・`run.json` の terminal status・source digest 不変を確認する
 - [ ] fail-closed ケース: snapshot を不能にした状態（読めない entry を含む fixture）で run が「変更なし」で成功しないことを確認する
+- [ ] escape symlink fail-closed ケース: fake agent が candidate に candidate root 外を指す symlink（`../` を含む相対ターゲット）を追加し、その後の revision 束縛 snapshot が `unavailable` を返し run が halt することを確認する（`revision-drift` または `unavailable` で停止し、artifact が作られないこと）
 - [ ] 規模ケース: 小 file を多数（CI で許容できる範囲、例 1000 件程度）持つ fixture で完走し、metrics（duration / entry 数 / byte 数 / artifact 容量）が欠落なく出ることを確認する。実測値そのものは assert しない
 - [ ] 生成した temp directory を後始末する
 
 **Acceptance Criteria**:
 - fixture root の祖先に `.git` が無いことが test 内で assert される
 - 成功ケースで manifest に added / modified / deleted がすべて出力される
+- 成功ケースで `changes.patch` に削除 hunk が存在する（deleted entry の patch 表現が end-to-end で欠落しない。TC-021 の integration 分類の意図を縦断で充足する）
 - binary / symlink / mode 変更が manifest と payload から欠落しない
 - verification record と review record の束縛 digest が manifest の candidate digest と一致する
 - 成功ケース・失敗ケースの双方で source directory の digest が baseline と一致する
 - 失敗ケースで `artifact/` が存在しない
 - snapshot 不能ケースが「変更なし成功」にならない
+- escape symlink fail-closed ケースで run が halt し `artifact/` が作られない
 - 規模ケースで metrics の全 field が欠落なく出力される
 
 ---

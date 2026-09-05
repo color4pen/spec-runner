@@ -220,6 +220,13 @@ The run SHALL freeze the candidate revision by taking a snapshot immediately bef
 **Then** the run halts with a `revision-drift` outcome
 **And** no finalized artifact directory exists
 
+#### Scenario: Candidate mutation during review halts the run
+
+**Given** an artifact-output run whose review step mutates the candidate workspace
+**When** the post-review snapshot is compared with the frozen digest taken before review
+**Then** the run halts with a `revision-drift` outcome
+**And** no finalized artifact directory exists
+
 ### Requirement: Git-dependent operations shall be enumerated by preflight before execution starts
 
 Before any workspace is materialized and before any step runs, the run SHALL evaluate the selected pipeline against the execution profile's capability set and produce an effective-pipeline report listing supported steps and unsupported steps with the missing capabilities for each. When the report declares the pipeline not executable under the profile, the run MUST stop before materializing a candidate workspace. Entry routes that the profile cannot support (issue-originated start and issue linkage) SHALL be rejected by the same preflight.
