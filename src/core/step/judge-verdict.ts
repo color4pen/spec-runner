@@ -176,6 +176,20 @@ export function deriveConformanceVerdict(
   if (base !== "needs-fix") return base;
 
   const target = aggregateFixTarget(findings);
+
+  // R1b: re-validate all findings against the aggregated fixer.
+  // aggregateFixTarget collapses multiple fixTargets to a single fixer, and
+  // getConformanceFixContext will hand ALL findings to that fixer. If any
+  // finding's sites are outside the aggregated fixer's write scope (e.g. a
+  // code-fixer finding with src/** sites that spec-fixer cannot write), the
+  // routing is inconsistent and must escalate instead.
+  if (canonScope) {
+    const aggregatedResolver = (): FixTarget => target as FixTarget;
+    if (selectUnroutableCanonFindings(findings, canonScope, aggregatedResolver).length > 0) {
+      return "escalation";
+    }
+  }
+
   return `needs-fix:${target}`;
 }
 

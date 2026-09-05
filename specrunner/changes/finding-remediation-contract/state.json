@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T14:46:26.341Z",
+  "updatedAt": "2026-09-05T15:08:32.082Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -77,7 +77,9 @@
     "a72f9d16ae40722297b032e778aeddce6369cb96",
     "78248d678bef13c62d63a218b66377a150e2f745",
     "cd40712800b5614148c7feac8acf3d83de3cfcf3",
-    "b58b3d1dac36b4062376a8271232fdfdb034ff23"
+    "b58b3d1dac36b4062376a8271232fdfdb034ff23",
+    "838f1bf2c479263cbe76b76294c06d56aef65d65",
+    "a7e7b5ce6bbb72d84c9a3a5bb965c01064ea3796"
   ],
   "touchedFiles": {
     "request-review": [
@@ -187,7 +189,20 @@
       "src/prompts/conformance-system.ts"
     ],
     "code-fixer": [
-      "src/core/step/canon-escalation.ts"
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/core/step/canon-escalation.test.ts",
+      "src/kernel/report-result.ts",
+      "tests/unit/core/step/judge-verdict-canon.test.ts",
+      "tests/core/steps/spec-review.test.ts",
+      "tests/helpers/pipeline-mock-client.ts",
+      "tests/pipeline-integration.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -229,7 +244,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -239,10 +254,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 3
+      "custom-reviewers": 4
     }
   }
 }
