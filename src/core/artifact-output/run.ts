@@ -417,8 +417,12 @@ export async function runArtifactOutput(
     return { kind: "failed", runId, runRoot, reason: "Artifact finalization failed", error: err, preflightReport };
   }
 
-  // Source unchanged final check
-  await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+  // Source unchanged final check — D6: fail-closed; if mutated/unverifiable, return failed
+  const sourceMutatedOnSuccess = await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+  if (sourceMutatedOnSuccess) {
+    // runJson.status is already 'failed' and written by checkSourceUnchanged
+    return { kind: "failed", runId, runRoot, reason: "Source was mutated during run", preflightReport };
+  }
 
   // Compute metrics
   const durationMs = (input.now ?? Date.now)() - startMs;
@@ -474,29 +478,42 @@ async function writeJson(filePath: string, data: unknown): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2) + "\n", "utf-8");
 }
 
+/**
+ * Check that the source directory is unchanged since the baseline snapshot.
+ * Returns true if mutation or unverifiable was detected (status set to 'failed'),
+ * false if source is unchanged.
+ *
+ * D6 fail-closed: always sets runJson.status = 'failed' on mutation/unverifiable,
+ * regardless of current status. The guard previously checked `=== 'completed'`
+ * but that fired too late on the success path (status was still 'running').
+ */
 async function checkSourceUnchanged(
   sourceRoot: string,
   baselineDigest: string,
   collectOpts: { exclusions: readonly string[] },
   runJson: RunJson,
   runRoot: string,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const guardResult = await assertSourceUnchanged(sourceRoot, baselineDigest, collectOpts);
     if (guardResult.kind === "mutated") {
       runJson.error = (runJson.error ?? "") + " | source-mutated: " + guardResult.currentDigest;
-      if (runJson.status === "completed") runJson.status = "failed";
+      runJson.status = "failed";
       await writeRunJson(runRoot, runJson);
+      return true;
     } else if (guardResult.kind === "unverifiable") {
       // Fail-closed: cannot confirm source is unchanged → record as failure.
       // D6: "不一致なら fail-closed で記録する" — unverifiable is not the same as unchanged.
       runJson.error = (runJson.error ?? "") + " | source-unverifiable: " + guardResult.reason;
-      if (runJson.status === "completed") runJson.status = "failed";
+      runJson.status = "failed";
       await writeRunJson(runRoot, runJson);
+      return true;
     }
     // guardResult.kind === "unchanged" → no action needed
+    return false;
   } catch {
     // best-effort: if the guard itself throws, we cannot update run.json
+    return false;
   }
 }
 

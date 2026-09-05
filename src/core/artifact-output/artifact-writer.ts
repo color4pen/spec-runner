@@ -191,10 +191,19 @@ async function writePayload(
     const dstPath = nodePath.join(payloadDir, entry.path);
 
     await fs.mkdir(nodePath.dirname(dstPath), { recursive: true });
-    try {
+    if (entry.classification === "omitted:unreadable") {
+      // Fail-closed: an unreadable entry cannot be represented in the patch.
+      // If we also cannot copy it to payload, the artifact is incomplete — propagate the error
+      // so finalizeArtifact fails and artifact/ is never created. (D6 fail-closed)
       await fs.copyFile(srcPath, dstPath);
-    } catch {
-      // Best-effort: if file doesn't exist in candidate, skip
+    } else {
+      // Best-effort for binary/size entries: if the candidate file moved or disappeared
+      // between classification and finalization, skip (rare race; not fail-closed).
+      try {
+        await fs.copyFile(srcPath, dstPath);
+      } catch {
+        // Best-effort: skip if file not found
+      }
     }
   }
 }

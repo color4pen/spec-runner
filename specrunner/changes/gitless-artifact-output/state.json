@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T17:24:52.621Z",
+  "updatedAt": "2026-09-05T17:59:11.637Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
-  "error": {
-    "code": "CODE_REVIEW_RETRIES_EXHAUSTED",
-    "message": "code-review did not approve after 2 iterations",
-    "hint": "Review review-feedback-006.md and address findings manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -150,12 +146,7 @@
       "tests/artifact-output-vertical.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "code-review did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -167,10 +158,15 @@
       "text": "operator 裁定（CANON_FINDING_ESCALATION 復帰）: code-review iter 3 の F-03（design.md D8 表）は operator-apply commit 9741d862 で対応済み。D8 表に `omitted:size-deletion`（deleted / 旧側 text / size 上限超過。patch にも payload にも含めない）と `omitted:unreadable`（readFile の I/O 失敗専用。manifest には必ず現れる）を定義し、tasks.md T-07 と test-cases.md TC-080（size 上限超過 text 削除 → omitted:size-deletion）を同期した。保護正典はこれ以上変更しない。\n\n残りの finding（iter 3 F-01 / F-02 / F-04 〜 F-09）はすべて src / tests / README の修正で code-fixer が解消する:\n- F-01/F-02: patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更し、PatchClassification 型に追加する。`omitted:unreadable` は I/O 失敗専用として残す。artifact-writer.ts / context.ts / APPLY.md 生成の分類一覧と file 先頭の doc comment も D8 表と一致させる（size-deletion は payload なし）\n- F-04: TC-080 に対応する unit test を patch.test.ts に追加する\n- F-05: deleted 分岐の到達不能な重複 binary check を削除する\n- F-06 〜 F-09: iter 2 からの持越し（_assertNoGitAbove 未使用、README の preview 注記、TC-027 統合テスト、TC-071 / TC-072）を今回すべて同一 iteration で解消する。前回は F-01〜F-04 だけを直して持越しが残ったので、今回は 9 件すべてを対象にすること。",
       "step": "code-review",
       "recordedAt": "2026-09-05T16:53:44.533Z"
+    },
+    {
+      "text": "Operator ruling for review-feedback-006. Address ALL THREE findings in this single iteration; do not widen scope beyond them.\n\nF-01 (high, src/core/artifact-output/run.ts ~420-463): source mutation on the success path must make runArtifactOutput return { kind: \"failed\" } and leave run.json with status \"failed\" (spec.md D6 fail-closed). Check guardResult.kind !== \"unchanged\" directly and return failed with the source-mutated reason before status is ever set to \"completed\" (or equivalently set status after the check so the guard fires). Strengthen the TC-006 test to assert result.kind === \"failed\" AND runJson.status === \"failed\", not only runJson.error includes \"source-mutated\".\n\nF-02 (medium, src/core/artifact-output/artifact-writer.ts ~193-198): writePayload must be fail-closed. For non-deletion entries classified omitted:unreadable, propagate the copyFile failure (throw) so finalizeArtifact fails and artifact/ is never created. Deletion entries keep no payload (unchanged). Add the TC-022 test: candidate file removed after classification but before finalize -> finalizeArtifact throws and artifact/ does not exist.\n\nF-03 (low): add src/core/artifact-output/__tests__/artifact-writer.test.ts with at least TC-062: fake writeFile/rename that throws right after manifest.json is written -> artifact/ directory does not exist afterward.\n\nKeep the D8 classification table as the single source of emitted classification values; do not introduce new classification values. Run the full test suite before finishing.",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-05T17:59:11.465Z"
     }
   ],
   "_journal": {
-    "historyCount": 91,
+    "historyCount": 93,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

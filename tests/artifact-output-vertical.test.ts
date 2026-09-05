@@ -679,29 +679,16 @@ describe("TC-006: source mutation during run is detected and recorded in run.jso
       spawn: makeSpawnRecorder().spawn,
     });
 
-    // The run may complete (verification passes) or halt, but the source-guard
-    // final check at the end of the run must record the mutation.
-    // run.json should contain "source-mutated" in the error field.
+    // D6: source mutation → fail-closed. runArtifactOutput must return { kind: "failed" }
+    // and run.json must have status "failed" with "source-mutated" in the error field.
+    expect(result.kind, "source mutation on success path must make runArtifactOutput return 'failed'").toBe("failed");
+
     const runJsonPath = path.join(runParentDir, "test-run-006", "run.json");
     const runJsonRaw = await fs.readFile(runJsonPath, "utf-8");
     const runJson = JSON.parse(runJsonRaw) as { status: string; error?: string };
 
-    // D6: source mutation → fail-closed; either status is "failed" or error records mutation.
-    const hasMutationRecord =
-      (runJson.error?.includes("source-mutated") ?? false) ||
-      runJson.status === "failed";
-
-    expect(
-      hasMutationRecord,
-      `Expected run.json to record source mutation. Got: status=${runJson.status}, error=${runJson.error ?? "(none)"}`,
-    ).toBe(true);
-
-    // Confirm the mutation is recorded as an error (not silently ignored).
-    if (result.kind === "completed") {
-      // If the run somehow completed, the mutation must still be in the error field.
-      expect(runJson.error, "source-mutated must appear in error field even if run completed")
-        .toContain("source-mutated");
-    }
+    expect(runJson.status, "run.json status must be 'failed' when source was mutated").toBe("failed");
+    expect(runJson.error, "run.json error must include 'source-mutated'").toContain("source-mutated");
   }, 30000);
 
   it("source-unverifiable path: checkSourceUnchanged records failure when source becomes unreadable", async () => {
