@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T22:36:29.593Z",
+  "updatedAt": "2026-09-05T22:43:57.498Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -92,7 +92,8 @@
     "7931f70489a95a8db91c338079473d9677859219",
     "f216a81f5a44427111d77f1c625d21fadda69d08",
     "75121e920eb17deec0435d1b0bb949d70f92656f",
-    "e5682a006d27aaecb074ac9955e7ec4e459bb77e"
+    "e5682a006d27aaecb074ac9955e7ec4e459bb77e",
+    "747ab7b16831c754ab5fd14766a031be2c9dc438"
   ],
   "touchedFiles": {
     "request-review": [
@@ -180,6 +181,10 @@
       "docs/artifact-output-profile.md",
       "src/core/artifact-output/run-layout.ts",
       "src/core/command/__tests__/guide.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-29-remove-bite-evidence.md",
+      "specrunner/adr/2026-09-05-gitless-artifact-output.md"
     ]
   },
   "resumePoint": null,
@@ -235,8 +240,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1122",
+    "number": 1122,
+    "createdAt": "2026-09-05T22:43:56.956Z"
+  },
   "_journal": {
-    "historyCount": 132,
+    "historyCount": 137,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -251,7 +261,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
