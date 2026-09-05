@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T14:04:08.831Z",
+  "updatedAt": "2026-09-05T14:07:22.017Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/finding-remediation-contract-d394de74",
-  "error": null,
+  "error": {
+    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
+    "message": "custom reviewers did not approve after 2 iterations",
+    "hint": "Review the latest reviewer results and address findings manually. (iteration 003)"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -75,7 +79,9 @@
     "b64b617613fa7c4ca38b58972f99b37b1e572bb0",
     "232b7729e07fdc5286ac2305b7f7038e0c514f6d",
     "a72f9d16ae40722297b032e778aeddce6369cb96",
-    "78248d678bef13c62d63a218b66377a150e2f745"
+    "78248d678bef13c62d63a218b66377a150e2f745",
+    "cd40712800b5614148c7feac8acf3d83de3cfcf3",
+    "b58b3d1dac36b4062376a8271232fdfdb034ff23"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,13 +191,7 @@
       "src/prompts/conformance-system.ts"
     ],
     "code-fixer": [
-      "src/core/step/canon-escalation.ts",
-      "src/core/step/executor.ts",
-      "src/core/step/no-op-detect.ts",
-      "src/kernel/report-result.ts",
-      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
-      "src/core/step/write-scope.ts",
-      "src/core/step/__tests__/executor-no-op.test.ts"
+      "src/core/step/canon-escalation.ts"
     ]
   },
   "reviewerStatuses": [
@@ -223,8 +223,14 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "custom reviewers did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -234,10 +240,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 2,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 3
     }
   }
 }
