@@ -104,13 +104,16 @@ function buildCodexThread(
       if (turn.type === "stall-until-abort") {
         const signal = opts?.signal;
         // Destructure at the narrowing point to preserve types through the async closure.
-        const { toolName } = turn;
+        const { toolName, toolTarget } = turn;
 
         async function* stallStream() {
           if (toolName) {
+            // item.started for a command_execution item: extractCodexProgress() maps it to
+            // tool "Bash" with the command as target, and the runner records it via
+            // tracker.onToolStart(). No item.completed follows → in-flight at timeout.
             yield {
               type: "item.started",
-              item: { type: "command_execution", command: toolName },
+              item: { type: "command_execution", id: "item_stall", command: toolTarget ?? toolName },
             };
           }
           // Block until abort fires.

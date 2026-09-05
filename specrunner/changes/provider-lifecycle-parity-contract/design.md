@@ -325,7 +325,9 @@ error message の provider 別 **prefix パターン**（provider-specific 分�
 **契約にしない**: wall-clock 時間、`durationMs` などの具体値、
 event の到着順序（`emittedEvents` は「含む」検査のみ、順序は assert しない）、
 prompt 本文、private helper 名、stdout / stderr の文字列、JSONL ログの行内容、
-raw SDK event の shape。
+raw SDK event の shape、artifact bundle の内容（`buildArtifactBundle` の戻り値。
+本 contract は artifact 構築を経由する lifecycle だけを観測し、fake timer case では
+grace timer の順序保証のため driver が同関数を `""` で stub する。実時間 case は本番実装を通す）。
 
 **Rationale**: 要件 2 の「不安定な実装詳細を共通契約にしない」を判断基準として明文化しておかないと、
 実装時に「たまたま通る assert」を足してしまい、R4b で偽陽性の red を量産する。

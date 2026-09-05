@@ -12,7 +12,7 @@
  *   fail-transient                   → throw new Error("ECONNREFUSED ...")
  *   fail-non-transient               → throw new Error("fatal non-transient error")
  *   fail-context-exhaustion          → yield error result with "Prompt is too long" OR throw
- *   stall-until-abort                → optionally emit tool_use, then wait for abortController
+ *   stall-until-abort                → optionally emit a tool_use content_block_start, then wait for abortController
  *
  * Invocation count: increments on every _queryFn call (main + retry + repair + postWork).
  */
@@ -173,12 +173,20 @@ function buildQueryFn(
 
       case "stall-until-abort": {
         if (turn.toolName) {
-          // Emit a tool_use start message so the runner records last-tool context.
+          // Emit a real tool_use content_block_start stream event (the shape isToolUse()
+          // in message-types.ts recognizes) so the runner emits step:progress and records
+          // last-tool context via tracker.onToolStart(). No tool_result follows, so the
+          // tracker reports the tool as in-flight in tracker.timeoutHint().
           yield {
-            type: "assistant",
-            message: {
-              role: "assistant",
-              content: [{ type: "text", text: `using ${turn.toolName}` }],
+            type: "stream_event",
+            event: {
+              type: "content_block_start",
+              content_block: {
+                type: "tool_use",
+                name: turn.toolName,
+                id: "toolu_stall",
+                input: turn.toolTarget !== undefined ? { command: turn.toolTarget } : {},
+              },
             },
           } as unknown;
         }

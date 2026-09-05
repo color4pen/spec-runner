@@ -730,8 +730,10 @@ export const CONTRACT_CASES: ContractCase[] = [
     area: "timeout",
     classification: "shared",
     scenario: {
-      // Agent stalls; fake-timer advance triggers inactivity watchdog at 900,000ms.
-      turns: [{ type: "stall-until-abort" }],
+      // Agent starts a tool (real tool_use / item.started), then stalls; fake-timer
+      // advance triggers inactivity watchdog at 900,000ms. The tool start exercises
+      // the last-tool hint path (tracker.onToolStart → timeoutHint "in-flight").
+      turns: [{ type: "stall-until-abort", toolName: "Bash", toolTarget: "sleep 1000" }],
       afterScript: "repeat-last",
       policy: {},
       config: {},
@@ -744,11 +746,14 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
+        // tracker.timeoutHint() must reach error.hint (last-tool in-flight path).
+        errorHintPresent: true,
       },
       codex: {
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
+        errorHintPresent: true,
       },
     },
   },
@@ -772,11 +777,14 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
+        // tracker.timeoutHint() must reach error.hint (no-tool-observed path).
+        errorHintPresent: true,
       },
       codex: {
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
+        errorHintPresent: true,
       },
     },
   },
@@ -800,14 +808,19 @@ export const CONTRACT_CASES: ContractCase[] = [
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
-        // abort is NOT retried — transientRetryAttempts stays 0
+        errorHintPresent: true,
+        // abort is NOT retried — transientRetryAttempts stays 0 AND no additional
+        // SDK invocation is issued after the abort (spec: "abort 後に追加 SDK invocation が無い").
         transientRetryAttempts: 0,
+        sdkInvocations: 1,
       },
       codex: {
         support: "supported",
         completionReason: "timeout",
         errorCode: "STEP_TIMEOUT",
+        errorHintPresent: true,
         transientRetryAttempts: 0,
+        sdkInvocations: 1,
       },
     },
   },

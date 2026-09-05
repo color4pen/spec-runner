@@ -108,7 +108,7 @@ describe("ratchet:duplicate", () => {
     expect(duplicates, `Duplicate case IDs: ${duplicates.join(", ")}`).toHaveLength(0);
   });
 
-  test("no duplicate IDs in REQUIRED_CASE_IDS (new Set(...).size === 31)", () => {
+  test("no duplicate IDs in REQUIRED_CASE_IDS (new Set(...).size === REQUIRED_CASE_IDS.length)", () => {
     // T-01 acceptance criterion: REQUIRED_CASE_IDS itself must not contain duplicates.
     // A duplicate entry here would be absorbed by the set comparison in ratchet:id and
     // go undetected without this explicit check.
@@ -144,8 +144,30 @@ describe("ratchet:area", () => {
     ).toHaveLength(0);
   });
 
-  test("total case count equals 31", () => {
-    expect(CONTRACT_CASES).toHaveLength(31);
+  test("every REQUIRED_CASE_IDS area prefix (<area>.<scenario>) is in LIFECYCLE_AREAS", () => {
+    // T-01 acceptance criterion: the ID itself carries the area. Checking only the
+    // table's `area` field would let `area: "timeout"` coexist with an ID like
+    // "misc.foo" — the prefix must be validated against LIFECYCLE_AREAS directly.
+    const areasSet = new Set<string>(LIFECYCLE_AREAS);
+    const invalid = REQUIRED_CASE_IDS.filter((id) => {
+      const dot = id.indexOf(".");
+      return dot <= 0 || !areasSet.has(id.slice(0, dot));
+    });
+    expect(invalid, `REQUIRED_CASE_IDS with an area prefix outside LIFECYCLE_AREAS`).toHaveLength(0);
+  });
+
+  test("case ID prefix matches the table's area field", () => {
+    const mismatched = CONTRACT_CASES.filter((c) => !c.id.startsWith(`${c.area}.`));
+    expect(
+      mismatched.map((c) => `${c.id} (area: ${c.area})`),
+      `Cases whose ID prefix differs from their area field`,
+    ).toHaveLength(0);
+  });
+
+  test("total case count equals REQUIRED_CASE_IDS.length", () => {
+    // REQUIRED_CASE_IDS is the canonical source of truth (D5); the table must match it,
+    // not a hand-written literal.
+    expect(CONTRACT_CASES).toHaveLength(REQUIRED_CASE_IDS.length);
   });
 });
 
@@ -170,6 +192,9 @@ describe("ratchet:shared", () => {
     expect(violations).toHaveLength(0);
   });
 
+  // The shared / provider-specific split is pinned by literal counts on purpose: it is
+  // the ratchet that detects a silent reclassification of a case. The total is derived
+  // from REQUIRED_CASE_IDS (D5) so the two literals can never drift from the canon.
   test("shared case count equals 19", () => {
     const shared = CONTRACT_CASES.filter((c) => c.classification === "shared");
     expect(shared).toHaveLength(19);
@@ -178,6 +203,12 @@ describe("ratchet:shared", () => {
   test("provider-specific case count equals 12", () => {
     const specific = CONTRACT_CASES.filter((c) => c.classification === "provider-specific");
     expect(specific).toHaveLength(12);
+  });
+
+  test("shared + provider-specific equals REQUIRED_CASE_IDS.length", () => {
+    const shared = CONTRACT_CASES.filter((c) => c.classification === "shared").length;
+    const specific = CONTRACT_CASES.filter((c) => c.classification === "provider-specific").length;
+    expect(shared + specific).toBe(REQUIRED_CASE_IDS.length);
   });
 });
 

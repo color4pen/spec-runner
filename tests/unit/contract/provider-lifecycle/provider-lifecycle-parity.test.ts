@@ -21,27 +21,39 @@
  *
  * Ledger: test name format "[<providerId>] <caseId>" so grep/filter works.
  *
- * buildArtifactBundle mock rationale:
- *   ClaudeCodeRunner.run() calls buildArtifactBundle (real file I/O) before armReportGrace()
- *   is called. With fake timers, vi.advanceTimersByTimeAsync uses originalSetTimeout internally
+ * buildArtifactBundle stub rationale (fake-timer cases ONLY):
+ *   Both runners call buildArtifactBundle (real file I/O) before armReportGrace() is called.
+ *   With fake timers, vi.advanceTimersByTimeAsync uses originalSetTimeout internally
  *   (sinon/fake-timers tickAsync), which fires in the event-loop timers phase — BEFORE the
  *   I/O phase. This means the real buildArtifactBundle I/O completes TOO LATE: doTick(60001)
  *   advances the fake clock before the grace timer is scheduled, causing the grace timer to be
  *   scheduled at clock+60000 which is unreachable.
  *
- *   The mock returns "" immediately (no real I/O), so the async chain from runner.run() to
+ *   The stub returns "" immediately (no real I/O), so the async chain from runner.run() to
  *   armReportGrace() completes as microtasks — which all drain BEFORE any event-loop timer
  *   fires. This ensures armReportGrace schedules the grace fake-timer BEFORE doTick advances
  *   the clock, allowing vi.advanceTimersByTimeAsync(60_001) to fire it correctly.
  *
- *   Semantic correctness: the test tempDir never contains artifact files, so the real
- *   buildArtifactBundle would also return "". The mock produces identical behavior.
+ *   Scope: the stub is active only while a `usesFakeTimers` case is running (the
+ *   `artifactBundleStub.active` flag is set around runner.run() in the driver below).
+ *   Real-timer cases go through the production buildArtifactBundle so the contract keeps
+ *   observing the production entry path — the tempDir has no artifact files, so it returns "".
+ *   Artifact bundle CONTENT is not an observation target of this contract (design.md D8
+ *   「契約にしない」); only the lifecycle around it is.
  */
+// vi.hoisted: the flag must exist before the hoisted vi.mock factory runs.
+const artifactBundleStub = vi.hoisted(() => ({ active: false }));
+
 // Hoisted vi.mock: must appear before imports that transitively load the module.
-// Mocks buildArtifactBundle for ALL tests in this file; see comment block above for rationale.
-vi.mock("../../../../src/adapter/shared/artifact-bundle.js", () => ({
-  buildArtifactBundle: async () => "",
-}));
+// Delegates to the production implementation unless the fake-timer stub is active.
+vi.mock("../../../../src/adapter/shared/artifact-bundle.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../../src/adapter/shared/artifact-bundle.js")>();
+  return {
+    ...actual,
+    buildArtifactBundle: async (cwd: string, slug: string): Promise<string> =>
+      artifactBundleStub.active ? "" : actual.buildArtifactBundle(cwd, slug),
+  };
+});
 
 import { describe, test, expect, vi } from "vitest";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
@@ -380,6 +392,8 @@ describe("provider-lifecycle-parity", () => {
               // This ensures that all I/O operations (mkdtemp, writeFile) resolve
               // via real timers, while the runner's internal timers are properly faked.
               vi.useFakeTimers();
+              // Stub buildArtifactBundle only for this fake-timer run (see header comment).
+              artifactBundleStub.active = true;
               try {
                 // Start the run in the background, then advance fake timers.
                 const runPromise = runner.run(ctx);
@@ -387,6 +401,7 @@ describe("provider-lifecycle-parity", () => {
                 await vi.advanceTimersByTimeAsync(advanceMs);
                 result = await runPromise;
               } finally {
+                artifactBundleStub.active = false;
                 vi.useRealTimers();
               }
             } else {
