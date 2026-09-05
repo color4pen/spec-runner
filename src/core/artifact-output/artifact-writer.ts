@@ -21,7 +21,8 @@ function buildApplyMd(manifest: ArtifactManifest): string {
       c.patchClassification === "not-applicable" ||
       c.patchClassification === "omitted:binary" ||
       c.patchClassification === "omitted:binary-deletion" ||
-      c.patchClassification === "omitted:size",
+      c.patchClassification === "omitted:size" ||
+      c.patchClassification === "omitted:unreadable",
   );
 
   return `# APPLY.md — Artifact Application Instructions
@@ -56,7 +57,7 @@ do NOT apply — the patch may not apply cleanly and may corrupt your source.
 3. Copy files from \`payload/\` to their respective paths (binary / large files).
 4. Verify the result matches the candidate digest: ${manifest.candidate.digest}
 
-${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, or `omitted:size` in manifest.json. These changes must be applied from `payload/` or handled separately.\n" : ""}
+${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, `omitted:size`, or `omitted:unreadable` in manifest.json. These changes must be applied from `payload/` or handled separately.\n" : ""}
 ## Profile: ${manifest.profile}
 
 Resume: NOT supported. If the run was interrupted, restart from the source directory.
@@ -172,10 +173,12 @@ async function writePayload(
   }
 
   for (const entry of patchEntries) {
-    // Include in payload: omitted:binary, omitted:size (added/modified have candidate bytes)
+    // Include in payload: omitted:binary, omitted:size, omitted:unreadable
+    // (added/modified have candidate bytes; unreadable is attempted best-effort)
     if (
       entry.classification !== "omitted:binary" &&
-      entry.classification !== "omitted:size"
+      entry.classification !== "omitted:size" &&
+      entry.classification !== "omitted:unreadable"
     ) {
       continue;
     }

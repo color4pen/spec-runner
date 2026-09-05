@@ -3,12 +3,13 @@
  * T-07: patch.ts — generates changes.patch and classifies each change entry.
  *
  * Patch entry classifications (D8 table):
- *   "included"          - text file modification/addition with diff
- *   "included:deletion" - text file deletion with deletion hunk
- *   "omitted:binary"    - binary file modification/addition (no diff; payload carries bytes)
+ *   "included"            - text file modification/addition with diff
+ *   "included:deletion"   - text file deletion with deletion hunk
+ *   "omitted:binary"      - binary file modification/addition (no diff; payload carries bytes)
  *   "omitted:binary-deletion" - binary file deletion (no diff; no payload)
- *   "omitted:size"      - text file too large for diff
- *   "not-applicable"    - symlink/dir/mode-only change (no text diff possible)
+ *   "omitted:size"        - text file too large for diff (added/modified only per D8)
+ *   "omitted:unreadable"  - file could not be read (I/O error; not a symlink/dir/mode change)
+ *   "not-applicable"      - symlink/dir/mode-only change (no text diff possible)
  */
 import * as nodePath from "node:path";
 import { classifyContent, buildUnifiedDiff } from "../../util/unified-diff.js";
@@ -27,6 +28,7 @@ export type PatchClassification =
   | "omitted:binary"
   | "omitted:binary-deletion"
   | "omitted:size"
+  | "omitted:unreadable"
   | "not-applicable";
 
 export interface PatchEntryResult {
@@ -115,13 +117,21 @@ async function classifyAndDiff(
     // Read the baseline file
     const basePath = nodePath.join(baselineRoot, path);
     const bytes = await readFile(basePath);
-    if (!bytes || bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
-      // Can't read or too large
-      if (bytes && classifyContent(bytes) === "binary") {
-        return { path, classification: "omitted:binary-deletion", diffContribution: "" };
-      }
-      // Unreadable or too large: omit
-      return { path, classification: "omitted:size", diffContribution: "" };
+    if (!bytes) {
+      // I/O failure reading the deleted baseline file: fail-closed, not omitted:size (D8 defines
+      // omitted:size only for added/modified size overruns, not for unreadable deletions).
+      return { path, classification: "omitted:unreadable", diffContribution: "" };
+    }
+
+    if (classifyContent(bytes) === "binary") {
+      return { path, classification: "omitted:binary-deletion", diffContribution: "" };
+    }
+
+    if (bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
+      // Deleted file is too large for a text diff; not a D8 "omitted:size" (added/modified only),
+      // but the closest defined category for a large deletion.  Use omitted:unreadable to signal
+      // the deletion is unrepresentable rather than omitted:size (wrong change kind per D8).
+      return { path, classification: "omitted:unreadable", diffContribution: "" };
     }
 
     if (classifyContent(bytes) === "binary") {
@@ -138,7 +148,10 @@ async function classifyAndDiff(
     const candPath = nodePath.join(candidateRoot, path);
     const bytes = await readFile(candPath);
     if (!bytes) {
-      return { path, classification: "not-applicable", diffContribution: "" };
+      // I/O failure reading the added file: cannot classify as not-applicable (that is reserved
+      // for symlink/dir/mode-only changes).  Use omitted:unreadable so the entry appears in the
+      // manifest and payload write is attempted (even if it may fail silently).
+      return { path, classification: "omitted:unreadable", diffContribution: "" };
     }
     if (bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
       return { path, classification: "omitted:size", diffContribution: "" };
@@ -157,7 +170,10 @@ async function classifyAndDiff(
   const [baseBytes, candBytes] = await Promise.all([readFile(basePath), readFile(candPath)]);
 
   if (!baseBytes || !candBytes) {
-    return { path, classification: "not-applicable", diffContribution: "" };
+    // I/O failure reading baseline or candidate: cannot classify as not-applicable (reserved for
+    // symlink/dir/mode-only changes).  Use omitted:unreadable so the entry is not silently dropped
+    // from the manifest and the payload write is attempted.
+    return { path, classification: "omitted:unreadable", diffContribution: "" };
   }
 
   const baseIsBinary = classifyContent(baseBytes) === "binary";

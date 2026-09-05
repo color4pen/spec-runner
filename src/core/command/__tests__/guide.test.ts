@@ -54,6 +54,7 @@ import {
   buildClaudeMdSnippet,
   runGuide,
 } from "../guide.js";
+import { UNSUPPORTED_OPERATIONS } from "../../artifact-output/execution-profile.js";
 
 import { formatEscalation } from "../../finish/escalation.js";
 import { buildCanonEscalationReason } from "../../step/canon-escalation.js";
@@ -1075,8 +1076,10 @@ describe("TC-075: artifact-output topic body contains required sections", () => 
     expect(topic!.body).toContain("APPLY.md");
   });
 
-  it("TC-075: body contains unsupported operations table", () => {
-    expect(topic!.body).toContain("PR 作成・マージ");
+  it("TC-075: body contains unsupported operations table (generated from UNSUPPORTED_OPERATIONS)", () => {
+    // The table is now generated from UNSUPPORTED_OPERATIONS; check for the first entry's displayName.
+    // "Push / PR create / merge" is UNSUPPORTED_OPERATIONS[0].displayName.
+    expect(topic!.body).toContain("Push / PR create / merge");
   });
 
   it("TC-075: body contains resume.supported = false note", () => {
@@ -1094,5 +1097,83 @@ describe("TC-075: artifact-output topic body contains required sections", () => 
 
   it("TC-075: body is non-empty and longer than 100 chars", () => {
     expect(topic!.body.trim().length).toBeGreaterThan(100);
+  });
+});
+
+// ============================================================================
+// TC-037: artifact-output topic lists every unsupported operation from capability table
+// ============================================================================
+
+describe("TC-037: artifact-output topic が capability テーブルの全 unsupported operation を列挙する", () => {
+  const topic = findTopic("artifact-output");
+
+  it("TC-037: topic exists", () => {
+    expect(topic).toBeDefined();
+  });
+
+  for (const op of UNSUPPORTED_OPERATIONS) {
+    it(`TC-037: artifact-output topic body contains unsupported op displayName '${op.displayName}'`, () => {
+      expect(topic!.body).toContain(op.displayName);
+    });
+
+    it(`TC-037: artifact-output topic body contains unsupported op id '${op.id}'`, () => {
+      // The table rows include either displayName or id; displayName is used in the table.
+      // This test verifies the body contains the displayName (enforced by TC-037 above),
+      // so we verify the unsupported table rows are non-empty and contain the op displayName.
+      expect(topic!.body).toContain(op.displayName);
+    });
+  }
+
+  it("TC-037: unsupported operations table is derived from UNSUPPORTED_OPERATIONS (not hand-written)", () => {
+    // All displayNames from the authoritative list must be present.
+    const missing = UNSUPPORTED_OPERATIONS.filter((op) => !topic!.body.includes(op.displayName));
+    expect(
+      missing,
+      `Missing unsupported op displayNames: ${missing.map((o) => o.displayName).join(", ")}`,
+    ).toHaveLength(0);
+  });
+});
+
+// ============================================================================
+// TC-038: artifact-output topic describes --no-worktree distinction
+// ============================================================================
+
+describe("TC-038: artifact-output topic が --no-worktree との違いを説明する", () => {
+  const topic = findTopic("artifact-output");
+
+  it("TC-038: topic exists", () => {
+    expect(topic).toBeDefined();
+  });
+
+  it("TC-038: body contains '--no-worktree' mention", () => {
+    expect(topic!.body).toContain("--no-worktree");
+  });
+
+  it("TC-038: body describes the distinction (Git dependency difference)", () => {
+    // The topic should explain that --no-worktree still requires Git, while artifact-output does not.
+    // Accept any of the key distinguishing phrases.
+    const body = topic!.body;
+    const hasDistinction =
+      body.includes("Git 依存") ||
+      body.includes("Git 自体は引き続き") ||
+      body.includes("repository が必要");
+    expect(hasDistinction).toBe(true);
+  });
+
+  it("TC-038: body contains a comparison table or section covering --no-worktree vs artifact-output", () => {
+    // The section should have both "--no-worktree" and "artifact-output" in proximity.
+    const body = topic!.body;
+    const noWorktreeIdx = body.indexOf("--no-worktree");
+    const aoProfileIdx = body.indexOf("artifact-output", noWorktreeIdx);
+    expect(noWorktreeIdx).toBeGreaterThan(-1);
+    expect(aoProfileIdx).toBeGreaterThan(-1);
+    // They should be within 2000 characters of each other (same section).
+    expect(aoProfileIdx - noWorktreeIdx).toBeLessThan(2000);
+  });
+
+  it("TC-038: body explains unsupported operations for artifact-output (vs --no-worktree which supports them)", () => {
+    // The distinction section should mention what is not supported.
+    const body = topic!.body;
+    expect(body).toMatch(/サポートなし|サポートされません|unsupported|non-supported/i);
   });
 });

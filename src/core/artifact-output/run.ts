@@ -471,9 +471,16 @@ async function checkSourceUnchanged(
       runJson.error = (runJson.error ?? "") + " | source-mutated: " + guardResult.currentDigest;
       if (runJson.status === "completed") runJson.status = "failed";
       await writeRunJson(runRoot, runJson);
+    } else if (guardResult.kind === "unverifiable") {
+      // Fail-closed: cannot confirm source is unchanged → record as failure.
+      // D6: "不一致なら fail-closed で記録する" — unverifiable is not the same as unchanged.
+      runJson.error = (runJson.error ?? "") + " | source-unverifiable: " + guardResult.reason;
+      if (runJson.status === "completed") runJson.status = "failed";
+      await writeRunJson(runRoot, runJson);
     }
+    // guardResult.kind === "unchanged" → no action needed
   } catch {
-    // best-effort
+    // best-effort: if the guard itself throws, we cannot update run.json
   }
 }
 
