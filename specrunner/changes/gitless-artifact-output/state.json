@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T14:53:23.187Z",
+  "updatedAt": "2026-09-05T15:46:40.052Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -142,13 +142,17 @@
       "src/core/artifact-output/__tests__/patch.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定（code-review escalation の Decision 1）: 選択肢 1 を採用する。D8 を拡張し `omitted:size-deletion`（change=deleted かつ kind=file かつ旧側が UTF-8 text かつ size 上限超過。patch に含めない。payload なし）を追加する。\n\n理由: D8 は既に binary について added/modified 用 `omitted:binary` と deleted 用 `omitted:binary-deletion` を対で定義しており、size についても同じ対称構造（`omitted:size` / `omitted:size-deletion`）にするのが D8 の「manifest の patch 分類から changes.patch の実内容を 1:1 で推定できる」原則に最も整合する。選択肢 3 は D8 が `included:deletion` に size 上限を明示している設計と矛盾し、選択肢 2 は意味の違う値を overload したまま残すので採らない。\n\n実施事項:\n1. design.md D8 の表に `omitted:size-deletion` 行を追加し、Rationale に size 対称性を一文追記する。manifest schema / 型定義 / test-cases.md / APPLY.md の分類一覧を同期する。\n2. src/core/artifact-output/patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更する。\n3. `omitted:unreadable`（I/O 失敗時）も現状 D8 表に未定義の値である。この値を残すなら D8 表に「readFile 失敗（added/modified/deleted 共通）。fail-closed のため patch に含めず、payload 収録も保証しない」として行を追加し、コードが emit しうる全分類値が D8 表に定義されている状態にする。D8 の unsupported（finalize 拒否）へ倒す方が設計に忠実と判断する場合はそちらでもよいが、どちらにしても未定義の分類値を残さないこと。\n4. 上記の分類ごとにテストを追加・更新する（large text deletion → size-deletion、binary deletion → binary-deletion、通常 text deletion → included:deletion）。\n\nスコープはこの分類整合に限定し、他の設計変更は行わない。",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T15:46:39.776Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
