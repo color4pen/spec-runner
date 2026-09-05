@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T15:52:54.225Z",
+  "updatedAt": "2026-09-05T16:53:44.843Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/gitless-artifact-output/design.md, title: \"D8 table missing omitted:size-deletion and omitted:unreadable rows\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -133,21 +129,22 @@
       "src/core/artifact-output/__tests__/patch.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/gitless-artifact-output/design.md, title: \"D8 table missing omitted:size-deletion and omitted:unreadable rows\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "operator 裁定（code-review escalation の Decision 1）: 選択肢 1 を採用する。D8 を拡張し `omitted:size-deletion`（change=deleted かつ kind=file かつ旧側が UTF-8 text かつ size 上限超過。patch に含めない。payload なし）を追加する。\n\n理由: D8 は既に binary について added/modified 用 `omitted:binary` と deleted 用 `omitted:binary-deletion` を対で定義しており、size についても同じ対称構造（`omitted:size` / `omitted:size-deletion`）にするのが D8 の「manifest の patch 分類から changes.patch の実内容を 1:1 で推定できる」原則に最も整合する。選択肢 3 は D8 が `included:deletion` に size 上限を明示している設計と矛盾し、選択肢 2 は意味の違う値を overload したまま残すので採らない。\n\n実施事項:\n1. design.md D8 の表に `omitted:size-deletion` 行を追加し、Rationale に size 対称性を一文追記する。manifest schema / 型定義 / test-cases.md / APPLY.md の分類一覧を同期する。\n2. src/core/artifact-output/patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更する。\n3. `omitted:unreadable`（I/O 失敗時）も現状 D8 表に未定義の値である。この値を残すなら D8 表に「readFile 失敗（added/modified/deleted 共通）。fail-closed のため patch に含めず、payload 収録も保証しない」として行を追加し、コードが emit しうる全分類値が D8 表に定義されている状態にする。D8 の unsupported（finalize 拒否）へ倒す方が設計に忠実と判断する場合はそちらでもよいが、どちらにしても未定義の分類値を残さないこと。\n4. 上記の分類ごとにテストを追加・更新する（large text deletion → size-deletion、binary deletion → binary-deletion、通常 text deletion → included:deletion）。\n\nスコープはこの分類整合に限定し、他の設計変更は行わない。",
       "step": "code-review",
       "recordedAt": "2026-09-05T15:46:39.776Z"
+    },
+    {
+      "text": "operator 裁定（CANON_FINDING_ESCALATION 復帰）: code-review iter 3 の F-03（design.md D8 表）は operator-apply commit 9741d862 で対応済み。D8 表に `omitted:size-deletion`（deleted / 旧側 text / size 上限超過。patch にも payload にも含めない）と `omitted:unreadable`（readFile の I/O 失敗専用。manifest には必ず現れる）を定義し、tasks.md T-07 と test-cases.md TC-080（size 上限超過 text 削除 → omitted:size-deletion）を同期した。保護正典はこれ以上変更しない。\n\n残りの finding（iter 3 F-01 / F-02 / F-04 〜 F-09）はすべて src / tests / README の修正で code-fixer が解消する:\n- F-01/F-02: patch.ts の large text deletion 分岐を `omitted:size-deletion` に変更し、PatchClassification 型に追加する。`omitted:unreadable` は I/O 失敗専用として残す。artifact-writer.ts / context.ts / APPLY.md 生成の分類一覧と file 先頭の doc comment も D8 表と一致させる（size-deletion は payload なし）\n- F-04: TC-080 に対応する unit test を patch.test.ts に追加する\n- F-05: deleted 分岐の到達不能な重複 binary check を削除する\n- F-06 〜 F-09: iter 2 からの持越し（_assertNoGitAbove 未使用、README の preview 注記、TC-027 統合テスト、TC-071 / TC-072）を今回すべて同一 iteration で解消する。前回は F-01〜F-04 だけを直して持越しが残ったので、今回は 9 件すべてを対象にすること。",
+      "step": "code-review",
+      "recordedAt": "2026-09-05T16:53:44.533Z"
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
