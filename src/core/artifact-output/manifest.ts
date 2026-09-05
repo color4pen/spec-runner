@@ -52,6 +52,12 @@ export interface ArtifactManifest {
     digest: string;
   };
   changes: ManifestChangeEntry[];
+  /**
+   * D9 per-file unsupported array: paths of files that could not be processed
+   * due to snapshot failures (e.g. unsupported entry kind, unreadable files,
+   * non-UTF-8 paths). Callers can use this to learn which files were excluded.
+   */
+  unsupported: string[];
   patchCoverage: {
     maxFileSizeBytes: number;
     included: number;
@@ -79,6 +85,11 @@ export interface BuildManifestInput {
   patchEntries: readonly PatchEntryResult[];
   verification: VerificationReference | null;
   review: ReviewReference | null;
+  /**
+   * D9 per-file unsupported: paths excluded due to snapshot failures.
+   * Defaults to [] when not provided.
+   */
+  unsupported?: readonly string[];
 }
 
 // ─── Manifest builder ─────────────────────────────────────────────────────────
@@ -127,6 +138,7 @@ export function buildManifest(input: BuildManifestInput): ArtifactManifest {
       digest: input.candidateDigest,
     },
     changes: manifestChanges,
+    unsupported: input.unsupported ? [...input.unsupported] : [],
     patchCoverage: {
       maxFileSizeBytes: PATCH_MAX_FILE_SIZE_BYTES,
       included,

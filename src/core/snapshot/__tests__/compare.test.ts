@@ -61,8 +61,8 @@ describe("TC-015: added, modified, deleted all derived", () => {
       fileEntry("new.txt", "sha256:" + "b".repeat(64)),
     ]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       expect(result.changes.some((c) => c.path === "new.txt" && c.change === "added")).toBe(true);
     }
   });
@@ -74,8 +74,8 @@ describe("TC-015: added, modified, deleted all derived", () => {
     ]);
     const cand = makeSnapshot([fileEntry("a.txt", "sha256:" + "a".repeat(64))]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       expect(result.changes.some((c) => c.path === "to-delete.txt" && c.change === "deleted")).toBe(true);
     }
   });
@@ -84,8 +84,8 @@ describe("TC-015: added, modified, deleted all derived", () => {
     const base = makeSnapshot([fileEntry("a.txt", "sha256:" + "a".repeat(64))]);
     const cand = makeSnapshot([fileEntry("a.txt", "sha256:" + "b".repeat(64))]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       expect(result.changes.some((c) => c.path === "a.txt" && c.change === "modified")).toBe(true);
     }
   });
@@ -97,8 +97,8 @@ describe("TC-015: added, modified, deleted all derived", () => {
       fileEntry("a.txt", "sha256:" + "a".repeat(64)),
     ]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       const paths = result.changes.map((c) => c.path);
       expect(paths).toEqual([...paths].sort());
     }
@@ -112,8 +112,8 @@ describe("TC-016: binary change appears in change set", () => {
     const base = makeSnapshot([fileEntry("bin.dat", "sha256:" + "1".repeat(64))]);
     const cand = makeSnapshot([fileEntry("bin.dat", "sha256:" + "2".repeat(64))]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       expect(result.changes.some((c) => c.path === "bin.dat" && c.change === "modified")).toBe(true);
     }
   });
@@ -127,8 +127,8 @@ describe("TC-017: mode-only change is modified with both modes", () => {
     const base = makeSnapshot([fileEntry("script.sh", digest, "100644")]);
     const cand = makeSnapshot([fileEntry("script.sh", digest, "100755")]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       const entry = result.changes.find((c) => c.path === "script.sh");
       expect(entry?.change).toBe("modified");
       expect(entry?.mode).toBe("100755");
@@ -145,8 +145,8 @@ describe("TC-018: moved file appears as delete + add, not rename", () => {
     const base = makeSnapshot([fileEntry("old/path.txt", digest)]);
     const cand = makeSnapshot([fileEntry("new/path.txt", digest)]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       const deleted = result.changes.find((c) => c.path === "old/path.txt");
       const added = result.changes.find((c) => c.path === "new/path.txt");
       expect(deleted?.change).toBe("deleted");
@@ -164,8 +164,8 @@ describe("Kind change: file → symlink", () => {
     const base = makeSnapshot([fileEntry("item", "sha256:" + "a".repeat(64))]);
     const cand = makeSnapshot([symlinkEntry("item", "./target")]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
-    if (result.kind === "success") {
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
       const deleted = result.changes.find((c) => c.path === "item" && c.change === "deleted");
       const added = result.changes.find((c) => c.path === "item" && c.change === "added");
       expect(deleted?.previousKind).toBe("file");
@@ -189,7 +189,7 @@ describe("TC-051: exclusion mismatch returns unavailable", () => {
     const base = makeSnapshot([], [".git/"]);
     const cand = makeSnapshot([], [".git/"]);
     const result = deriveChangeSet(base, cand);
-    expect(result.kind).toBe("success");
+    expect(result.kind).toBe("ok");
   });
 });
 

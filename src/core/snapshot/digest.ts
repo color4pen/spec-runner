@@ -23,9 +23,13 @@ export function computeFileContentDigest(bytes: Uint8Array): string {
 /**
  * Compute SHA-256 digest of a symlink target string.
  * Returns "sha256:<64-hex>".
+ *
+ * D3 kind-scoped digest: the "symlink:" prefix ensures that a file containing
+ * the bytes of a symlink target and a symlink with that same target produce
+ * different contentDigests, so kinds can be distinguished by digest alone.
  */
 export function computeSymlinkDigest(target: string): string {
-  return "sha256:" + createHash("sha256").update(target, "utf8").digest("hex");
+  return "sha256:" + createHash("sha256").update("symlink:" + target, "utf8").digest("hex");
 }
 
 // ─── Snapshot digest ──────────────────────────────────────────────────────────

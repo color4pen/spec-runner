@@ -15,6 +15,12 @@ export interface SnapshotContextInput {
   changes: readonly ChangeEntry[];
   patchEntries?: readonly PatchEntryResult[];
   patchExcerptLimit?: number;
+  /**
+   * D14: set to true when this context is built for the verification phase,
+   * before the change set has been derived. Renders an explicit
+   * 'not-yet-derived' marker instead of the misleading '(no changes)'.
+   */
+  changesNotYetDerived?: boolean;
 }
 
 export interface SnapshotContextOutput {
@@ -39,7 +45,7 @@ export interface SnapshotContextOutput {
  * clarifying that no revision history exists in this profile.
  */
 export function buildSnapshotContext(input: SnapshotContextInput): SnapshotContextOutput {
-  const { baselineDigest, candidateDigest, changes, patchEntries = [] } = input;
+  const { baselineDigest, candidateDigest, changes, patchEntries = [], changesNotYetDerived = false } = input;
 
   const changedPaths = changes.map((c) => `${c.change}: ${c.path}`);
 
@@ -67,7 +73,9 @@ export function buildSnapshotContext(input: SnapshotContextInput): SnapshotConte
     "### Changed files",
     changedPaths.length > 0
       ? changedPaths.map((p) => `- ${p}`).join("\n")
-      : "(no changes)",
+      : changesNotYetDerived
+        ? "(not yet derived — change set is computed after verification)"
+        : "(no changes)",
     "",
     "### Non-text / patch-omitted entries",
     nonTextPaths.length > 0
