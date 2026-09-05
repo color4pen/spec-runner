@@ -49,7 +49,7 @@ export async function collectSnapshot(
 
   try {
     await traverseDir(root, root, exclusions, entries, failures);
-  } catch (err) {
+  } catch {
     failures.push({
       path: "",
       reason: "io-error",

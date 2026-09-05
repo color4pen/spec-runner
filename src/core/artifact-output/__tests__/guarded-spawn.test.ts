@@ -66,7 +66,6 @@ describe("TC-057: non-git commands are delegated to inner spawn", () => {
   });
 
   it("passes same arguments to inner", async () => {
-    const { fn } = makeMockSpawn();
     const innerSpy = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
     const guarded = createGitDenyingSpawn(innerSpy as unknown as SpawnFn);
     const opts = { cwd: "/tmp" };

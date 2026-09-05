@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T14:11:48.045Z",
+  "updatedAt": "2026-09-05T14:15:05.290Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -72,7 +72,9 @@
     "862522180617aa809863944f4b7ae7efd123919f",
     "4485602c5a76a58739791b9b3ba4e16de4b23e43",
     "afca3f05d9c0a391665527597c52a3679737965e",
-    "51e13ee13a2c98e6f0a31364063006aa37a7b54a"
+    "51e13ee13a2c98e6f0a31364063006aa37a7b54a",
+    "09a68daa7fd86afa147d2eec042cf3c7a9b15d9b",
+    "2d0f6d29644034ba7caac60d60b21014778a7902"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,67 +97,19 @@
     "spec-review": [],
     "spec-fixer": [],
     "implementer": [
-      "src/util/spawn.ts",
-      "src/core/pipeline/registry.ts",
-      "src/core/command/guide.ts",
-      "src/core/command/__tests__/guide.test.ts",
-      "src/util/hash.ts",
-      "src/core/step/step-names.js",
-      "src/core/step/step-names.ts",
-      "src/util/atomic-write.ts",
-      "src/kernel/step-names.ts",
-      "src/core/pipeline/runtime-capability-gate.ts",
-      "src/core/verification/changed-lines.ts",
-      "src/cli/flag-parser.ts",
-      "src/cli/job-start-handler.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/util/unified-diff.ts",
-      "src/core/snapshot/types.ts",
-      "src/core/snapshot/digest.ts",
-      "src/core/snapshot/collect.ts",
-      "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/execution-profile.ts",
-      "src/core/pipeline/types.ts",
-      "src/core/artifact-output/preflight.ts",
-      "src/core/artifact-output/run-layout.ts",
-      "src/core/artifact-output/materialize.ts",
-      "src/core/artifact-output/source-guard.ts",
-      "src/core/artifact-output/guarded-spawn.ts",
-      "src/core/artifact-output/patch.ts",
-      "src/core/artifact-output/manifest.ts",
-      "src/core/artifact-output/artifact-writer.ts",
-      "src/core/artifact-output/context.ts",
-      "src/core/artifact-output/revision-binding.ts",
-      "src/core/artifact-output/run.ts",
-      "src/util/__tests__/unified-diff.test.ts",
-      "src/core/snapshot/__tests__/digest.test.ts",
-      "src/core/snapshot/__tests__/collect.test.ts",
-      "src/core/snapshot/__tests__/compare.test.ts",
-      "src/core/artifact-output/__tests__/preflight.test.ts",
-      "src/core/artifact-output/__tests__/guarded-spawn.test.ts",
-      "src/core/artifact-output/__tests__/context-binding.test.ts",
-      "tests/artifact-output-vertical.test.ts",
-      "src/core/artifact-output/__tests__/materialize.test.ts",
-      "src/core/artifact-output/__tests__/patch.test.ts",
-      "src/core/artifact-output/__tests__/run.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/unit/architecture/artifact-output-git-free.test.ts",
-      "docs/artifact-output-profile.md",
-      "README.md",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/cli/__tests__/cli-contract-snapshot.test.ts"
+      "src/core/snapshot/collect.ts"
     ]
   },
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 1,
-      "verification": 1
+      "implementer": 2,
+      "verification": 2
     }
   }
 }

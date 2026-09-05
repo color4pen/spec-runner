@@ -305,10 +305,8 @@ describe("TC-079: cross-phase digest mismatch causes halt", () => {
     // Verify sees real digest; review mutates candidate during execution
     // We simulate this by having the review step change the candidate's files
     // which causes the revision binding to detect drift.
-    let candidateRootRef = "";
     const verifySeam: VerifySeam = {
-      async run(candidateRoot, contextBlock): Promise<VerificationRecord> {
-        candidateRootRef = candidateRoot;
+      async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
         const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
         const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
         return { candidateDigest, outcome: "passed" };

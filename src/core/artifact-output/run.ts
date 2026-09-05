@@ -159,7 +159,6 @@ export async function runArtifactOutput(
   }
 
   // Phase 3: Baseline snapshot
-  let baselineSnapshot: DirectorySnapshot;
   const baselineResult = await collectSnapshot(sourceRoot, collectOpts);
   if (baselineResult.kind === "unavailable") {
     return {
@@ -169,7 +168,7 @@ export async function runArtifactOutput(
       preflightReport,
     };
   }
-  baselineSnapshot = baselineResult.snapshot;
+  const baselineSnapshot: DirectorySnapshot = baselineResult.snapshot;
   const baselineDigest = baselineSnapshot.digest;
 
   // Phase 4: Create run root + materialize candidate
@@ -274,7 +273,6 @@ export async function runArtifactOutput(
   };
 
   const changeSetResult = deriveChangeSet(baselineSnapshot, frozenCandidateSnapshot);
-  let changes: readonly ChangeEntry[];
   if (changeSetResult.kind === "unavailable") {
     runJson.status = "halted";
     runJson.phase = "change-set";
@@ -283,7 +281,7 @@ export async function runArtifactOutput(
     await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
     return { kind: "halted", runId, runRoot, reason: `Change set unavailable: ${changeSetResult.reason}`, preflightReport };
   }
-  changes = changeSetResult.changes;
+  const changes: readonly ChangeEntry[] = changeSetResult.changes;
 
   // Build patch
   const readFile = async (absPath: string): Promise<Uint8Array | null> => {

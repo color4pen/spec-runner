@@ -16,11 +16,11 @@
  * TC-073: run.json に resume.supported === false が記録される
  * TC-078: escape symlink fail-closed ケース
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
+import * as fsSync from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { execSync } from "node:child_process";
 import { runArtifactOutput } from "../src/core/artifact-output/run.js";
 import { DESIGN_ONLY_DESCRIPTOR } from "../src/core/pipeline/registry.js";
 import { EXECUTION_PROFILE_IDS } from "../src/core/artifact-output/execution-profile.js";
@@ -46,7 +46,7 @@ afterEach(async () => {
   }
 });
 
-function assertNoGitAbove(dir: string): void {
+function _assertNoGitAbove(dir: string): void {
   // Walk up from dir to check no .git exists
   let current = dir;
   const root = path.parse(current).root;
@@ -54,7 +54,7 @@ function assertNoGitAbove(dir: string): void {
     const gitPath = path.join(current, ".git");
     let exists = false;
     try {
-      require("node:fs").accessSync(gitPath);
+      fsSync.accessSync(gitPath);
       exists = true;
     } catch { /* not found */ }
     if (exists) {
@@ -162,7 +162,7 @@ describe("TC-001: no git/gh spawned in minimal vertical run", () => {
 
     const { spawn, commands } = makeSpawnRecorder();
 
-    const result = await runArtifactOutput({
+    const _result = await runArtifactOutput({
       sourceRoot: sourceDir,
       runParentDir,
       runId: "test-run-001",
