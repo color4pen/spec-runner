@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T12:39:26.098Z",
+  "updatedAt": "2026-09-05T12:42:33.780Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -63,10 +63,30 @@
   "issueNumber": 1115,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "a3c211c08c7a388634778a5fdeecfac0a807e9b7"
+    "a3c211c08c7a388634778a5fdeecfac0a807e9b7",
+    "7a4cd816689856fec71030137740ec75f386e9b9"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/worktree/manager.ts",
+      "src/core/runtime/local.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/scope.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/state/profile.ts",
+      "src/core/pipeline/runtime-capability-gate.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/types.ts",
+      "src/cli/flag-parser.ts",
+      "src/core/command/runner.ts",
+      "src/cli/job-start-handler.ts",
+      "src/core/runtime/workspace-materializer.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
