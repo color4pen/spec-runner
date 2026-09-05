@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-05T13:05:23.925Z",
+  "updatedAt": "2026-09-05T13:46:02.478Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -68,7 +68,9 @@
     "fd27d7c688879e91ea8b7ee215c8ce543539fb50",
     "a73dbe77a3925b623ee3a965d239773339d899ff",
     "3394d54af66b20a9053b6076723a0f290bc1e405",
-    "c085c19e0d1a476a96e15edfe0674c9baa3c6fe0"
+    "c085c19e0d1a476a96e15edfe0674c9baa3c6fe0",
+    "7ef5da86382963161d6234d267f169314271922d",
+    "7c6591d6ce4346f68aaea922861bb8092293af3b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -116,16 +118,59 @@
       "src/core/decision/decision-ledger.ts",
       "src/core/step/step-completion.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/kernel/report-result.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/prompts/custom-reviewer-system.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/code-review-system.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/conformance-system.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/__tests__/fixer-reviewer.test.ts",
+      "src/core/port/__tests__/report-result.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/prompts/__tests__/fragment-coverage.test.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/core/port/__tests__/evidence-enforcement.test.ts",
+      "tests/unit/core/port/report-result-findings.test.ts",
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "tests/spec-review-step.test.ts",
+      "tests/adapter/codex/strict-schema.test.ts",
+      "src/adapter/codex/__tests__/agent-runner-completion-report.test.ts",
+      "tests/unit/core/port/report-result.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "tasks.md",
+      "tests/unit/core/port/report-result-observations.test.ts",
+      "src/core/port/__tests__/remediation-parse.test.ts",
+      "src/core/step/__tests__/fail-closed-drift-guard.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/helpers/pipeline-mock-client.ts",
+      "tests/core/steps/spec-review.test.ts",
+      "tests/custom-reviewers-e2e.test.ts",
+      "tests/multi-layer-defense.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 28,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
