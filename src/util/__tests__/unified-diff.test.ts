@@ -10,7 +10,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifyContent, buildUnifiedDiff } from "../unified-diff.js";
+import { classifyContent, buildUnifiedDiff, buildUnifiedDiffBounded, DEFAULT_DIFF_LINE_PRODUCT_BUDGET } from "../unified-diff.js";
 import { parseUnifiedDiffChangedLines } from "../../core/verification/changed-lines.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -157,5 +157,54 @@ describe("buildUnifiedDiff is deterministic", () => {
     const d1 = buildUnifiedDiff(old, next, { oldPath: "f", newPath: "f" });
     const d2 = buildUnifiedDiff(old, next, { oldPath: "f", newPath: "f" });
     expect(d1).toBe(d2);
+  });
+});
+
+// ─── Computation budget ──────────────────────────────────────────────────────
+
+describe("buildUnifiedDiffBounded: computation budget", () => {
+  it("returns budget-exceeded instead of allocating the LCS table", () => {
+    const oldText = Array.from({ length: 3000 }, (_, i) => `a${i}`).join("\n") + "\n";
+    const newText = Array.from({ length: 3000 }, (_, i) => `b${i}`).join("\n") + "\n";
+    const result = buildUnifiedDiffBounded(oldText, newText, { oldPath: "a", newPath: "b" });
+    expect(result.kind).toBe("budget-exceeded");
+    if (result.kind === "budget-exceeded") {
+      expect(result.lineProduct).toBe(3000 * 3000);
+      expect(result.budget).toBe(DEFAULT_DIFF_LINE_PRODUCT_BUDGET);
+    }
+  });
+
+  it("respects an explicit maxLineProduct", () => {
+    const result = buildUnifiedDiffBounded("a\nb\nc\n", "x\ny\nz\n", { oldPath: "a", newPath: "b", maxLineProduct: 8 });
+    expect(result.kind).toBe("budget-exceeded");
+    const ok = buildUnifiedDiffBounded("a\nb\nc\n", "x\ny\nz\n", { oldPath: "a", newPath: "b", maxLineProduct: 9 });
+    expect(ok.kind).toBe("ok");
+  });
+
+  it("common prefix/suffix are trimmed before the budget check", () => {
+    // 100k identical lines with one changed line in the middle: raw product is 1e10,
+    // trimmed product is 1.
+    const lines = Array.from({ length: 100_000 }, (_, i) => `line ${i}`);
+    const oldText = lines.join("\n") + "\n";
+    const changed = [...lines];
+    changed[50_000] = "CHANGED";
+    const newText = changed.join("\n") + "\n";
+    const result = buildUnifiedDiffBounded(oldText, newText, { oldPath: "a", newPath: "b", maxLineProduct: 1 });
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.diff).toContain("@@ -49998,7 +49998,7 @@");
+      expect(result.diff).toContain("-line 50000\n");
+      expect(result.diff).toContain("+CHANGED\n");
+    }
+  });
+
+  it("trimmed diff equals the untrimmed diff for a prefix-only / suffix-only overlap", () => {
+    // Deletion at the start and insertion at the end: exercise prefix=0 and suffix boundaries.
+    const oldText = "x\ncommon1\ncommon2\n";
+    const newText = "common1\ncommon2\ny\n";
+    const diff = buildUnifiedDiff(oldText, newText, { oldPath: "a", newPath: "b" });
+    expect(diff).toContain("-x\n");
+    expect(diff).toContain("+y\n");
+    expect(diff).toContain(" common1\n common2\n");
   });
 });

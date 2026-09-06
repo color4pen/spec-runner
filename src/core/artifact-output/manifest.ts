@@ -7,6 +7,7 @@
 import type { ChangeEntry } from "../snapshot/compare.js";
 import type { PatchEntryResult } from "./patch.js";
 import { PATCH_MAX_FILE_SIZE_BYTES } from "./patch.js";
+import { DEFAULT_DIFF_LINE_PRODUCT_BUDGET } from "../../util/unified-diff.js";
 import { UNSUPPORTED_OPERATIONS } from "./execution-profile.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -60,6 +61,8 @@ export interface ArtifactManifest {
   unsupported: string[];
   patchCoverage: {
     maxFileSizeBytes: number;
+    /** Unified diff computation budget: max (trimmed old lines) * (trimmed new lines). */
+    maxDiffLineProduct: number;
     included: number;
     omitted: number;
   };
@@ -94,14 +97,21 @@ export interface BuildManifestInput {
 
 // ─── Manifest builder ─────────────────────────────────────────────────────────
 
+/** Identity key for a change/patch entry: operation kind + path. */
+export function patchEntryKey(change: string, path: string): string {
+  return `${change}|${path}`;
+}
+
 /**
  * Build an ArtifactManifest from the run inputs and outputs.
  * Pure function: no I/O, no side effects.
  */
 export function buildManifest(input: BuildManifestInput): ArtifactManifest {
+  // Keyed by (change, path): a kind change is a deleted + added pair with the same path,
+  // so a path-only key would let one classification overwrite the other.
   const patchClassMap = new Map<string, string>();
   for (const pe of input.patchEntries) {
-    patchClassMap.set(pe.path, pe.classification);
+    patchClassMap.set(patchEntryKey(pe.change, pe.path), pe.classification);
   }
 
   const manifestChanges: ManifestChangeEntry[] = input.changes.map((c) => ({
@@ -115,7 +125,7 @@ export function buildManifest(input: BuildManifestInput): ArtifactManifest {
     candidateDigest: c.candidateDigest,
     symlinkTarget: c.symlinkTarget,
     previousSymlinkTarget: c.previousSymlinkTarget,
-    patchClassification: patchClassMap.get(c.path),
+    patchClassification: patchClassMap.get(patchEntryKey(c.change, c.path)),
   }));
 
   const included = input.patchEntries.filter(
@@ -141,6 +151,7 @@ export function buildManifest(input: BuildManifestInput): ArtifactManifest {
     unsupported: input.unsupported ? [...input.unsupported] : [],
     patchCoverage: {
       maxFileSizeBytes: PATCH_MAX_FILE_SIZE_BYTES,
+      maxDiffLineProduct: DEFAULT_DIFF_LINE_PRODUCT_BUDGET,
       included,
       omitted,
     },

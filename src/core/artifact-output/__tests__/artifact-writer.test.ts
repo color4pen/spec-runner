@@ -8,6 +8,12 @@
  * TC-062: Staging-to-final atomicity — if finalizeArtifact throws after writing
  *         manifest.json but before completing all files, the artifact/ directory
  *         is not created (only artifact.staging/ may remain).
+ *
+ * D9 payload completeness — payload/ carries every added / modified regular file
+ *         (text, empty, binary, large); any required copy failure fails finalize.
+ *
+ * Kind change identity — a deleted + added pair with the same path keeps two
+ *         distinct patch classifications in the manifest (keyed by change + path).
  */
 import { describe, it, expect, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -69,7 +75,7 @@ describe("TC-022: omitted:unreadable entry prevents finalization (fail-closed)",
     // unavailable at finalization time.
     const missingPath = "unreadable-file.bin";
     const patchEntries: PatchEntryResult[] = [
-      { path: missingPath, classification: "omitted:unreadable", diffContribution: "" },
+      { path: missingPath, change: "added", classification: "omitted:unreadable", diffContribution: "" },
     ];
     const changes: ChangeEntry[] = [
       {
@@ -108,10 +114,10 @@ describe("TC-022: omitted:unreadable entry prevents finalization (fail-closed)",
     await fs.mkdir(candidateRoot, { recursive: true });
 
     // A deletion entry classified as omitted:unreadable has no payload (file is deleted
-    // from candidate). writePayload skips it via the `change.change === "deleted"` guard.
+    // from candidate). writePayload skips deleted entries.
     const deletedPath = "deleted-unreadable.bin";
     const patchEntries: PatchEntryResult[] = [
-      { path: deletedPath, classification: "omitted:unreadable", diffContribution: "" },
+      { path: deletedPath, change: "deleted", classification: "omitted:unreadable", diffContribution: "" },
     ];
     const changes: ChangeEntry[] = [
       {
@@ -159,7 +165,7 @@ describe("TC-062: artifact staging-to-final atomicity", () => {
     // manifest.json (step 1) and changes.patch (step 2) are already written.
     const missingPath = "missing.bin";
     const patchEntries: PatchEntryResult[] = [
-      { path: missingPath, classification: "omitted:unreadable", diffContribution: "" },
+      { path: missingPath, change: "modified", classification: "omitted:unreadable", diffContribution: "" },
     ];
     const changes: ChangeEntry[] = [
       {
@@ -198,5 +204,126 @@ describe("TC-062: artifact staging-to-final atomicity", () => {
       fs.access(artifactDir),
       "artifact/ must not exist after mid-write failure",
     ).rejects.toMatchObject({ code: "ENOENT" });
+  });
+});
+
+// ─── D9: payload completeness / fail-closed ──────────────────────────────────
+
+describe("D9: payload/ carries every added / modified regular file", () => {
+  function baseInput(tmp: string, candidateRoot: string, changes: ChangeEntry[], patchEntries: PatchEntryResult[]) {
+    return {
+      stagingDir: path.join(tmp, "artifact.staging"),
+      artifactDir: path.join(tmp, "artifact"),
+      candidateRoot,
+      baselineRoot: tmp,
+      manifest: makeMinimalManifest({ changes, patchEntries }),
+      patchText: "",
+      patchEntries,
+      changes,
+      verificationRecord: { candidateDigest: CANDIDATE_DIGEST, outcome: "passed" },
+      reviewRecord: { candidateDigest: CANDIDATE_DIGEST, outcome: "approved", findings: [] },
+    };
+  }
+
+  it("copies included text files, empty added files and binary files into payload/", async () => {
+    const tmp = await mktemp("aw-d9-");
+    const candidateRoot = path.join(tmp, "candidate");
+    await fs.mkdir(path.join(candidateRoot, "sub"), { recursive: true });
+    await fs.writeFile(path.join(candidateRoot, "text.txt"), "hello\n");
+    await fs.writeFile(path.join(candidateRoot, "sub", "empty.txt"), "");
+    await fs.writeFile(path.join(candidateRoot, "blob.bin"), new Uint8Array([0, 1, 2]));
+
+    const changes: ChangeEntry[] = [
+      { path: "text.txt", change: "modified", kind: "file", baselineDigest: BASELINE_DIGEST, candidateDigest: CANDIDATE_DIGEST },
+      { path: "sub/empty.txt", change: "added", kind: "file", candidateDigest: CANDIDATE_DIGEST },
+      { path: "blob.bin", change: "added", kind: "file", candidateDigest: CANDIDATE_DIGEST },
+      { path: "gone.txt", change: "deleted", kind: "file", baselineDigest: BASELINE_DIGEST },
+    ];
+    const patchEntries: PatchEntryResult[] = [
+      { path: "text.txt", change: "modified", classification: "included", diffContribution: "x" },
+      { path: "sub/empty.txt", change: "added", classification: "included", diffContribution: "" },
+      { path: "blob.bin", change: "added", classification: "omitted:binary", diffContribution: "" },
+      { path: "gone.txt", change: "deleted", classification: "included:deletion", diffContribution: "y" },
+    ];
+
+    await finalizeArtifact(baseInput(tmp, candidateRoot, changes, patchEntries));
+
+    const payload = path.join(tmp, "artifact", "payload");
+    expect(await fs.readFile(path.join(payload, "text.txt"), "utf-8")).toBe("hello\n");
+    expect((await fs.stat(path.join(payload, "sub", "empty.txt"))).size).toBe(0);
+    expect(Array.from(await fs.readFile(path.join(payload, "blob.bin")))).toEqual([0, 1, 2]);
+    await expect(fs.access(path.join(payload, "gone.txt"))).rejects.toMatchObject({ code: "ENOENT" });
+
+    const applyMd = await fs.readFile(path.join(tmp, "artifact", "APPLY.md"), "utf-8");
+    expect(applyMd).toContain("empty");
+    expect(applyMd).toContain("payload/");
+  });
+
+  it.each(["omitted:binary", "omitted:size"] as const)(
+    "a missing candidate file for a %s entry fails finalize and artifact/ is not created",
+    async (classification) => {
+      const tmp = await mktemp("aw-d9-fail-");
+      const candidateRoot = path.join(tmp, "candidate");
+      await fs.mkdir(candidateRoot, { recursive: true });
+
+      const changes: ChangeEntry[] = [
+        { path: "missing.dat", change: "added", kind: "file", candidateDigest: CANDIDATE_DIGEST },
+      ];
+      const patchEntries: PatchEntryResult[] = [
+        { path: "missing.dat", change: "added", classification, diffContribution: "" },
+      ];
+
+      await expect(finalizeArtifact(baseInput(tmp, candidateRoot, changes, patchEntries))).rejects.toThrow();
+      await expect(fs.access(path.join(tmp, "artifact"))).rejects.toMatchObject({ code: "ENOENT" });
+    },
+  );
+});
+
+// ─── Kind change: deleted + added with the same path ─────────────────────────
+
+describe("kind change keeps distinct classifications per (change, path)", () => {
+  it("manifest records not-applicable for the deleted symlink and included for the added file", () => {
+    const changes: ChangeEntry[] = [
+      { path: "link", change: "deleted", previousKind: "symlink", previousSymlinkTarget: "target" },
+      { path: "link", change: "added", kind: "file", previousKind: "symlink", candidateDigest: CANDIDATE_DIGEST },
+    ];
+    const patchEntries: PatchEntryResult[] = [
+      { path: "link", change: "deleted", classification: "not-applicable", diffContribution: "" },
+      { path: "link", change: "added", classification: "included", diffContribution: "+x" },
+    ];
+    const manifest = makeMinimalManifest({ changes, patchEntries });
+    const deleted = manifest.changes.find((c) => c.change === "deleted");
+    const added = manifest.changes.find((c) => c.change === "added");
+    expect(deleted?.patchClassification).toBe("not-applicable");
+    expect(added?.patchClassification).toBe("included");
+  });
+
+  it("payload/ receives the added file of a symlink → file kind change", async () => {
+    const tmp = await mktemp("aw-kind-");
+    const candidateRoot = path.join(tmp, "candidate");
+    await fs.mkdir(candidateRoot, { recursive: true });
+    await fs.writeFile(path.join(candidateRoot, "link"), "now a file\n");
+
+    const changes: ChangeEntry[] = [
+      { path: "link", change: "deleted", previousKind: "symlink", previousSymlinkTarget: "target" },
+      { path: "link", change: "added", kind: "file", previousKind: "symlink", candidateDigest: CANDIDATE_DIGEST },
+    ];
+    const patchEntries: PatchEntryResult[] = [
+      { path: "link", change: "deleted", classification: "not-applicable", diffContribution: "" },
+      { path: "link", change: "added", classification: "included", diffContribution: "+x" },
+    ];
+    await finalizeArtifact({
+      stagingDir: path.join(tmp, "artifact.staging"),
+      artifactDir: path.join(tmp, "artifact"),
+      candidateRoot,
+      baselineRoot: tmp,
+      manifest: makeMinimalManifest({ changes, patchEntries }),
+      patchText: "",
+      patchEntries,
+      changes,
+      verificationRecord: { candidateDigest: CANDIDATE_DIGEST, outcome: "passed" },
+      reviewRecord: { candidateDigest: CANDIDATE_DIGEST, outcome: "approved", findings: [] },
+    });
+    expect(await fs.readFile(path.join(tmp, "artifact", "payload", "link"), "utf-8")).toBe("now a file\n");
   });
 });

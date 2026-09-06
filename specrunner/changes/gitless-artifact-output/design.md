@@ -122,6 +122,7 @@ run root（呼び出し側が親 directory を指定、SpecRunner が `<parent>/
 
 - candidate には **利用者の source だけ**を materialize する。SpecRunner の pipeline 成果物（request の写し・step result・run state）は `steps/` 側に置き、candidate tree に混ぜない。
 - materialize は symlink を追跡せず（`dereference: false`）そのまま symlink として複製し、mode の実行 bit を保存する。source root の外を指す symlink（絶対 path・`..` で外へ出る相対）は materialize 前の baseline snapshot 段階で unsupported として fail-closed。
+- run root と source の分離は fail-closed に検査する: `<parent>/<runId>` と source root を symlink 解決後の実 path で比較し、一方が他方に含まれる（同一を含む）場合は run root を作らずに失敗する。呼び出し側の指定ミス（source 配下や source を指す symlink）で source に書き込む経路を構造的に塞ぐ。
 - cleanup 責務: SpecRunner が作った run root だけを消す。source は決して消さない。失敗時は candidate を残す（事後解析のため）。
 
 - Rationale: 「runtime state / baseline evidence を agent writable 領域だけに置かない」（設計要求 2）を layout で満たす。candidate に SpecRunner 成果物を混ぜないのは、artifact が「利用者の変更だけ」を含むという artifact contract（D9）を単純に保つため — 混ぜると除外規則が manifest の意味に恒久的に食い込む。
@@ -155,15 +156,17 @@ baseline / candidate の entry map を突き合わせ `added` / `modified` / `de
 
 | 分類 | 条件 | `changes.patch` | payload |
 |---|---|---|---|
-| `included` | change=added/modified かつ kind=file かつ UTF-8 text（NUL byte なし）かつ size 上限内 | unified diff hunk を含む | 含む（candidate bytes） |
+| `included` | change=added/modified かつ kind=file かつ UTF-8 text（NUL byte なし）かつ size 上限内かつ計算量予算内 | unified diff hunk を含む（空 file の追加は hunk なし） | 含む（candidate bytes） |
 | `included:deletion` | change=deleted かつ kind=file かつ 旧側が UTF-8 text（NUL byte なし）かつ size 上限内 | 削除 hunk を含む（`--- /dev/null` 形式） | なし（candidate が存在しない） |
 | `omitted:binary` | change=added/modified かつ NUL byte を含む / UTF-8 decode 不可 | 含まない | 含む（candidate bytes） |
 | `omitted:binary-deletion` | change=deleted かつ 旧側が binary（NUL byte を含む / UTF-8 decode 不可） | 含まない（binary 内容を unified diff に含めない） | なし（candidate が存在しない） |
-| `omitted:size` | change=added/modified かつ size 上限超過 | 含まない | 含む（candidate bytes） |
+| `omitted:size` | change=added/modified かつ（size 上限超過、または unified diff の計算量予算（共通 prefix / suffix を除いた行数積）超過） | 含まない | 含む（candidate bytes） |
 | `omitted:size-deletion` | change=deleted かつ kind=file かつ 旧側が UTF-8 text（NUL byte なし）かつ size 上限超過 | 含まない | なし（candidate が存在しない） |
 | `omitted:unreadable` | change=added/modified/deleted で内容の読み取り（readFile）が I/O error で失敗した（symlink / dir / mode のみの変更ではない） | 含まない | 保証しない（entry は manifest に必ず現れる。added/modified は payload 収録を試みるが読めない以上 fail-closed に扱う） |
 | `not-applicable` | kind が symlink / dir、または mode のみの変更 | 含まない | metadata として manifest に記録（symlink target を含む） |
 | `unsupported` | payload としても表現できない（fifo 等） | — | — → **artifact を finalize しない**（fail-closed） |
+
+payload は patch 分類に関わらず added / modified の kind=file entry すべてについて candidate bytes を収録する（D9）。`changes.patch` は review 用の表現であり、適用の正本は payload + manifest である。したがって空 file の追加（hunk なし）や BOM のみの差分も payload から復元できる。diff 計算に用いる UTF-8 decode は BOM を保持する（BOM の追加 / 削除が patch に現れる）。unified diff の計算量は byte size 上限だけでは抑えられない（短い行が多数あると LCS 表が行数の積で膨らむ）ため、共通 prefix / suffix を除いた行数積に予算を設け、超過した entry は diff を計算せず `omitted:size` として payload で表現する。size 上限と予算はいずれも `changes.patch` の表現範囲を決めるだけで、artifact の完全性は payload が担う。
 
 削除 entry に `not-applicable` を使わないことで、manifest の `patch` フィールド値から `changes.patch` の実内容が 1:1 で推定できる（`included` / `included:deletion` → patch に hunk あり、それ以外 → patch に hunk なし）。manifest には全変更 entry が必ず現れ、`patch` 欄で分類を明示する。「patch に出なかったので変更なし」は構造的に起こらない。
 
@@ -174,7 +177,7 @@ baseline / candidate の entry map を突き合わせ `added` / `modified` / `de
 
 ### D9: artifact は 1 つの出力単位。finalize は atomic、source へ自動適用しない
 
-`artifact/` の内容: `manifest.json` / `changes.patch` / `payload/`（added・modified の candidate 内容を path 構造のまま） / `verification.json` / `review.json` / `APPLY.md`（適用手順と unsupported entry の有無）。
+`artifact/` の内容: `manifest.json` / `changes.patch` / `payload/`（added・modified の candidate 内容を path 構造のまま。patch 分類に関わらず kind=file の added / modified entry すべてを収録し、いずれか 1 つでも収録に失敗したら finalize しない） / `verification.json` / `review.json` / `APPLY.md`（適用手順と unsupported entry の有無。適用手順は「manifest の deleted entry を削除 → payload を上書き copy（空 file を含む） → not-applicable entry の metadata を適用 → candidate digest 照合」の順で、`changes.patch` は review 用と位置づける）。
 
 - 生成は `artifact.staging/` に書き切ってから `artifact/` へ rename（atomic finalize）。途中失敗時に `artifact/` は存在しない。
 - artifact は source へ自動適用しない。将来 apply command を提供する場合も別の明示操作とし、**適用先の現在 digest が manifest の baseline digest と一致しない限り上書きしない**ことを契約として `APPLY.md` と manifest に記載する（本 change では apply を実装しない）。
@@ -284,7 +287,7 @@ capability id（`git-revision` / `git-commit-attribution` / `git-remote-publish`
 
 - [Risk] 大規模 source（`node_modules` を含む tree 等）で baseline / candidate / 終了時照合の複数回走査が支配的コストになる → Mitigation: 既定 exclusion は最小（`.git/` のみ、D3 で digest 入力に記録）とし、追加 exclusion は呼び出し側が明示宣言できる形にする。コストは D16 の metrics で実測し、incremental snapshot の要否判断材料として記録する（先回り最適化はしない）。
 - [Risk] candidate に SpecRunner の pipeline 成果物を置かない設計（D5）は、cwd 相対に result file を書く実 agent adapter と噛み合わない可能性 → Mitigation: 最小縦断は injected runner で成立させ、実 agent 配線時の overlay 要否を OQ-2 として実測後に判断する。overlay が必要になった場合も「overlay prefix は manifest に記録し、変更集合から除外した事実を明示する」ことを前提とする。
-- [Risk] unified diff を自前実装するため、大きな text file で計算量・メモリが問題になる → Mitigation: size 上限を超えた entry は `omitted:size`（削除は `omitted:size-deletion`）として patch から外し、added/modified は payload で表現する（D8）。上限値は manifest に記録し、利用者が「なぜ patch に出ないか」を追跡できる。
+- [Risk] unified diff を自前実装するため、大きな text file で計算量・メモリが問題になる → Mitigation: size 上限を超えた entry は `omitted:size`（削除は `omitted:size-deletion`）として patch から外し、added/modified は payload で表現する（D8）。size 上限だけでは LCS 表（行数の積）を抑えられないため、共通 prefix / suffix を除いた行数積に計算量予算を設け、超過時も同じ `omitted:size` + payload に倒す。上限値は manifest に記録し、利用者が「なぜ patch に出ないか」を追跡できる。
 - [Risk] `.git` を既定 exclusion にすることが「Git を暗黙に特別扱いしている」と読まれうる → Mitigation: exclusion は authority ではなくデータ（digest 入力に含まれ manifest に出力される）であり、Git を参照する処理は一切ないことを doc と test で示す。`.git` を含めたい利用者は exclusion を空にできる。
 - [Risk] 新規 module 群が production 経路から薄くしか参照されず（guide topic の capability テーブルのみ）、実質 dead code に見える → Mitigation: preview として位置づけ、docs に次段階 Issue（CLI 配線）を明記する。縦断テストが常時実行されるため behavior は固定される。
 - [Trade-off] resume 非対応（D13）は Git profile より durability が明確に低い。これは「暗黙の保証低下」ではなく、preflight・`run.json`・guide topic の 3 箇所で明示する仕様上の差分として扱う。

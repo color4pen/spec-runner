@@ -46,19 +46,32 @@ do NOT apply — the patch may not apply cleanly and may corrupt your source.
 ## Contents
 
 - \`manifest.json\`   — full change manifest with baseline/candidate digests
-- \`changes.patch\`   — unified diff (text changes only)
-- \`payload/\`        — candidate file bytes for binary and large changes
+- \`changes.patch\`   — unified diff (text changes only; for review)
+- \`payload/\`        — candidate bytes of EVERY added / modified regular file
+                       (text, binary, large, and empty files alike), in path structure
 - \`verification.json\` — verification record
 - \`review.json\`     — review record
 
 ## Application steps
 
 1. Verify baseline digest matches your source directory.
-2. Apply \`changes.patch\` using \`patch -p0 < changes.patch\` (text changes).
-3. Copy files from \`payload/\` to their respective paths (binary / large files).
-4. Verify the result matches the candidate digest: ${manifest.candidate.digest}
+2. For every entry with \`change: "deleted"\` in \`manifest.json\`, remove the path.
+   (\`changes.patch\` carries deletion hunks only for text deletions; binary / large
+   deletions appear in the manifest only.)
+3. Copy every file under \`payload/\` to its path, overwriting. The payload is the
+   authoritative content for all added / modified regular files — including files
+   that are empty (a zero-byte file must be created), binary, or too large for the patch.
+   Apply the \`mode\` recorded in the manifest entry.
+4. For entries with \`patchClassification: "not-applicable"\` (symlink / directory /
+   mode-only changes), apply the metadata recorded in the manifest entry
+   (\`kind\`, \`mode\`, \`symlinkTarget\`). A kind change is recorded as a
+   \`deleted\` entry plus an \`added\` entry with the same path.
+5. \`changes.patch\` is intended for review. Applying it with \`patch -p0\` against the
+   baseline is equivalent to step 3 for \`included\` entries only; it is never required
+   after step 3.
+6. Verify the result matches the candidate digest: ${manifest.candidate.digest}
 
-${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, `omitted:size`, `omitted:size-deletion`, or `omitted:unreadable` in manifest.json. These changes must be applied from `payload/` or handled separately.\n" : ""}
+${hasUnsupported ? "## NOTE: Some changes are not representable as text patches\n\nSee entries with `patchClassification` of `not-applicable`, `omitted:binary`, `omitted:binary-deletion`, `omitted:size`, `omitted:size-deletion`, or `omitted:unreadable` in manifest.json. Added / modified regular files among them are applied from `payload/` (step 3); the rest are applied from manifest metadata (steps 2 and 4).\n" : ""}
 ## Profile: ${manifest.profile}
 
 Resume: NOT supported. If the run was interrupted, restart from the source directory.
@@ -98,7 +111,7 @@ export interface FinalizeArtifactInput {
  * 3. Renames artifact.staging/ → artifact/.
  *
  * If any step fails, artifact/ is never created.
- * If any change entry is unrepresentable (not-applicable without metadata), fails closed.
+ * If any required payload copy fails, fails closed (artifact/ is never created).
  *
  * Source directory is NEVER written to.
  */
@@ -132,7 +145,7 @@ export async function finalizeArtifact(input: FinalizeArtifactInput): Promise<vo
     // 2. Write changes.patch
     await fs.writeFile(nodePath.join(stagingDir, "changes.patch"), patchText, "utf-8");
 
-    // 3. Write payload/ (binary and large text files that couldn't be in the patch)
+    // 3. Write payload/ (candidate bytes of every added / modified regular file)
     const payloadDir = nodePath.join(stagingDir, "payload");
     await fs.mkdir(payloadDir, { recursive: true });
     await writePayload(payloadDir, candidateRoot, patchEntries, input.changes);
@@ -168,42 +181,29 @@ async function writePayload(
   patchEntries: readonly PatchEntryResult[],
   changes: readonly ChangeEntry[],
 ): Promise<void> {
+  // Keyed by (change, path): a kind change is a deleted + added pair with the same path.
   const changeMap = new Map<string, ChangeEntry>();
   for (const c of changes) {
-    changeMap.set(c.path, c);
+    changeMap.set(`${c.change}|${c.path}`, c);
   }
 
   for (const entry of patchEntries) {
-    // Include in payload: omitted:binary, omitted:size, omitted:unreadable
-    // (added/modified have candidate bytes; unreadable is attempted best-effort)
-    if (
-      entry.classification !== "omitted:binary" &&
-      entry.classification !== "omitted:size" &&
-      entry.classification !== "omitted:unreadable"
-    ) {
-      continue;
-    }
-
-    const change = changeMap.get(entry.path);
-    if (!change || change.change === "deleted") continue;
+    // D9: payload/ carries the candidate bytes of EVERY added / modified regular file,
+    // regardless of patch classification. This makes the payload authoritative for
+    // application (empty files, BOM-only differences, binary and large files are all
+    // recoverable from it) and keeps changes.patch a review aid rather than the only
+    // carrier of the change.
+    if (entry.change === "deleted") continue;
+    const change = changeMap.get(`${entry.change}|${entry.path}`);
+    if (!change || change.kind !== "file") continue;
 
     const srcPath = nodePath.join(candidateRoot, entry.path);
     const dstPath = nodePath.join(payloadDir, entry.path);
 
+    // Fail-closed (D6 / D8): every payload copy is required. If any candidate file cannot
+    // be copied, the artifact would be incomplete — propagate so finalizeArtifact throws
+    // and artifact/ is never created.
     await fs.mkdir(nodePath.dirname(dstPath), { recursive: true });
-    if (entry.classification === "omitted:unreadable") {
-      // Fail-closed: an unreadable entry cannot be represented in the patch.
-      // If we also cannot copy it to payload, the artifact is incomplete — propagate the error
-      // so finalizeArtifact fails and artifact/ is never created. (D6 fail-closed)
-      await fs.copyFile(srcPath, dstPath);
-    } else {
-      // Best-effort for binary/size entries: if the candidate file moved or disappeared
-      // between classification and finalization, skip (rare race; not fail-closed).
-      try {
-        await fs.copyFile(srcPath, dstPath);
-      } catch {
-        // Best-effort: skip if file not found
-      }
-    }
+    await fs.copyFile(srcPath, dstPath);
   }
 }

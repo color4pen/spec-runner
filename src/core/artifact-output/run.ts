@@ -20,7 +20,7 @@
 import * as fs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { planEffectivePipeline } from "./preflight.js";
-import { createRunRoot, baselineSnapshotPath, candidateDir, artifactStagingDir, artifactDir, runJsonPath } from "./run-layout.js";
+import { createRunRoot, assertRunRootDisjointFromSource, baselineSnapshotPath, candidateDir, artifactStagingDir, artifactDir, runJsonPath } from "./run-layout.js";
 import { materializeCandidate } from "./materialize.js";
 import { assertSourceUnchanged } from "./source-guard.js";
 import { createGitDenyingSpawn } from "./guarded-spawn.js";
@@ -127,6 +127,8 @@ interface RunJson {
 /**
  * Run the artifact-output pipeline.
  * Never throws — all errors are captured into the result discriminated union.
+ * Once the run root exists, every failure (including seam exceptions and run.json
+ * I/O failures) goes through the common finish path (`finishFailed`).
  */
 export async function runArtifactOutput(
   input: ArtifactOutputRunInput,
@@ -172,6 +174,14 @@ export async function runArtifactOutput(
   const baselineDigest = baselineSnapshot.digest;
 
   // Phase 4: Create run root + materialize candidate
+  // Fail-closed: the run root must be disjoint from the source directory (after symlink
+  // resolution) — otherwise SpecRunner would write into the user's source tree.
+  try {
+    await assertRunRootDisjointFromSource(sourceRoot, runParentDir, runId);
+  } catch (err) {
+    return { kind: "failed", runId, reason: "Run root placement rejected", error: err, preflightReport };
+  }
+
   let runRoot: string;
   try {
     runRoot = await createRunRoot(runParentDir, runId);
@@ -189,288 +199,350 @@ export async function runArtifactOutput(
     resume: { supported: false, reason: "artifact-output profile does not support resume" },
     preflightReport,
   };
-  await writeRunJson(runRoot, runJson);
+  const failRun = (phase: string, reason: string, err: unknown): Promise<ArtifactOutputRunResult> =>
+    finishFailed({ runId, runRoot, runJson, sourceRoot, baselineDigest, collectOpts, preflightReport, phase, reason, err });
 
-  // Write baseline snapshot evidence
-  await writeJson(baselineSnapshotPath(runRoot), baselineSnapshot);
+  const runPhases = async (): Promise<ArtifactOutputRunResult> => {
+    await writeRunJson(runRoot, runJson);
 
-  // Phase 4: Materialize candidate
-  runJson.phase = "materialize";
-  await writeRunJson(runRoot, runJson);
+    // Write baseline snapshot evidence
+    await writeJson(baselineSnapshotPath(runRoot), baselineSnapshot);
 
-  const candidateRoot = candidateDir(runRoot);
-  try {
-    await materializeCandidate(sourceRoot, candidateRoot, baselineSnapshot);
-  } catch (err) {
-    runJson.status = "failed";
+    // Phase 4: Materialize candidate
     runJson.phase = "materialize";
-    runJson.error = String(err);
-    await writeRunJson(runRoot, runJson);
-    return { kind: "failed", runId, runRoot, reason: "Materialization failed", error: err, preflightReport };
-  }
-
-  // Phase 5: Agent execution
-  runJson.phase = "agent";
-  await writeRunJson(runRoot, runJson);
-
-  try {
-    await input.agent.run(candidateRoot, requestContent);
-  } catch (err) {
-    runJson.status = "failed";
-    runJson.phase = "agent";
-    runJson.error = String(err);
-    await writeRunJson(runRoot, runJson);
-    return { kind: "failed", runId, runRoot, reason: "Agent execution failed", error: err, preflightReport };
-  }
-
-  // Phase 6: Verification (revision-bound)
-  runJson.phase = "verification";
-  await writeRunJson(runRoot, runJson);
-
-  // D14: take the pre-verification snapshot ourselves so we can build the context block
-  // with the actual candidate digest (not a placeholder).
-  const preVerifySnapshotResult = await collectSnapshot(candidateRoot, collectOpts);
-  if (preVerifySnapshotResult.kind === "unavailable") {
-    runJson.status = "halted";
-    runJson.error = `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`;
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`, preflightReport };
-  }
-
-  // D14: changesNotYetDerived=true renders an explicit marker instead of the
-  // misleading '(no changes)' — the change set has not been derived yet at this phase.
-  const preVerifyContext = buildSnapshotContext({
-    baselineDigest,
-    candidateDigest: preVerifySnapshotResult.snapshot.digest,
-    changes: [],
-    changesNotYetDerived: true,
-  });
-
-  const verifyBound = await runBoundToCandidateRevision<VerificationRecord>(
-    candidateRoot,
-    () => input.verify.run(candidateRoot, preVerifyContext.contextBlock),
-    collectOpts,
-    preVerifySnapshotResult.snapshot, // pass pre-snapshot to avoid redundant collection
-  );
-
-  if (verifyBound.kind === "unavailable") {
-    runJson.status = "halted";
-    runJson.phase = "verification";
-    runJson.error = verifyBound.reason;
     await writeRunJson(runRoot, runJson);
 
-    // Source unchanged check even on failure
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: `Verification snapshot unavailable: ${verifyBound.reason}`, preflightReport };
-  }
-
-  if (verifyBound.kind === "revision-drift") {
-    runJson.status = "halted";
-    runJson.phase = "verification";
-    runJson.error = `Revision drift during verification: before=${verifyBound.before} after=${verifyBound.after}`;
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: "Revision drift during verification", preflightReport };
-  }
-
-  if (verifyBound.result.outcome === "failed") {
-    runJson.status = "halted";
-    runJson.phase = "verification";
-    runJson.error = `Verification failed: ${verifyBound.result.details ?? ""}`;
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: "Verification failed", preflightReport };
-  }
-
-  // Step 7: Change set derivation — uses frozen candidate from step 6 (no re-scan)
-  const frozenCandidateSnapshot = verifyBound.frozenSnapshot;
-  const candidateDigest = verifyBound.digest;
-  const verificationRecord: VerificationRecord = {
-    ...verifyBound.result,
-    candidateDigest,
-  };
-
-  const changeSetResult = deriveChangeSet(baselineSnapshot, frozenCandidateSnapshot);
-  if (changeSetResult.kind === "unavailable") {
-    runJson.status = "halted";
-    runJson.phase = "change-set";
-    runJson.error = changeSetResult.reason;
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: `Change set unavailable: ${changeSetResult.reason}`, preflightReport };
-  }
-  const changes: readonly ChangeEntry[] = changeSetResult.changes;
-
-  // Build patch
-  const readFile = async (absPath: string): Promise<Uint8Array | null> => {
+    const candidateRoot = candidateDir(runRoot);
     try {
-      return new Uint8Array(await fs.readFile(absPath));
-    } catch {
-      return null;
+      await materializeCandidate(sourceRoot, candidateRoot, baselineSnapshot);
+    } catch (err) {
+      runJson.status = "failed";
+      runJson.phase = "materialize";
+      runJson.error = String(err);
+      await writeRunJson(runRoot, runJson);
+      return { kind: "failed", runId, runRoot, reason: "Materialization failed", error: err, preflightReport };
     }
-  };
-  const patchResult = await buildPatch(changes, candidateRoot, sourceRoot, readFile);
 
-  // Phase 8: Review (revision-bound)
-  runJson.phase = "review";
-  await writeRunJson(runRoot, runJson);
+    // Phase 5: Agent execution
+    runJson.phase = "agent";
+    await writeRunJson(runRoot, runJson);
 
-  const reviewContext = buildSnapshotContext({
-    baselineDigest,
-    candidateDigest,
-    changes,
-    patchEntries: patchResult.entries,
-  });
+    try {
+      await input.agent.run(candidateRoot, requestContent);
+    } catch (err) {
+      runJson.status = "failed";
+      runJson.phase = "agent";
+      runJson.error = String(err);
+      await writeRunJson(runRoot, runJson);
+      return { kind: "failed", runId, runRoot, reason: "Agent execution failed", error: err, preflightReport };
+    }
 
-  const reviewBound = await runBoundToCandidateRevision<ReviewRecord>(
-    candidateRoot,
-    () => input.review.run(candidateRoot, reviewContext.contextBlock),
-    collectOpts,
-  );
+    // Phase 6: Verification (revision-bound)
+    runJson.phase = "verification";
+    await writeRunJson(runRoot, runJson);
 
-  if (reviewBound.kind === "unavailable") {
-    runJson.status = "halted";
+    // D14: take the pre-verification snapshot ourselves so we can build the context block
+    // with the actual candidate digest (not a placeholder).
+    const preVerifySnapshotResult = await collectSnapshot(candidateRoot, collectOpts);
+    if (preVerifySnapshotResult.kind === "unavailable") {
+      runJson.status = "halted";
+      runJson.error = `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: `Pre-verification snapshot unavailable: ${preVerifySnapshotResult.reason}`, preflightReport };
+    }
+
+    // D14: changesNotYetDerived=true renders an explicit marker instead of the
+    // misleading '(no changes)' — the change set has not been derived yet at this phase.
+    const preVerifyContext = buildSnapshotContext({
+      baselineDigest,
+      candidateDigest: preVerifySnapshotResult.snapshot.digest,
+      changes: [],
+      changesNotYetDerived: true,
+    });
+
+    let verifyBound: Awaited<ReturnType<typeof runBoundToCandidateRevision<VerificationRecord>>>;
+    try {
+      verifyBound = await runBoundToCandidateRevision<VerificationRecord>(
+        candidateRoot,
+        () => input.verify.run(candidateRoot, preVerifyContext.contextBlock),
+        collectOpts,
+        preVerifySnapshotResult.snapshot, // pass pre-snapshot to avoid redundant collection
+      );
+    } catch (err) {
+      // The verify seam threw (or the bound snapshot failed unexpectedly): failed, not halted.
+      return await failRun("verification", "Verification execution failed", err);
+    }
+
+    if (verifyBound.kind === "unavailable") {
+      runJson.status = "halted";
+      runJson.phase = "verification";
+      runJson.error = verifyBound.reason;
+      await writeRunJson(runRoot, runJson);
+
+      // Source unchanged check even on failure
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: `Verification snapshot unavailable: ${verifyBound.reason}`, preflightReport };
+    }
+
+    if (verifyBound.kind === "revision-drift") {
+      runJson.status = "halted";
+      runJson.phase = "verification";
+      runJson.error = `Revision drift during verification: before=${verifyBound.before} after=${verifyBound.after}`;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: "Revision drift during verification", preflightReport };
+    }
+
+    if (verifyBound.result.outcome === "failed") {
+      runJson.status = "halted";
+      runJson.phase = "verification";
+      runJson.error = `Verification failed: ${verifyBound.result.details ?? ""}`;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: "Verification failed", preflightReport };
+    }
+
+    // Step 7: Change set derivation — uses frozen candidate from step 6 (no re-scan)
+    const frozenCandidateSnapshot = verifyBound.frozenSnapshot;
+    const candidateDigest = verifyBound.digest;
+    const verificationRecord: VerificationRecord = {
+      ...verifyBound.result,
+      candidateDigest,
+    };
+
+    const changeSetResult = deriveChangeSet(baselineSnapshot, frozenCandidateSnapshot);
+    if (changeSetResult.kind === "unavailable") {
+      runJson.status = "halted";
+      runJson.phase = "change-set";
+      runJson.error = changeSetResult.reason;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: `Change set unavailable: ${changeSetResult.reason}`, preflightReport };
+    }
+    const changes: readonly ChangeEntry[] = changeSetResult.changes;
+
+    // Build patch
+    const readFile = async (absPath: string): Promise<Uint8Array | null> => {
+      try {
+        return new Uint8Array(await fs.readFile(absPath));
+      } catch {
+        return null;
+      }
+    };
+    const patchResult = await buildPatch(changes, candidateRoot, sourceRoot, readFile);
+
+    // Phase 8: Review (revision-bound)
     runJson.phase = "review";
-    runJson.error = reviewBound.reason;
     await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: `Review snapshot unavailable: ${reviewBound.reason}`, preflightReport };
-  }
 
-  if (reviewBound.kind === "revision-drift") {
-    runJson.status = "halted";
-    runJson.phase = "review";
-    runJson.error = `Revision drift during review`;
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "halted", runId, runRoot, reason: "Revision drift during review", preflightReport };
-  }
+    const reviewContext = buildSnapshotContext({
+      baselineDigest,
+      candidateDigest,
+      changes,
+      patchEntries: patchResult.entries,
+    });
 
-  // Phase 8.5: Cross-phase digest check
-  const reviewDigest = reviewBound.digest;
-  if (verifyBound.digest !== reviewDigest) {
-    runJson.status = "halted";
-    runJson.phase = "cross-phase-check";
-    runJson.error = `Cross-phase digest mismatch: verification=${verifyBound.digest} review=${reviewDigest}`;
+    let reviewBound: Awaited<ReturnType<typeof runBoundToCandidateRevision<ReviewRecord>>>;
+    try {
+      reviewBound = await runBoundToCandidateRevision<ReviewRecord>(
+        candidateRoot,
+        () => input.review.run(candidateRoot, reviewContext.contextBlock),
+        collectOpts,
+      );
+    } catch (err) {
+      return await failRun("review", "Review execution failed", err);
+    }
+
+    if (reviewBound.kind === "unavailable") {
+      runJson.status = "halted";
+      runJson.phase = "review";
+      runJson.error = reviewBound.reason;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: `Review snapshot unavailable: ${reviewBound.reason}`, preflightReport };
+    }
+
+    if (reviewBound.kind === "revision-drift") {
+      runJson.status = "halted";
+      runJson.phase = "review";
+      runJson.error = `Revision drift during review`;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "halted", runId, runRoot, reason: "Revision drift during review", preflightReport };
+    }
+
+    // Phase 8.5: Cross-phase digest check
+    const reviewDigest = reviewBound.digest;
+    if (verifyBound.digest !== reviewDigest) {
+      runJson.status = "halted";
+      runJson.phase = "cross-phase-check";
+      runJson.error = `Cross-phase digest mismatch: verification=${verifyBound.digest} review=${reviewDigest}`;
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return {
+        kind: "halted",
+        runId,
+        runRoot,
+        reason: "revision-drift: verification and review bound digests do not match",
+        preflightReport,
+      };
+    }
+
+    const reviewRecord: ReviewRecord = {
+      ...reviewBound.result,
+      candidateDigest,
+    };
+
+    // Phase 9: Artifact finalize
+    runJson.phase = "finalize";
+    runJson.candidateDigest = candidateDigest;
     await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+
+    const manifest = buildManifest({
+      runId,
+      profile: input.profileId,
+      sourceRoot,
+      exclusions,
+      baselineDigest,
+      candidateDigest,
+      changes,
+      patchEntries: patchResult.entries,
+      verification: {
+        boundDigest: candidateDigest,
+        outcome: verificationRecord.outcome,
+        details: verificationRecord.details,
+      },
+      review: {
+        boundDigest: candidateDigest,
+        outcome: reviewRecord.outcome,
+        findings: reviewRecord.findings,
+      },
+    });
+
+    const stagingDir = artifactStagingDir(runRoot);
+    const finalArtifactDir = artifactDir(runRoot);
+
+    try {
+      await finalizeArtifact({
+        stagingDir,
+        artifactDir: finalArtifactDir,
+        candidateRoot,
+        baselineRoot: sourceRoot,
+        manifest,
+        patchText: patchResult.patchText,
+        patchEntries: patchResult.entries,
+        changes,
+        verificationRecord,
+        reviewRecord,
+      });
+    } catch (err) {
+      runJson.status = "failed";
+      runJson.phase = "finalize";
+      runJson.error = String(err);
+      await writeRunJson(runRoot, runJson);
+      await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+      return { kind: "failed", runId, runRoot, reason: "Artifact finalization failed", error: err, preflightReport };
+    }
+
+    // Source unchanged final check — D6: fail-closed; if mutated/unverifiable, return failed
+    const sourceMutatedOnSuccess = await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+    if (sourceMutatedOnSuccess) {
+      // runJson.status is already 'failed' and written by checkSourceUnchanged
+      return { kind: "failed", runId, runRoot, reason: "Source was mutated during run", preflightReport };
+    }
+
+    // Compute metrics
+    const durationMs = (input.now ?? Date.now)() - startMs;
+    const entryCount = frozenCandidateSnapshot.entries.length;
+    const scannedBytes = frozenCandidateSnapshot.entries.reduce(
+      (sum, e) => sum + (e.size ?? 0),
+      0,
+    );
+
+    let artifactBytes = 0;
+    let payloadBytes = 0;
+    try {
+      artifactBytes = await dirSize(finalArtifactDir);
+      payloadBytes = await dirSize(nodePath.join(finalArtifactDir, "payload")).catch(() => 0);
+    } catch { /* best-effort */ }
+
+    const patchLines = patchResult.patchText.split("\n").length;
+
+    const metrics: ArtifactOutputMetrics = {
+      durationMs,
+      entryCount,
+      scannedBytes,
+      artifactBytes,
+      payloadBytes,
+      patchLines,
+    };
+
+    runJson.status = "completed";
+    runJson.phase = "done";
+    runJson.metrics = metrics;
+    await writeRunJson(runRoot, runJson);
+
     return {
-      kind: "halted",
+      kind: "completed",
       runId,
       runRoot,
-      reason: "revision-drift: verification and review bound digests do not match",
+      baselineDigest,
+      candidateDigest,
+      artifactPath: finalArtifactDir,
+      metrics,
       preflightReport,
     };
-  }
-
-  const reviewRecord: ReviewRecord = {
-    ...reviewBound.result,
-    candidateDigest,
   };
 
-  // Phase 9: Artifact finalize
-  runJson.phase = "finalize";
-  runJson.candidateDigest = candidateDigest;
-  await writeRunJson(runRoot, runJson);
-
-  const manifest = buildManifest({
-    runId,
-    profile: input.profileId,
-    sourceRoot,
-    exclusions,
-    baselineDigest,
-    candidateDigest,
-    changes,
-    patchEntries: patchResult.entries,
-    verification: {
-      boundDigest: candidateDigest,
-      outcome: verificationRecord.outcome,
-      details: verificationRecord.details,
-    },
-    review: {
-      boundDigest: candidateDigest,
-      outcome: reviewRecord.outcome,
-      findings: reviewRecord.findings,
-    },
-  });
-
-  const stagingDir = artifactStagingDir(runRoot);
-  const finalArtifactDir = artifactDir(runRoot);
-
+  // Backstop: any exception escaping a phase (seam throw, run.json I/O failure, ...) is
+  // converted into a failed result through the common finish path — never rethrown.
   try {
-    await finalizeArtifact({
-      stagingDir,
-      artifactDir: finalArtifactDir,
-      candidateRoot,
-      baselineRoot: sourceRoot,
-      manifest,
-      patchText: patchResult.patchText,
-      patchEntries: patchResult.entries,
-      changes,
-      verificationRecord,
-      reviewRecord,
-    });
+    return await runPhases();
   } catch (err) {
-    runJson.status = "failed";
-    runJson.phase = "finalize";
-    runJson.error = String(err);
-    await writeRunJson(runRoot, runJson);
-    await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-    return { kind: "failed", runId, runRoot, reason: "Artifact finalization failed", error: err, preflightReport };
+    return await failRun(runJson.phase, `Unhandled error in phase '${runJson.phase}'`, err);
   }
-
-  // Source unchanged final check — D6: fail-closed; if mutated/unverifiable, return failed
-  const sourceMutatedOnSuccess = await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
-  if (sourceMutatedOnSuccess) {
-    // runJson.status is already 'failed' and written by checkSourceUnchanged
-    return { kind: "failed", runId, runRoot, reason: "Source was mutated during run", preflightReport };
-  }
-
-  // Compute metrics
-  const durationMs = (input.now ?? Date.now)() - startMs;
-  const entryCount = frozenCandidateSnapshot.entries.length;
-  const scannedBytes = frozenCandidateSnapshot.entries.reduce(
-    (sum, e) => sum + (e.size ?? 0),
-    0,
-  );
-
-  let artifactBytes = 0;
-  let payloadBytes = 0;
-  try {
-    artifactBytes = await dirSize(finalArtifactDir);
-    payloadBytes = await dirSize(nodePath.join(finalArtifactDir, "payload")).catch(() => 0);
-  } catch { /* best-effort */ }
-
-  const patchLines = patchResult.patchText.split("\n").length;
-
-  const metrics: ArtifactOutputMetrics = {
-    durationMs,
-    entryCount,
-    scannedBytes,
-    artifactBytes,
-    payloadBytes,
-    patchLines,
-  };
-
-  runJson.status = "completed";
-  runJson.phase = "done";
-  runJson.metrics = metrics;
-  await writeRunJson(runRoot, runJson);
-
-  return {
-    kind: "completed",
-    runId,
-    runRoot,
-    baselineDigest,
-    candidateDigest,
-    artifactPath: finalArtifactDir,
-    metrics,
-    preflightReport,
-  };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+interface FinishFailedArgs {
+  runId: string;
+  runRoot: string;
+  runJson: RunJson;
+  sourceRoot: string;
+  baselineDigest: string;
+  collectOpts: { exclusions: readonly string[] };
+  preflightReport: EffectivePipelineReport;
+  phase: string;
+  reason: string;
+  err: unknown;
+}
+
+/**
+ * Common finish path for a failed run after the run root exists:
+ * record status/phase/error in run.json (an I/O failure while recording is folded
+ * into the returned reason instead of escaping), then run the source-unchanged
+ * check, then return the failed result. Never throws.
+ */
+async function finishFailed(args: FinishFailedArgs): Promise<ArtifactOutputRunResult> {
+  const { runId, runRoot, runJson, sourceRoot, baselineDigest, collectOpts, preflightReport, phase, err } = args;
+  runJson.status = "failed";
+  runJson.phase = phase;
+  runJson.error = String(err);
+
+  let reason = args.reason;
+  try {
+    await writeRunJson(runRoot, runJson);
+  } catch (writeErr) {
+    reason = `${reason} (run.json could not be written: ${String(writeErr)})`;
+  }
+
+  // Source unchanged check even on failure (checkSourceUnchanged never throws).
+  await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
+
+  return { kind: "failed", runId, runRoot, reason, error: err, preflightReport };
+}
 
 async function writeRunJson(runRoot: string, data: RunJson): Promise<void> {
   await writeJson(runJsonPath(runRoot), data);

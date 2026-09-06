@@ -56,7 +56,8 @@ export function buildSnapshotContext(input: SnapshotContextInput): SnapshotConte
         e.classification === "omitted:binary-deletion" ||
         e.classification === "not-applicable",
     )
-    .map((e) => `${e.classification}: ${e.path}`);
+    // Include the operation kind: a kind change is a deleted + added pair with the same path.
+    .map((e) => `${e.classification} (${e.change}): ${e.path}`);
 
   const historySection =
     "No revision history available. This run uses snapshot-digest revision identity " +

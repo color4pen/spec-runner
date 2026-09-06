@@ -8,6 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { buildPatch, PATCH_MAX_FILE_SIZE_BYTES } from "../patch.js";
+import { DEFAULT_DIFF_LINE_PRODUCT_BUDGET } from "../../../util/unified-diff.js";
 import type { ChangeEntry } from "../../snapshot/compare.js";
 
 // ─── Mock readFile ────────────────────────────────────────────────────────────
@@ -273,5 +274,94 @@ describe("Non-applicable: directories and symlinks are not-applicable in patch",
     const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
     const entry = result.entries.find((e) => e.path === "link.txt");
     expect(entry?.classification).toBe("not-applicable");
+  });
+});
+
+// ─── Review fixes: empty file, BOM, diff budget, kind change ─────────────────
+
+describe("empty added file", () => {
+  it("is classified included with an empty diff contribution and carries change=added", async () => {
+    const changes: readonly ChangeEntry[] = [
+      { path: "empty.txt", change: "added", kind: "file", mode: "100644" },
+    ];
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/cand/empty.txt", new Uint8Array(0));
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "empty.txt");
+    expect(entry).toMatchObject({ change: "added", classification: "included", diffContribution: "" });
+  });
+});
+
+describe("UTF-8 BOM is preserved in the diff", () => {
+  it("adding a BOM to an otherwise identical file produces a diff", async () => {
+    const changes: readonly ChangeEntry[] = [
+      { path: "bom.txt", change: "modified", kind: "file", mode: "100644" },
+    ];
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/base/bom.txt", textBytes("line\n"));
+    fileMap.set("/cand/bom.txt", new Uint8Array([0xef, 0xbb, 0xbf, ...textBytes("line\n")]));
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "bom.txt");
+    expect(entry?.classification).toBe("included");
+    expect(entry?.diffContribution).toContain("-line");
+    expect(entry?.diffContribution).toContain("+\uFEFFline");
+  });
+});
+
+describe("diff computation budget", () => {
+  it("a modified text file whose trimmed line product exceeds the budget is omitted:size", async () => {
+    // Two files under the byte-size limit but with no common prefix/suffix and
+    // ~2.5k lines each → line product ≈ 6.25M > DEFAULT_DIFF_LINE_PRODUCT_BUDGET.
+    const n = Math.ceil(Math.sqrt(DEFAULT_DIFF_LINE_PRODUCT_BUDGET)) + 500;
+    const oldText = Array.from({ length: n }, (_, i) => `a${i}`).join("\n") + "\n";
+    const newText = Array.from({ length: n }, (_, i) => `b${i}`).join("\n") + "\n";
+    expect(oldText.length).toBeLessThan(PATCH_MAX_FILE_SIZE_BYTES);
+
+    const changes: readonly ChangeEntry[] = [
+      { path: "big.txt", change: "modified", kind: "file", mode: "100644" },
+    ];
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/base/big.txt", textBytes(oldText));
+    fileMap.set("/cand/big.txt", textBytes(newText));
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "big.txt");
+    expect(entry?.classification).toBe("omitted:size");
+    expect(result.patchText).toBe("");
+  });
+
+  it("a large file with a small localised change stays included (prefix/suffix trimming)", async () => {
+    const n = 5000;
+    const lines = Array.from({ length: n }, (_, i) => `line ${i}`);
+    const oldText = lines.join("\n") + "\n";
+    const changed = [...lines];
+    changed[2500] = "changed line";
+    const newText = changed.join("\n") + "\n";
+
+    const changes: readonly ChangeEntry[] = [
+      { path: "local.txt", change: "modified", kind: "file", mode: "100644" },
+    ];
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/base/local.txt", textBytes(oldText));
+    fileMap.set("/cand/local.txt", textBytes(newText));
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    const entry = result.entries.find((e) => e.path === "local.txt");
+    expect(entry?.classification).toBe("included");
+    expect(entry?.diffContribution).toContain("-line 2500");
+    expect(entry?.diffContribution).toContain("+changed line");
+  });
+});
+
+describe("kind change: deleted + added with the same path", () => {
+  it("yields two entries distinguished by change", async () => {
+    const changes: readonly ChangeEntry[] = [
+      { path: "p", change: "deleted", previousKind: "symlink", previousSymlinkTarget: "t" },
+      { path: "p", change: "added", kind: "file", previousKind: "symlink", mode: "100644" },
+    ];
+    const fileMap = new Map<string, Uint8Array | null>();
+    fileMap.set("/cand/p", textBytes("content\n"));
+    const result = await buildPatch(changes, "/cand", "/base", makeReadFile(fileMap));
+    expect(result.entries).toHaveLength(2);
+    expect(result.entries.find((e) => e.change === "deleted")?.classification).toBe("not-applicable");
+    expect(result.entries.find((e) => e.change === "added")?.classification).toBe("included");
   });
 });

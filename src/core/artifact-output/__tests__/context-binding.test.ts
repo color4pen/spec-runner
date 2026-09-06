@@ -63,6 +63,35 @@ describe("TC-035/TC-036/TC-063: buildSnapshotContext", () => {
 
 // ─── TC-064: revision binding with unavailable snapshot ───────────────────────
 
+describe("D14: change set not yet derived marker", () => {
+  it("renders an explicit not-yet-derived marker instead of '(no changes)'", () => {
+    const out = buildSnapshotContext({
+      baselineDigest: "sha256:" + "0".repeat(64),
+      candidateDigest: "sha256:" + "1".repeat(64),
+      changes: [],
+      changesNotYetDerived: true,
+    });
+    expect(out.contextBlock).toContain("not yet derived");
+    expect(out.contextBlock).not.toContain("(no changes)");
+  });
+
+  it("non-text entries list the operation kind so a kind change shows both entries", () => {
+    const out = buildSnapshotContext({
+      baselineDigest: "sha256:" + "0".repeat(64),
+      candidateDigest: "sha256:" + "1".repeat(64),
+      changes: [
+        { path: "p", change: "deleted", previousKind: "symlink" },
+        { path: "p", change: "added", kind: "file" },
+      ],
+      patchEntries: [
+        { path: "p", change: "deleted", classification: "not-applicable", diffContribution: "" },
+        { path: "p", change: "added", classification: "omitted:binary", diffContribution: "" },
+      ],
+    });
+    expect(out.data.nonTextEntries).toEqual(["not-applicable (deleted): p", "omitted:binary (added): p"]);
+  });
+});
+
 describe("TC-064: revision binding fails when snapshot is unavailable", () => {
   it("returns unavailable (not bound) when directory does not exist", async () => {
     const nonexistentDir = "/nonexistent-path-that-does-not-exist-12345";

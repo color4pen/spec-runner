@@ -5,6 +5,8 @@
  * TC-066: runArtifactOutput が throw しない（never throws）
  * TC-073: run.json に resume.supported === false が記録される
  * TC-079: cross-phase digest mismatch が halt を返す
+ * Review fixes: run root が source 内に置かれると失敗する（symlink 経由を含む）、
+ *               verify / review seam の例外が failed result に変換され run.json に記録される
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -367,5 +369,180 @@ describe("TC-079: cross-phase digest mismatch causes halt", () => {
     if (result.kind === "halted") {
       expect(result.reason).toBeDefined();
     }
+  });
+});
+
+// ─── Run root must be disjoint from the source directory ─────────────────────
+
+describe("run root placement is rejected when it would live inside the source", () => {
+  async function runWith(sourceDir: string, runParentDir: string, runId: string) {
+    return runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId,
+      requestContent: "Test",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: makePassingReview(),
+      spawn: makeNoopSpawn(),
+    });
+  }
+
+  it("runParentDir === sourceRoot fails before anything is written into the source", async () => {
+    const sourceDir = await mktemp("run-src-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const result = await runWith(sourceDir, sourceDir, "inside-source");
+    expect(result.kind).toBe("failed");
+    if (result.kind === "failed") {
+      expect(result.reason).toBe("Run root placement rejected");
+      expect(result.runRoot).toBeUndefined();
+    }
+    expect((await fs.readdir(sourceDir)).sort()).toEqual(["a.txt"]);
+  });
+
+  it("runParentDir as a not-yet-existing subdirectory of the source is rejected", async () => {
+    const sourceDir = await mktemp("run-src-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const result = await runWith(sourceDir, path.join(sourceDir, "runs", "nested"), "inside-source-2");
+    expect(result.kind).toBe("failed");
+    expect((await fs.readdir(sourceDir)).sort()).toEqual(["a.txt"]);
+  });
+
+  it("a symlinked runParentDir that resolves into the source is rejected", async () => {
+    const sourceDir = await mktemp("run-src-");
+    const outside = await mktemp("run-outside-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+    await fs.mkdir(path.join(sourceDir, "runs"));
+    const link = path.join(outside, "runs-link");
+    await fs.symlink(path.join(sourceDir, "runs"), link);
+
+    const result = await runWith(sourceDir, link, "via-symlink");
+    expect(result.kind).toBe("failed");
+    if (result.kind === "failed") expect(result.reason).toBe("Run root placement rejected");
+    expect(await fs.readdir(path.join(sourceDir, "runs"))).toEqual([]);
+  });
+
+  it("a source directory located inside the run root is rejected", async () => {
+    const runParentDir = await mktemp("run-parent-");
+    const runId = "outer";
+    const sourceDir = path.join(runParentDir, runId, "src");
+    await fs.mkdir(sourceDir, { recursive: true });
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const result = await runWith(sourceDir, runParentDir, runId);
+    expect(result.kind).toBe("failed");
+    if (result.kind === "failed") expect(result.reason).toBe("Run root placement rejected");
+  });
+});
+
+// ─── Seam exceptions are converted into failed results ───────────────────────
+
+describe("verify / review seam exceptions become failed results", () => {
+  async function readRunJson(runRoot: string) {
+    return JSON.parse(await fs.readFile(path.join(runRoot, "run.json"), "utf-8")) as {
+      status: string;
+      phase: string;
+      error?: string;
+    };
+  }
+
+  it("a throwing verify seam yields kind=failed with run.json status=failed / phase=verification", async () => {
+    const sourceDir = await mktemp("run-src-");
+    const runParentDir = await mktemp("run-parent-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const throwingVerify: VerifySeam = {
+      async run(): Promise<VerificationRecord> {
+        throw new Error("verify exploded");
+      },
+    };
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "verify-throws",
+      requestContent: "Test",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: throwingVerify,
+      review: makePassingReview(),
+      spawn: makeNoopSpawn(),
+    });
+
+    expect(result.kind).toBe("failed");
+    if (result.kind !== "failed") return;
+    expect(result.reason).toBe("Verification execution failed");
+    expect(result.runRoot).toBeDefined();
+    const runJson = await readRunJson(result.runRoot!);
+    expect(runJson.status).toBe("failed");
+    expect(runJson.phase).toBe("verification");
+    expect(runJson.error).toContain("verify exploded");
+    await expect(fs.access(path.join(result.runRoot!, "artifact"))).rejects.toMatchObject({ code: "ENOENT" });
+    // Source untouched
+    expect((await fs.readdir(sourceDir)).sort()).toEqual(["a.txt"]);
+  });
+
+  it("a throwing review seam yields kind=failed with run.json status=failed / phase=review", async () => {
+    const sourceDir = await mktemp("run-src-");
+    const runParentDir = await mktemp("run-parent-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const throwingReview: ReviewSeam = {
+      async run(): Promise<ReviewRecord> {
+        throw new Error("review exploded");
+      },
+    };
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "review-throws",
+      requestContent: "Test",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: throwingReview,
+      spawn: makeNoopSpawn(),
+    });
+
+    expect(result.kind).toBe("failed");
+    if (result.kind !== "failed") return;
+    expect(result.reason).toBe("Review execution failed");
+    const runJson = await readRunJson(result.runRoot!);
+    expect(runJson.status).toBe("failed");
+    expect(runJson.phase).toBe("review");
+    expect(runJson.error).toContain("review exploded");
+    await expect(fs.access(path.join(result.runRoot!, "artifact"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("a non-Error rejection from the verify seam is still converted (never throws)", async () => {
+    const sourceDir = await mktemp("run-src-");
+    const runParentDir = await mktemp("run-parent-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const rejectingVerify: VerifySeam = {
+      run: () => Promise.reject("plain string rejection"),
+    };
+
+    await expect(
+      runArtifactOutput({
+        sourceRoot: sourceDir,
+        runParentDir,
+        runId: "verify-rejects",
+        requestContent: "Test",
+        pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+        profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+        agent: makeNoopAgent(),
+        verify: rejectingVerify,
+        review: makePassingReview(),
+        spawn: makeNoopSpawn(),
+      }),
+    ).resolves.toMatchObject({ kind: "failed", reason: "Verification execution failed" });
   });
 });

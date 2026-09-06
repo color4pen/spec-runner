@@ -7,14 +7,15 @@
  *   "included:deletion"   - text file deletion with deletion hunk
  *   "omitted:binary"      - binary file modification/addition (no diff; payload carries bytes)
  *   "omitted:binary-deletion" - binary file deletion (no diff; no payload)
- *   "omitted:size"          - text file too large for diff (added/modified)
+ *   "omitted:size"          - text file too large for diff, or diff computation budget exceeded
+ *                             (added/modified; payload carries bytes)
  *   "omitted:size-deletion" - deleted text file too large for diff hunk (D8 operator decision)
  *   "omitted:unreadable"    - file could not be read (I/O error; not a symlink/dir/mode change)
  *   "not-applicable"      - symlink/dir/mode-only change (no text diff possible)
  */
 import * as nodePath from "node:path";
-import { classifyContent, buildUnifiedDiff } from "../../util/unified-diff.js";
-import type { ChangeEntry } from "../snapshot/compare.js";
+import { classifyContent, buildUnifiedDiffBounded } from "../../util/unified-diff.js";
+import type { ChangeEntry, ChangeKind } from "../snapshot/compare.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,12 @@ export type PatchClassification =
 
 export interface PatchEntryResult {
   path: string;
+  /**
+   * Operation kind of the change entry this result belongs to. A kind change
+   * (e.g. symlink → file) is represented as a `deleted` entry plus an `added`
+   * entry with the SAME path, so consumers must key on (change, path), not path.
+   */
+  change: ChangeKind;
   classification: PatchClassification;
   /** The diff contribution from this entry (may be empty string). */
   diffContribution: string;
@@ -45,6 +52,19 @@ export interface BuildPatchResult {
   patchText: string;
   /** Per-entry classification results. */
   entries: PatchEntryResult[];
+}
+
+// ─── Text decoding ────────────────────────────────────────────────────────────
+
+/**
+ * Decode UTF-8 for diff purposes. `ignoreBOM: true` keeps a leading U+FEFF in the
+ * decoded string so the diff reflects the actual bytes (the default decoder
+ * silently strips it, which would drop a BOM addition/removal from the patch).
+ */
+const utf8Decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
+
+function decodeText(bytes: Uint8Array): string {
+  return utf8Decoder.decode(bytes);
 }
 
 // ─── Content reader seam ──────────────────────────────────────────────────────
@@ -101,7 +121,7 @@ async function classifyAndDiff(
   // Symlink or directory: not applicable for text diff
   const effectiveKind = kind ?? previousKind;
   if (effectiveKind === "symlink" || effectiveKind === "dir") {
-    return { path, classification: "not-applicable", diffContribution: "" };
+    return { path, change: changeKind, classification: "not-applicable", diffContribution: "" };
   }
 
   // Mode-only change: same digest (and both digests must be defined), mode changed
@@ -112,7 +132,7 @@ async function classifyAndDiff(
     change.baselineDigest === change.candidateDigest &&
     change.mode !== change.previousMode
   ) {
-    return { path, classification: "not-applicable", diffContribution: "" };
+    return { path, change: changeKind, classification: "not-applicable", diffContribution: "" };
   }
 
   if (changeKind === "deleted") {
@@ -122,23 +142,26 @@ async function classifyAndDiff(
     if (!bytes) {
       // I/O failure reading the deleted baseline file: fail-closed, not omitted:size (D8 defines
       // omitted:size only for added/modified size overruns, not for unreadable deletions).
-      return { path, classification: "omitted:unreadable", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:unreadable", diffContribution: "" };
     }
 
     if (classifyContent(bytes) === "binary") {
-      return { path, classification: "omitted:binary-deletion", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:binary-deletion", diffContribution: "" };
     }
 
     if (bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
       // Deleted text file is too large for a diff hunk (D8 operator decision: omitted:size-deletion
       // for deleted text files exceeding the size limit).
-      return { path, classification: "omitted:size-deletion", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:size-deletion", diffContribution: "" };
     }
 
     // Text deletion: include as deletion hunk
-    const oldText = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-    const diff = buildUnifiedDiff(oldText, "", { oldPath: path, newPath: "/dev/null" });
-    return { path, classification: "included:deletion", diffContribution: diff };
+    const oldText = decodeText(bytes);
+    const diff = buildUnifiedDiffBounded(oldText, "", { oldPath: path, newPath: "/dev/null" });
+    if (diff.kind === "budget-exceeded") {
+      return { path, change: changeKind, classification: "omitted:size-deletion", diffContribution: "" };
+    }
+    return { path, change: changeKind, classification: "included:deletion", diffContribution: diff.diff };
   }
 
   if (changeKind === "added") {
@@ -148,17 +171,22 @@ async function classifyAndDiff(
       // I/O failure reading the added file: cannot classify as not-applicable (that is reserved
       // for symlink/dir/mode-only changes).  Use omitted:unreadable so the entry appears in the
       // manifest and payload write is attempted (even if it may fail silently).
-      return { path, classification: "omitted:unreadable", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:unreadable", diffContribution: "" };
     }
     if (bytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
-      return { path, classification: "omitted:size", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:size", diffContribution: "" };
     }
     if (classifyContent(bytes) === "binary") {
-      return { path, classification: "omitted:binary", diffContribution: "" };
+      return { path, change: changeKind, classification: "omitted:binary", diffContribution: "" };
     }
-    const newText = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-    const diff = buildUnifiedDiff("", newText, { oldPath: "/dev/null", newPath: path });
-    return { path, classification: "included", diffContribution: diff };
+    // An empty added file yields an empty diff contribution: the entry is still `included`
+    // (manifest records it) and the payload carries the (empty) candidate file.
+    const newText = decodeText(bytes);
+    const diff = buildUnifiedDiffBounded("", newText, { oldPath: "/dev/null", newPath: path });
+    if (diff.kind === "budget-exceeded") {
+      return { path, change: changeKind, classification: "omitted:size", diffContribution: "" };
+    }
+    return { path, change: changeKind, classification: "included", diffContribution: diff.diff };
   }
 
   // Modified
@@ -170,23 +198,29 @@ async function classifyAndDiff(
     // I/O failure reading baseline or candidate: cannot classify as not-applicable (reserved for
     // symlink/dir/mode-only changes).  Use omitted:unreadable so the entry is not silently dropped
     // from the manifest and the payload write is attempted.
-    return { path, classification: "omitted:unreadable", diffContribution: "" };
+    return { path, change: changeKind, classification: "omitted:unreadable", diffContribution: "" };
   }
 
   const baseIsBinary = classifyContent(baseBytes) === "binary";
   const candIsBinary = classifyContent(candBytes) === "binary";
 
   if (baseIsBinary || candIsBinary) {
-    return { path, classification: "omitted:binary", diffContribution: "" };
+    return { path, change: changeKind, classification: "omitted:binary", diffContribution: "" };
   }
 
   if (baseBytes.length > PATCH_MAX_FILE_SIZE_BYTES || candBytes.length > PATCH_MAX_FILE_SIZE_BYTES) {
-    return { path, classification: "omitted:size", diffContribution: "" };
+    return { path, change: changeKind, classification: "omitted:size", diffContribution: "" };
   }
 
-  const oldText = new TextDecoder("utf-8", { fatal: false }).decode(baseBytes);
-  const newText = new TextDecoder("utf-8", { fatal: false }).decode(candBytes);
-  const diff = buildUnifiedDiff(oldText, newText, { oldPath: path, newPath: path });
+  const oldText = decodeText(baseBytes);
+  const newText = decodeText(candBytes);
+  const diff = buildUnifiedDiffBounded(oldText, newText, { oldPath: path, newPath: path });
+  if (diff.kind === "budget-exceeded") {
+    // The byte-size limit does not bound the O(m*n) LCS table (many short lines).
+    // D8: a computation-budget overrun is treated like a size overrun — the entry is
+    // omitted from the patch and the candidate bytes are carried in the payload.
+    return { path, change: changeKind, classification: "omitted:size", diffContribution: "" };
+  }
 
-  return { path, classification: "included", diffContribution: diff };
+  return { path, change: changeKind, classification: "included", diffContribution: diff.diff };
 }
