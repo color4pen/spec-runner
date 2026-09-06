@@ -120,7 +120,7 @@
 | TC-052 | `--json` 出力で無効 job が `result: "branch-published"` / `prUrl: null` を返す | completion | must | spec:PRが無くても完了成果と証跡の所在が得られる/機械可読出力がPRを詐称しない |
 | TC-053 | attestation 書き込み失敗でも `awaiting-archive` 遷移と push は成立する | completion | must | T-07 AC |
 | TC-054 | GitHub 有効 job の `--json` 出力が従来どおり `"pr-created"` を返す | completion | must | T-07 AC |
-| TC-055 | `pipelineManagedPaths` への追加が agent deny path / round staging / worktree reconcile の既存テストを壊さない | completion | should | T-07 AC |
+| TC-055 | `pipelineManagedPaths` への追加が agent deny path / round staging / worktree reconcile の既存テストを壊さない | completion | must | T-07 AC |
 
 ### TC-053 詳細
 
@@ -163,7 +163,7 @@
 | TC-072 | archive 成功後に base branch が自動 merge されていない | archive | must | spec:GitHub無効jobのarchiveはGitだけで1回で完了する/base_branchは自動_merge_されない |
 | TC-073 | 無効 job の `--with-merge` が record 作成前に拒否され job status が変わらない | archive | must | spec:GitHub専用の操作は副作用の前に拒否される/merge付きarchiveを事前に拒否する |
 | TC-074 | 無効 job の archive で GitHub API 呼び出しと token 解決が 0 件 | archive | must | T-09 AC |
-| TC-075 | `ARCHIVE_USAGE` のヘルプ文言が単相 archive 実装（1 回で complete）と一致する | archive | should | T-09 AC |
+| TC-075 | `ARCHIVE_USAGE` のヘルプ文言が単相 archive 実装（1 回で complete）と一致する | archive | must | T-09 AC |
 
 ### TC-075 詳細
 
@@ -288,7 +288,7 @@
 
 | Priority | 件数 |
 |---|---|
-| must | 57 |
-| should | 5 |
+| must | 59 |
+| should | 3 |
 | could | 0 |
 | **合計** | **62** |
