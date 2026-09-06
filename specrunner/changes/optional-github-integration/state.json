@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T16:53:26.283Z",
+  "updatedAt": "2026-09-06T17:10:59.635Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -89,7 +89,9 @@
     "dbfac0f840c1009c936e9c1c8e52b42d611bb25a",
     "8089580cd940ffcbb77db780f8e258300fb5b4fa",
     "9bc3d847fba8f4db43ed4d2000007ea44a633313",
-    "2b251fae4ede64a3011383f18c8290d0a81f7e54"
+    "2b251fae4ede64a3011383f18c8290d0a81f7e54",
+    "3c7f31b1fc81680a5f80675b7fb6e2fe39308c36",
+    "1c6422d0aead151ce331ba5276532e91b071f551"
   ],
   "touchedFiles": {
     "request-review": [
@@ -254,31 +256,28 @@
       "src/config/github-integration.ts",
       "src/state/github-integration.ts",
       "src/state/schema/operations.ts",
-      "src/core/command/reopen.ts",
       "src/core/pipeline/apply-github-integration.ts",
-      "src/core/command/run-result.ts",
+      "src/core/command/reopen.ts",
       "src/core/attach/verify-checkpoint.ts",
+      "src/core/command/run-result.ts",
+      "src/core/command/runner.ts",
       "src/git/remote.ts",
-      "src/core/preflight.ts",
+      "src/core/archive/plain-archive.ts",
       "src/cli/archive.ts",
-      "src/cli/bootstrap.ts",
-      "src/core/runtime/factory.ts",
       "src/cli/github-composition.ts",
       "src/core/github/integration.ts",
-      "src/core/command/runner.ts",
-      "src/core/attestation/render-markdown.ts",
-      "src/core/doctor/checks/index.ts",
-      "src/cli/doctor.ts",
+      "src/core/preflight.ts",
+      "src/state/schema/types.ts",
       "tests/github-disabled-e2e.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "bin/specrunner.ts",
+      "tests/unit/cli/reopen-github-disabled.test.ts",
+      "tests/unit/core/command/reopen-terminal-slug.test.ts",
       "src/cli/config-effective.ts",
-      "src/cli/job-show.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/resume/resolve-step.ts",
-      "src/core/pipeline/run.ts",
-      "src/core/command/resume.ts",
-      "tests/unit/cli/reopen-github-disabled.test.ts"
+      "src/core/doctor/checks/index.ts",
+      "src/core/runtime/factory.ts",
+      "README.md",
+      "architecture/model.md",
+      "src/config/schema/validation.ts",
+      "src/core/runtime/local.ts"
     ]
   },
   "resumePoint": null,
@@ -315,7 +314,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 116,
+    "historyCount": 125,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -323,14 +322,14 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 6,
-      "verification": 5,
+      "verification": 6,
       "code-review": 3,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
