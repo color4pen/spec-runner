@@ -368,7 +368,24 @@ export function validateJobState(raw: unknown): JobState {
   // Semantic rules:
   //   - enabled === false → owner and name must be absent; origin must be present
   //   - enabled === true (or absent) → owner and name must be non-empty strings
-  if ("githubIntegration" in obj && obj["githubIntegration"] !== null && obj["githubIntegration"] !== undefined) {
+  //
+  // T-02: Legacy state (githubIntegration absent) is treated as enabled:true and must satisfy the
+  // same owner/name requirements as explicitly enabled jobs. This closes the gap where
+  // legacy state with owner absent would pass validation without the field being present.
+  if (!("githubIntegration" in obj) || obj["githubIntegration"] === null || obj["githubIntegration"] === undefined) {
+    // Legacy/absent field: enforce owner + name as if enabled: true
+    const repo = obj["repository"] as Record<string, unknown> | undefined;
+    if (!repo || typeof repo["owner"] !== "string" || !repo["owner"]) {
+      throw new Error(
+        "repository.owner must be a non-empty string when githubIntegration is absent (legacy state treated as enabled: true).",
+      );
+    }
+    if (typeof repo["name"] !== "string" || !repo["name"]) {
+      throw new Error(
+        "repository.name must be a non-empty string when githubIntegration is absent (legacy state treated as enabled: true).",
+      );
+    }
+  } else if ("githubIntegration" in obj && obj["githubIntegration"] !== null && obj["githubIntegration"] !== undefined) {
     if (typeof obj["githubIntegration"] !== "object" || Array.isArray(obj["githubIntegration"])) {
       throw new Error("githubIntegration must be an object when present.");
     }

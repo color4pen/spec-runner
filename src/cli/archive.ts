@@ -353,7 +353,7 @@ Archive the completed change folder, remove worktree, and update job status.
 
 Plain archive (without --with-merge): pushes an archive record commit to the feature branch,
 transitions the job to archived status, and removes the worktree — all in a single run.
-Requires GitHub integration to be enabled (a merged or open PR is expected on the remote).
+For jobs with GitHub integration enabled, a merged or open PR is expected on the remote.
 
 For jobs with GitHub integration disabled: the archive record is pushed to the feature branch
 and the job transitions to archived in one step. The remote feature branch is preserved for

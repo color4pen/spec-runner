@@ -160,6 +160,37 @@ describe("TC-014: validateJobState rejects enabled: true with owner absent", () 
 });
 
 // ---------------------------------------------------------------------------
+// TC-014b: legacy state (githubIntegration absent) + owner absent → validateJobState rejects
+// T-02 AC: enabled: true (and contract absent) + owner absent → validation rejected
+// ---------------------------------------------------------------------------
+
+describe("TC-014b: validateJobState rejects legacy state (no githubIntegration) with owner absent", () => {
+  it("throws when githubIntegration is absent and repository.owner is missing", () => {
+    const raw = makeRaw({
+      repository: { name: "repo" },
+      // githubIntegration intentionally absent
+    });
+    // Remove githubIntegration from raw to simulate legacy state with field truly absent
+    delete (raw as Record<string, unknown>)["githubIntegration"];
+    expect(() => validateJobState(raw)).toThrow(/owner.*non-empty|owner/i);
+  });
+
+  it("throws when githubIntegration is absent and repository has no owner or name", () => {
+    const raw = makeRaw({ repository: {} });
+    delete (raw as Record<string, unknown>)["githubIntegration"];
+    expect(() => validateJobState(raw)).toThrow(/owner/i);
+  });
+
+  it("accepts legacy state (no githubIntegration) with both owner and name present", () => {
+    const raw = makeRaw({ repository: { owner: "acme", name: "repo" } });
+    delete (raw as Record<string, unknown>)["githubIntegration"];
+    expect(() => validateJobState(raw)).not.toThrow();
+    const state = validateJobState(raw);
+    expect(getGitHubIntegration(state)).toEqual({ enabled: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-015: requireGitHubRepository → GITHUB_INTEGRATION_DISABLED for disabled state
 // ---------------------------------------------------------------------------
 

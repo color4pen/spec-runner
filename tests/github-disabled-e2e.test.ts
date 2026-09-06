@@ -50,7 +50,7 @@ import { runPlainArchive } from "../src/core/archive/plain-archive.js";
 import { normalizeOriginIdentity } from "../src/git/remote.js";
 import type { FinishFs } from "../src/core/finish/types.js";
 import { getGitHubIntegration } from "../src/state/github-integration.js";
-import { verificationResultPath } from "../src/util/paths.js";
+import { verificationResultPath, reviewFeedbackPath, conformanceResultPath } from "../src/util/paths.js";
 
 // ---------------------------------------------------------------------------
 // Mock the verification runner and pr-create runner so we don't spawn real processes
@@ -124,6 +124,26 @@ const MINIMAL_CONFIG: SpecRunnerConfig = {
     implementer: {
       agentId: "implementer-agent-id",
       definitionHash: "sha256:imp",
+      lastSyncedAt: new Date().toISOString(),
+    },
+    "code-review": {
+      agentId: "code-review-agent-id",
+      definitionHash: "sha256:cr",
+      lastSyncedAt: new Date().toISOString(),
+    },
+    "code-fixer": {
+      agentId: "code-fixer-agent-id",
+      definitionHash: "sha256:cf",
+      lastSyncedAt: new Date().toISOString(),
+    },
+    conformance: {
+      agentId: "conformance-agent-id",
+      definitionHash: "sha256:con",
+      lastSyncedAt: new Date().toISOString(),
+    },
+    "adr-gen": {
+      agentId: "adr-gen-agent-id",
+      definitionHash: "sha256:adr",
       lastSyncedAt: new Date().toISOString(),
     },
   },
@@ -358,24 +378,70 @@ describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", 
 
       let agentCallCount = 0;
       const fakeAgent: AgentRunner = {
-        async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        async run(ctx: AgentRunContext): Promise<AgentRunResult> {
           agentCallCount++;
           // Return timeout on first call → pipeline halts to awaiting-resume
           if (agentCallCount === 1) {
             return { completionReason: "timeout" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
           }
-          // Second call (resume): return success result for implementer
-          // Write a minimal implementer-result.md so parseResult succeeds
-          const implResultPath = path.join(_ctx.cwd, `specrunner/changes/${SLUG}/implementer-result.md`);
-          await fsPromises.mkdir(path.dirname(implResultPath), { recursive: true });
-          await fsPromises.writeFile(
-            implResultPath,
-            `# Implementer Result — ${SLUG}\n\n## Status: success\n\nImplemented.\n`,
-          );
+
+          const stepName = ctx.step.name;
+          const changeDir = path.join(ctx.cwd, "specrunner", "changes", SLUG);
+          await fsPromises.mkdir(changeDir, { recursive: true });
+
+          // Write step-appropriate result files and return matching toolResult.
+          // implementer (producer): writes implementer-result.md
+          if (stepName === "implementer") {
+            const implResultPath = path.join(ctx.cwd, `specrunner/changes/${SLUG}/implementer-result.md`);
+            await fsPromises.writeFile(
+              implResultPath,
+              `# Implementer Result — ${SLUG}\n\n## Status: success\n\nImplemented.\n`,
+            );
+            return {
+              completionReason: "success" as const,
+              resultContent: await fsPromises.readFile(implResultPath, "utf-8"),
+              toolResult: { ok: true, status: "success" },
+              followUpAttempts: 0,
+            };
+          }
+
+          // code-review (judge step): writes review-feedback-001.md, approves with no findings
+          if (stepName === "code-review") {
+            const reviewPath = path.join(ctx.cwd, reviewFeedbackPath(SLUG, 1));
+            await fsPromises.mkdir(path.dirname(reviewPath), { recursive: true });
+            await fsPromises.writeFile(
+              reviewPath,
+              `# Code Review — ${SLUG}\n\n## Verdict: approved\n\nLGTM — no issues found.\n`,
+            );
+            return {
+              completionReason: "success" as const,
+              resultContent: await fsPromises.readFile(reviewPath, "utf-8"),
+              toolResult: { ok: true, findings: [], evidence: { checked: 1 } },
+              followUpAttempts: 0,
+            };
+          }
+
+          // conformance (judge step): writes conformance-result-001.md, approves with no findings
+          if (stepName === "conformance") {
+            const conformancePath = path.join(ctx.cwd, conformanceResultPath(SLUG, 1));
+            await fsPromises.mkdir(path.dirname(conformancePath), { recursive: true });
+            await fsPromises.writeFile(
+              conformancePath,
+              `# Conformance — ${SLUG}\n\n## Verdict: approved\n\nAll acceptance criteria met.\n`,
+            );
+            return {
+              completionReason: "success" as const,
+              resultContent: await fsPromises.readFile(conformancePath, "utf-8"),
+              toolResult: { ok: true, findings: [], evidence: { checked: 1 } },
+              followUpAttempts: 0,
+            };
+          }
+
+          // All other agent steps (adr-gen etc.): return success with no result file
           return {
             completionReason: "success" as const,
-            resultContent: await fsPromises.readFile(implResultPath, "utf-8"),
-            toolResult: { ok: true },
+            resultContent: null,
+            toolResult: { ok: true, status: "success" },
             followUpAttempts: 0,
           };
         },
@@ -426,7 +492,9 @@ describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", 
       // TC-T16-001(b): pipeline completes with awaiting-archive (no PR created)
       // In GitHub-disabled mode, pr-create is removed from the pipeline,
       // so the pipeline ends at awaiting-archive after adr-gen → end.
-      expect(["awaiting-archive", "awaiting-resume"]).toContain(completeState.status);
+      // TC-120 (must): only awaiting-archive is acceptable — awaiting-resume means the
+      // pipeline halted again and the GitHub-disabled completion contract was not verified.
+      expect(completeState.status).toBe("awaiting-archive");
 
       // TC-T16-002: Still no GitHub API calls
       expect(fetchSpy).not.toHaveBeenCalled();

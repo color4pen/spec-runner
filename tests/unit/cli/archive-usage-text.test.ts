@@ -33,4 +33,8 @@ describe("TC-075: ARCHIVE_USAGE ヘルプ文言が単相 archive 実装（1 回�
   it("--with-merge は GitHub integration が必要であることが明記されている", () => {
     expect(ARCHIVE_USAGE).toContain("requires GitHub");
   });
+
+  it("plain archive が GitHub integration を必須とするとは記載されていない", () => {
+    expect(ARCHIVE_USAGE).not.toContain("Requires GitHub integration to be enabled");
+  });
 });

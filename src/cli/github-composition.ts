@@ -14,7 +14,7 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveJobGitHubIntegration } from "../core/github/integration.js";
 import { resolveGitHubIntegrationConfig } from "../config/github-integration.js";
-import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
+import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { RepositoryOrigin } from "../state/schema/types.js";
@@ -99,7 +99,7 @@ export async function composeGitHubIntegrationForJob(opts: {
   }
 
   const { config, env } = opts;
-  const githubHost = (await import("../config/github-host.js")).resolveGitHubHost(config.github);
+  const githubHost = resolveGitHubHost(config.github);
   const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
   const { token: githubToken } = await resolveGitHubToken(env, { host: githubHost });
   const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
