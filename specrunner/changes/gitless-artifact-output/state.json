@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T06:21:17.946Z",
+  "updatedAt": "2026-09-06T06:22:53.524Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -99,7 +99,8 @@
     "a623fe3adaa9a6e364d2051933dbe73a4aceb310",
     "4f863ff629eb7269a968e2108d55029643c43c44",
     "5211d9853c799029bc70e8676a0300b808c45404",
-    "114ab1f7ecb190dc24f1b06cafe2f22a821a4f18"
+    "114ab1f7ecb190dc24f1b06cafe2f22a821a4f18",
+    "e5203cc133a39bf9ff4cd9cadf929ce8013ba951"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,12 +152,9 @@
       "src/core/artifact-output/context.ts"
     ],
     "code-fixer": [
-      "src/core/artifact-output/run.ts",
-      "src/core/snapshot/compare.ts",
-      "tests/artifact-output-vertical.test.ts",
-      "src/core/artifact-output/run-layout.ts",
-      "src/core/artifact-output/__tests__/run.test.ts",
-      "src/core/snapshot/__tests__/compare.test.ts"
+      "src/core/command/guide.ts",
+      "README.md",
+      "src/core/command/__tests__/guide.test.ts"
     ],
     "regression-gate": [
       "src/core/artifact-output/patch.ts",
@@ -305,7 +303,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 171,
+    "historyCount": 175,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -315,7 +313,7 @@
       "implementer": 3,
       "verification": 5,
       "code-review": 9,
-      "code-fixer": 6,
+      "code-fixer": 7,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
