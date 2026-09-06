@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T15:11:54.418Z",
+  "updatedAt": "2026-09-06T15:14:12.236Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -86,7 +86,8 @@
     "c56b64dc7bf9639dfee98843700c1623550fdd73",
     "b2f32dc2c3975b2fc0bda350da0443b14ef6de84",
     "731cd6db082f122a88c69d5a5041747c90595257",
-    "dbfac0f840c1009c936e9c1c8e52b42d611bb25a"
+    "dbfac0f840c1009c936e9c1c8e52b42d611bb25a",
+    "8089580cd940ffcbb77db780f8e258300fb5b4fa"
   ],
   "touchedFiles": {
     "request-review": [
@@ -182,11 +183,9 @@
       "tests/github-disabled-e2e.test.ts",
       "src/cli/archive.ts",
       "src/state/schema/operations.ts",
-      "tests/unit/cli/archive-usage-text.test.ts",
       "src/cli/github-composition.ts",
       "src/git/remote.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "tests/unit/git/normalize-origin-identity.test.ts"
+      "src/core/attach/verify-checkpoint.ts"
     ]
   },
   "resumePoint": null,
@@ -223,7 +222,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 103,
+    "historyCount": 108,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -237,7 +236,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
