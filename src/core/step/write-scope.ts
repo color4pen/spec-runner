@@ -37,6 +37,21 @@ export const GUARDED_WRITE_STEPS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * The subset of GUARDED_WRITE_STEPS that are also valid FixTarget values.
+ *
+ * These fixers have broad ("guarded") write access and may legally write any non-canon path.
+ * Used to populate CanonWriteScope.broadWriteFixers in canon-write-scope.ts so that
+ * isFindingWithinFixerWriteScope can determine whether a non-canon remediation site
+ * is writable by the effective fixer without importing write-scope.ts in the leaf module.
+ *
+ * Note: "adr-gen" is in GUARDED_WRITE_STEPS but is not a FixTarget, so it is excluded here.
+ */
+export const BROAD_WRITE_FIXERS: ReadonlySet<string> = new Set([
+  "implementer",
+  "code-fixer",
+]);
+
+/**
  * Determine the commit-staging mode for a step.
  *
  * "scoped"  — stage only declared output paths (git add -A -- <paths>).

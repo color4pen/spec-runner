@@ -119,8 +119,8 @@ describe("SpecFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("[HIGH]");
     // File reference
     expect(msg).toContain("src/core/foo.ts");
-    // findingsPath (spec-review-result-001.md) should NOT appear — findings are embedded
-    expect(msg).not.toContain("spec-review-result-001.md");
+    // T-07: evidence reference path appears in structured findings branch (read-only reference)
+    expect(msg).toContain("spec-review-result-001.md");
   });
 
   it("TC-FF-S-002: initial run without findings → findingsPath fallback", () => {
@@ -163,8 +163,8 @@ describe("SpecFixerStep.buildMessage — findings injection", () => {
 
     // Should be continuation format with findings embedded
     expect(msg).toContain("Missing null check");
-    // Should NOT reference findingsPath
-    expect(msg).not.toContain("spec-review-result-001.md");
+    // T-07: evidence reference path appears in continuation with structured findings
+    expect(msg).toContain("spec-review-result-001.md");
     // Continuation wording
     expect(msg).toContain("新しい findings");
   });
@@ -209,8 +209,8 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("Null dereference possible");
     expect(msg).toContain("[HIGH]");
     expect(msg).toContain("src/core/foo.ts");
-    // review-feedback-001.md should NOT appear
-    expect(msg).not.toContain("review-feedback-001.md");
+    // T-06: evidence reference path appears in structured findings branch (read-only reference)
+    expect(msg).toContain("review-feedback-001.md");
   });
 
   it("TC-FF-C-002: initial run without findings → findingsPath fallback", () => {
@@ -253,7 +253,8 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     const msg = CodeFixerStep.buildMessage!(state, deps);
 
     expect(msg).toContain("Missing null check");
-    expect(msg).not.toContain("review-feedback-001.md");
+    // T-06: evidence reference path appears in continuation with structured findings
+    expect(msg).toContain("review-feedback-001.md");
     expect(msg).toContain("新しい findings");
   });
 
@@ -316,8 +317,8 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("src/core/step/executor.ts");
     expect(msg).toContain("File should end with a newline");
     expect(msg).toContain("[LOW]");
-    // review-feedback file path should NOT appear — findings are directly embedded
-    expect(msg).not.toContain("review-feedback-001.md");
+    // T-06: evidence reference path appears in structured findings branch (read-only reference)
+    expect(msg).toContain("review-feedback-001.md");
   });
 });
 

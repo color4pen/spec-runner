@@ -9,7 +9,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, specReviewResultPath, conformanceResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
-import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts } from "./fixer-helpers.js";
+import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext, buildUnpushablePathContracts, renderEvidenceReference } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { renderPushCapabilityNotice } from "../../git/push-capability.js";
 
@@ -129,9 +129,11 @@ export const SpecFixerStep: AgentStep = {
           slug: deps.slug,
           findings: conformanceFindings,
           reviewerName: "conformance",
+          findingsPaths: [findingsPath],
         }) + capabilityNotice;
       }
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
+      const evidenceRefConformance = renderEvidenceReference([findingsPath]);
       return `<user-request>
 You are the spec-fixer for the following change:
 
@@ -141,7 +143,7 @@ Branch: ${state.branch}
 ## Conformance non-conformities (must resolve)
 
 ${findingsBlock}
-
+${evidenceRefConformance}
 Please:
 1. For each finding above, fix the spec.md, design.md, or tasks.md artifact as indicated by the rationale
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
@@ -166,12 +168,14 @@ If any finding cannot be fixed, add a comment at the end of design.md:
         findingsPath,
         slug: deps.slug,
         findings,
+        findingsPaths: [findingsPath],
       }) + capabilityNotice;
     }
 
     // 初回: findings がある場合は埋め込む、ない場合は findingsPath 方式にフォールバック
     if (findings && findings.length > 0) {
       const findingsBlock = buildFindingsBlock(findings);
+      const evidenceRefNormal = renderEvidenceReference([findingsPath]);
       return `<user-request>
 You are the spec-fixer for the following change:
 
@@ -179,7 +183,7 @@ Change folder: ${changeFolderPath(deps.slug)}
 Branch: ${state.branch}
 
 ${findingsBlock}
-
+${evidenceRefNormal}
 Please:
 1. For each finding above, implement the fix described in the rationale
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。

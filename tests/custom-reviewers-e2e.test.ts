@@ -179,7 +179,8 @@ function buildCustomMockClient(opts: {
               ok: true,
               approved: false,
               evidence: { checked: 1, skipped: 0, unverified: 0 },
-              findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "code-review issue", rationale: "Fix required" }],
+              // T-11: fixable findings require remediation in judge strict path
+              findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "code-review issue", rationale: "Fix required", remediation: { invariant: "Code review invariant at src/test.ts", sites: [{ file: "src/test.ts" }], approach: "Fix the code review issue" } }],
             },
           }]);
         }
@@ -216,12 +217,18 @@ function buildCustomMockClient(opts: {
                 ok: true,
                 approved: false,
                 evidence: { checked: 1, skipped: 0, unverified: 0 },
+                // T-11: fixable findings require remediation in judge strict path
                 findings: [{
                   severity: "high",
                   resolution: "fixable",
                   file: "src/feature.ts",
                   title: `${reviewerName} finding`,
                   rationale: `Fix required by ${reviewerName}`,
+                  remediation: {
+                    invariant: `${reviewerName} invariant at src/feature.ts`,
+                    sites: [{ file: "src/feature.ts" }],
+                    approach: `Fix the ${reviewerName} finding`,
+                  },
                 }],
               },
             }]);
@@ -270,12 +277,18 @@ function buildCustomMockClient(opts: {
             input: {
               ok: true,
               evidence: { checked: 1, skipped: 0, unverified: 0 },
+              // T-11: fixable findings require remediation in judge strict path
               findings: [{
                 severity: "high",
                 resolution: "fixable",
                 file: "src/regressed.ts",
                 title: "Regression detected",
                 rationale: "A previously-fixed issue has returned",
+                remediation: {
+                  invariant: "Regression invariant at src/regressed.ts",
+                  sites: [{ file: "src/regressed.ts" }],
+                  approach: "Fix the regression",
+                },
               }],
             },
           }]);

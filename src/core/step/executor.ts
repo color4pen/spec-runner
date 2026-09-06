@@ -519,7 +519,12 @@ export class StepExecutor {
             cwd,
             branch: state.branch ?? null,
             completionReason: runResult.completionReason,
-            findingTargetPaths: step.noOpDetect === true ? collectRoutedFixerFindings(state).map((f) => f.file) : [],
+            findingTargetPaths: step.noOpDetect === true
+              ? collectRoutedFixerFindings(state).flatMap((f) => [
+                  f.file,
+                  ...(f.remediation?.sites.map((s) => s.file) ?? []),
+                ])
+              : [],
             pipelineManagedPaths: pipelineManagedPaths(deps.slug),
           })
         : undefined;

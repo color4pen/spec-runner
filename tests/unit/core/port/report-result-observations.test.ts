@@ -289,6 +289,7 @@ describe("parseRequestReviewReportInput — observations", () => {
 
 describe("backward compat — old toolResult without observations field", () => {
   it("parseJudgeReportInput parses old format (no observations field)", () => {
+    // T-11: fixable findings in judge strict path require remediation
     const oldFormat = {
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
@@ -299,6 +300,11 @@ describe("backward compat — old toolResult without observations field", () => 
           file: "src/old.ts",
           title: "Old finding",
           rationale: "From before observations channel",
+          remediation: {
+            invariant: "Invariant at src/old.ts",
+            sites: [{ file: "src/old.ts" }],
+            approach: "Fix it",
+          },
         },
       ],
     };
@@ -311,13 +317,25 @@ describe("backward compat — old toolResult without observations field", () => 
   });
 
   it("parseCodeReviewReportInput parses old format", () => {
+    // T-11: fixable findings in code-review strict path require remediation
     const oldFormat = {
       ok: true,
       approved: true,
       fixableCount: 1,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
-        { severity: "low", resolution: "fixable", file: "a.ts", title: "Old", rationale: "r" },
+        {
+          severity: "low",
+          resolution: "fixable",
+          file: "a.ts",
+          title: "Old",
+          rationale: "r",
+          remediation: {
+            invariant: "Invariant at a.ts",
+            sites: [{ file: "a.ts" }],
+            approach: "Fix it",
+          },
+        },
       ],
     };
     const result = parseCodeReviewReportInput(oldFormat);

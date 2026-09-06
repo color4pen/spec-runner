@@ -11,6 +11,40 @@ export interface BaseReportResult {
 /** Severity levels for findings reported by judge steps. */
 export type FindingSeverity = "critical" | "high" | "medium" | "low";
 
+/**
+ * A single site entry within a FindingRemediation.
+ * Represents a location in the worktree that shares the same broken invariant.
+ * `file` and `line` carry the same meaning as Finding.file / Finding.line.
+ */
+export interface RemediationSite {
+  /** Worktree-relative file path — same meaning as Finding.file. */
+  file: string;
+  /** Optional line number — same meaning as Finding.line. */
+  line?: number;
+}
+
+/**
+ * Remediation contract attached to a fixable finding.
+ *
+ * Describes the broken invariant, all sites that share it, and the recommended
+ * fix direction. Required by the parse layer when resolution === "fixable" and
+ * the source is a live tool call (strict + requireRemediation mode).
+ *
+ * Not present on legacy persisted findings — absence is backward-compatible.
+ */
+export interface FindingRemediation {
+  /** The broken invariant, expressed in one sentence. */
+  invariant: string;
+  /**
+   * All sites that share the same invariant.
+   * MUST include the finding's own file:line (auto-injected by the parse layer if missing).
+   * At least one site is required.
+   */
+  sites: RemediationSite[];
+  /** Recommended direction for the fix. */
+  approach: string;
+}
+
 /** Resolution classification for a finding. */
 export type FindingResolution = "fixable" | "decision-needed";
 
@@ -96,6 +130,16 @@ export interface Finding {
    * other steps leave this field unset and it is ignored by all existing consumers.
    */
   ledgerRef?: string;
+  /**
+   * Remediation contract — populated by reviewers for fixable findings.
+   *
+   * When resolution === "fixable" and this is a live tool call (strict + requireRemediation mode),
+   * remediation is REQUIRED (enforced by the parse layer, not this type).
+   * For persisted legacy findings (no remediation field), absence is normal and backward-compatible.
+   *
+   * identity (fingerprint / ledgerRef / findingKey) does NOT include remediation fields.
+   */
+  remediation?: FindingRemediation;
 }
 
 /**

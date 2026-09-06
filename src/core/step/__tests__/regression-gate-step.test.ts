@@ -13,6 +13,7 @@ import { createRegressionGateStep, REGRESSION_GATE_STEP_NAME } from "../regressi
 import { JUDGE_REPORT_TOOL } from "../report-tool.js";
 import { computeLedgerRef } from "../../pipeline/findings-ledger.js";
 import { resolveReviewerResultPath } from "../../../util/paths.js";
+import { REGRESSION_GATE_SYSTEM_PROMPT } from "../../../prompts/regression-gate-system.js";
 import type { JobState } from "../../../state/schema.js";
 import type { StepDeps } from "../types.js";
 import type { StepRun } from "../../../state/schema.js";
@@ -71,6 +72,21 @@ function makeFixableFinding(file = "src/foo.ts", title = "Test Issue"): Finding 
     file,
     title,
     rationale: "Should be fixed",
+  };
+}
+
+function makeFixableFindingWithSites(file = "src/foo.ts", title = "Test Issue"): Finding {
+  return {
+    severity: "high",
+    resolution: "fixable",
+    file,
+    title,
+    rationale: "Should be fixed",
+    remediation: {
+      invariant: "Test invariant in one sentence",
+      sites: [{ file, line: 10 }],
+      approach: "Fix the invariant violation",
+    },
   };
 }
 
@@ -264,5 +280,58 @@ describe("createRegressionGateStep — parseResult", () => {
     const deps = makeDeps();
     const result = step.parseResult("any content", deps);
     expect(result).toEqual({ verdict: null, findingsPath: null });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-T09-01: buildMessage — sitesNote is present when any ledger entry has sites
+// ---------------------------------------------------------------------------
+
+describe("TC-T09-01: createRegressionGateStep — buildMessage sitesNote for entries with sites", () => {
+  it("message contains all-site verification note when any entry has sites", () => {
+    const step = createRegressionGateStep();
+    const finding = makeFixableFindingWithSites("src/auth.ts", "Invariant violation");
+    const state = makeJobState({
+      steps: {
+        "code-review": [makeStepRun([finding])],
+      },
+    });
+    const deps = makeDeps("my-slug");
+
+    const msg = step.buildMessage(state, deps);
+    expect(msg).toContain("Sites がある entry は列挙された全 site で不変条件が成立しているかを確認する");
+  });
+
+  it("message does NOT contain the sitesNote when no entry has sites", () => {
+    const step = createRegressionGateStep();
+    const finding = makeFixableFinding("src/auth.ts", "No sites finding");
+    const state = makeJobState({
+      steps: {
+        "code-review": [makeStepRun([finding])],
+      },
+    });
+    const deps = makeDeps("my-slug");
+
+    const msg = step.buildMessage(state, deps);
+    expect(msg).not.toContain("Sites がある entry は列挙された全 site で不変条件が成立しているかを確認する");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-T09-02: REGRESSION_GATE_SYSTEM_PROMPT — full-site wording and sites-inheritance
+// ---------------------------------------------------------------------------
+
+describe("TC-T09-02: REGRESSION_GATE_SYSTEM_PROMPT — full-site verification and sites-inheritance", () => {
+  it("system prompt contains full-site verification phrase", () => {
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain(
+      "全 site を確認し、いずれかで不変条件が破れていれば退行として報告する",
+    );
+  });
+
+  it("system prompt contains sites-inheritance instruction for reported regressions", () => {
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain("ledger entry の");
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain("invariant");
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain("sites");
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain("引き継ぐ");
   });
 });

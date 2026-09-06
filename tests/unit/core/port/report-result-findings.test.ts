@@ -34,6 +34,17 @@ const validFindingWithLine = {
   line: 42,
 };
 
+// T-11: fixable findings passed to parseJudgeReportInput require remediation.
+// Use this fixture for strict-path tests (judge / code-review / conformance).
+const validFindingWithRemediation = {
+  ...validFinding,
+  remediation: {
+    invariant: "Invariant must hold at src/foo.ts",
+    sites: [{ file: "src/foo.ts" }],
+    approach: "Fix the invariant",
+  },
+};
+
 // ---------------------------------------------------------------------------
 // parseFindings
 // ---------------------------------------------------------------------------
@@ -147,8 +158,9 @@ describe("parseFindings", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseJudgeReportInput — findings validation", () => {
-  it("{ok:true, findings:[valid]} → ok:true with findings set", () => {
-    const result = parseJudgeReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFinding] });
+  it("{ok:true, findings:[valid with remediation]} → ok:true with findings set", () => {
+    // T-11: fixable findings require remediation in judge strict path
+    const result = parseJudgeReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFindingWithRemediation] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toHaveLength(1);
@@ -193,8 +205,9 @@ describe("parseJudgeReportInput — findings validation", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseCodeReviewReportInput — findings validation", () => {
-  it("{ok:true, findings:[valid]} → ok:true with findings", () => {
-    const result = parseCodeReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFinding] });
+  it("{ok:true, findings:[valid with remediation]} → ok:true with findings", () => {
+    // T-11: fixable findings require remediation in code-review strict path
+    const result = parseCodeReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFindingWithRemediation] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toHaveLength(1);
@@ -215,10 +228,11 @@ describe("parseCodeReviewReportInput — findings validation", () => {
   });
 
   it("fixableCount is preserved when present", () => {
+    // T-11: use remediation-bearing finding for fixable in judge strict path
     const result = parseCodeReviewReportInput({
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
-      findings: [validFinding],
+      findings: [validFindingWithRemediation],
       fixableCount: 3,
     });
     expect(result.ok).toBe(true);
@@ -432,10 +446,11 @@ describe("parseFindings strict mode — decision-needed options enforcement", ()
 
 describe("parseConformanceReportInput — fixTarget capture", () => {
   it("{ok:true, findings:[{fixTarget:'spec-fixer'}]} → finding has fixTarget", () => {
+    // T-11: fixable findings require remediation in conformance strict path
     const result = parseConformanceReportInput({
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
-      findings: [{ ...validFinding, fixTarget: "spec-fixer" }],
+      findings: [{ ...validFindingWithRemediation, fixTarget: "spec-fixer" }],
     });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
@@ -443,10 +458,11 @@ describe("parseConformanceReportInput — fixTarget capture", () => {
   });
 
   it("invalid fixTarget is ignored (undefined on finding)", () => {
+    // T-11: fixable findings require remediation in conformance strict path
     const result = parseConformanceReportInput({
       ok: true,
       evidence: { checked: 1, skipped: 0, unverified: 0 },
-      findings: [{ ...validFinding, fixTarget: "bogus" }],
+      findings: [{ ...validFindingWithRemediation, fixTarget: "bogus" }],
     });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");

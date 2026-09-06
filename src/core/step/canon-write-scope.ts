@@ -15,7 +15,7 @@
 import type { FixTarget } from "../../kernel/report-result.js";
 import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "../port/step-types.js";
-import { protectedCanonPaths } from "./write-scope.js";
+import { protectedCanonPaths, BROAD_WRITE_FIXERS } from "./write-scope.js";
 import { changeFolderPath } from "../../util/paths.js";
 import type { CanonWriteScope } from "./canon-escalation.js";
 import { getJobSlug } from "../../state/job-slug.js";
@@ -45,7 +45,17 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
     ["test-case-gen", new Set<string>([`${folder}/test-cases.md`])],
   ]);
 
-  return { canonPaths, writableByFixer };
+  // broadWriteFixers: the subset of GUARDED_WRITE_STEPS that are also FixTarget values.
+  // Populated from write-scope.ts (single source of truth for guarded-write step names).
+  // Allows isFindingWithinFixerWriteScope to determine whether a non-canon remediation
+  // site is legally writable without requiring canon-escalation.ts to import write-scope.ts.
+  const broadWriteFixers = new Set<FixTarget>(
+    [...BROAD_WRITE_FIXERS].filter((s): s is FixTarget =>
+      s === "code-fixer" || s === "implementer"
+    ),
+  );
+
+  return { canonPaths, writableByFixer, broadWriteFixers };
 }
 
 /**

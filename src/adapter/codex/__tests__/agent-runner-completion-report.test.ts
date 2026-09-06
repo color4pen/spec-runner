@@ -140,6 +140,18 @@ describe("tryExtractToolResult — unit tests", () => {
       parseInput: parseJudgeReportInput,
     };
 
+    // T-11: fixable findings require remediation in judge strict path
+    const remediationA = {
+      invariant: "Invariant at a.ts",
+      sites: [{ file: "a.ts" }],
+      approach: "Fix it",
+    };
+    const remediationB = {
+      invariant: "Invariant at b.ts",
+      sites: [{ file: "b.ts", line: 10 }],
+      approach: "Fix it",
+    };
+
     it("findings with line: null → toolResult non-null (kernel parser normalizes null)", () => {
       const jsonWithNullLine = JSON.stringify({
         ok: true,
@@ -152,6 +164,7 @@ describe("tryExtractToolResult — unit tests", () => {
             title: "T",
             rationale: "R",
             line: null,
+            remediation: remediationA,
           },
         ],
       });
@@ -165,8 +178,8 @@ describe("tryExtractToolResult — unit tests", () => {
         ok: true,
         evidence: { checked: 1, skipped: 0, unverified: 0 },
         findings: [
-          { severity: "high", resolution: "fixable", file: "a.ts", title: "T", rationale: "R", line: null },
-          { severity: "low", resolution: "fixable", file: "b.ts", title: "U", rationale: "S", line: 10 },
+          { severity: "high", resolution: "fixable", file: "a.ts", title: "T", rationale: "R", line: null, remediation: remediationA },
+          { severity: "low", resolution: "fixable", file: "b.ts", title: "U", rationale: "S", line: 10, remediation: remediationB },
         ],
       });
       const result = tryExtractToolResult(json, judgeReportTool);

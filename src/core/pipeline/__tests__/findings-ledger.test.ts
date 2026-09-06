@@ -8,9 +8,11 @@
  * (d) StepRuns with missing findings/toolResult are safely ignored
  * (e) empty chain or empty findings → empty array
  * (f) collectParallelFixerFindings: TC-024 / TC-025
+ * (g) dedupeFindings merges remediation of same-identity findings (sites union;
+ *     legacy-first ordering keeps a later remediation; invariant/approach first non-empty wins)
  */
 import { describe, it, expect } from "vitest";
-import { collectFindingsLedger, dedupeFindings, collectParallelFixerFindings, computeRegressionLedger } from "../findings-ledger.js";
+import { collectFindingsLedger, dedupeFindings, collectParallelFixerFindings, computeRegressionLedger, mergeRemediation } from "../findings-ledger.js";
 import type { JobState, DispositionDecisionRecord } from "../../../state/schema.js";
 import type { Finding, Observation } from "../../../kernel/report-result.js";
 import type { StepRun } from "../../../state/schema.js";
@@ -670,5 +672,136 @@ describe("TC-011: 除外は照合のみで履歴を変えない", () => {
     expect(stepRuns).toHaveLength(1);
     const toolResult = stepRuns[0]!.outcome.toolResult as { findings?: Finding[] };
     expect(toolResult.findings?.map((f) => f.title)).toContain("F1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// (g) dedupeFindings — remediation merge for same-identity findings
+// ---------------------------------------------------------------------------
+
+describe("dedupeFindings — remediation merge (sites union)", () => {
+  const key = { file: "src/foo.ts", line: 10, title: "Invariant broken" } as const;
+
+  it("parallel reviewers reporting the same key with different sites → one finding with the union of sites", () => {
+    const state = makeState({
+      "reviewer-a": [
+        {
+          outcome: {
+            verdict: "needs-fix",
+            findingsPath: null,
+            error: null,
+            toolResult: {
+              ok: true,
+              findings: [
+                makeFixableFinding({
+                  ...key,
+                  remediation: {
+                    invariant: "All callers validate input",
+                    sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/a.ts", line: 3 }],
+                    approach: "Add validation",
+                  },
+                }),
+              ],
+            },
+          },
+        },
+      ],
+      "reviewer-b": [
+        {
+          outcome: {
+            verdict: "needs-fix",
+            findingsPath: null,
+            error: null,
+            toolResult: {
+              ok: true,
+              findings: [
+                makeFixableFinding({
+                  ...key,
+                  remediation: {
+                    invariant: "All callers validate input",
+                    sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/b.ts", line: 7 }],
+                    approach: "Add validation",
+                  },
+                }),
+              ],
+            },
+          },
+        },
+      ],
+    });
+
+    const result = collectParallelFixerFindings(state, ["reviewer-a", "reviewer-b"]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.remediation?.sites).toEqual([
+      { file: "src/foo.ts", line: 10 },
+      { file: "src/a.ts", line: 3 },
+      { file: "src/b.ts", line: 7 },
+    ]);
+  });
+
+  it("a site added in a later iteration of the same reviewer is kept (collectFindingsLedger)", () => {
+    const iter1 = makeFixableFinding({
+      ...key,
+      remediation: { invariant: "I", sites: [{ file: "src/foo.ts", line: 10 }], approach: "A" },
+    });
+    const iter2 = makeFixableFinding({
+      ...key,
+      remediation: {
+        invariant: "I",
+        sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/new-site.ts", line: 42 }],
+        approach: "A",
+      },
+    });
+    const state = makeState({
+      "code-review": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [iter1] } } },
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [iter2] } } },
+      ],
+    });
+
+    const ledger = collectFindingsLedger(["code-review"], state);
+    expect(ledger).toHaveLength(1);
+    expect(ledger[0]!.remediation?.sites).toEqual([
+      { file: "src/foo.ts", line: 10 },
+      { file: "src/new-site.ts", line: 42 },
+    ]);
+    // Inputs are not mutated
+    expect(iter1.remediation?.sites).toHaveLength(1);
+  });
+
+  it("legacy finding first, remediation later → the later remediation is adopted", () => {
+    const legacy = makeFixableFinding({ ...key });
+    const withRemediation = makeFixableFinding({
+      ...key,
+      rationale: "later rationale",
+      remediation: { invariant: "I", sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/x.ts" }], approach: "A" },
+    });
+    const result = dedupeFindings([legacy, withRemediation]);
+    expect(result).toHaveLength(1);
+    // Identity / non-remediation fields still come from the first occurrence
+    expect(result[0]!.rationale).toBe("Fix this");
+    expect(result[0]!.remediation).toEqual(withRemediation.remediation);
+    expect(legacy.remediation).toBeUndefined();
+  });
+
+  it("invariant / approach: first non-empty wins; sites dedupe by file|line (absent line ≠ line)", () => {
+    const merged = mergeRemediation(
+      { invariant: "", sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/x.ts" }], approach: "first approach" },
+      { invariant: "second invariant", sites: [{ file: "src/x.ts" }, { file: "src/x.ts", line: 1 }, { file: "src/foo.ts", line: 10 }], approach: "second approach" },
+    );
+    expect(merged).toEqual({
+      invariant: "second invariant",
+      approach: "first approach",
+      sites: [{ file: "src/foo.ts", line: 10 }, { file: "src/x.ts" }, { file: "src/x.ts", line: 1 }],
+    });
+  });
+
+  it("returns the first remediation by reference when nothing changes, and keeps the finding reference", () => {
+    const rem = { invariant: "I", sites: [{ file: "src/foo.ts", line: 10 }], approach: "A" };
+    expect(mergeRemediation(rem, { invariant: "other", sites: [{ file: "src/foo.ts", line: 10 }], approach: "other" })).toBe(rem);
+    const f = makeFixableFinding({ ...key, remediation: rem });
+    const dup = makeFixableFinding({ ...key, remediation: { ...rem } });
+    const result = dedupeFindings([f, dup]);
+    expect(result[0]).toBe(f);
   });
 });

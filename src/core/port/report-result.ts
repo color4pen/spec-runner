@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence } from "../../kernel/report-result.js";
-export type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence, FindingRemediation, RemediationSite } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence, FindingRemediation, RemediationSite } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -137,6 +137,55 @@ const VALID_RESOLUTIONS = new Set(["fixable", "decision-needed"]);
 const VALID_FIX_TARGETS = new Set<FixTarget>(["implementer", "code-fixer", "spec-fixer"]);
 
 /**
+ * Parse and validate a remediation object from unknown input.
+ * Pure function — no I/O. Uses typeof checks (no zod parse).
+ *
+ * Null / undefined input is treated as "absent" — callers decide what to do.
+ * Returns { ok: true, value: FindingRemediation } if the input is a valid remediation object.
+ * Returns { ok: false } if the object is present but malformed.
+ *
+ * Validation rules:
+ * - invariant: non-empty string (trimmed)
+ * - approach: non-empty string (trimmed)
+ * - sites: array with at least 1 element; each has non-empty string `file`,
+ *   and `line` is a number or absent/null (null normalized to absent).
+ */
+export function parseRemediation(
+  raw: unknown,
+): { ok: true; value: FindingRemediation } | { ok: false } {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false };
+  const o = raw as Record<string, unknown>;
+  // invariant: non-empty string
+  if (typeof o["invariant"] !== "string" || o["invariant"].trim() === "") return { ok: false };
+  // approach: non-empty string
+  if (typeof o["approach"] !== "string" || o["approach"].trim() === "") return { ok: false };
+  // sites: array with at least 1 element
+  if (!Array.isArray(o["sites"]) || o["sites"].length === 0) return { ok: false };
+  const sites: RemediationSite[] = [];
+  for (const site of o["sites"]) {
+    if (typeof site !== "object" || site === null) return { ok: false };
+    const s = site as Record<string, unknown>;
+    // file: non-empty string
+    if (typeof s["file"] !== "string" || s["file"].trim() === "") return { ok: false };
+    // line: number or absent/null (null = absent)
+    if ("line" in s && s["line"] !== undefined && s["line"] !== null && typeof s["line"] !== "number") {
+      return { ok: false };
+    }
+    const parsedSite: RemediationSite = { file: s["file"] as string };
+    if (typeof s["line"] === "number") parsedSite.line = s["line"] as number;
+    sites.push(parsedSite);
+  }
+  return {
+    ok: true,
+    value: {
+      invariant: o["invariant"] as string,
+      sites,
+      approach: o["approach"] as string,
+    },
+  };
+}
+
+/**
  * Parse and validate an evidence object from unknown input.
  * Pure function — no I/O. Uses typeof checks (no zod parse).
  *
@@ -167,15 +216,23 @@ export function parseEvidence(
  * Parse and validate a findings array from unknown input.
  * Pure function — no I/O. Uses typeof checks (no zod parse).
  *
- * @param raw    Raw input to validate.
- * @param strict When true, `decision-needed` findings MUST have at least two valid options
- *               (each with non-empty `label` and `consequence`). Use true for new live tool
- *               calls; false (default) for legacy persisted state reads.
+ * @param raw                Raw input to validate.
+ * @param strict             When true, `decision-needed` findings MUST have at least two valid options
+ *                           (each with non-empty `label` and `consequence`). Also enforces strict
+ *                           remediation validation (malformed remediation → fail). Use true for new live
+ *                           tool calls; false (default) for legacy persisted state reads.
+ * @param requireRemediation When true AND strict=true, `fixable` findings without a remediation object
+ *                           fail with reason "remediation-missing". Default false.
  *
  * Returns { ok: true, value: Finding[] } if input is a valid findings array.
  * Returns { ok: false } if input is missing, not an array, or contains invalid elements.
+ * Returns { ok: false, reason: "remediation-missing" } when strict + requireRemediation + fixable + no remediation.
  */
-export function parseFindings(raw: unknown, strict = false): { ok: true; value: Finding[] } | { ok: false } {
+export function parseFindings(
+  raw: unknown,
+  strict = false,
+  requireRemediation = false,
+): { ok: true; value: Finding[] } | { ok: false; reason?: "remediation-missing" } {
   if (!Array.isArray(raw)) return { ok: false };
   const findings: Finding[] = [];
   for (const item of raw) {
@@ -238,6 +295,46 @@ export function parseFindings(raw: unknown, strict = false): { ok: true; value: 
     if (typeof f["ledgerRef"] === "string") {
       finding.ledgerRef = f["ledgerRef"];
     }
+
+    // remediation: parse when present, enforce when strict + requireRemediation + fixable
+    const rawRemediation = f["remediation"];
+    if (rawRemediation !== undefined && rawRemediation !== null) {
+      const parsedRemediation = parseRemediation(rawRemediation);
+      if (!parsedRemediation.ok) {
+        if (strict) {
+          // strict mode: malformed remediation is a hard failure
+          return { ok: false };
+        }
+        // non-strict mode: silently drop malformed remediation (options-style treatment)
+      } else {
+        // Valid remediation — apply self-site normalization (design D4)
+        const rem = parsedRemediation.value;
+        const selfFile = finding.file;
+        const selfLine = finding.line;
+        // Check if finding's own site is already in sites (match by file + line)
+        const hasSelfSite = rem.sites.some(
+          (s) => s.file === selfFile && s.line === selfLine,
+        );
+        if (!hasSelfSite) {
+          const selfSite: RemediationSite = { file: selfFile };
+          if (selfLine !== undefined) selfSite.line = selfLine;
+          rem.sites = [selfSite, ...rem.sites];
+        }
+        // Deduplicate by file|line (first occurrence wins)
+        const seen = new Set<string>();
+        rem.sites = rem.sites.filter((s) => {
+          const key = `${s.file}|${s.line ?? ""}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        finding.remediation = rem;
+      }
+    } else if (strict && requireRemediation && finding.resolution === "fixable") {
+      // strict + requireRemediation + fixable + absent remediation → fail with reason
+      return { ok: false, reason: "remediation-missing" };
+    }
+
     findings.push(finding);
   }
   return { ok: true, value: findings };
@@ -345,9 +442,12 @@ export function parseJudgeReportInput(
 
   // When ok=true, findings and evidence are required
   if (result.ok) {
-    const parsed = parseFindings(obj["findings"], true);
+    const parsed = parseFindings(obj["findings"], true, true);
     if (!parsed.ok) {
-      return { ok: false, missingFields: ["findings"], rawInput: raw };
+      const missingFields = (parsed as { reason?: string }).reason === "remediation-missing"
+        ? ["findings.remediation"]
+        : ["findings"];
+      return { ok: false, missingFields, rawInput: raw };
     }
     result.findings = parsed.value;
 
@@ -466,7 +566,8 @@ export function parseRequestReviewReportInput(
   // - evidence absent or invalid → parse fails with missingFields: ["evidence"].
   if (result.ok) {
     if ("findings" in obj && obj["findings"] !== undefined) {
-      const parsed = parseFindings(obj["findings"], true);
+      // request-review does not require remediation (design D2)
+      const parsed = parseFindings(obj["findings"], true, false);
       if (!parsed.ok) {
         return { ok: false, missingFields: ["findings"], rawInput: raw };
       }

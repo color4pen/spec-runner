@@ -11,7 +11,7 @@
  */
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION, FINDING_REMEDIATION_DEFINITION } from "./judge-rules.js";
 
 const REGRESSION_GATE_BASE = `あなたは spec-runner pipeline の退行ゲート agent（regression-gate）です。
 作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
@@ -45,6 +45,7 @@ reviewer が指摘した fixable findings が最終コードで退行してい�
    - 元の file / line / title（ledger から）
    - \`rationale\`: 何が退行したか・どう修正すべきか
    - \`ledgerRef\`: ledger エントリの **Provenance Ref** をそのまま（verbatim に）コピーする（例: \`"1a2b3c4d"\`）
+   - entry に **Sites** がある場合: 全 site を確認し、いずれかで不変条件が破れていれば退行として報告する。退行 finding の \`remediation\` には ledger entry の \`invariant\` / \`sites\` を引き継ぐ
 
 4. **矛盾の報告**: 2 つの ledger エントリを同時に修正できない場合:
    - \`severity: "high"\`, \`resolution: "decision-needed"\`
@@ -77,17 +78,26 @@ ${COMPLETION_REPORT_LINE}
   "line": 42,
   "title": "短い説明",
   "rationale": "退行理由と修正方法",
-  "ledgerRef": "1a2b3c4d"
+  "ledgerRef": "1a2b3c4d",
+  "remediation": {  // ledger entry の Sites がある場合、invariant と sites を引き継ぐ
+    "invariant": "ledger entry の invariant をそのまま引き継ぐ",
+    "sites": [{ "file": "...", "line": 42 }],
+    "approach": "推奨する修正の方向"
+  }
 }
 \`\`\`
 
 **重要**: \`ledgerRef\` フィールドには、対応する ledger エントリの **Provenance Ref** を **verbatim（そのまま）** コピーしてください。この値は CLI が operator の \`--wontfix\` 操作を解決するために使用します。
+
+退行 finding に \`Sites\` がある ledger エントリの場合、\`remediation\` には ledger entry の \`invariant\` と \`sites\` を引き継いでください。
 
 ${SEVERITY_DEFINITION}
 
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能（退行検出時はこちら）
 ${DECISION_NEEDED_DEFINITION}
+
+${FINDING_REMEDIATION_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
 

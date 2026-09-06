@@ -256,6 +256,7 @@ beforeEach(async () => {
   git(["init"], gitDir);
   git(["config", "user.email", "test@example.com"], gitDir);
   git(["config", "user.name", "WSC Integration Test"], gitDir);
+  git(["config", "gc.auto", "0"], gitDir); // prevent background gc from writing to .git/objects
 
   // Create initial commit with foundational files
   const changeFolder = path.join(gitDir, "specrunner", "changes", slug);
@@ -278,7 +279,10 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await fs.rm(gitDir, { recursive: true, force: true });
+  // Use spawnSync("rm", ["-rf", ...]) instead of fs.rm because Bun's fs.rm can
+  // intermittently fail with ENOTEMPTY when git background processes (e.g. gc --auto)
+  // are still writing to .git/objects during coverage runs.
+  spawnSync("rm", ["-rf", gitDir]);
   vi.restoreAllMocks();
 });
 
