@@ -1135,6 +1135,44 @@ describe("TC-037: artifact-output topic が capability テーブルの全 unsupp
 });
 
 // ============================================================================
+// TC-076: artifact-output topic body contains preview / not-yet-wired notice
+// ============================================================================
+
+describe("TC-076: artifact-output topic body が preview / 未配線 notice を含む", () => {
+  const topic = findTopic("artifact-output");
+
+  it("TC-076: topic exists", () => {
+    expect(topic).toBeDefined();
+  });
+
+  it("TC-076: body contains 'preview' keyword", () => {
+    expect(topic!.body.toLowerCase()).toContain("preview");
+  });
+
+  it("TC-076: body contains '未配線' (not yet wired in Japanese)", () => {
+    expect(topic!.body).toContain("未配線");
+  });
+
+  it("TC-076: body contains '--source' flag reference", () => {
+    expect(topic!.body).toContain("--source");
+  });
+
+  it("TC-076: body states that CLI wiring is deferred", () => {
+    // Must mention that CLI wiring (配線) is deferred (後続 issue / follow-on)
+    const body = topic!.body;
+    const hasDeferral =
+      body.includes("後続 issue") ||
+      body.includes("follow-on") ||
+      body.includes("持ち越し");
+    expect(hasDeferral).toBe(true);
+  });
+
+  it("TC-076: body mentions programmatic API as current access path", () => {
+    expect(topic!.body).toContain("runArtifactOutput");
+  });
+});
+
+// ============================================================================
 // TC-038: artifact-output topic describes --no-worktree distinction
 // ============================================================================
 

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T06:12:19.967Z",
+  "updatedAt": "2026-09-06T06:21:17.946Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -98,7 +98,8 @@
     "eed52efc03642864ac378fb877c2fa2c92397420",
     "a623fe3adaa9a6e364d2051933dbe73a4aceb310",
     "4f863ff629eb7269a968e2108d55029643c43c44",
-    "5211d9853c799029bc70e8676a0300b808c45404"
+    "5211d9853c799029bc70e8676a0300b808c45404",
+    "114ab1f7ecb190dc24f1b06cafe2f22a821a4f18"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,19 +161,20 @@
     "regression-gate": [
       "src/core/artifact-output/patch.ts",
       "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/__tests__/patch.test.ts",
+      "src/core/artifact-output/artifact-writer.ts",
       "tests/artifact-output-vertical.test.ts",
       "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/artifact-output/context.ts",
+      "src/core/snapshot/compare.ts",
       "src/core/command/guide.ts",
       "README.md",
-      "src/core/artifact-output/__tests__/patch.test.ts",
-      "src/core/artifact-output/context.ts",
-      "src/core/artifact-output/artifact-writer.ts",
       "src/core/snapshot/digest.ts",
-      "src/core/snapshot/compare.ts",
-      "src/core/snapshot/types.ts",
       "src/core/artifact-output/manifest.ts",
       "src/core/snapshot/collect.ts",
-      "src/core/artifact-output/__tests__/run.test.ts"
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts",
+      "src/core/command/__tests__/guide.test.ts"
     ],
     "conformance": [
       "src/core/artifact-output/run.ts",
@@ -303,7 +305,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 167,
+    "historyCount": 171,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -317,7 +319,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1

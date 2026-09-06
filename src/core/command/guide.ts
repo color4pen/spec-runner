@@ -582,6 +582,14 @@ artifact-output プロファイルは Git リポジトリが存在しない環�
 
 詳細: \`docs/artifact-output-profile.md\`
 
+## Preview / 未配線フラグ
+
+> **Note (preview / not yet wired):** \`job start --source <dir>\` フラグ群
+> (\`--profile artifact-output\`、\`--source-root\`、\`--run-parent-dir\`) は現在 CLI フラグパーサー
+> (\`src/cli/flag-parser.ts\`) に未配線です。CLI 配線は後続 issue に持ち越されており、
+> artifact-output プロファイルは現時点では \`runArtifactOutput\` プログラマティック API
+> 経由でのみ利用可能です。
+
 ## 出力構造
 
 成功した run では以下のアーティファクトが生成されます:
