@@ -100,3 +100,6 @@
 {"type":"transition","ts":"2026-09-06T14:27:26.033Z","step":"code-review-failed","status":"error","message":"code-review failed: STEP_OUTPUT_MISSING — Step 'code-review' output contract(s) not satisfied on branch 'feat/optional-github-integration-c0a99891': specrunner/changes/optional-github-integration/review-feedback-001.md"}
 {"type":"transition","ts":"2026-09-06T14:27:26.037Z","step":"code-review","status":"error","message":"code-review iteration 1 completed with verdict: error"}
 {"type":"transition","ts":"2026-09-06T14:27:26.037Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Step 'code-review' output contract(s) not satisfied on branch 'feat/optional-github-integration-c0a99891': specrunner/changes/optional-github-integration/review-feedback-001.md"}
+{"type":"transition","ts":"2026-09-06T14:29:36.753Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-09-06T14:29:37.209Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-09-06T14:29:37.211Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
