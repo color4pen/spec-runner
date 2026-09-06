@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T06:58:16.873Z",
+  "updatedAt": "2026-09-06T07:11:20.505Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -106,7 +106,8 @@
     "91926530338ee3c09779a986a888ca7833deb8ce",
     "7047548d5bb5bfa12eb82f47abbf2ea5a9ee9b7f",
     "b29cdf6815396aa6f95c4a04581b5cf71b36fbc7",
-    "70fee84c828ac1ce8e759f97ac33d641885079bd"
+    "70fee84c828ac1ce8e759f97ac33d641885079bd",
+    "1d79a20e661a4561f1faf79e978ef822e94f93bc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -147,9 +148,14 @@
       "src/core/artifact-output/run-layout.ts"
     ],
     "code-fixer": [
-      "src/core/command/guide.ts",
-      "README.md",
-      "src/core/command/__tests__/guide.test.ts"
+      "src/core/artifact-output/run.ts",
+      "src/core/artifact-output/__tests__/run.test.ts",
+      "tests/artifact-output-vertical.test.ts",
+      "src/core/artifact-output/guarded-spawn.ts",
+      "src/core/artifact-output/revision-binding.ts",
+      "src/core/artifact-output/__tests__/guarded-spawn.test.ts",
+      "src/core/artifact-output/run-layout.ts",
+      "src/core/artifact-output/source-guard.ts"
     ],
     "regression-gate": [
       "src/core/artifact-output/patch.ts",
@@ -299,7 +305,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 202,
+    "historyCount": 213,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -309,10 +315,10 @@
       "implementer": 4,
       "verification": 7,
       "code-review": 10,
-      "code-fixer": 7,
-      "cross-boundary-invariants": 2,
-      "scale-tolerance": 2,
-      "custom-reviewers": 2,
+      "code-fixer": 8,
+      "cross-boundary-invariants": 3,
+      "scale-tolerance": 3,
+      "custom-reviewers": 3,
       "regression-gate": 4,
       "conformance": 2,
       "adr-gen": 1,
