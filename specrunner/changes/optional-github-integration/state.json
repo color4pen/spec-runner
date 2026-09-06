@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T15:10:44.939Z",
+  "updatedAt": "2026-09-06T15:11:54.418Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -85,7 +85,8 @@
     "f3ab36662b33b3d925ab8c6fe3189f054940c478",
     "c56b64dc7bf9639dfee98843700c1623550fdd73",
     "b2f32dc2c3975b2fc0bda350da0443b14ef6de84",
-    "731cd6db082f122a88c69d5a5041747c90595257"
+    "731cd6db082f122a88c69d5a5041747c90595257",
+    "dbfac0f840c1009c936e9c1c8e52b42d611bb25a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -167,25 +168,10 @@
       "src/core/attach/orchestrator.ts"
     ],
     "code-fixer": [
-      "tests/github-disabled-e2e.test.ts",
-      "src/cli/archive.ts",
-      "src/cli/github-composition.ts",
-      "src/state/schema/operations.ts",
-      "src/core/pipeline/registry.ts",
-      "src/core/pipeline/apply-github-integration.ts",
-      "src/util/paths.ts",
-      "src/core/port/agent-runner.ts",
-      "src/core/step/step-completion.ts",
-      "src/core/step/judge-verdict.ts",
-      "src/core/step/executor.ts",
-      "src/core/step/step-context-builder.ts",
-      "tests/attach/attach-resume-e2e.test.ts",
-      "src/core/pipeline/run.ts",
-      "src/config/getAgentId.ts",
-      "src/core/pipeline/types.ts",
-      "src/kernel/step-names.ts",
-      "tests/unit/cli/archive-usage-text.test.ts",
-      "tests/unit/state/github-integration.test.ts"
+      "src/core/command/runner.ts",
+      "src/git/remote.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "tests/unit/git/normalize-origin-identity.test.ts"
     ],
     "regression-gate": [
       "src/cli/bootstrap.ts",
@@ -237,7 +223,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 99,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -247,7 +233,7 @@
       "implementer": 6,
       "verification": 5,
       "code-review": 3,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
