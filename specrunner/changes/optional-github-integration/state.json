@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T10:29:30.092Z",
+  "updatedAt": "2026-09-06T10:32:18.953Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "5c3f7e10838f961fcd1d591c43b471d9093d0145",
     "a7a8c203f19a75841bb2f2fb9a40cc8e8307eb94",
-    "20358d84da77b85ea62b2eb3605195478df784b9"
+    "20358d84da77b85ea62b2eb3605195478df784b9",
+    "abbd9a607e05ed766cd46bc35dbe583f1440e67a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -100,13 +101,15 @@
       "src/cli/archive.ts",
       "src/git/transport-auth.ts",
       "src/cli/command-context.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
