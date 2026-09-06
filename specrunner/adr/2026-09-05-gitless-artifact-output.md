@@ -270,9 +270,9 @@ artifact-output profile の初期 unsupported（required capability を持つが
 
 **Rationale**: AC「実測結果と次段階の分割 Issue 案が記録される」。閾値 assert にしないのは CI の flake を作らないため。
 
-## 却下した代替案（全体方針）
+## Alternatives Considered
 
-### 案 A: `RuntimeStrategy` の 3 実装目として artifact-output runtime を作る
+### Alternative 1: D2 — `RuntimeStrategy` の 3 実装目として artifact-output runtime を作る
 
 `ArtifactOutputRuntime implements RuntimeStrategy` を作り、port の各 method を null / unavailable 返す stub で埋める案。
 
@@ -280,7 +280,7 @@ artifact-output profile の初期 unsupported（required capability を持つが
 - **Cons**: port の method の多くが Git 意味論（`captureHeadSha` / `listCommitChangedFiles` / `readFileAtCommit` / `lastCommitTouchingPath` …）であり、null / unavailable を返す stub の山になる。stub の意味を consumer が「変更なし」と誤読する経路（Stop Condition の fail-open）を新規に作る。Git profile の regression 面が最大になる。
 - **Why not**: D2 で採用した独立 orchestrator 方式の方が「既存 profile の挙動を変えない」保証をテストで固定しやすく、どの call site が本当に共通化可能かを実測してから統合できる。
 
-### 案 B: `LocalRuntime` に `artifactOutput` オプションを足す
+### Alternative 2: D2 — `LocalRuntime` に `artifactOutput` オプションを足す
 
 既存 `LocalRuntime` へ条件分岐を加え、artifact-output 動作を混入させる案。
 
@@ -288,13 +288,69 @@ artifact-output profile の初期 unsupported（required capability を持つが
 - **Cons**: 既存 profile の regression 面が最大になる。条件分岐が core 全域へ滲む（Stop Condition 該当）。「既存 profile の挙動を変えない」をテストで固定しにくい。
 - **Why not**: D2 / Stop Condition「core 全域への条件分岐拡散が必要になる」に直接該当する。
 
-### 案 C: Git profile と artifact-output profile を assurance profile の同一軸で表現する
+### Alternative 3: D1 — Git profile と artifact-output profile を assurance profile の同一軸で表現する
 
 `STANDARD_PROFILE` / `FAST_PROFILE` へ `executionAuthority: "git-pr" | "artifact-output"` を足す案。
 
 - **Pros**: 型が 1 本になる。
 - **Cons**: assurance profile は「保証水準の lattice」であり `satisfiesFloor` の意味論を持つ。execution authority（「何ができないか」の capability 集合）と意味が異なり、`computePolicyDigest` の入力が変わって既存 job state の digest 互換性に影響する。
 - **Why not**: D1 で採用した別軸方式の方が意味の異なる 2 軸を 1 型に混ぜないため整合性が保てる。
+
+### Alternative 4: D1 — `RuntimeStrategy` に `canPush()` / `canCreatePr()` … を足す
+
+capability 判定を `RuntimeStrategy` の interface method として宣言し、profile ごとに実装する案。
+
+- **Pros**: 既存の port インターフェース拡張で済み、新しい概念（execution profile）を導入しなくてよい。
+- **Cons**: 述語が増えるたびに call site が散り、preflight で pipeline 全体の可否を一括判定できない。「何が不足しているか」を一覧で示すデータ表現にならない。
+- **Why not**: capability の追加ごとに全実装クラスへの修正が必要になり、Stop Condition「core 全域への条件分岐拡散が必要になる」に近づく。
+
+### Alternative 5: D3 — mtime + size を identity として使う
+
+snapshot digest の代わりに mtime + size の組み合わせで revision identity を識別する案。
+
+- **Pros**: ファイルシステムの stat で取得可能なため高速。実装が単純。
+- **Cons**: 内容が変わらない再書き込みや mtime 保存 copy（`cp -p`）で誤判定する。identity が「再計算可能」でなくなり、同一入力から誰でも検証できる性質が失われる。
+- **Why not**: 設計要求 3「時刻・絶対 path・traversal 順などmachine依存値をidentityへ混ぜない」に直接違反する。
+
+### Alternative 6: D3 — Git 互換の tree OID を自前計算する
+
+Git の tree object 形式（SHA-1 hash）を再実装して revision identity に使う案。
+
+- **Pros**: Git tooling と identity 値を照合できる。
+- **Cons**: 「Gitの再実装」に該当する（Non-Goal）。空 directory を表現できない（Git の制約を引き継ぐ）。mode 表現も Git の制約に縛られる。
+- **Why not**: Non-Goal に明示されており、Git が表現できない空 directory（tarball 展開物で意味を持つ）を落とす。
+
+### Alternative 7: D8 — binary を base64 で `changes.patch` に埋める（git binary patch 相当）
+
+binary ファイルの変更を patch ファイルに base64 エンコードして収録する案。
+
+- **Pros**: `changes.patch` 1 ファイルで全変更を表現できる。
+- **Cons**: 独自 patch 方言になり `git apply` 等の標準ツールで適用できなくなる。payload で完全性は担保済みのため冗長。
+- **Why not**: 適用ツールが SpecRunner 専用になることへの対価がない。payload による完全性保証で代替できる。
+
+### Alternative 8: D9 — tar / zip で artifact を 1 ファイルにまとめる
+
+`artifact/` directory bundle の代わりに tar や zip archive を出力する案。
+
+- **Pros**: CI 環境間で受け渡しやすい（OQ-3 の動機）。単一 artifact URL で配布できる。
+- **Cons**: 追加の実装・依存が要る。directory bundle でも「完全な変更 payload」の要件は満たせる。
+- **Why not**: 配布形態は OQ-3 として次段階 Issue に分離。初期 profile では directory bundle で要件を満たす。
+
+### Alternative 9: D10 — 実行前 digest のみ記録し、実行後の再 snapshot を省略する
+
+verification / review 実行前に digest を記録するだけで、実行後の再 snapshot・照合を行わない案。
+
+- **Pros**: 実装が単純。snapshot 実行回数が減る。
+- **Cons**: verification が workspace を汚す（build 生成物等）ケースで、record の digest が実際に検証した revision と乖離する。
+- **Why not**: 設計要求 3「digestがverification / reviewの対象revisionと一致すること」を保証できない。Stop Condition「revision 不一致でも verification / review を有効として扱う必要がある」に抵触する。
+
+### Alternative 10: D12 — 既存 `assertRuntimeSupportsScope` を拡張して capability チェックを担わせる
+
+既存の `src/core/pipeline/runtime-capability-gate.ts` の述語チェックに artifact-output profile 用の unsupported 判定を追加する案。
+
+- **Pros**: 新しい preflight module を作らなくてよい。既存コードを再利用できる。
+- **Cons**: 既存 gate は permissionScope 宣言時のみ発火する 1 述語（`canDeriveChangedFiles()`）であり、意味論を変えると fast profile の既存挙動に影響する。「pipeline 全体の可否」を一括判定するデータ表現にもなっていない。
+- **Why not**: 既存 gate の意味論を変えることで fast profile への回帰リスクが生じる。独立した preflight 純関数として設計する方が分離が明確。
 
 ## リスクとトレードオフ
 

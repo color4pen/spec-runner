@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T07:18:43.992Z",
+  "updatedAt": "2026-09-06T07:32:01.382Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -108,7 +108,9 @@
     "b29cdf6815396aa6f95c4a04581b5cf71b36fbc7",
     "70fee84c828ac1ce8e759f97ac33d641885079bd",
     "1d79a20e661a4561f1faf79e978ef822e94f93bc",
-    "b6fc34de135c47dd979198c50c1fe386aa174bff"
+    "b6fc34de135c47dd979198c50c1fe386aa174bff",
+    "dd00844feb0b4ed18f6f7a2c243c671b796b8045",
+    "26da1d61ca80cf34ec7581ebc9031998019a780f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -171,25 +173,21 @@
     ],
     "conformance": [
       "src/core/artifact-output/run.ts",
-      "src/core/artifact-output/source-guard.ts",
-      "src/core/artifact-output/guarded-spawn.ts",
       "src/core/artifact-output/execution-profile.ts",
       "src/core/artifact-output/preflight.ts",
+      "src/core/artifact-output/source-guard.ts",
       "src/core/artifact-output/revision-binding.ts",
-      "src/core/artifact-output/manifest.ts",
-      "src/core/artifact-output/artifact-writer.ts",
       "src/core/artifact-output/context.ts",
-      "src/core/command/guide.ts",
-      "specrunner/adr/2026-09-05-gitless-artifact-output.md",
+      "src/core/artifact-output/guarded-spawn.ts",
       "src/core/snapshot/collect.ts",
-      "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/patch.ts",
+      "src/core/command/guide.ts",
+      "README.md",
+      "docs/artifact-output-profile.md",
       "tests/unit/architecture/artifact-output-git-free.test.ts",
       "tests/artifact-output-vertical.test.ts",
-      "src/core/snapshot/digest.ts",
-      "docs/artifact-output-profile.md",
-      "README.md",
-      "src/core/artifact-output/__tests__/artifact-writer.test.ts"
+      "specrunner/adr/2026-09-05-gitless-artifact-output.md",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/core/artifact-output/artifact-writer.ts"
     ],
     "adr-gen": [
       "specrunner/adr/2026-08-29-remove-bite-evidence.md",
@@ -301,7 +299,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 218,
+    "historyCount": 227,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -309,14 +307,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 4,
-      "verification": 7,
+      "verification": 8,
       "code-review": 10,
       "code-fixer": 8,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 3,
       "custom-reviewers": 3,
       "regression-gate": 5,
-      "conformance": 2,
+      "conformance": 3,
       "adr-gen": 1,
       "pr-create": 1
     }
