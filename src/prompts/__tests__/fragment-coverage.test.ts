@@ -275,6 +275,33 @@ describe("FINDING_REMEDIATION_DEFINITION scanning obligation (TC-T04-04)", () =>
 });
 
 // ---------------------------------------------------------------------------
+// TC-T04-03: 5 judge prompts contain FINDING_REMEDIATION_DEFINITION
+// ---------------------------------------------------------------------------
+
+describe("5 judge prompts contain FINDING_REMEDIATION_DEFINITION (TC-T04-03)", () => {
+  it("CODE_REVIEW_SYSTEM_PROMPT contains FINDING_REMEDIATION_DEFINITION", () => {
+    expect(CODE_REVIEW_SYSTEM_PROMPT).toContain(FINDING_REMEDIATION_DEFINITION);
+  });
+
+  it("SPEC_REVIEW_SYSTEM_PROMPT contains FINDING_REMEDIATION_DEFINITION", () => {
+    expect(SPEC_REVIEW_SYSTEM_PROMPT).toContain(FINDING_REMEDIATION_DEFINITION);
+  });
+
+  it("CONFORMANCE_SYSTEM_PROMPT contains FINDING_REMEDIATION_DEFINITION", () => {
+    expect(CONFORMANCE_SYSTEM_PROMPT).toContain(FINDING_REMEDIATION_DEFINITION);
+  });
+
+  it("REGRESSION_GATE_SYSTEM_PROMPT contains FINDING_REMEDIATION_DEFINITION", () => {
+    expect(REGRESSION_GATE_SYSTEM_PROMPT).toContain(FINDING_REMEDIATION_DEFINITION);
+  });
+
+  it("buildCustomReviewerSystemPrompt contains FINDING_REMEDIATION_DEFINITION", () => {
+    const prompt = buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot());
+    expect(prompt).toContain(FINDING_REMEDIATION_DEFINITION);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // T-07: Provider-neutral completion contract — all 14 prompt symbols
 // ---------------------------------------------------------------------------
 

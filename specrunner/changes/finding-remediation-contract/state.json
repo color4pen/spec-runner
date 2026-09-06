@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-06T06:16:23.103Z",
+  "updatedAt": "2026-09-06T06:23:54.584Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -94,7 +94,8 @@
     "286bca1c90008e2fce5e1a508741ce53cc738a0b",
     "9946e3f37b8cbbfb4fdc32d2a54578a1d8353e7d",
     "3e7bdb8f5dc81440e55342ba77e2c742574643bc",
-    "34b28be216c053d093ca52ab28df927e9d9564d6"
+    "34b28be216c053d093ca52ab28df927e9d9564d6",
+    "89581422ce43f10be645c49ed3ec2151e3b834b6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,20 +151,24 @@
     "code-review": [
       "src/kernel/report-result.ts",
       "src/core/port/report-result.ts",
+      "src/core/step/report-tool.ts",
       "src/core/step/fixer-helpers.ts",
       "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
       "src/prompts/judge-rules.ts",
       "src/prompts/code-fixer-system.ts",
-      "src/core/step/report-tool.ts",
-      "src/core/step/regression-gate.ts",
-      "src/prompts/regression-gate-system.ts",
       "src/prompts/custom-reviewer-system.ts",
       "src/core/port/__tests__/remediation-parse.test.ts",
       "src/core/step/__tests__/fail-closed-drift-guard.test.ts",
-      "tests/unit/step/fixer-findings.test.ts",
-      "src/core/step/spec-fixer.ts",
+      "src/core/step/regression-gate.ts",
       "src/prompts/spec-fixer-system.ts",
-      "src/prompts/__tests__/fragment-coverage.test.ts"
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/prompts/__tests__/fragment-coverage.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts"
     ],
     "code-fixer": [
       "src/prompts/__tests__/fragment-coverage.test.ts",
@@ -248,7 +253,7 @@
     "createdAt": "2026-09-05T16:10:10.907Z"
   },
   "_journal": {
-    "historyCount": 138,
+    "historyCount": 142,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -257,7 +262,7 @@
       "spec-fixer": 1,
       "implementer": 2,
       "verification": 5,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 6,
       "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
