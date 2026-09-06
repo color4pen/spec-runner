@@ -160,6 +160,16 @@ remediation を含めると、同一欠陥が方針の言い回し違いで別 e
 sites を ledger に載せるのに identity 変更は不要である（ledger entry は `Finding` そのものを保持しているため、
 remediation はすでに entry に同伴して運ばれる）。Stop Condition 3 は発火しない。
 
+**同一 identity の finding の統合（remediation merge）**: `dedupeFindings` は identity（fingerprint）が一致する
+finding を 1 entry に畳むが、後続の重複を捨てるのではなく remediation を統合する。
+identity・severity・rationale・ledgerRef 等は先頭出現から採る（従来どおり）。remediation は次の規則で統合する:
+- `sites`: 到着順の和集合（`file|line` で dedupe）。先頭出現の自 site が先頭に残る。
+- `invariant` / `approach`: 先頭出現を優先し、空なら後続の非空値を採る。
+- 片方が legacy（remediation なし）の場合は他方を採る。legacy が先に来ても後続の remediation は失われない。
+iteration をまたいで追加された site や、並列 reviewer が別 site を報告した場合に、ledger / fixer 入力
+（`collectParallelFixerFindings` / `computeRegressionLedger`）が site を取りこぼさないための規則である。
+入力 finding は変更しない（統合結果は shallow copy）。
+
 **Alternatives considered**:
 - site 単位に ledger entry を分割する（1 finding × N sites → N entry）: entry ごとに新しい fingerprint が必要になり、
   既存 ledgerRef 互換が壊れる。regression-gate の verdict 集計単位も変わる。却下。

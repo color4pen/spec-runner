@@ -9,7 +9,7 @@
  */
 import { createHash } from "crypto";
 import type { JobState } from "../../state/schema.js";
-import type { Finding } from "../../kernel/report-result.js";
+import type { Finding, FindingRemediation, RemediationSite } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
 import { getLatestJudgeFindings } from "../review-routing.js";
 import {
@@ -183,24 +183,84 @@ export function findingFingerprint(f: Finding): string {
 /**
  * Deduplicate findings using (file + line + title) as the key.
  * Line is coerced to empty string when absent.
- * The first occurrence of each key is retained; subsequent duplicates are dropped.
+ *
+ * The first occurrence of each key is retained as the representative entry
+ * (identity, severity, rationale, ledgerRef, ... all come from it — D5: identity
+ * never includes remediation). Later duplicates are NOT simply dropped: their
+ * `remediation` is merged into the representative via `mergeRemediation`, so the
+ * `sites` reported by a later iteration or a parallel reviewer are kept as a union.
+ *
+ * Input objects are never mutated; a merged representative is a shallow copy.
  *
  * @param findings - Raw findings array (may contain structural duplicates).
- * @returns De-duplicated findings (first-occurrence wins).
+ * @returns De-duplicated findings (first-occurrence wins for identity; remediation merged).
  */
 export function dedupeFindings(findings: Finding[]): Finding[] {
-  const seen = new Set<string>();
+  const indexByKey = new Map<string, number>();
   const result: Finding[] = [];
 
   for (const f of findings) {
     const key = findingFingerprint(f);
-    if (!seen.has(key)) {
-      seen.add(key);
+    const idx = indexByKey.get(key);
+    if (idx === undefined) {
+      indexByKey.set(key, result.length);
       result.push(f);
+      continue;
+    }
+    const existing = result[idx]!;
+    const merged = mergeRemediation(existing.remediation, f.remediation);
+    if (merged !== existing.remediation) {
+      result[idx] = { ...existing, remediation: merged };
     }
   }
 
   return result;
+}
+
+/** Identity of a remediation site: file + line (line coerced to "" when absent). */
+function siteKey(site: RemediationSite): string {
+  return `${site.file}|${site.line ?? ""}`;
+}
+
+/**
+ * Merge the remediation of two findings that share the same identity.
+ *
+ * Rules (design D5, "remediation merge"):
+ * - Either side absent (legacy finding without remediation) → the other side is adopted,
+ *   whichever order they arrived in. A legacy-first ordering never loses a later remediation.
+ * - `sites`: union in arrival order, deduplicated by `file|line`. The first side's own
+ *   site therefore stays at the head (parse-layer invariant preserved).
+ * - `invariant` / `approach`: the first non-empty value wins (first side preferred).
+ *
+ * Returns `first` itself (same reference) when nothing changes, so callers can detect
+ * "no merge needed" by reference equality.
+ */
+export function mergeRemediation(
+  first: FindingRemediation | undefined,
+  second: FindingRemediation | undefined,
+): FindingRemediation | undefined {
+  if (!second) return first;
+  if (!first) return second;
+
+  const sites: RemediationSite[] = [];
+  const seen = new Set<string>();
+  for (const site of [...first.sites, ...second.sites]) {
+    const k = siteKey(site);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    sites.push(site);
+  }
+
+  const invariant = first.invariant.trim() !== "" ? first.invariant : second.invariant;
+  const approach = first.approach.trim() !== "" ? first.approach : second.approach;
+
+  const unchanged =
+    invariant === first.invariant &&
+    approach === first.approach &&
+    sites.length === first.sites.length;
+  if (unchanged) return first;
+
+  return { invariant, sites, approach };
 }
 
 /**
