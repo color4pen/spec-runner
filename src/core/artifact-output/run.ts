@@ -572,13 +572,9 @@ async function checkSourceUnchanged(
   runJson: RunJson,
   runRoot: string,
 ): Promise<boolean> {
-  // Track whether mutation/unverifiable was detected before attempting writeRunJson.
-  // If writeRunJson throws after mutation is detected, we must still return true.
-  let mutationDetected = false;
   try {
     const guardResult = await assertSourceUnchanged(sourceRoot, baselineDigest, collectOpts);
     if (guardResult.kind === "mutated") {
-      mutationDetected = true;
       runJson.error = (runJson.error ?? "") + " | source-mutated: " + guardResult.currentDigest;
       runJson.status = "failed";
       await writeRunJson(runRoot, runJson);
@@ -586,7 +582,6 @@ async function checkSourceUnchanged(
     } else if (guardResult.kind === "unverifiable") {
       // Fail-closed: cannot confirm source is unchanged → record as failure.
       // D6: "不一致なら fail-closed で記録する" — unverifiable is not the same as unchanged.
-      mutationDetected = true;
       runJson.error = (runJson.error ?? "") + " | source-unverifiable: " + guardResult.reason;
       runJson.status = "failed";
       await writeRunJson(runRoot, runJson);

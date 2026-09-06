@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T06:29:32.786Z",
+  "updatedAt": "2026-09-06T06:42:30.467Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -101,7 +101,9 @@
     "5211d9853c799029bc70e8676a0300b808c45404",
     "114ab1f7ecb190dc24f1b06cafe2f22a821a4f18",
     "e5203cc133a39bf9ff4cd9cadf929ce8013ba951",
-    "c1edff5fac83d31fbb8fc6d199d686f87284ea7b"
+    "c1edff5fac83d31fbb8fc6d199d686f87284ea7b",
+    "9abf3472533747c1756cf469d8a19025a4756fca",
+    "91926530338ee3c09779a986a888ca7833deb8ce"
   ],
   "touchedFiles": {
     "request-review": [
@@ -175,22 +177,25 @@
     ],
     "conformance": [
       "src/core/artifact-output/run.ts",
-      "src/core/snapshot/digest.ts",
-      "src/core/artifact-output/manifest.ts",
-      "src/core/artifact-output/context.ts",
-      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/source-guard.ts",
       "src/core/artifact-output/guarded-spawn.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/preflight.ts",
       "src/core/artifact-output/revision-binding.ts",
-      "src/core/snapshot/compare.ts",
-      "src/core/snapshot/collect.ts",
+      "src/core/artifact-output/manifest.ts",
       "src/core/artifact-output/artifact-writer.ts",
+      "src/core/artifact-output/context.ts",
       "src/core/command/guide.ts",
-      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "specrunner/adr/2026-09-05-gitless-artifact-output.md",
+      "src/core/snapshot/collect.ts",
+      "src/core/snapshot/compare.ts",
       "src/core/artifact-output/patch.ts",
-      "src/core/artifact-output/__tests__/artifact-writer.test.ts",
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "tests/artifact-output-vertical.test.ts",
+      "src/core/snapshot/digest.ts",
       "docs/artifact-output-profile.md",
-      "src/core/artifact-output/run-layout.ts",
-      "src/core/command/__tests__/guide.test.ts"
+      "README.md",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts"
     ],
     "adr-gen": [
       "specrunner/adr/2026-08-29-remove-bite-evidence.md",
@@ -302,7 +307,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 180,
+    "historyCount": 189,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -310,14 +315,14 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 3,
-      "verification": 5,
+      "verification": 6,
       "code-review": 9,
       "code-fixer": 7,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 4,
-      "conformance": 1,
+      "conformance": 2,
       "adr-gen": 1,
       "pr-create": 1
     }
