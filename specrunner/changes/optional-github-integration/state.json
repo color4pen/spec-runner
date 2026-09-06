@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T13:38:15.262Z",
+  "updatedAt": "2026-09-06T13:53:46.873Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -71,7 +71,9 @@
     "f321f8b3c96fd5bbfea8c1db3757b73cdd6aa9e6",
     "ab420e72e5af3232a30c38f310c8c3ad89a687c4",
     "be5401598f3aefb480fa5245f1bbc8f06b058eaf",
-    "6f97eb992a109967abe22327f41b4f201c57c8dd"
+    "6f97eb992a109967abe22327f41b4f201c57c8dd",
+    "d7061abf0316aa47bad643d08b5be6718ffea107",
+    "6bfb2ad014e4976d64c0c73a8893a3bf2da89890"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,35 +129,51 @@
     "spec-fixer": [],
     "implementer": [
       "src/core/types.ts",
+      "src/core/pipeline/parallel-review-round.ts",
       "src/core/step/step-deps.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/cli/ps.ts",
       "src/state/schema/types.ts",
+      "src/cli/resume.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/pr-create.ts",
+      "src/core/pr-create/runner.ts",
+      "src/core/attach/__tests__/checkpoint-policy.test.ts",
+      "tests/core/step/step-interface.test.ts",
       "src/core/runtime/factory.ts",
       "src/core/runtime/managed.ts",
-      "src/core/notify/issue-notifier.ts",
-      "src/cli/resume.ts",
-      "src/cli/archive-from-issue.ts",
-      ".claude/settings.json",
-      ".specrunner/config.json",
-      "src/cli/ps.ts",
-      "specrunner/project.md",
-      "specrunner/rules/implementer/02-test-command.md",
-      "test_write_probe.txt",
-      "src/cli/resume-from-issue.ts",
-      "src/core/port/step-context.ts"
+      "src/core/preflight.ts",
+      "tests/unit/core/command/pipeline-run.test.ts",
+      "tests/unit/core/command/pipeline-run-gate.test.ts",
+      "tests/unit/core/command/pipeline-run-duplicate-guard.test.ts",
+      "tests/unit/core/command/pipeline-run-inbox-origin.test.ts",
+      "tests/unit/core/command/pipeline-run-input-completeness.test.ts",
+      "tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts",
+      "tests/core/steps/spec-review.test.ts",
+      "tests/spec-review-step.test.ts",
+      "tests/unit/step/executor.test.ts",
+      "tests/unit/step/review-exit-contract.test.ts",
+      "tests/github-disabled-e2e.test.ts",
+      "src/core/finish/types.ts",
+      "src/core/archive/plain-archive.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 2,
-      "verification": 1
+      "implementer": 3,
+      "verification": 2
     }
   }
 }

@@ -11,7 +11,7 @@ import * as childProcess from "node:child_process";
 import { promisify } from "node:util";
 
 import { runChecks } from "../core/doctor/runner.js";
-import { commonChecks, managedChecks, localChecks, selectChecks } from "../core/doctor/checks/index.js";
+import { selectChecks } from "../core/doctor/checks/index.js";
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";

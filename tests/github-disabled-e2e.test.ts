@@ -33,7 +33,6 @@ import { buildPipelineForJob } from "../src/core/pipeline/run.js";
 import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
 import { commitFinalState } from "../src/core/step/commit-push.js";
 import { EventBus } from "../src/core/event/event-bus.js";
-import { STEP_NAMES } from "../src/core/step/step-names.js";
 import { defaultSpawnFn, gitExec } from "../src/util/git-exec.js";
 import type { AgentRunContext, AgentRunResult } from "../src/core/port/agent-runner.js";
 import type { AgentRunner } from "../src/core/port/agent-runner.js";
@@ -45,15 +44,13 @@ import type { StepIoValidationCapability } from "../src/core/step/step-capabilit
 import type { TerminalStateCapability } from "../src/core/pipeline/pipeline-capability.js";
 import type { SpecRunnerConfig } from "../src/config/schema.js";
 import type { ParsedRequest } from "../src/parser/request-md.js";
-import { LocalRuntime } from "../src/core/runtime/local.js";
 import { noopRoundGitEffects } from "../src/core/step/noop-capabilities.js";
 import { runAttachVerification } from "../src/core/attach/orchestrator.js";
 import { runPlainArchive } from "../src/core/archive/plain-archive.js";
 import { normalizeOriginIdentity } from "../src/git/remote.js";
 import type { FinishFs } from "../src/core/finish/types.js";
 import { getGitHubIntegration } from "../src/state/github-integration.js";
-import { prCreateResultPath, verificationResultPath } from "../src/util/paths.js";
-import * as fsSync from "node:fs";
+import { verificationResultPath } from "../src/util/paths.js";
 
 // ---------------------------------------------------------------------------
 // Mock the verification runner and pr-create runner so we don't spawn real processes
@@ -442,7 +439,7 @@ describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", 
       const branchesBeforeArchive = await git(originDir, "branch", "--list", BRANCH);
       expect(branchesBeforeArchive).toContain(BRANCH);
 
-      const archiveResult = await runPlainArchive({
+      await runPlainArchive({
         slug: SLUG,
         cwd: machineADir,
         spawn: spawnCommand,

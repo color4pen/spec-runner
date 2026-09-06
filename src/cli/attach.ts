@@ -20,8 +20,7 @@ import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { runAttachVerification } from "../core/attach/orchestrator.js";
 import { attachQuiescentPolicy } from "../core/attach/checkpoint-policy.js";
 import { loadConfig } from "../config/store.js";
-import { getOriginInfo, getOriginUrl, normalizeOriginIdentity } from "../git/remote.js";
-import { resolveGitHubHost } from "../config/github-host.js";
+import { getOriginUrl, normalizeOriginIdentity } from "../git/remote.js";
 import { createTransportAuth } from "../git/transport-auth.js";
 import { spawnCommand } from "../util/spawn.js";
 import {
@@ -34,7 +33,6 @@ import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
 import { logResult, logError, stderrWrite, resolveLogLevel, type LogLevel, setLogLevel } from "../logger/stdout.js";
 import { LocalRuntime } from "../core/runtime/local.js";
-import { resolveGitHubIntegrationConfig } from "../config/github-integration.js";
 import { composeGitHubIntegration, composeGitHubIntegrationForJob } from "./github-composition.js";
 
 export interface RunAttachOptions {

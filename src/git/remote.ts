@@ -94,7 +94,7 @@ export function normalizeOriginIdentity(remoteUrl: string): RepositoryOrigin {
     cleanUrl = cleanedUrl.toString();
 
     const host = url.hostname.toLowerCase();
-    let path = url.pathname.replace(/\.git$/, "").replace(/\/$/, "").replace(/^\//, "");
+    const path = url.pathname.replace(/\.git$/, "").replace(/\/$/, "").replace(/^\//, "");
 
     if (url.protocol === "file:") {
       // file:///tmp/x/bare.git → just use the path

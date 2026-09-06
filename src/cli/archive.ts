@@ -17,8 +17,6 @@ import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { requestMdPath, archivedChangesDirRel, archivedChangeFolderPath } from "../util/paths.js";
 import { composeGitHubIntegration } from "./github-composition.js";
-import { getOriginInfo } from "../git/remote.js";
-import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { loadConfig } from "../config/store.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, resolveDesignLayerConfig } from "../config/schema.js";
 import type { ResolvedDesignLayer, ShellCommand } from "../config/schema.js";
@@ -168,8 +166,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
     if (opts.withMerge) {
       // --with-merge: resolve GitHub credentials and run merge-then-archive
       // (only reached when jobGithubEnabled === true, checked above)
-      let githubHost = "github.com";
-      let githubApiBaseUrl = "https://api.github.com";
       let waitTimeoutMs: number | null | undefined = undefined;
       let pollIntervalMs: number | undefined = undefined;
       let protectedPaths: string[] | undefined = undefined;
@@ -181,8 +177,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       try {
         const config = await loadConfig();
         mergeConfig = config;
-        githubHost = resolveGitHubHost(config.github);
-        githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
         // Resolve wait timeout: flag override > config > default
         if (opts.mergeWaitMs !== undefined) {
           waitTimeoutMs = opts.mergeWaitMs;
