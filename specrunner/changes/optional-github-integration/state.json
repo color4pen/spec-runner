@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T13:36:26.509Z",
+  "updatedAt": "2026-09-06T13:38:15.262Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
   "pipelineId": "standard",
@@ -144,13 +144,10 @@
       "src/core/port/step-context.ts"
     ]
   },
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "implementer escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

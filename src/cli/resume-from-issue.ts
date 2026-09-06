@@ -162,7 +162,7 @@ export async function runResumeFromIssue(
           cwd: repoRoot,
           branch: resolved.branch,
           spawnFn,
-          expectedRepo: { owner, name: repo },
+          expectedRepo: { github: { owner, name: repo } },
         });
       } catch (err) {
         if (err instanceof SpecRunnerError) {

@@ -75,5 +75,6 @@ export function createRuntime(
     );
   }
 
-  return new ManagedRuntime(cwd, sessionClient, githubClient!, repo!, undefined, githubToken);
+  // At this point githubEnabled is true: githubToken is guaranteed non-null by the caller.
+  return new ManagedRuntime(cwd, sessionClient, githubClient!, repo!, undefined, githubToken!);
 }

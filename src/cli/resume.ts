@@ -58,9 +58,9 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     logError((err as Error).message);
     return 1;
   }
-  const repo = state
-    ? { owner: state.repository.owner, name: state.repository.name }
-    : { owner: "", name: "" };
+  const stateOwner = state?.repository.owner;
+  const stateName = state?.repository.name;
+  const repo = stateOwner && stateName ? { owner: stateOwner, name: stateName } : null;
 
   let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
   let config: Awaited<ReturnType<typeof bootstrap>>["config"];

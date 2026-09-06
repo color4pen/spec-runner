@@ -180,7 +180,7 @@ export function buildEscalationComment(state: JobState): string {
     "",
   ];
 
-  if (state.branch) {
+  if (state.branch && state.repository.owner && state.repository.name) {
     const base = state.request.baseBranch ?? "main";
     const url = buildCompareUrl(state.repository.owner, state.repository.name, base, state.branch);
     lines.push(`Diff: ${url}`);

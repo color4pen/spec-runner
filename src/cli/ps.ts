@@ -41,6 +41,7 @@ export async function checkPrMerged(job: import("../state/schema.js").JobState, 
   if (!githubClient) return null;
 
   const { owner, name } = job.repository;
+  if (!owner || !name) return null;
   const prNumber = job.pullRequest.number;
 
   try {

@@ -28,12 +28,17 @@ import type {
 } from "../port/runtime-strategy.js";
 
 export interface StepExecutionDeps extends StepContext {
-  /** GitHub client (port interface). Required for all pipeline steps. */
-  githubClient: GitHubClient;
-  /** GitHub repository owner. Required for PR operations. */
-  owner: string;
-  /** GitHub repository name. Required for PR operations. */
-  repo: string;
+  /**
+   * GitHub client (port interface). null when GitHub integration is disabled.
+   * Steps that require a non-null client (e.g. pr-create) perform an explicit
+   * null-check and throw at runtime — they are also removed from the pipeline
+   * by applyGitHubIntegration before they can be reached.
+   */
+  githubClient: GitHubClient | null;
+  /** GitHub repository owner. undefined when GitHub integration is disabled. */
+  owner?: string;
+  /** GitHub repository name. undefined when GitHub integration is disabled. */
+  repo?: string;
   /** Subprocess spawning function. CLI steps pass this to subprocess-spawning functions. */
   spawn: SpawnFn;
   /** Factory for creating JobStateStore instances (no inline `new JobStateStore()`). */

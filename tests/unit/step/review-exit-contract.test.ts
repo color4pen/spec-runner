@@ -500,7 +500,7 @@ function makeReviewStepStub(stepName: "spec-review" | "code-review", resultPath:
 function makeExecutorFromDeps(events: EventBus, deps: PipelineDeps): StepExecutor {
   const runner = createManagedAgentRunner({
     sessionClient: deps.client!,
-    githubClient: deps.githubClient,
+    githubClient: deps.githubClient!,
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });

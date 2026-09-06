@@ -270,7 +270,7 @@ describe("TC-013: StepExecutor lifecycle events fire in correct order on success
     const deps = makeMinimalDeps({ pollStatus: "idle" });
     const runner = createManagedAgentRunner({
       sessionClient: deps.client!,
-      githubClient: deps.githubClient,
+      githubClient: deps.githubClient!,
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });
@@ -341,7 +341,7 @@ describe("TC-014: StepExecutor error path emits step:error and decorates excepti
     });
     const runner = createManagedAgentRunner({
       sessionClient: deps.client!,
-      githubClient: deps.githubClient,
+      githubClient: deps.githubClient!,
       repo: { owner: "testowner", name: "testrepo" },
       githubToken: "ghp_test",
     });

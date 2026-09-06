@@ -28,7 +28,7 @@ import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 
-import { spawnCommand } from "../src/util/spawn.js";
+import { spawnCommand, type SpawnOptions } from "../src/util/spawn.js";
 import { buildPipelineForJob } from "../src/core/pipeline/run.js";
 import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
 import { commitFinalState } from "../src/core/step/commit-push.js";
@@ -195,11 +195,19 @@ const noopChangedFiles: ChangedFilesCapability = {
 
 function makeFinishFs(): FinishFs {
   return {
-    rename: fsPromises.rename,
-    mkdir: (p: string, opts?: { recursive?: boolean }) => fsPromises.mkdir(p, opts ?? {}),
+    exists: async (p: string) => {
+      try { await fsPromises.access(p); return true; } catch { return false; }
+    },
     readdir: (p: string) => fsPromises.readdir(p),
-    rm: (p: string, opts?: { recursive?: boolean; force?: boolean }) => fsPromises.rm(p, opts ?? {}),
-    existsSync: (p: string) => fsSync.existsSync(p),
+    stat: async (p: string) => {
+      const s = await fsPromises.stat(p);
+      return { isDirectory: () => s.isDirectory() };
+    },
+    mkdir: async (p: string, opts: { recursive: boolean }) => { await fsPromises.mkdir(p, opts); },
+    writeFile: (p: string, content: string) => fsPromises.writeFile(p, content),
+    unlink: (p: string) => fsPromises.unlink(p),
+    readFile: async (p: string) => { const buf = await fsPromises.readFile(p); return buf.toString(); },
+    rm: async (p: string, opts: { recursive: boolean; force: boolean }) => { await fsPromises.rm(p, opts); },
   };
 }
 
@@ -305,7 +313,7 @@ describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", 
       // Spy on fetch (must stay 0 — no GitHub API calls)
       // =====================================================================
 
-      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: RequestInfo | URL) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL | Request) => {
         const urlStr = String(url);
         // Fail loudly if GitHub API is called — this must never happen in GitHub-disabled path
         throw new Error(`[T-16] Unexpected fetch call to GitHub API: ${urlStr}`);
@@ -509,12 +517,12 @@ describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", 
         runAttachVerification({
           cwd: machineCDir,
           branch: BRANCH,
-          spawnFn: async (cmd: string, args: string[], opts?: Record<string, unknown>) => {
+          spawnFn: async (cmd: string, args: string[], opts: SpawnOptions) => {
             // Skip "git fetch origin <branch>" — objects already available
             if (cmd === "git" && args[0] === "fetch") {
               return { exitCode: 0, stdout: "", stderr: "" };
             }
-            return spawnCommand(cmd, args, opts as Parameters<typeof spawnCommand>[2]);
+            return spawnCommand(cmd, args, opts);
           },
           expectedRepo: {
             origin: machineCOrigin, // wrong digest
