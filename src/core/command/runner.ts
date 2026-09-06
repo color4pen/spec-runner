@@ -465,8 +465,11 @@ async function handleResult(finalState: JobState, slug: string, json: boolean, r
   outputSpecReviewVerdict(finalState, slug);
 
   if (finalState.status === "awaiting-archive") {
-    if (finalState.pullRequest?.url) {
-      logInfo(`PR: ${finalState.pullRequest.url}`);
+    if (finalState.githubIntegration?.enabled !== false) {
+      // GitHub-enabled job (or legacy state without githubIntegration field).
+      if (finalState.pullRequest?.url) {
+        logInfo(`PR: ${finalState.pullRequest.url}`);
+      }
       logInfo(`Pipeline completed; awaiting archive. Branch: ${finalState.branch}`);
     } else {
       // GitHub integration disabled — branch published locally, no PR created.

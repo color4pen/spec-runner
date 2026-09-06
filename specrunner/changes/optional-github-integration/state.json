@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T15:06:29.783Z",
+  "updatedAt": "2026-09-06T15:10:44.939Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -84,7 +84,8 @@
     "bbde218b4f32ef6331c84676414dcae971615dd2",
     "f3ab36662b33b3d925ab8c6fe3189f054940c478",
     "c56b64dc7bf9639dfee98843700c1623550fdd73",
-    "b2f32dc2c3975b2fc0bda350da0443b14ef6de84"
+    "b2f32dc2c3975b2fc0bda350da0443b14ef6de84",
+    "731cd6db082f122a88c69d5a5041747c90595257"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,6 +186,21 @@
       "src/kernel/step-names.ts",
       "tests/unit/cli/archive-usage-text.test.ts",
       "tests/unit/state/github-integration.test.ts"
+    ],
+    "regression-gate": [
+      "src/cli/bootstrap.ts",
+      "src/cli/resume.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/run-result.ts",
+      "src/config/github-integration.ts",
+      "tests/github-disabled-e2e.test.ts",
+      "src/cli/archive.ts",
+      "src/state/schema/operations.ts",
+      "tests/unit/cli/archive-usage-text.test.ts",
+      "src/cli/github-composition.ts",
+      "src/git/remote.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "tests/unit/git/normalize-origin-identity.test.ts"
     ]
   },
   "resumePoint": null,
@@ -221,7 +237,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 95,
+    "historyCount": 99,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -234,7 +250,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

@@ -47,6 +47,31 @@ describe("TC-023: normalizeOriginIdentity — HTTPS / SSH / plain HTTPS produce 
 });
 
 // ---------------------------------------------------------------------------
+// TC-025: non-default port is included in digest — different ports → different digests
+// ---------------------------------------------------------------------------
+
+describe("TC-025: normalizeOriginIdentity — non-default ports produce distinct digests", () => {
+  it("two HTTPS URLs differing only in port produce different digests", () => {
+    const a = normalizeOriginIdentity("https://forge.example:8443/team/repo.git");
+    const b = normalizeOriginIdentity("https://forge.example:9443/team/repo.git");
+    expect(a.digest).not.toBe(b.digest);
+  });
+
+  it("HTTPS URL with explicit default port 443 matches the no-port equivalent", () => {
+    // Browsers/Node normalise https://host:443/path → https://host/path (port omitted).
+    // Both should resolve to the same canonical host string.
+    const withPort = normalizeOriginIdentity("https://example.com:443/team/repo.git");
+    const withoutPort = normalizeOriginIdentity("https://example.com/team/repo.git");
+    expect(withPort.digest).toBe(withoutPort.digest);
+  });
+
+  it("digest for custom-port URL is a valid SHA-256 hex string", () => {
+    const result = normalizeOriginIdentity("https://forge.example:8443/team/repo.git");
+    expect(result.digest).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-024: file:// local remote → stable non-empty digest
 // ---------------------------------------------------------------------------
 

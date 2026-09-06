@@ -93,7 +93,10 @@ export function normalizeOriginIdentity(remoteUrl: string): RepositoryOrigin {
     cleanedUrl.password = "";
     cleanUrl = cleanedUrl.toString();
 
-    const host = url.hostname.toLowerCase();
+    // Use url.host (not url.hostname) so that non-default ports are included in the
+    // canonical form and thus in the digest. Different-port endpoints must not share
+    // the same identity (e.g. forge.example:8443 ≠ forge.example:9443).
+    const host = url.host.toLowerCase();
     const path = url.pathname.replace(/\.git$/, "").replace(/\/$/, "").replace(/^\//, "");
 
     if (url.protocol === "file:") {
