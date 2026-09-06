@@ -47,12 +47,12 @@ function makeNoopSpawn(): SpawnFn {
 }
 
 function makeNoopAgent(): AgentSeam {
-  return { run: async (_candidateRoot, _requestContent) => {} };
+  return { run: async (_candidateRoot, _requestContent, _spawn) => {} };
 }
 
 function makePassingVerify(): VerifySeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<VerificationRecord> {
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
       return { candidateDigest, outcome: "passed" };
@@ -62,7 +62,7 @@ function makePassingVerify(): VerifySeam {
 
 function makeFailingVerify(): VerifySeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<VerificationRecord> {
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
       return { candidateDigest, outcome: "failed", details: "Fake failure" };
@@ -72,7 +72,7 @@ function makeFailingVerify(): VerifySeam {
 
 function makePassingReview(): ReviewSeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<ReviewRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<ReviewRecord> {
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
       return { candidateDigest, outcome: "approved", findings: [] };
@@ -131,7 +131,7 @@ describe("TC-066: runArtifactOutput never throws", () => {
     await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
 
     const throwingAgent: AgentSeam = {
-      run: async () => {
+      run: async (_candidateRoot, _requestContent, _spawn) => {
         throw new Error("Agent intentionally failed");
       },
     };
@@ -299,25 +299,18 @@ describe("TC-073: run.json declares resume as unsupported", () => {
 // ─── TC-079: cross-phase digest mismatch → halt ───────────────────────────────
 
 describe("TC-079: cross-phase digest mismatch causes halt", () => {
-  it("review that reports a different candidateDigest causes cross-phase halt", async () => {
+  it("per-phase drift during review causes halted result (revision-drift path)", async () => {
+    // NOTE: this test exercises per-phase drift (step 8 revision-drift check), NOT the
+    // cross-phase check at step 8.5. It is retained because per-phase review drift is
+    // an independent failure mode that must also be covered.
     const sourceDir = await mktemp("run-src-");
     const runParentDir = await mktemp("run-parent-");
     await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
 
-    // Verify sees real digest; review mutates candidate during execution
-    // We simulate this by having the review step change the candidate's files
-    // which causes the revision binding to detect drift.
-    const verifySeam: VerifySeam = {
-      async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
-        const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
-        const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
-        return { candidateDigest, outcome: "passed" };
-      },
-    };
-
+    // Review seam mutates the candidate DURING review execution → per-phase drift detected.
     const reviewSeam: ReviewSeam = {
-      async run(candidateRoot, contextBlock): Promise<ReviewRecord> {
-        // Mutate the candidate during review to cause revision drift
+      async run(candidateRoot, contextBlock, _spawn): Promise<ReviewRecord> {
+        // Mutate the candidate during review to cause per-phase revision drift
         try {
           await fs.writeFile(path.join(candidateRoot, "injected-by-review.txt"), "injected");
         } catch { /* best effort */ }
@@ -330,17 +323,17 @@ describe("TC-079: cross-phase digest mismatch causes halt", () => {
     const result = await runArtifactOutput({
       sourceRoot: sourceDir,
       runParentDir,
-      runId: "tc-079",
+      runId: "tc-079-per-phase",
       requestContent: "Test",
       pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
       profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
       agent: makeNoopAgent(),
-      verify: verifySeam,
+      verify: makePassingVerify(),
       review: reviewSeam,
       spawn: makeNoopSpawn(),
     });
 
-    // Must halt (revision-drift during review causes cross-phase digest mismatch)
+    // Must halt (per-phase revision-drift during review)
     expect(result.kind).toBe("halted");
 
     // artifact/ must not exist — drift-halted runs must not finalize
@@ -353,6 +346,56 @@ describe("TC-079: cross-phase digest mismatch causes halt", () => {
         exists = true;
       } catch { /* expected */ }
       expect(exists, "artifact/ must not exist after a revision-drift halt").toBe(false);
+    }
+  });
+
+  it("cross-phase digest mismatch: candidate mutated between verify and review causes halt at step 8.5", async () => {
+    // This test exercises the cross-phase digest check at step 8.5 (run.ts L373-388).
+    // D10 scenario: verify passes (no per-phase drift), review passes (no per-phase drift),
+    // but the candidate was externally mutated between the two phases, so
+    // verifyBound.digest !== reviewBound.digest → halt at cross-phase check.
+    //
+    // Injection: _testOnlyAfterVerify mutates the candidate AFTER verify's post-snapshot
+    // but BEFORE review's pre-snapshot, ensuring neither per-phase check detects drift.
+    const sourceDir = await mktemp("run-src-");
+    const runParentDir = await mktemp("run-parent-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "tc-079-cross-phase",
+      requestContent: "Test",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: makePassingReview(),
+      spawn: makeNoopSpawn(),
+      // Inject mutation between verify and review (after verify post-snapshot, before review pre-snapshot)
+      _testOnlyAfterVerify: async () => {
+        // Find candidateRoot from the run root
+        const runRoot = path.join(runParentDir, "tc-079-cross-phase");
+        await fs.writeFile(path.join(runRoot, "candidate", "cross-phase-injected.txt"), "external mutation");
+      },
+    });
+
+    // Must halt at cross-phase check (step 8.5)
+    expect(result.kind).toBe("halted");
+    if (result.kind === "halted") {
+      expect(result.reason).toContain("revision-drift");
+    }
+
+    // artifact/ must not exist — cross-phase-halted runs must not finalize
+    const runRoot = "runRoot" in result ? result.runRoot : undefined;
+    if (runRoot) {
+      const artifactPath = path.join(runRoot, "artifact");
+      let exists = false;
+      try {
+        await fs.access(artifactPath);
+        exists = true;
+      } catch { /* expected */ }
+      expect(exists, "artifact/ must not exist after a cross-phase digest mismatch halt").toBe(false);
     }
   });
 
@@ -468,7 +511,7 @@ describe("verify / review seam exceptions become failed results", () => {
     await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
 
     const throwingVerify: VerifySeam = {
-      async run(): Promise<VerificationRecord> {
+      async run(_candidateRoot, _contextBlock, _spawn): Promise<VerificationRecord> {
         throw new Error("verify exploded");
       },
     };
@@ -505,7 +548,7 @@ describe("verify / review seam exceptions become failed results", () => {
     await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
 
     const throwingReview: ReviewSeam = {
-      async run(): Promise<ReviewRecord> {
+      async run(_candidateRoot, _contextBlock, _spawn): Promise<ReviewRecord> {
         throw new Error("review exploded");
       },
     };

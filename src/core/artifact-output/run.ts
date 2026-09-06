@@ -42,15 +42,15 @@ import { EXECUTION_PROFILE_IDS } from "./execution-profile.js";
 // ─── Input types ──────────────────────────────────────────────────────────────
 
 export interface AgentSeam {
-  run(candidateRoot: string, requestContent: string): Promise<void>;
+  run(candidateRoot: string, requestContent: string, spawn: SpawnFn): Promise<void>;
 }
 
 export interface VerifySeam {
-  run(candidateRoot: string, contextBlock: string): Promise<VerificationRecord>;
+  run(candidateRoot: string, contextBlock: string, spawn: SpawnFn): Promise<VerificationRecord>;
 }
 
 export interface ReviewSeam {
-  run(candidateRoot: string, contextBlock: string): Promise<ReviewRecord>;
+  run(candidateRoot: string, contextBlock: string, spawn: SpawnFn): Promise<ReviewRecord>;
 }
 
 export interface ArtifactOutputRunInput {
@@ -68,6 +68,14 @@ export interface ArtifactOutputRunInput {
   review: ReviewSeam;
   spawn: SpawnFn;
   now?: () => number;
+  /**
+   * Test-only hook: called after verification completes (and verify pre-snapshot is frozen)
+   * but before the review pre-snapshot is taken. Allows tests to inject an external candidate
+   * mutation between phases to exercise the cross-phase digest check (step 8.5) without
+   * triggering per-phase drift detection in either verify or review.
+   * Must not be used in production callers.
+   */
+  _testOnlyAfterVerify?: () => Promise<void>;
 }
 
 // ─── Result types ─────────────────────────────────────────────────────────────
@@ -137,7 +145,7 @@ export async function runArtifactOutput(
   const { runId, sourceRoot, runParentDir, requestContent } = input;
   const exclusions = input.exclusions ?? [".git/"];
   const collectOpts = { exclusions };
-  const _guardedSpawn = createGitDenyingSpawn(input.spawn);
+  const guardedSpawn = createGitDenyingSpawn(input.spawn);
 
   // Phase 1: Preflight
   let preflightReport: EffectivePipelineReport;
@@ -226,7 +234,7 @@ export async function runArtifactOutput(
     await writeRunJson(runRoot, runJson);
 
     try {
-      await input.agent.run(candidateRoot, requestContent);
+      await input.agent.run(candidateRoot, requestContent, guardedSpawn);
     } catch (err) {
       runJson.status = "failed";
       runJson.phase = "agent";
@@ -263,7 +271,7 @@ export async function runArtifactOutput(
     try {
       verifyBound = await runBoundToCandidateRevision<VerificationRecord>(
         candidateRoot,
-        () => input.verify.run(candidateRoot, preVerifyContext.contextBlock),
+        () => input.verify.run(candidateRoot, preVerifyContext.contextBlock, guardedSpawn),
         collectOpts,
         preVerifySnapshotResult.snapshot, // pass pre-snapshot to avoid redundant collection
       );
@@ -334,6 +342,10 @@ export async function runArtifactOutput(
     runJson.phase = "review";
     await writeRunJson(runRoot, runJson);
 
+    // Test-only seam: inject external mutations between verify and review to exercise
+    // the cross-phase digest check (step 8.5) without triggering per-phase drift.
+    await input._testOnlyAfterVerify?.();
+
     const reviewContext = buildSnapshotContext({
       baselineDigest,
       candidateDigest,
@@ -345,7 +357,7 @@ export async function runArtifactOutput(
     try {
       reviewBound = await runBoundToCandidateRevision<ReviewRecord>(
         candidateRoot,
-        () => input.review.run(candidateRoot, reviewContext.contextBlock),
+        () => input.review.run(candidateRoot, reviewContext.contextBlock, guardedSpawn),
         collectOpts,
       );
     } catch (err) {
@@ -446,7 +458,10 @@ export async function runArtifactOutput(
     // Source unchanged final check — D6: fail-closed; if mutated/unverifiable, return failed
     const sourceMutatedOnSuccess = await checkSourceUnchanged(sourceRoot, baselineDigest, collectOpts, runJson, runRoot);
     if (sourceMutatedOnSuccess) {
-      // runJson.status is already 'failed' and written by checkSourceUnchanged
+      // runJson.status is 'failed' (set and written by checkSourceUnchanged on the normal path).
+      // On the pathological path where checkSourceUnchanged's internal writeRunJson throws,
+      // the in-memory runJson is 'failed' but run.json on disk may still reflect the
+      // pre-check status (phase:'finalize') — a durable evidence inconsistency for that edge case.
       return { kind: "failed", runId, runRoot, reason: "Source was mutated during run", preflightReport };
     }
 

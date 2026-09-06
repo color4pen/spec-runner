@@ -77,7 +77,7 @@ function _assertNoGitAbove(dir: string): void {
 
 function makeNoopAgent(): AgentSeam {
   return {
-    async run(_candidateRoot, _requestContent) {
+    async run(_candidateRoot, _requestContent, _spawn) {
       // no-op: agent does nothing
     },
   };
@@ -85,7 +85,7 @@ function makeNoopAgent(): AgentSeam {
 
 function makeMutatingAgent(mutations: (candidateRoot: string) => Promise<void>): AgentSeam {
   return {
-    async run(candidateRoot, _requestContent) {
+    async run(candidateRoot, _requestContent, _spawn) {
       await mutations(candidateRoot);
     },
   };
@@ -93,7 +93,7 @@ function makeMutatingAgent(mutations: (candidateRoot: string) => Promise<void>):
 
 function makePassingVerify(): VerifySeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<VerificationRecord> {
       // Extract candidate digest from context (for TC-026)
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
@@ -108,7 +108,7 @@ function makePassingVerify(): VerifySeam {
 
 function makeFailingVerify(): VerifySeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<VerificationRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<VerificationRecord> {
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
       return {
@@ -122,7 +122,7 @@ function makeFailingVerify(): VerifySeam {
 
 function makePassingReview(): ReviewSeam {
   return {
-    async run(_candidateRoot, contextBlock): Promise<ReviewRecord> {
+    async run(_candidateRoot, contextBlock, _spawn): Promise<ReviewRecord> {
       const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
       const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
       return {
@@ -624,7 +624,7 @@ describe("TC-027: candidate drift during verification causes halted result", () 
     // causing the candidate digest at verification time to differ from the
     // digest observed by the post-verify patch phase (revision-drift).
     const driftingVerify: VerifySeam = {
-      async run(candidateRoot: string, contextBlock: string): Promise<VerificationRecord> {
+      async run(candidateRoot: string, contextBlock: string, _spawn): Promise<VerificationRecord> {
         // Mutate the candidate during verification to trigger drift detection
         await fs.writeFile(
           path.join(candidateRoot, "drift-injected.txt"),
@@ -670,7 +670,7 @@ describe("TC-077: review 中の candidate 変更で run が revision-drift と�
     // causing the candidate digest at review time to differ from the digest
     // observed during the post-review finalize phase (revision-drift).
     const driftingReview: ReviewSeam = {
-      async run(candidateRoot: string, contextBlock: string): Promise<ReviewRecord> {
+      async run(candidateRoot: string, contextBlock: string, _spawn): Promise<ReviewRecord> {
         // Mutate the candidate during review to trigger drift detection
         await fs.writeFile(
           path.join(candidateRoot, "review-drift-injected.txt"),
@@ -726,7 +726,7 @@ describe("TC-006: source mutation during run is detected and recorded in run.jso
     // Create an agent that mutates the source directory during execution.
     // This simulates an external process modifying the source while a run is in progress.
     const mutatingSourceAgent: AgentSeam = {
-      async run(_candidateRoot: string, _requestContent: string): Promise<void> {
+      async run(_candidateRoot: string, _requestContent: string, _spawn): Promise<void> {
         // Write a new file into the source directory (not the candidate)
         await fs.writeFile(
           path.join(sourceDir, "injected-by-agent.txt"),
@@ -768,7 +768,7 @@ describe("TC-006: source mutation during run is detected and recorded in run.jso
     // Use an agent that removes the source directory entirely during the run,
     // making it unverifiable (not just mutated).
     const deletingSourceAgent: AgentSeam = {
-      async run(_candidateRoot: string, _requestContent: string): Promise<void> {
+      async run(_candidateRoot: string, _requestContent: string, _spawn): Promise<void> {
         // Remove a file from source to change its digest (mutation scenario).
         // Full deletion of sourceDir would make snapshot unavailable (unverifiable scenario).
         await fs.writeFile(path.join(sourceDir, "extra.txt"), "injected\n");
@@ -874,5 +874,95 @@ describe("TC-021 / TC-019: deletion hunk in patch + binary change in payload", (
 
     // TC-019: changes.patch must NOT contain binary.dat diff
     expect(patch).not.toContain("binary.dat");
+  }, 30000);
+});
+
+// ─── TC-034: run evidence is outside the agent-writable area (candidate/) ─────
+
+describe("TC-034: run evidence (run.json, baseline snapshot) is not inside the agent-writable area", () => {
+  it("run.json is in run root, not inside candidate/", async () => {
+    const sourceDir = await mktemp("ao-src-");
+    const runParentDir = await mktemp("ao-run-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const runId = "test-run-034";
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId,
+      requestContent: "Test request",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: makePassingReview(),
+      spawn: makeSpawnRecorder().spawn,
+    });
+
+    // run.json must exist at <runRoot>/run.json, NOT inside <runRoot>/candidate/
+    const runRoot = path.join(runParentDir, runId);
+    const runJsonAtRoot = path.join(runRoot, "run.json");
+    const runJsonInsideCandidate = path.join(runRoot, "candidate", "run.json");
+
+    // Confirm run.json exists at the run root level
+    await expect(fs.access(runJsonAtRoot), "run.json must be at run root").resolves.toBeUndefined();
+
+    // Confirm run.json does NOT exist inside candidate/
+    let runJsonInCandidate = false;
+    try {
+      await fs.access(runJsonInsideCandidate);
+      runJsonInCandidate = true;
+    } catch { /* expected: should not exist */ }
+    expect(runJsonInCandidate, "run.json must not be inside candidate/").toBe(false);
+
+    // Confirm the run.json path is a direct child of runRoot (D5 layout contract)
+    const parsed = JSON.parse(await fs.readFile(runJsonAtRoot, "utf-8")) as { runId: string };
+    expect(parsed.runId).toBe(runId);
+
+    // The run itself should have completed
+    expect(["completed", "halted"]).toContain(result.kind);
+  }, 30000);
+
+  it("baseline/snapshot.json is in run root, not inside candidate/", async () => {
+    const sourceDir = await mktemp("ao-src-");
+    const runParentDir = await mktemp("ao-run-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
+
+    const runId = "test-run-034b";
+    await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId,
+      requestContent: "Test request",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: makePassingReview(),
+      spawn: makeSpawnRecorder().spawn,
+    });
+
+    const runRoot = path.join(runParentDir, runId);
+    const candidateDir = path.join(runRoot, "candidate");
+
+    // baseline/snapshot.json must be at <runRoot>/baseline/snapshot.json
+    const baselineSnapshotPath = path.join(runRoot, "baseline", "snapshot.json");
+    await expect(
+      fs.access(baselineSnapshotPath),
+      "baseline/snapshot.json must be at run root level",
+    ).resolves.toBeUndefined();
+
+    // baseline/snapshot.json must NOT be inside candidate/
+    const snapshotInsideCandidate = path.join(candidateDir, "baseline", "snapshot.json");
+    let snapshotInCandidate = false;
+    try {
+      await fs.access(snapshotInsideCandidate);
+      snapshotInCandidate = true;
+    } catch { /* expected */ }
+    expect(snapshotInCandidate, "baseline/snapshot.json must not be inside candidate/").toBe(false);
+
+    // Validate that the baseline snapshot contains a valid digest
+    const baseline = JSON.parse(await fs.readFile(baselineSnapshotPath, "utf-8")) as { digest: string };
+    expect(baseline.digest).toMatch(/^sha256:[0-9a-f]{64}$/);
   }, 30000);
 });
