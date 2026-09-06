@@ -11,7 +11,7 @@ import * as childProcess from "node:child_process";
 import { promisify } from "node:util";
 
 import { runChecks } from "../core/doctor/runner.js";
-import { commonChecks, managedChecks, localChecks } from "../core/doctor/checks/index.js";
+import { commonChecks, managedChecks, localChecks, selectChecks } from "../core/doctor/checks/index.js";
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
@@ -24,6 +24,7 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
 import { resolveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
+import { resolveGitHubIntegrationConfig } from "../config/github-integration.js";
 import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
 import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
@@ -140,18 +141,26 @@ export async function runDoctor(opts: {
     }
   }
 
+  // T-12: Resolve GitHub integration status before token/client construction.
+  // When disabled: skip token resolution and client construction entirely.
+  const githubIntegration = resolveGitHubIntegrationConfig(rawConfig ?? { version: 1, agents: {} });
+  const githubEnabled = githubIntegration.enabled;
+
   const githubHost = resolveGitHubHost(rawConfig?.github);
   const githubApiBaseUrl = resolveGitHubApiBaseUrl(rawConfig?.github);
 
   // Resolve GitHub token (best-effort — doctor works even without token)
+  // T-12: Skip entirely when GitHub integration is disabled.
   let resolvedGitHubToken: string | null = null;
   let githubTokenSource: "credentials" | "env" | "gh" | null = null;
-  try {
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-    resolvedGitHubToken = resolved.token;
-    githubTokenSource = resolved.source;
-  } catch {
-    // Token not found — checks will report failure
+  if (githubEnabled) {
+    try {
+      const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+      resolvedGitHubToken = resolved.token;
+      githubTokenSource = resolved.source;
+    } catch {
+      // Token not found — checks will report failure
+    }
   }
 
   // Resolve Anthropic API key (best-effort — doctor works even without key)
@@ -187,7 +196,10 @@ export async function runDoctor(opts: {
   }
 
   // Build GitHub client (uses resolved token — may be null → empty string fallback)
-  const githubClient: DoctorGitHubClient = createGitHubClient(globalThis.fetch, resolvedGitHubToken ?? "", githubApiBaseUrl);
+  // T-12: Skip client construction when GitHub integration is disabled; pass no-op client.
+  const githubClient: DoctorGitHubClient = githubEnabled
+    ? createGitHubClient(globalThis.fetch, resolvedGitHubToken ?? "", githubApiBaseUrl)
+    : { verifyTokenScopes: async () => ({ status: 0, scopes: [] }) };
 
   // Assemble DoctorContext
   const ctx: DoctorContext = {
@@ -212,16 +224,17 @@ export async function runDoctor(opts: {
     configPath: getConfigPath(),
   };
 
-  // Run runtime-specific checks
+  // Run runtime-specific checks (T-12: select based on GitHub integration status)
   const runtime = rawConfig?.runtime ?? "local";
-  const checks = [
-    ...commonChecks,
-    ...(runtime === "managed" ? managedChecks : localChecks),
-  ];
+  const checks = selectChecks(runtime, githubEnabled);
   const results = await runChecks(checks, ctx);
 
   // Output
-  const output = opts.json ? formatJson(results) : formatHuman(results);
+  let output = opts.json ? formatJson(results) : formatHuman(results);
+  // T-12: Prepend a GitHub integration status notice when disabled
+  if (!githubEnabled && !opts.json) {
+    output = `GitHub integration: disabled (github.enabled: false in project config)\nChecks requiring GitHub token, API, or GitHub-specific origin are skipped.\n\n${output}`;
+  }
   stdoutWrite(output + "\n");
 
   // Return exit code: 1 if any fail, 0 otherwise

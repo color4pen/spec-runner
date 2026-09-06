@@ -14,6 +14,8 @@ import {
 } from "./registry.js";
 import { composeReviewerDescriptor } from "./compose-reviewers.js";
 import { applyScopeConfig } from "./resolve-scope.js";
+import { applyGitHubIntegration } from "./apply-github-integration.js";
+import { getGitHubIntegration } from "../../state/github-integration.js";
 
 /**
  * Loop step names used by the standard pipeline.
@@ -93,7 +95,8 @@ export function buildPipelineForJob(
 ): Pipeline {
   const base = getPipelineDescriptor(getPipelineId(jobState));
   const scoped = applyScopeConfig(base, deps.config);
-  const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
+  const githubApplied = applyGitHubIntegration(scoped, getGitHubIntegration(jobState));
+  const descriptor = composeReviewerDescriptor(githubApplied, jobState.reviewers);
 
   return buildPipeline(descriptor, deps, events);
 }
@@ -134,7 +137,8 @@ export async function runPipeline(
   const bus = events ?? new EventBus();
   const base = getPipelineDescriptor(getPipelineId(jobState));
   const scoped = applyScopeConfig(base, deps.config);
-  const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
+  const githubApplied = applyGitHubIntegration(scoped, getGitHubIntegration(jobState));
+  const descriptor = composeReviewerDescriptor(githubApplied, jobState.reviewers);
 
   const pipeline = buildPipeline(descriptor, deps, bus);
   return pipeline.run(descriptor.startStep, jobState, deps);

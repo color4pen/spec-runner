@@ -10,6 +10,11 @@ export interface FlagDef {
   /** when set, encountering this flag throws FlagParseError(message).
    *  message may be a function receiving the flag value (string flags only) for per-value routing. */
   deprecated?: { message: string | ((value: string | undefined) => string) };
+  /**
+   * T-11: When true, this flag requires GitHub integration to be enabled.
+   * The dispatch layer rejects its use when the project config has github.enabled: false.
+   */
+  githubOnly?: true;
 }
 
 export interface ParsedArgs {

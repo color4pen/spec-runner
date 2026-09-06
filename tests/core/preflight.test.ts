@@ -16,7 +16,10 @@ vi.mock("../../src/core/design-layer/check-gate.js", () => ({
   runDesignLayerCheckGate: vi.fn().mockResolvedValue({ passed: true, skipped: true }),
 }));
 vi.mock("../../src/git/remote.js", () => ({
-  getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", repo: "test-repo" }),
+  getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", name: "test-repo" }),
+  getOriginUrl: vi.fn().mockResolvedValue("https://github.com/test-owner/test-repo.git"),
+  normalizeOriginIdentity: vi.fn().mockReturnValue({ url: "https://github.com/test-owner/test-repo.git", digest: "abc123" }),
+  parseRemoteUrl: vi.fn().mockReturnValue({ owner: "test-owner", name: "test-repo" }),
 }));
 vi.mock("../../src/parser/request-md.js", () => ({
   parseRequestMd: vi.fn().mockResolvedValue({

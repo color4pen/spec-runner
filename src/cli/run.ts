@@ -1,8 +1,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
 import { resolveWithFallback as storeResolve } from "../core/request/store.js";
-import { createGitHubClient } from "../adapter/github/github-client.js";
-import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
+import { buildGitHubClientFromToken } from "./github-composition.js";
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { resolveSpecRunnerApiKey } from "../core/credentials/anthropic.js";
@@ -74,20 +73,21 @@ export async function runRunCore(
     return 1;
   }
 
-  const { config, repo, githubToken } = preflightResult;
+  const { config, repo, githubToken, githubEnabled } = preflightResult;
 
   // Ensure .gitignore covers .specrunner/ (idempotent)
   await ensureDotSpecrunnerGitignore(cwd);
 
-  const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
-  const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
+  // Build GitHub client only when integration is enabled. Client construction
+  // is confined to src/cli/github-composition.ts (B-19).
+  const githubClient = buildGitHubClientFromToken(githubToken, config);
   const anthropicResult = config.runtime === "managed"
     ? await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>)
     : await resolveSpecRunnerApiKey(process.env as Record<string, string | undefined>, { optional: true });
   const sessionClient = anthropicResult
     ? createAnthropicSessionClient(createAnthropicClient(anthropicResult.apiKey))
     : undefined;
-  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken);
+  const runtime = createRuntime(config, cwd, githubClient, repo, sessionClient, githubToken ?? undefined, { githubEnabled });
   const events = new EventBus();
   const logLevel = options.logLevel ?? "default";
   const slug = preflightResult.request.slug;

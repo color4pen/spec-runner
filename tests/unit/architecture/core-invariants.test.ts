@@ -1293,6 +1293,103 @@ describe("B-18 (arch pin): request 系入口は LLM 系 port / adapter / port ba
   });
 });
 
+describe("B-19 (arch pin): GitHub credential / client 構築は composition seam に限定される", () => {
+  /**
+   * B-19: `resolveGitHubToken` and `createGitHubClient` calls must be confined
+   * to the composition seam:
+   *   - src/core/github/integration.ts (core seam — receives resolveToken as callback)
+   *   - src/cli/github-composition.ts  (composition-root assembly point)
+   * Allowlisted direct callers: src/cli/login.ts, src/cli/credentials.ts, src/cli/doctor.ts
+   *
+   * Legacy callsites in GitHub-only commands (job-start-handler, from-issue, ps, inbox, etc.)
+   * are grandfathered in the LEGACY_CLI_FILES list. These files are GitHub-dependent
+   * commands that predate B-19 and should be migrated over time (burn-down).
+   *
+   * This invariant is the credential-path complement to B-1 (domain must not
+   * import adapters).
+   */
+
+  /**
+   * Core allowlist: these files are explicitly permitted to call the seam functions directly.
+   */
+  const ALLOWLIST_FILES = [
+    // Core seam (receives resolveToken as callback, not a direct call in the usual sense)
+    "src/core/github/integration.ts",
+    // Composition-root assembly point
+    "src/cli/github-composition.ts",
+    // Direct callers with explicit approval
+    "src/cli/login.ts",
+    "src/cli/credentials.ts",
+    "src/cli/doctor.ts",
+    // Definition file (not a call site)
+    "src/core/credentials/github.ts",
+    "src/adapter/github/github-client.ts",
+    // Test files (not production code)
+    "src/core/credentials/__tests__/github.test.ts",
+  ];
+
+  /**
+   * Legacy callsites in GitHub-only CLI commands. These files call resolveGitHubToken /
+   * createGitHubClient directly because they predate B-19. They are grandfathered as
+   * burn-down candidates (to be migrated to github-composition.ts over time).
+   * These files are all GitHub-only commands (guarded by T-11 requiresGitHub flag).
+   */
+  const LEGACY_CLI_FILES = [
+    "src/cli/job-start-handler.ts",
+    "src/cli/from-issue.ts",
+    "src/cli/resume-from-issue.ts",
+    "src/cli/archive-from-issue.ts",
+    "src/cli/ps.ts",
+    "src/cli/inbox.ts",
+    "src/cli/cancel.ts",
+  ];
+
+  const ALL_PERMITTED = [...ALLOWLIST_FILES, ...LEGACY_CLI_FILES];
+
+  function findDirectCalls(fnName: string): GrepMatch[] {
+    // Match `fnName(` — function call sites (not type references or comments).
+    const raw = grepE(`"${fnName}\\\\("`, "src");
+    return parseGrepOutput(raw).filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.content.includes("import ") &&
+        !ALL_PERMITTED.some((f) => m.file === f || m.file.endsWith(f)),
+    );
+  }
+
+  it("resolveGitHubToken の呼び出しが allowlist（＋legacy 台帳）外に存在しない", () => {
+    const violations = findDirectCalls("resolveGitHubToken");
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("createGitHubClient の呼び出しが allowlist（＋legacy 台帳）外に存在しない", () => {
+    const violations = findDirectCalls("createGitHubClient");
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-19 regression guard: allowlist 外の resolveGitHubToken 呼び出しが違反として検出される", () => {
+    // Simulate a non-allowlisted file calling resolveGitHubToken directly.
+    const injected: GrepMatch[] = [
+      {
+        file: "src/cli/some-new-command.ts",
+        line: 10,
+        content: "const { token } = await resolveGitHubToken(env, { host });",
+      },
+      {
+        file: "src/cli/some-new-command.ts",
+        line: 11,
+        content: "// resolveGitHubToken is called above",
+      },
+    ];
+    const violations = injected.filter(
+      (m) => !isCommentLine(m.content) && !ALL_PERMITTED.some((f) => m.file === f),
+    );
+    // The real call is a violation; the comment is not.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.line).toBe(10);
+  });
+});
+
 // ─── DSM closure: §3 全層 whitelist enforcement ───────────────────────────────
 
 /**

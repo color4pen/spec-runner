@@ -39,7 +39,7 @@ vi.mock("../../src/core/pipeline/registry.js", async (importOriginal) => {
 const SLUG = "my-feature";
 const JOB_ID = "test-job-id-12345678";
 const BRANCH = "feat/my-feature-1234abcd";
-const EXPECTED_REPO = { owner: "acme", name: "repo" };
+const EXPECTED_REPO = { github: { owner: "acme", name: "repo" } };
 const CHECKPOINT_OID = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
 
 function makeValidStateJson(overrides: Record<string, unknown> = {}): string {
@@ -54,7 +54,7 @@ function makeValidStateJson(overrides: Record<string, unknown> = {}): string {
       type: "new-feature",
       slug: SLUG,
     },
-    repository: { owner: EXPECTED_REPO.owner, name: EXPECTED_REPO.name },
+    repository: { owner: EXPECTED_REPO.github.owner, name: EXPECTED_REPO.github.name },
     session: null,
     step: "implementer",
     status: "awaiting-resume",
@@ -148,7 +148,7 @@ describe("TC-VC-003: repository identity mismatch → CHECKPOINT_NOT_ATTACHABLE"
       verifyCheckpoint({
         slug: SLUG, stateJson: VALID_STATE_JSON, eventsJsonl: "",
         treeFiles: VALID_TREE_FILES, branch: BRANCH,
-        expectedRepo: { owner: "wrong-owner", name: EXPECTED_REPO.name }, checkpointOid: CHECKPOINT_OID,
+        expectedRepo: { github: { owner: "wrong-owner", name: EXPECTED_REPO.github.name } }, checkpointOid: CHECKPOINT_OID,
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
   });
@@ -158,7 +158,7 @@ describe("TC-VC-003: repository identity mismatch → CHECKPOINT_NOT_ATTACHABLE"
       verifyCheckpoint({
         slug: SLUG, stateJson: VALID_STATE_JSON, eventsJsonl: "",
         treeFiles: VALID_TREE_FILES, branch: BRANCH,
-        expectedRepo: { owner: EXPECTED_REPO.owner, name: "wrong-repo" }, checkpointOid: CHECKPOINT_OID,
+        expectedRepo: { github: { owner: EXPECTED_REPO.github.owner, name: "wrong-repo" } }, checkpointOid: CHECKPOINT_OID,
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
   });

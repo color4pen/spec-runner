@@ -345,6 +345,7 @@ export const configSchema = object({
               }
             }),
         ),
+        enabled: optional(boolean("must be a boolean.")),
       },
       "must be an object.",
     ),

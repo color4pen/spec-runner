@@ -183,9 +183,18 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 - → `src/core/pipeline/pipeline-capability.ts`（R2b: `TerminalStateCapability` / `RoundGitEffectsCapability` + derive helpers）
 
 ### createRuntime — runtime factory（分岐集約点）
-- **責務**: `config.runtime`（local / managed）の分岐を**ここ1箇所に閉じて** RuntimeStrategy を組む（B-8）。
+- **責務**: `config.runtime`（local / managed）の分岐を**ここ1箇所に閉じて** RuntimeStrategy を組む（B-8）。`managed` かつ `githubIntegration.enabled === false` の組合せは `GITHUB_INTEGRATION_UNSUPPORTED_RUNTIME` で job 作成前に拒否する。
 - **不変条件**: runtime 分岐を domain / CLI に散らさない。
 - → `src/core/runtime/factory.ts`
+
+### GitHub integration seam（B-19）— credential / client 構築の composition seam
+- **責務**: `resolveGitHubToken` と `createGitHubClient` の呼び出しを **2 ファイルと allowlist に閉じる**（B-19）。`src/core/github/integration.ts`（domain seam：token 解決・host 解決・origin 解析を行い `GitHubClient` adapter を *import しない*）と `src/cli/github-composition.ts`（CLI composition seam：`createGitHubClient` を呼んで `GitHubClient | null` を組む）の 2 点が正規 call site。`login` / `credentials` / `doctor` は allowlist として許可。`githubIntegration.enabled === false` の場合は token 解決・client 構築を行わない。
+- **不変条件**: B-19 の call site 制限は `tests/unit/architecture/core-invariants.test.ts` の `describe("B-19: ...")` が機械強制する。
+- → `src/core/github/integration.ts` / `src/cli/github-composition.ts`
+
+### Archive subsystem（GitHub-disabled path）
+- **GitHub 無効経路**: `githubIntegration.enabled === false` の job では `applyGitHubIntegration` が `pr-create` を pipeline から除去するため、pipeline 完走は `awaiting-archive` で終了し PR は作成されない（`branch-published` result。証跡は `attestation.md` として feature branch に記録される）。archive は通常どおり 1 回で `archived` に到達し remote feature branch は保存される（`deleteRemoteBranch: false` 固定）。`--with-merge` フラグは `GITHUB_INTEGRATION_REQUIRED` で record 作成前に拒否される（2 段拒否：dispatch-level と handler-level）。
+- **`archived` の意味（無効経路）**: 「archive record が remote feature branch に到達した」のみを保証し、「変更が main に入った」は保証しない（外部 merge gate なし）。`archived` 状態は merge 済みを意味しない。
 
 ### CommandRunner — pipeline 実行の Template Method
 - **責務**: run / resume 共通の実行骨格。`assertProviderReadiness`（前置）→ `prepare`（subclass override の唯一点）→ `setupWorkspace` → `buildDeps` → `registerCleanup` → **issue fidelity gate**（Step 4b、`dynamic-model.md`）→ runPipeline → `handleResult` → `teardown`。

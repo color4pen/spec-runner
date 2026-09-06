@@ -250,6 +250,7 @@ describe("TC-039: scoped step の AgentRunContext に正しい writeScope が設
       `specrunner/changes/${slug}/events.jsonl`,
       `specrunner/changes/${slug}/usage.json`,
       `specrunner/changes/${slug}/pr-create-result.md`,
+      `specrunner/changes/${slug}/attestation.md`,
     ]);
 
     // forbiddenPaths: protectedCanonPaths(slug) minus declaredWritePaths
@@ -311,6 +312,7 @@ describe("TC-040: guarded step の AgentRunContext に正しい writeScope が�
       `specrunner/changes/${slug}/events.jsonl`,
       `specrunner/changes/${slug}/usage.json`,
       `specrunner/changes/${slug}/pr-create-result.md`,
+      `specrunner/changes/${slug}/attestation.md`,
     ]);
 
     // forbiddenPaths: protectedCanonPaths(slug) minus declaredWritePaths

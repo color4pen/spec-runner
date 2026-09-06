@@ -21,10 +21,13 @@ export interface StepContext {
   request: ParsedRequest;
   /** Dynamic repository context injected at pipeline start. Optional for backward compat. */
   dynamicContext?: DynamicContext;
-  /** Resolved GitHub token. Optional for backward compat. */
+  /** Resolved GitHub token. Optional for backward compat. undefined when GitHub integration disabled. */
   githubToken?: string;
-  /** GitHub REST API client. Optional in StepContext; required in PipelineDeps. */
-  githubClient?: GitHubClient;
+  /**
+   * GitHub REST API client. null or undefined when GitHub integration is disabled.
+   * Optional in StepContext; GitHubClient | null in PipelineDeps.
+   */
+  githubClient?: GitHubClient | null;
   /** GitHub repository owner (e.g. "octocat"). Optional in StepContext; required in PipelineDeps. */
   owner?: string;
   /** GitHub repository name (e.g. "my-repo"). Optional in StepContext; required in PipelineDeps. */

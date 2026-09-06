@@ -287,13 +287,20 @@ export abstract class CommandRunner {
       // Fires only when startStep === "request-review" AND issueNumber is set AND
       // not an inbox job. Fail-closed: any error (fetch / parse / wiring) halts.
       // Non-propagation: issue body is never stored in state or logs.
+      // When githubClient is null (integration disabled) and issueNumber is set,
+      // the gate is fail-closed: getIssue always throws → halt(ISSUE_FETCH_FAILED).
       const gateDecision = await evaluateIssueFidelityGate({
         startStep,
         issueNumber: jobState.issueNumber,
         inboxOrigin: jobState.inboxOrigin,
-        owner: deps.owner,
-        repo: deps.repo,
-        getIssue: (owner, repo, n) => deps.githubClient.getIssue(owner, repo, n),
+        owner: deps.owner ?? "",
+        repo: deps.repo ?? "",
+        getIssue: (owner, repo, n) => {
+          if (!deps.githubClient) {
+            throw new Error("GitHub integration is disabled; cannot fetch issue for fidelity gate");
+          }
+          return deps.githubClient.getIssue(owner, repo, n);
+        },
         readRequestMd: () =>
           nodeFs.readFile(
             nodePath.join(workspace?.cwd ?? repoRoot, requestMdPath(slug)),
@@ -457,8 +464,13 @@ async function handleResult(finalState: JobState, slug: string, json: boolean): 
   if (finalState.status === "awaiting-archive") {
     if (finalState.pullRequest?.url) {
       logInfo(`PR: ${finalState.pullRequest.url}`);
+      logInfo(`Pipeline completed; awaiting archive. Branch: ${finalState.branch}`);
+    } else {
+      // GitHub integration disabled — branch published locally, no PR created.
+      logInfo(`Branch published: ${finalState.branch}`);
+      logInfo(`Pipeline completed (GitHub integration disabled); awaiting archive.`);
+      logInfo(`Run 'specrunner job archive ${slug}' to archive the job.`);
     }
-    logInfo(`Pipeline completed; awaiting archive. Branch: ${finalState.branch}`);
     return 0;
   }
 

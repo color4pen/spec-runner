@@ -31,6 +31,7 @@ import { readUsageFile } from "../core/usage/store.js";
 import { computeCostUsd, formatUsd } from "../core/usage/pricing.js";
 import type { ModelUsage } from "../state/schema.js";
 import { resolveChangeDir } from "../core/job-access/resolve-change-dir.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
@@ -121,6 +122,13 @@ export async function handleJobShow(parsed: ParsedArgs, ctx?: CommandContext): P
 export async function printJobState(state: JobState, repoRoot: string = process.cwd()): Promise<void> {
   logResult(`Job ID:  ${state.jobId}`);
   logResult(`Status:  ${state.status}`);
+  // T-13: Show GitHub integration status fixed to this job.
+  // Legacy state (no githubIntegration field) defaults to enabled (backward compat).
+  const { enabled: ghEnabled } = getGitHubIntegration(state);
+  const ghSource = (state as { githubIntegration?: { enabled: boolean } }).githubIntegration !== undefined
+    ? ""
+    : " (legacy: absent → enabled)";
+  logResult(`GitHub:  ${ghEnabled ? "enabled" : "disabled"}${ghSource}`);
   logResult(`Branch:  ${state.branch ?? "(none)"}`);
   logResult(`Step:    ${state.step ?? "(none)"}`);
   logResult(`Created: ${state.createdAt}`);

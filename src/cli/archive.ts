@@ -16,20 +16,20 @@ import { runMergeThenArchive } from "../core/archive/merge-then-archive.js";
 import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { requestMdPath, archivedChangesDirRel, archivedChangeFolderPath } from "../util/paths.js";
-import { resolveGitHubToken } from "../core/credentials/github.js";
+import { composeGitHubIntegration } from "./github-composition.js";
 import { getOriginInfo } from "../git/remote.js";
-import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { loadConfig } from "../config/store.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, resolveDesignLayerConfig } from "../config/schema.js";
 import type { ResolvedDesignLayer, ShellCommand } from "../config/schema.js";
-import { SpecRunnerError } from "../errors.js";
+import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { LocalRuntime } from "../core/runtime/local.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
@@ -135,12 +135,39 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
     }
   }
 
+  // Resolve the job's GitHub integration contract from stored job state.
+  // This is used to: (a) reject --with-merge for disabled jobs before any state change,
+  // and (b) skip token resolution when GitHub integration is disabled.
+  let jobGithubEnabled = true; // default: enabled (backward compat)
+  try {
+    const allStates = resolvedJobIdForLog
+      ? await JobStateStore.list(repoRoot)
+      : [];
+    const matchingState = allStates.find((s) => s.jobId === resolvedJobIdForLog);
+    if (matchingState) {
+      jobGithubEnabled = getGitHubIntegration(matchingState).enabled;
+    }
+  } catch {
+    // Could not read job state — assume enabled (fail-safe)
+  }
+
+  // Reject --with-merge / --merge-wait-ms for disabled jobs BEFORE any state changes (T-09).
+  if ((opts.withMerge || opts.mergeWaitMs !== undefined) && !jobGithubEnabled) {
+    stderrWrite(
+      "Error: --with-merge and --merge-wait-ms require GitHub integration. This job was started with github.enabled: false.",
+    );
+    stderrWrite("Hint: Run 'specrunner job archive <slug>' (without --with-merge) to archive this job.");
+    closePipelineLog();
+    return 2;
+  }
+
   const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false };
 
   let archiveResult;
   try {
     if (opts.withMerge) {
       // --with-merge: resolve GitHub credentials and run merge-then-archive
+      // (only reached when jobGithubEnabled === true, checked above)
       let githubHost = "github.com";
       let githubApiBaseUrl = "https://api.github.com";
       let waitTimeoutMs: number | null | undefined = undefined;
@@ -180,10 +207,29 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         pollIntervalMs = DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
       }
 
+      // Resolve GitHub integration for --with-merge path (B-19: via composition)
+      // composeGitHubIntegration creates the GitHubClient; no direct createGitHubClient call here.
       let githubToken: string;
+      let owner: string;
+      let repoName: string;
+      let githubClient: import("../core/port/github-client.js").GitHubClient;
       try {
-        const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-        githubToken = resolved.token;
+        const mergeCompose = await composeGitHubIntegration(
+          mergeConfig ?? await loadConfig(),
+          opts.cwd,
+          process.env as Record<string, string | undefined>,
+        );
+        if (!mergeCompose.enabled || !mergeCompose.githubToken || !mergeCompose.repository || !mergeCompose.githubClient) {
+          throw new SpecRunnerError(
+            ERROR_CODES.GITHUB_INTEGRATION_REQUIRED,
+            "GitHub integration is required for --with-merge.",
+            "--with-merge requires GitHub integration to be enabled.",
+          );
+        }
+        githubToken = mergeCompose.githubToken;
+        owner = mergeCompose.repository.owner;
+        repoName = mergeCompose.repository.name;
+        githubClient = mergeCompose.githubClient;
       } catch (err) {
         if (resolvedJobIdForLog) {
           logPipelineEvent({ type: "archive:error", jobId: resolvedJobIdForLog, error: "GitHub token not found" });
@@ -197,21 +243,6 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         closePipelineLog();
         return 2;
       }
-
-      let owner: string;
-      let repoName: string;
-      try {
-        const originInfo = await getOriginInfo(opts.cwd, githubHost);
-        owner = originInfo.owner;
-        repoName = originInfo.name;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        logError(message);
-        closePipelineLog();
-        return 2;
-      }
-
-      const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
 
       // Construct LocalRuntime for the achieved-assurance floor gate (T-06).
       // Only injected when config loaded successfully (mergeConfig defined).
@@ -243,25 +274,34 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         logResult,
       );
     } else {
-      // No --with-merge: resolve token and design layer (best-effort).
+      // No --with-merge: plain archive.
       // Plain archive does NOT query GitHub PR state — no GitHub API client needed.
+      // For disabled jobs, skip token resolution entirely (B-19).
       let archiveToken: string | undefined;
       let designLayerNoMerge: ResolvedDesignLayer = disabledDesignLayer;
 
-      try {
-        let githubHost = "github.com";
+      if (jobGithubEnabled) {
+        // GitHub-enabled job: resolve token and design layer (best-effort)
         try {
           const config = await loadConfig();
-          githubHost = resolveGitHubHost(config.github);
+          designLayerNoMerge = resolveDesignLayerConfig(config);
+          const plainCompose = await composeGitHubIntegration(
+            config,
+            opts.cwd,
+            process.env as Record<string, string | undefined>,
+          );
+          archiveToken = plainCompose.githubToken;
+        } catch {
+          // Token not required for non-merge path — best-effort
+        }
+      } else {
+        // GitHub-disabled job: no token needed, just resolve design layer
+        try {
+          const config = await loadConfig();
           designLayerNoMerge = resolveDesignLayerConfig(config);
         } catch {
-          // Config not available — use default host / disabled design layer
+          // Config not available — use disabled design layer
         }
-
-        const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-        archiveToken = resolved.token;
-      } catch {
-        // Token not required for non-merge path — best-effort
       }
 
       archiveResult = await runPlainArchive(
@@ -291,6 +331,14 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
   }
 
   if (archiveResult.exitCode === 0) {
+    // For GitHub-disabled jobs, emit a completion advisory since there is no PR to merge.
+    if (!jobGithubEnabled && !opts.withMerge) {
+      logResult(
+        `The feature branch has been preserved on the remote. ` +
+        `Note: 'archived' does not imply the branch has been merged into the base branch. ` +
+        `Integration with the base branch is left to the operator.`,
+      );
+    }
     return 0;
   }
 
@@ -309,19 +357,25 @@ export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
 
 Archive the completed change folder, remove worktree, and update job status.
 
-Plain archive (without --with-merge): pushes an archive record commit to the feature branch
-and leaves the job in awaiting-archive until the PR is merged. After the PR is merged,
-re-run the same command to complete the transition (archived status + worktree cleanup).
+Plain archive (without --with-merge): pushes an archive record commit to the feature branch,
+transitions the job to archived status, and removes the worktree — all in a single run.
+Requires GitHub integration to be enabled (a merged or open PR is expected on the remote).
 
-Use --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.
+For jobs with GitHub integration disabled: the archive record is pushed to the feature branch
+and the job transitions to archived in one step. The remote feature branch is preserved for
+manual review or merge. Note that "archived" does not imply the branch has been merged into
+the base branch — that step must be performed externally.
+
+Use --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step
+(requires GitHub integration enabled).
 
 Arguments:
   <slug>            Slug of the request to archive.
 
 Options:
   --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).
-                         Mutually exclusive with <slug>: specify exactly one.
-  --with-merge           Wait for PR checks to pass, merge, then archive
+                         Requires GitHub integration. Mutually exclusive with <slug>.
+  --with-merge           Wait for PR checks to pass, merge, then archive (requires GitHub).
   --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
                          For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
   --help, -h             Show this help message

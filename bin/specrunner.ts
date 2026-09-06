@@ -7,7 +7,7 @@
  * Handlers return exit codes (number); process.exit() is called once, after dispatch.
  */
 
-import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE, resolveCommand, resolveEffectiveRequiresRepo } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE, resolveCommand, resolveEffectiveRequiresRepo, resolveEffectiveRequiresGitHub, findActiveGitHubOnlyFlags } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
@@ -115,6 +115,40 @@ export async function main(): Promise<void> {
     process.stderr.write(`Error: ${err.message}\n`);
     process.stderr.write(`Hint: ${err.hint}\n`);
     process.exit(err.exitCode);
+  }
+
+  // T-11: GitHub integration check — reject commands/flags that require GitHub when disabled.
+  // Only run when ctx.repoRoot is available (so we can load the config).
+  if (ctx.repoRoot !== null) {
+    const commandRequiresGitHub = resolveEffectiveRequiresGitHub(COMMANDS, canonicalPath);
+    const activeGitHubOnlyFlags = findActiveGitHubOnlyFlags(spec, parsed.flags);
+    const needsGitHub = commandRequiresGitHub || activeGitHubOnlyFlags.length > 0;
+    if (needsGitHub) {
+      try {
+        const { loadConfig } = await import("../src/config/store.js");
+        const { resolveGitHubIntegrationConfig } = await import("../src/config/github-integration.js");
+        const config = await loadConfig(ctx.repoRoot);
+        const { enabled } = resolveGitHubIntegrationConfig(config);
+        if (!enabled) {
+          if (commandRequiresGitHub) {
+            process.stderr.write(`Error: '${commandLabel}' requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+          } else {
+            process.stderr.write(`Error: --${activeGitHubOnlyFlags[0]} requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+          }
+          process.stderr.write(`Hint: Enable GitHub integration in .specrunner/config.json (set github.enabled: true), or omit the flag.\n`);
+          process.exit(EXIT_CODE.ARG_ERROR);
+        }
+      } catch (e) {
+        // If config load fails (e.g. not a specrunner project), skip the GitHub check and
+        // let the handler surface the config error with a more contextual message.
+        if (e instanceof SpecRunnerError && e.code === "GITHUB_INTEGRATION_REQUIRED") {
+          process.stderr.write(`Error: ${e.message}\n`);
+          process.stderr.write(`Hint: ${e.hint}\n`);
+          process.exit(e.exitCode);
+        }
+        // Other errors (CONFIG_NOT_FOUND etc.): fall through to handler
+      }
+    }
   }
 
   // Dispatch — handler returns exit code; process.exit is called once, outside the try/catch.

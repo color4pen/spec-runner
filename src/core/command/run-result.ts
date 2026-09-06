@@ -7,7 +7,7 @@
  */
 import type { JobState } from "../../state/schema.js";
 
-export type RunResultKind = "pr-created" | "awaiting-human" | "failed";
+export type RunResultKind = "pr-created" | "branch-published" | "awaiting-human" | "failed";
 
 /**
  * Terminal contract emitted to stdout when --json is specified.
@@ -53,9 +53,13 @@ export function buildRunResult(state: JobState, slug: string): RunResultContract
   }
 
   if (state.status === "awaiting-archive") {
+    // When GitHub integration is explicitly disabled, no PR is created — the branch is
+    // published locally. Use "branch-published" to distinguish from "pr-created".
+    // Legacy state (no githubIntegration field) defaults to enabled → "pr-created".
+    const githubDisabled = state.githubIntegration?.enabled === false;
     return {
       schemaVersion: 1,
-      result: "pr-created",
+      result: githubDisabled ? "branch-published" : "pr-created",
       slug,
       jobId: state.jobId,
       step: state.step,

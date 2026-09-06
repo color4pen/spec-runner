@@ -19,7 +19,18 @@
   - **remote-resumable** は送信側フラグではなく `origin/<branch>` HEAD tree に対する検証可能述語 ―― `state.status` が quiescent ∧ journal / projection / 必須成果物が**同一 tree で自己整合**。単一 commit の atomic 更新で保証し、二相コミットを要さない（ADR-20260715）。
   - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は `1 | 2`（新規 state は 2、旧 version 1 は read 時に 2 へ normalize）。`status` は `JobStatus` の列挙内（validateJobState が強制）。
+- **GitHub 連携契約（`githubIntegration?: { enabled: boolean }`）**: job start 時に config から決定し state に固定される。不在（legacy state）= `{ enabled: true }`。`enabled === false` の job は pipeline から `pr-create` が除去され（`applyGitHubIntegration`）、`repository.owner` / `name` を持たず `repository.origin` のみを持つ。`getGitHubIntegration(state)` が不在を `enabled: true` に正規化する（backward compat accessor）。
+- **repository identity（`RepositoryInfo`）**: `enabled === true`（または legacy） → `owner: string; name: string`（GitHub API identity）と `origin?: RepositoryOrigin`（forge 非依存 identity、任意）。`enabled === false` → `origin: RepositoryOrigin` のみ（`owner` / `name` は不在。`validateJobState` が意味規則を強制）。
 - → `src/state/schema.ts`（正確なフィールドはコードが正典）
+
+### RepositoryOrigin — forge 非依存 origin identity（Value Object）
+```ts
+interface RepositoryOrigin { url: string; digest: string }  // digest = SHA-256 of normalized host/path
+```
+- **役割**: `git remote get-url origin` を正規化（scheme / userinfo / port / .git 末尾 / 末尾スラッシュ除去、host 小文字化）し `host/path` 形に整え、その SHA-256 を `digest` にした forge 非依存の identity。GitHub 以外のリモート（self-hosted Git、ローカル bare）でも一意に同定できる。
+- **attach での使用**: checkpoint の `githubIntegration.enabled === false` 経路では GitHub owner/name の照合をせず、`state.repository.origin.digest === expectedRepo.origin.digest` のみを確認する（`verifyCheckpoint` の identity 照合分岐）。
+- **正規化保証**: `https://user:secret@example.com/team/repo.git` と `git@example.com:team/repo` と `https://example.com/team/repo/` が同一 `digest` に収束する。
+- → `src/state/schema/types.ts`（型）/ `src/git/remote.ts`（`normalizeOriginIdentity` 純関数）
 
 ### StepRun / StepOutcome — 1 step の 1 実行（journal の record）
 ```ts

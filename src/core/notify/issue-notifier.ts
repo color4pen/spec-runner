@@ -15,11 +15,13 @@ import { getOpenDecisionFindings } from "../decision/decision-ledger.js";
 /**
  * Minimum context required to write issue comments.
  * PipelineDeps satisfies this interface structurally.
+ * All fields are optional/nullable — when client is absent (GitHub integration
+ * disabled) or owner/repo are missing, notifyJobTerminal is a no-op.
  */
 interface NotifyCtx {
-  githubClient: GitHubClient;
-  owner: string;
-  repo: string;
+  githubClient: GitHubClient | null;
+  owner?: string;
+  repo?: string;
 }
 
 /** The HTML comment prefix used in all specrunner notification comments. */
@@ -269,6 +271,10 @@ export function buildCompletionComment(state: JobState): string {
  * - Comment write failures are caught and logged as warnings; never re-thrown.
  */
 export async function notifyJobTerminal(state: JobState, ctx: NotifyCtx): Promise<void> {
+  // No-op when GitHub integration is disabled (no client or no repo identity).
+  if (!ctx.githubClient || !ctx.owner || !ctx.repo) {
+    return;
+  }
   if (state.issueNumber == null) {
     return;
   }
@@ -283,7 +289,7 @@ export async function notifyJobTerminal(state: JobState, ctx: NotifyCtx): Promis
   }
 
   try {
-    await ctx.githubClient.createIssueComment(ctx.owner, ctx.repo, state.issueNumber, body);
+    await ctx.githubClient.createIssueComment(ctx.owner!, ctx.repo!, state.issueNumber, body);
   } catch (err) {
     logWarn(
       `issue-notifier: failed to write comment to issue #${state.issueNumber}: ${(err as Error).message ?? String(err)}`,

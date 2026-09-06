@@ -4,6 +4,8 @@ import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
 import { logInfo } from "../../logger/stdout.js";
 
+const PR_CREATE = STEP_NAMES.PR_CREATE;
+
 /** Set of all valid step names for O(1) membership check. */
 const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
 
@@ -30,11 +32,18 @@ const LEGACY_STEP_ALIASES: Record<string, string> = {
  * are present (reviewers.length > 0), also adds the regression-gate step name,
  * the coordinator step name, and each reviewer's member name, since these are
  * dynamically injected into the pipeline descriptor at job time.
+ *
+ * When GitHub integration is disabled (githubIntegration.enabled === false),
+ * pr-create is excluded from the set because it cannot run without a GitHub client.
  */
 export function buildAllowedStepSet(
   reviewers?: ReadonlyArray<{ name: string }>,
+  githubIntegration?: { enabled: boolean },
 ): ReadonlySet<string> {
   const set = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
+  if (githubIntegration && !githubIntegration.enabled) {
+    set.delete(PR_CREATE);
+  }
   if (reviewers && reviewers.length > 0) {
     set.add(REGRESSION_GATE_STEP_NAME);
     set.add(CUSTOM_REVIEWERS_STEP_NAME);

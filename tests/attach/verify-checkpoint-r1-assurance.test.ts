@@ -32,7 +32,7 @@ vi.mock("../../src/core/pipeline/registry.js", async (importOriginal) => {
 const SLUG = "r1-compat-feature";
 const JOB_ID = "r1-compat-job-id-abcd1234";
 const BRANCH = "change/r1-compat-feature-abcd1234";
-const EXPECTED_REPO = { owner: "acme", name: "repo" };
+const EXPECTED_REPO = { github: { owner: "acme", name: "repo" } };
 const CHECKPOINT_OID = "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3";
 
 const VALID_EVENTS_JSONL = `{"type":"interruption","ts":"2026-01-01T01:00:00.000Z","step":"implementer","reason":"interrupted","budgetRemaining":3}\n`;
@@ -56,7 +56,7 @@ function makeStateJsonWithR1Profile(profileOverrides: Record<string, unknown> = 
       type: "spec-change",
       slug: SLUG,
     },
-    repository: { owner: EXPECTED_REPO.owner, name: EXPECTED_REPO.name },
+    repository: { owner: EXPECTED_REPO.github.owner, name: EXPECTED_REPO.github.name },
     session: null,
     step: "implementer",
     status: "awaiting-resume",

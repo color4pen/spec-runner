@@ -48,7 +48,7 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
 const SLUG = "my-feature";
 const JOB_ID = "test-job-id-12345678";
 const BRANCH = `feat/${SLUG}-${JOB_ID.slice(0, 8)}`;
-const EXPECTED_REPO = { owner: "acme", name: "repo" };
+const EXPECTED_REPO = { github: { owner: "acme", name: "repo" } };
 
 function makeStateJson(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({
@@ -62,7 +62,7 @@ function makeStateJson(overrides: Record<string, unknown> = {}): string {
       type: "new-feature",
       slug: SLUG,
     },
-    repository: { owner: EXPECTED_REPO.owner, name: EXPECTED_REPO.name },
+    repository: { owner: EXPECTED_REPO.github.owner, name: EXPECTED_REPO.github.name },
     session: null,
     step: "implementer",
     status: "awaiting-resume",

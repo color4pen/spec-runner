@@ -35,6 +35,9 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   ARCHIVE_FROM_ISSUE_NO_MARKER: EXIT_CODE.ARG_ERROR,
   ARCHIVE_FROM_ISSUE_NO_PR: EXIT_CODE.ARG_ERROR,
   ARCHIVE_FROM_ISSUE_UNCONFIRMED: EXIT_CODE.ARG_ERROR,
+  GITHUB_INTEGRATION_DISABLED: EXIT_CODE.ARG_ERROR,
+  GITHUB_INTEGRATION_REQUIRED: EXIT_CODE.ARG_ERROR,
+  GITHUB_INTEGRATION_UNSUPPORTED_RUNTIME: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -185,6 +188,22 @@ export const ERROR_CODES = {
    * The pipeline converts this into an awaiting-resume halt.
    */
   UNPUSHABLE_PATH_BLOCKED: "UNPUSHABLE_PATH_BLOCKED",
+  /**
+   * An operation that requires GitHub integration was attempted on a job where
+   * GitHub integration is disabled (githubIntegration.enabled === false).
+   * Exit 2: the user must either enable GitHub integration or use a Git-only workflow.
+   */
+  GITHUB_INTEGRATION_DISABLED: "GITHUB_INTEGRATION_DISABLED",
+  /**
+   * An operation requires GitHub integration but the contract or repository identity
+   * is missing from the job state. May indicate a corrupted state file.
+   */
+  GITHUB_INTEGRATION_REQUIRED: "GITHUB_INTEGRATION_REQUIRED",
+  /**
+   * GitHub integration is not supported for the selected runtime (e.g. managed runtime
+   * requires GitHub integration). Job creation is rejected before any side effects.
+   */
+  GITHUB_INTEGRATION_UNSUPPORTED_RUNTIME: "GITHUB_INTEGRATION_UNSUPPORTED_RUNTIME",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

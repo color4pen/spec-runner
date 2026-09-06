@@ -45,6 +45,9 @@ vi.mock("../../config/github-host.js", () => ({
 
 vi.mock("../../git/remote.js", () => ({
   getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", name: "test-repo" }),
+  getOriginUrl: vi.fn().mockResolvedValue("https://github.com/test-owner/test-repo.git"),
+  normalizeOriginIdentity: vi.fn().mockReturnValue({ url: "https://github.com/test-owner/test-repo.git", digest: "abc123" }),
+  parseRemoteUrl: vi.fn().mockReturnValue({ owner: "test-owner", name: "test-repo" }),
 }));
 
 vi.mock("../../git/transport-auth.js", () => ({

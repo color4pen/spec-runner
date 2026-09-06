@@ -364,6 +364,46 @@ export function validateJobState(raw: unknown): JobState {
     }
   }
 
+  // Validate githubIntegration when present (backward compat: absence is OK → treated as { enabled: true })
+  // Semantic rules:
+  //   - enabled === false → owner and name must be absent; origin must be present
+  //   - enabled === true (or absent) → owner and name must be non-empty strings
+  if ("githubIntegration" in obj && obj["githubIntegration"] !== null && obj["githubIntegration"] !== undefined) {
+    if (typeof obj["githubIntegration"] !== "object" || Array.isArray(obj["githubIntegration"])) {
+      throw new Error("githubIntegration must be an object when present.");
+    }
+    const gi = obj["githubIntegration"] as Record<string, unknown>;
+    if (typeof gi["enabled"] !== "boolean") {
+      throw new Error("githubIntegration.enabled must be a boolean.");
+    }
+    const repo = obj["repository"] as Record<string, unknown> | undefined;
+    if (gi["enabled"] === false) {
+      // GitHub-disabled: owner/name must be absent; origin must be present
+      if (repo && (typeof repo["owner"] === "string" || typeof repo["name"] === "string")) {
+        throw new Error(
+          "repository.owner and repository.name must be absent when githubIntegration.enabled is false.",
+        );
+      }
+      if (!repo || typeof repo["origin"] !== "object" || repo["origin"] === null) {
+        throw new Error(
+          "repository.origin must be present when githubIntegration.enabled is false.",
+        );
+      }
+    } else {
+      // GitHub-enabled: owner and name must be non-empty strings
+      if (!repo || typeof repo["owner"] !== "string" || !repo["owner"]) {
+        throw new Error(
+          "repository.owner must be a non-empty string when githubIntegration.enabled is true.",
+        );
+      }
+      if (typeof repo["name"] !== "string" || !repo["name"]) {
+        throw new Error(
+          "repository.name must be a non-empty string when githubIntegration.enabled is true.",
+        );
+      }
+    }
+  }
+
   // Validate touchedFiles when present (backward compat: absence is OK → treated as undefined)
   // Design D2 (touched-files-propagation): lightweight check — non-array object with array values.
   // Fail-open at the element level: entries with non-string elements are dropped (not a crash)

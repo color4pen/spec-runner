@@ -52,6 +52,11 @@ export function buildInitialJobState(params: {
   profile?: EffectiveProfile;
   /** Reviewer snapshots loaded and validated at job start. Absent = no custom reviewers. */
   reviewers?: import("../core/reviewers/types.js").ReviewerSnapshot[];
+  /**
+   * GitHub integration contract fixed at job start.
+   * Absent = enabled (backward compat with legacy state files).
+   */
+  githubIntegration?: { enabled: boolean };
 }): JobState {
   const jobId = randomUUID();
   const now = new Date().toISOString();
@@ -86,6 +91,11 @@ export function buildInitialJobState(params: {
 
   if (params.reviewers && params.reviewers.length > 0) {
     state.reviewers = params.reviewers;
+  }
+
+  // Fix the GitHub integration contract at job start (absent = enabled, per legacy compat).
+  if (params.githubIntegration !== undefined) {
+    state.githubIntegration = params.githubIntegration;
   }
 
   return state;

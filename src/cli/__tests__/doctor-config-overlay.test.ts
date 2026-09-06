@@ -22,11 +22,23 @@ vi.mock("../../core/doctor/runner.js", () => ({
 }));
 
 // ── Mock checks index to avoid importing real check deps ─────────────────────
-vi.mock("../../core/doctor/checks/index.js", () => ({
-  commonChecks: [],
-  managedChecks: [],
-  localChecks: [],
-}));
+// T-12: selectChecks is used by runDoctor to pick the right check set.
+// The mock implementation mirrors the real selectChecks logic so that
+// tests which push into managedChecks/localChecks still work.
+vi.mock("../../core/doctor/checks/index.js", () => {
+  const commonChecks: unknown[] = [];
+  const managedChecks: unknown[] = [];
+  const localChecks: unknown[] = [];
+  return {
+    commonChecks,
+    managedChecks,
+    localChecks,
+    selectChecks: vi.fn().mockImplementation((runtime: string, _githubEnabled: boolean) => {
+      const runtimeSpecific = runtime === "managed" ? managedChecks : localChecks;
+      return [...commonChecks, ...runtimeSpecific];
+    }),
+  };
+});
 
 // ── Mock formatters ───────────────────────────────────────────────────────────
 vi.mock("../../core/doctor/formatter.js", () => ({

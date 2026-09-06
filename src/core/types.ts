@@ -43,12 +43,21 @@ export interface PipelineDeps extends StepContext {
   client?: SessionClient;
   /** Injectable sleep for testing */
   sleepFn?: (ms: number) => Promise<void>;
-  /** GitHub client (port interface). Required for all pipeline steps. */
-  githubClient: GitHubClient;
-  /** GitHub repository owner. Required for PR operations. */
-  owner: string;
-  /** GitHub repository name. Required for PR operations. */
-  repo: string;
+  /**
+   * GitHub client (port interface). null when GitHub integration is disabled.
+   * Steps that require a client (e.g. pr-create) are removed from the pipeline
+   * by applyGitHubIntegration when disabled — so null should never reach them.
+   */
+  githubClient: GitHubClient | null;
+  /**
+   * GitHub token. undefined when GitHub integration is disabled.
+   * Used for transport auth (git push/fetch with token injection).
+   */
+  githubToken?: string;
+  /** GitHub repository owner. undefined when integration disabled. */
+  owner?: string;
+  /** GitHub repository name. undefined when integration disabled. */
+  repo?: string;
   /**
    * Pre-built AgentRunner injected by RuntimeStrategy.buildDeps().
    * createStandardPipeline and runProposePipeline use this directly,

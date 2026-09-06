@@ -79,6 +79,12 @@ export interface CommandSpec {
   handler?: CommandHandler;
   /** Child subcommands. */
   children?: Record<string, CommandSpec>;
+  /**
+   * T-11: When true, this command requires GitHub integration to be enabled.
+   * The dispatch layer rejects the command when the project config has github.enabled: false.
+   * Individual flags may also carry githubOnly: true for flag-level rejection.
+   */
+  requiresGitHub?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +198,49 @@ export function resolveEffectiveRequiresRepo(
     if (cur.requiresRepo !== undefined) effective = cur.requiresRepo;
   }
   return effective;
+}
+
+/**
+ * Resolve the effective requiresGitHub for a command path (T-11), supporting parent→child
+ * inheritance. Walks the path from root to leaf; the most-specific (deepest) explicit value wins.
+ * If no node in the path has an explicit value, returns false.
+ * Exported for testing and used by dispatch.
+ */
+export function resolveEffectiveRequiresGitHub(
+  registry: Record<string, CommandSpec>,
+  path: string[],
+): boolean {
+  let cur: CommandSpec | undefined;
+  let effective = false;
+  for (let i = 0; i < path.length; i++) {
+    const name = path[i]!;
+    cur = i === 0 ? registry[name] : cur?.children?.[name];
+    if (!cur) break;
+    if (cur.requiresGitHub !== undefined) effective = cur.requiresGitHub;
+  }
+  return effective;
+}
+
+/**
+ * Return the names of any githubOnly flags (T-11) that are present and set in `parsedFlags`.
+ * A boolean flag is "set" when its value is true.
+ * A string/integer flag is "set" when its value is not undefined.
+ * Used by dispatch to reject GitHub-only flags when GitHub integration is disabled.
+ */
+export function findActiveGitHubOnlyFlags(
+  spec: CommandSpec,
+  parsedFlags: Record<string, string | number | boolean>,
+): string[] {
+  const flagDefs = spec.flags ?? {};
+  const active: string[] = [];
+  for (const [name, def] of Object.entries(flagDefs)) {
+    if (!def.githubOnly) continue;
+    const value = parsedFlags[name];
+    if (value === undefined) continue;
+    if (value === false) continue; // boolean flag not passed
+    active.push(name);
+  }
+  return active;
 }
 
 /**
@@ -495,9 +544,9 @@ const RUN_JOB_FLAGS = {
   quiet: { type: "boolean" },
   json: { type: "boolean" },
   "no-worktree": { type: "boolean" },
-  issue: { type: "integer", min: 1 },
+  issue: { type: "integer", min: 1, githubOnly: true },      // T-11: issue attachment requires GitHub
   detach: { type: "boolean" },
-  "from-issue": { type: "integer", min: 1 },
+  "from-issue": { type: "integer", min: 1, githubOnly: true }, // T-11: issue-origin job requires GitHub
 } as const satisfies Record<string, FlagDef>;
 
 // ---------------------------------------------------------------------------
@@ -787,7 +836,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           "apply-canon": { type: "boolean" },
           "adopt-commits": { type: "boolean" },
           detach: { type: "boolean" },
-          "from-issue": { type: "integer", min: 1 },
+          "from-issue": { type: "integer", min: 1, githubOnly: true }, // T-11: issue-based resume requires GitHub
           wontfix: { type: "string" },
           "wontfix-reason": { type: "string" },
         },
@@ -842,11 +891,11 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "archive"],
         summary: "Archive a completed change folder",
         flags: {
-          "with-merge": { type: "boolean" },
+          "with-merge": { type: "boolean", githubOnly: true },   // T-11: merge requires GitHub
           // ponytail: lenient parse — behavior preservation; strict integer typing forbidden (TC-027)
           // mergeWaitMs is lenient: invalid values (non-numeric) are silently ignored
-          "merge-wait-ms": { type: "string" },
-          "from-issue": { type: "integer", min: 1 },
+          "merge-wait-ms": { type: "string", githubOnly: true }, // T-11: merge wait requires GitHub
+          "from-issue": { type: "integer", min: 1, githubOnly: true }, // T-11: issue-based archive requires GitHub
         },
         args: [{ name: "slug", required: false }],
         worktreeGuard: true,
@@ -931,6 +980,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           quiet: { type: "boolean" },
         },
         requiresRepo: true,
+        requiresGitHub: true, // T-11: inbox requires GitHub to scan issues
         worktreeGuard: true,
         visibility: "normal",
         help: {

@@ -17,6 +17,7 @@ import { verifyCheckpoint } from "./verify-checkpoint.js";
 import { attachFetchFailedError, checkpointNotFoundError } from "../../errors.js";
 import type { VerifiedCheckpoint } from "./verify-checkpoint.js";
 import type { CheckpointVerificationPolicy } from "./checkpoint-policy.js";
+import type { RepositoryOrigin } from "../../state/schema/types.js";
 
 // ---------------------------------------------------------------------------
 // runAttachVerification
@@ -29,8 +30,17 @@ export interface AttachVerificationInput {
   branch: string;
   /** Spawn function (transport-auth-wrapped for authentication). */
   spawnFn: SpawnFn;
-  /** Expected repository identity (owner + name). */
-  expectedRepo: { owner: string; name: string };
+  /**
+   * Expected repository identity. Verification branches on the checkpoint's
+   * githubIntegration contract (T-10):
+   *   - GitHub-enabled (or legacy): `github.owner/name` is checked.
+   *   - GitHub-disabled: `origin.digest` is compared against the checkpoint's
+   *     `state.repository.origin.digest`.
+   */
+  expectedRepo: {
+    github?: { owner: string; name: string };
+    origin?: RepositoryOrigin;
+  };
   /**
    * Use-case verification policy (default: attachResumePolicy via verifyCheckpoint default).
    * Pass attachArchivePolicy for awaiting-archive, attachQuiescentPolicy for both statuses.

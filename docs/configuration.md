@@ -461,7 +461,31 @@ This setting has two layers of effect:
 |---|---|---|
 | `progress.heartbeatIntervalSec` | `30` (TTY) / `60` (non-TTY) | Heartbeat interval in seconds. `0` or `null` disables |
 
-## GitHub Enterprise (GHES)
+## GitHub Integration
+
+### Disabling GitHub integration
+
+Set `github.enabled: false` to run SpecRunner without a GitHub token or GitHub repository:
+
+```jsonc
+{
+  "version": 1,
+  "github": { "enabled": false }
+}
+```
+
+When `false`:
+- GitHub token resolution and API calls are skipped entirely.
+- The `pr-create` step is removed from the pipeline; jobs complete with result `branch-published`.
+- Commands that require GitHub (`--issue`, `--from-issue`, `inbox run`, `--with-merge`) are rejected at dispatch with exit 2.
+- `doctor` skips GitHub-specific checks (token, client-id, origin). Generic git origin presence is checked instead.
+- `job archive` pushes to the remote feature branch and marks the job `archived`; the branch is not deleted. Merging into the base branch is your responsibility.
+
+When absent or `true` (default), GitHub integration is active — all features are enabled.
+
+The setting is resolved from the first layer that explicitly declares it (project-local → user-global → default `true`). `specrunner config effective` shows the resolved value and its source.
+
+### GitHub Enterprise (GHES)
 
 ```jsonc
 {
@@ -472,7 +496,7 @@ This setting has two layers of effect:
 }
 ```
 
-When absent, defaults to `github.com` / `api.github.com`. `apiBaseUrl` is derived from `host` when not explicitly set.
+When absent, defaults to `github.com` / `api.github.com`. `apiBaseUrl` is derived from `host` when not explicitly set. `host` and `apiBaseUrl` are only used when `github.enabled` is `true` (the default).
 
 ## Transient error retries
 
