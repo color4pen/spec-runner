@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T05:49:45.168Z",
+  "updatedAt": "2026-09-06T06:12:19.967Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -198,11 +198,7 @@
       "specrunner/adr/2026-09-05-gitless-artifact-output.md"
     ]
   },
-  "resumePoint": {
-    "step": "regression-gate",
-    "reason": "regression-gate escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -229,6 +225,11 @@
       "text": "operator-apply commit a74306b8 で PR #1122 のレビュー指摘 6 件を修正済み（src/util/unified-diff.ts, src/core/artifact-output/{patch,artifact-writer,manifest,context,run,run-layout}.ts と design.md D5/D8/D9）。この commit の内容を前提に verification と code-review を行うこと。design.md の D8（計算量予算・payload 正本）/ D9（payload 全件収録と APPLY.md 手順）/ D5（run root と source の分離検査）は operator 裁定であり変更しないこと。",
       "step": "verification",
       "recordedAt": "2026-09-06T05:12:31.166Z"
+    },
+    {
+      "text": "operator 裁定: ChangeSetResult は design.md D4 / ADR どおり kind:'success' を維持する（wontfix 済み）。SnapshotResult の kind:'ok' との命名統一は行わない。この点を再度 finding として挙げないこと。残りの fixable finding（run.json の phase 2/3 未記録）は通常どおり処理してよい。",
+      "step": "regression-gate",
+      "recordedAt": "2026-09-06T06:12:19.695Z"
     }
   ],
   "reviewerStatuses": [
@@ -265,8 +266,44 @@
     "number": 1122,
     "createdAt": "2026-09-05T22:43:56.956Z"
   },
+  "decisions": [
+    {
+      "kind": "disposition",
+      "id": "disposition-2026-09-06T06:12:19.695Z-2-code-review",
+      "step": "code-review",
+      "findingKey": "code-review|src/core/snapshot/compare.ts|35|snapshotresult uses kind:'ok' while changesetresult uses kind:'success' — naming inconsistency|both types represent du results with a happy-path arm and an unavailable arm, but the happy-path discriminant differs. a reader switching between the two types in run.ts must notice the difference. consistent naming (both 'ok' or both 'success') reduces cognitive load.",
+      "finding": {
+        "title": "SnapshotResult uses kind:'ok' while ChangeSetResult uses kind:'success' — naming inconsistency",
+        "file": "src/core/snapshot/compare.ts",
+        "line": 35,
+        "rationale": "Both types represent DU results with a happy-path arm and an unavailable arm, but the happy-path discriminant differs. A reader switching between the two types in run.ts must notice the difference. Consistent naming (both 'ok' or both 'success') reduces cognitive load.",
+        "severity": "low"
+      },
+      "disposition": "wontfix",
+      "reason": "operator 裁定: ChangeSetResult の成功 arm は design.md D4 / ADR の記述どおり kind:'success' を維持する。SnapshotResult (kind:'ok') とは別 union であり、命名統一は本 Issue のスコープ外。ledger 内の『operator ruling で ok に揃える』という記載は誤りで、spec と code を往復させない。",
+      "decidedAt": "2026-09-06T06:12:19.695Z",
+      "source": "operator"
+    },
+    {
+      "kind": "disposition",
+      "id": "disposition-2026-09-06T06:12:19.695Z-3-code-review",
+      "step": "code-review",
+      "findingKey": "code-review|src/core/snapshot/compare.ts|36|changesetresult uses kind:'success' inconsistently with snapshotresult kind:'ok'|snapshotresult (types.ts line 56) uses kind:'ok'. changesetresult uses kind:'success'. both are in the same snapshot api surface. the inconsistency increases cognitive overhead and risks subtle mismatches when callers pattern-match across both types. the operator ruling specifies alignment to kind:'ok'.",
+      "finding": {
+        "title": "ChangeSetResult uses kind:'success' inconsistently with SnapshotResult kind:'ok'",
+        "file": "src/core/snapshot/compare.ts",
+        "line": 36,
+        "rationale": "SnapshotResult (types.ts line 56) uses kind:'ok'. ChangeSetResult uses kind:'success'. Both are in the same snapshot API surface. The inconsistency increases cognitive overhead and risks subtle mismatches when callers pattern-match across both types. The operator ruling specifies alignment to kind:'ok'.",
+        "severity": "low"
+      },
+      "disposition": "wontfix",
+      "reason": "operator 裁定: ChangeSetResult の成功 arm は design.md D4 / ADR の記述どおり kind:'success' を維持する。SnapshotResult (kind:'ok') とは別 union であり、命名統一は本 Issue のスコープ外。ledger 内の『operator ruling で ok に揃える』という記載は誤りで、spec と code を往復させない。",
+      "decidedAt": "2026-09-06T06:12:19.695Z",
+      "source": "operator"
+    }
+  ],
   "_journal": {
-    "historyCount": 164,
+    "historyCount": 167,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

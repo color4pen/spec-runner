@@ -240,3 +240,6 @@
 {"type":"lineage","step":"regression-gate","ts":"2026-09-06T05:49:43.971Z","outputs":[{"path":"specrunner/changes/gitless-artifact-output/regression-gate-result-002.md","hash":"sha256:2fe2f528b5d989b9a1c570dbb64b98959e1b5c01a175b065a87e4a5b4b6014ef"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-09-06T05:49:45.168Z","step":"regression-gate","status":"error","message":"regression-gate iteration 1 completed with verdict: escalation"}
 {"type":"transition","ts":"2026-09-06T05:49:45.168Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: regression-gate escalated"}
+{"type":"transition","ts":"2026-09-06T06:12:19.696Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'regression-gate'"}
+{"type":"transition","ts":"2026-09-06T06:12:19.964Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-09-06T06:12:19.967Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
