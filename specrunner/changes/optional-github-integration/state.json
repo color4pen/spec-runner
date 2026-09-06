@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T15:14:12.236Z",
+  "updatedAt": "2026-09-06T15:27:01.262Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -87,7 +87,8 @@
     "b2f32dc2c3975b2fc0bda350da0443b14ef6de84",
     "731cd6db082f122a88c69d5a5041747c90595257",
     "dbfac0f840c1009c936e9c1c8e52b42d611bb25a",
-    "8089580cd940ffcbb77db780f8e258300fb5b4fa"
+    "8089580cd940ffcbb77db780f8e258300fb5b4fa",
+    "9bc3d847fba8f4db43ed4d2000007ea44a633313"
   ],
   "touchedFiles": {
     "request-review": [
@@ -186,6 +187,36 @@
       "src/cli/github-composition.ts",
       "src/git/remote.ts",
       "src/core/attach/verify-checkpoint.ts"
+    ],
+    "conformance": [
+      "src/config/github-integration.ts",
+      "src/state/github-integration.ts",
+      "src/state/schema/operations.ts",
+      "src/core/command/reopen.ts",
+      "src/core/pipeline/apply-github-integration.ts",
+      "src/core/command/run-result.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/git/remote.ts",
+      "src/core/preflight.ts",
+      "src/cli/archive.ts",
+      "src/cli/bootstrap.ts",
+      "src/core/runtime/factory.ts",
+      "src/cli/github-composition.ts",
+      "src/core/github/integration.ts",
+      "src/core/command/runner.ts",
+      "src/core/attestation/render-markdown.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/cli/doctor.ts",
+      "tests/github-disabled-e2e.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "bin/specrunner.ts",
+      "src/cli/config-effective.ts",
+      "src/cli/job-show.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/pipeline/run.ts",
+      "src/core/command/resume.ts",
+      "tests/unit/cli/reopen-github-disabled.test.ts"
     ]
   },
   "resumePoint": null,
@@ -222,7 +253,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 108,
+    "historyCount": 112,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -236,7 +267,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }

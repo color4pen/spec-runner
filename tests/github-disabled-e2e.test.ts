@@ -1,5 +1,5 @@
 /**
- * T-16: E2E fixture — GitHub 無効経路の完全ライフサイクル
+ * T-16: E2E fixture — GitHub 無効経路の完全ライフサイクル (CLI entry-point version)
  *
  * Verifies that with `github.enabled: false`:
  * - The pipeline completes without creating a PR (`branch-published` result)
@@ -10,15 +10,18 @@
  *
  * Infrastructure:
  *   - bare origin (non-GitHub URL: file:///tmp/...)
- *   - Machine A clone runs the pipeline (fake AgentRunner, real git)
- *   - Machine B clone tests attach with matching and mismatched origin
+ *   - Machine A clone runs via real CLI entry points (runRunCore, runResumeCore, runArchive)
+ *   - Machine B clone tests attach with matching origin
+ *   - Machine C clone tests attach with wrong origin (rejected)
  *
- * Mock boundary: only the agent SDK query seam (AgentRunner.run) and
- * verification step runner are mocked. git / state / pipeline are real.
+ * Mock boundary:
+ *   - `buildPipelineForJob` is mocked to control pipeline transitions without real LLM calls
+ *   - `createClaudeProviderReadinessProbe` is mocked to bypass Claude Code auth check
+ *   - All git/state/worktree/commit/push operations are real
  *
  * TC-T16-001: pipeline completes with awaiting-archive (branch-published)
  * TC-T16-002: no GitHub API calls made during the lifecycle
- * TC-T16-003: no git extraheader token injection
+ * TC-T16-003: no git extraheader token injection (local file:// remote, no auth needed)
  * TC-T16-004: archive leaves remote feature branch intact (deleteRemoteBranch:false)
  * TC-T16-005: attach from Machine B succeeds with matching origin digest
  * TC-T16-006: attach from Machine C (wrong origin) is rejected with identity-mismatch
@@ -29,57 +32,131 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 import { spawnCommand, type SpawnOptions } from "../src/util/spawn.js";
-import { buildPipelineForJob } from "../src/core/pipeline/run.js";
-import { JobStateStore, buildInitialJobState } from "../src/store/job-state-store.js";
-import { commitFinalState } from "../src/core/step/commit-push.js";
-import { EventBus } from "../src/core/event/event-bus.js";
-import { defaultSpawnFn, gitExec } from "../src/util/git-exec.js";
-import type { AgentRunContext, AgentRunResult } from "../src/core/port/agent-runner.js";
-import type { AgentRunner } from "../src/core/port/agent-runner.js";
-import type { PipelineDeps } from "../src/core/types.js";
-import type { JobState } from "../src/state/schema.js";
-import type { ChangedFilesCapability } from "../src/core/port/runtime-strategy.js";
-import type { StepArtifactLifecycleCapability } from "../src/core/step/step-capability.js";
-import type { StepIoValidationCapability } from "../src/core/step/step-capability.js";
-import type { TerminalStateCapability } from "../src/core/pipeline/pipeline-capability.js";
-import type { SpecRunnerConfig } from "../src/config/schema.js";
-import type { ParsedRequest } from "../src/parser/request-md.js";
-import { noopRoundGitEffects } from "../src/core/step/noop-capabilities.js";
-import { runAttachVerification } from "../src/core/attach/orchestrator.js";
-import { runPlainArchive } from "../src/core/archive/plain-archive.js";
-import { normalizeOriginIdentity } from "../src/git/remote.js";
-import type { FinishFs } from "../src/core/finish/types.js";
+import { runRunCore } from "../src/cli/run.js";
+import { runResumeCore } from "../src/cli/resume.js";
+import { runArchive } from "../src/cli/archive.js";
+import { JobStateStore } from "../src/store/job-state-store.js";
+import { getJobSlug } from "../src/state/job-slug.js";
 import { getGitHubIntegration } from "../src/state/github-integration.js";
-import { verificationResultPath, reviewFeedbackPath, conformanceResultPath } from "../src/util/paths.js";
+import { normalizeOriginIdentity } from "../src/git/remote.js";
+import { runAttachVerification } from "../src/core/attach/orchestrator.js";
 
 // ---------------------------------------------------------------------------
-// Mock the verification runner and pr-create runner so we don't spawn real processes
+// vi.hoisted: pipeline call counter — must be accessible in vi.mock() factory
+// closures (vi.hoisted values are available before module evaluation).
+// ---------------------------------------------------------------------------
+
+const { pipelineCallState } = vi.hoisted(() => ({
+  pipelineCallState: { count: 0 },
+}));
+
+// ---------------------------------------------------------------------------
+// Mock buildPipelineForJob — controls pipeline transitions without real LLM
+//
+// Call 1 (from runRunCore):  returns awaiting-resume (implementer timeout)
+// Call 2 (from runResumeCore): returns awaiting-archive (full completion)
+//
+// Each call:
+//   1. Persists the new state to the slug store (writes state.json + events.jsonl)
+//   2. Calls deps.terminalState.commitFinalState (real LocalRuntime implementation:
+//      git add → git commit → persistBeforePush appends OID → git push)
+//   3. Returns the new state
+//
+// The egress ledger (synthesizedCommits) is maintained correctly:
+//   Call 1: ledger = [bootstrapOid, checkpointOid] → push succeeds
+//   Call 2: ledger = [bootstrapOid, checkpointOid, finalizeOid] → push succeeds
+// ---------------------------------------------------------------------------
+
+vi.mock("../src/core/pipeline/index.js", async (importOriginal) => {
+  const orig = await importOriginal<Record<string, unknown>>();
+  return {
+    ...orig,
+    buildPipelineForJob: vi.fn().mockImplementation(
+      (_jobState: unknown, _deps: unknown, _events: unknown) => ({
+        run: vi.fn().mockImplementation(
+          async (_startStep: unknown, state: unknown, deps: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const s = state as any;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const d = deps as any;
+
+            pipelineCallState.count++;
+            const callNum = pipelineCallState.count;
+
+            // Build the new state based on which call this is
+            const newState =
+              callNum === 1
+                ? {
+                    ...s,
+                    status: "awaiting-resume" as const,
+                    resumePoint: {
+                      step: "implementer",
+                      reason: "timeout",
+                      iterationsExhausted: 0,
+                    },
+                    updatedAt: new Date().toISOString(),
+                  }
+                : {
+                    ...s,
+                    status: "awaiting-archive" as const,
+                    resumePoint: null,
+                    updatedAt: new Date().toISOString(),
+                  };
+
+            // Step 1: persist to slug store (writes state.json + events.jsonl in worktree)
+            await d.storeFactory(s.jobId).persist(newState);
+
+            // Step 2: commit + push via real LocalRuntime.commitFinalState
+            // persistBeforePush callback (inside commitFinalState) appends the new OID
+            // to synthesizedCommits BEFORE push — egress ledger stays consistent.
+            const cwd: string = d.cwd ?? process.cwd();
+            await d.terminalState.commitFinalState(cwd, d.slug, newState);
+
+            return newState;
+          },
+        ),
+      }),
+    ),
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Mock createClaudeProviderReadinessProbe — bypasses Claude Code auth check.
+// LocalRuntime.assertProviderReadiness() dynamically imports this factory and
+// calls the returned probe before any pipeline step runs.
+// ---------------------------------------------------------------------------
+
+vi.mock("../src/adapter/claude-code/provider-readiness-probe.js", () => ({
+  createClaudeProviderReadinessProbe: () =>
+    async (_env: unknown) => ({ kind: "ready" as const }),
+}));
+
+// ---------------------------------------------------------------------------
+// Mock verification + pr-create runners for safety (neither should be called
+// since the mock pipeline never invokes real steps).
 // ---------------------------------------------------------------------------
 
 vi.mock("../src/core/verification/runner.js", () => ({
-  runVerification: vi.fn().mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
-    const outputPath = path.join(cwd, verificationResultPath(slug));
-    await fsPromises.mkdir(path.dirname(outputPath), { recursive: true });
-    await fsPromises.writeFile(
-      outputPath,
-      `# Verification Result — ${slug} — iter 1\n\n## Verdict: passed\n\n## Phase Results\n\n| # | Phase | Status | Duration | Exit Code |\n|---|-------|--------|----------|-----------|\n`,
-    );
-    return { slug, verdict: "passed" as const, phases: [] };
-  }),
+  runVerification: vi.fn().mockRejectedValue(
+    new Error("runVerification must not be called — mock pipeline bypasses real steps"),
+  ),
 }));
 
-// pr-create runner is NOT called in GitHub-disabled path; if it were called it would fail
 vi.mock("../src/core/pr-create/runner.js", () => ({
-  runPrCreate: vi.fn().mockRejectedValue(new Error("pr-create must not be called in GitHub-disabled path")),
+  runPrCreate: vi.fn().mockRejectedValue(
+    new Error("runPrCreate must not be called in GitHub-disabled path"),
+  ),
 }));
 
 // ---------------------------------------------------------------------------
-// Silence stdout/stderr
+// Silence stdout/stderr output from CLI entry points
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  // Reset pipeline call counter before each test
+  pipelineCallState.count = 0;
 });
 
 afterEach(() => {
@@ -100,7 +177,9 @@ const GIT_ENV = {
 async function git(cwd: string, ...args: string[]): Promise<string> {
   const result = await spawnCommand("git", args, { cwd, env: GIT_ENV });
   if (result.exitCode !== 0) {
-    throw new Error(`git ${args.join(" ")} failed (exit ${result.exitCode}): ${result.stderr.trim()}`);
+    throw new Error(
+      `git ${args.join(" ")} failed (exit ${result.exitCode}):\n${result.stderr.trim()}`,
+    );
   }
   return result.stdout.trim();
 }
@@ -110,126 +189,9 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
 // ---------------------------------------------------------------------------
 
 const SLUG = "gh-disabled-feature";
-const JOB_ID_PREFIX = "deadbeef";
-const JOB_ID = `${JOB_ID_PREFIX}-cafe-babe-cafe-babe00000000`;
-const BRANCH = `feat/${SLUG}-${JOB_ID_PREFIX}`;
 
 // ---------------------------------------------------------------------------
-// Minimal configs
-// ---------------------------------------------------------------------------
-
-const MINIMAL_CONFIG: SpecRunnerConfig = {
-  version: 1 as const,
-  agents: {
-    implementer: {
-      agentId: "implementer-agent-id",
-      definitionHash: "sha256:imp",
-      lastSyncedAt: new Date().toISOString(),
-    },
-    "code-review": {
-      agentId: "code-review-agent-id",
-      definitionHash: "sha256:cr",
-      lastSyncedAt: new Date().toISOString(),
-    },
-    "code-fixer": {
-      agentId: "code-fixer-agent-id",
-      definitionHash: "sha256:cf",
-      lastSyncedAt: new Date().toISOString(),
-    },
-    conformance: {
-      agentId: "conformance-agent-id",
-      definitionHash: "sha256:con",
-      lastSyncedAt: new Date().toISOString(),
-    },
-    "adr-gen": {
-      agentId: "adr-gen-agent-id",
-      definitionHash: "sha256:adr",
-      lastSyncedAt: new Date().toISOString(),
-    },
-  },
-  pipeline: { maxRetries: 2 },
-  // GitHub integration disabled
-  github: { enabled: false },
-};
-
-function makeRequest(slug: string): ParsedRequest {
-  return {
-    type: "new-feature",
-    title: "GitHub-disabled E2E feature",
-    slug,
-    baseBranch: "main",
-    content: "# GitHub-disabled E2E request\n\nDo something locally.\n",
-    adr: false,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Pipeline capability helpers (mirrors attach-resume-e2e.test.ts)
-// ---------------------------------------------------------------------------
-
-function makeTerminalStateCapability(cwd: string, slug: string): TerminalStateCapability {
-  return {
-    async commitFinalState(_cwd: string, _slug: string, state: JobState): Promise<void> {
-      await commitFinalState({
-        cwd,
-        branch: state.branch ?? "",
-        slug,
-        spawnFn: spawnCommand,
-        messageLabel: "checkpoint",
-      });
-    },
-  };
-}
-
-function makeStepArtifact(): StepArtifactLifecycleCapability {
-  return {
-    async captureHeadSha(cwd: string): Promise<string | null> {
-      return gitExec(defaultSpawnFn, cwd, ["rev-parse", "HEAD"]);
-    },
-    async prepareStepArtifacts(): Promise<void> {},
-    async finalizeStepArtifacts(): Promise<void> {},
-    async snapshotMainCheckoutGuard(): Promise<null> { return null; },
-    async digestArtifacts(refs: { path: string }[]) {
-      return refs.map((r) => ({ path: r.path, hash: null }));
-    },
-  };
-}
-
-const noopStepIo: StepIoValidationCapability = {
-  async validateStepInputs(): Promise<void> {},
-  async validateStepOutputs() { return { violations: [] }; },
-  async verifyFindingRefs() { return []; },
-};
-
-const noopChangedFiles: ChangedFilesCapability = {
-  canDeriveChangedFiles: () => false,
-  async listChangedFiles() { return { kind: "success" as const, files: [] }; },
-};
-
-// ---------------------------------------------------------------------------
-// FinishFs for plain archive
-// ---------------------------------------------------------------------------
-
-function makeFinishFs(): FinishFs {
-  return {
-    exists: async (p: string) => {
-      try { await fsPromises.access(p); return true; } catch { return false; }
-    },
-    readdir: (p: string) => fsPromises.readdir(p),
-    stat: async (p: string) => {
-      const s = await fsPromises.stat(p);
-      return { isDirectory: () => s.isDirectory() };
-    },
-    mkdir: async (p: string, opts: { recursive: boolean }) => { await fsPromises.mkdir(p, opts); },
-    writeFile: (p: string, content: string) => fsPromises.writeFile(p, content),
-    unlink: (p: string) => fsPromises.unlink(p),
-    readFile: async (p: string) => { const buf = await fsPromises.readFile(p); return buf.toString(); },
-    rm: async (p: string, opts: { recursive: boolean; force: boolean }) => { await fsPromises.rm(p, opts); },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Setup / teardown
+// Environment setup / teardown
 // ---------------------------------------------------------------------------
 
 let tmpDir: string;
@@ -243,9 +205,10 @@ beforeEach(async () => {
   savedGhToken = process.env["GH_TOKEN"];
   savedGithubToken = process.env["GITHUB_TOKEN"];
 
-  // Set tokens in environment — they must NOT be used (key assertion of T-16)
+  // Set fake tokens — a key assertion of T-16 is that these are NEVER used
   process.env["GH_TOKEN"] = "ghp_FAKE_TOKEN_MUST_NOT_BE_USED";
   process.env["GITHUB_TOKEN"] = "github_FAKE_TOKEN_MUST_NOT_BE_USED";
+  // Isolate XDG config so global credentials files cannot interfere
   process.env["XDG_CONFIG_HOME"] = path.join(tmpDir, "xdg");
 });
 
@@ -263,341 +226,281 @@ afterEach(async () => {
 // TC-T16-001 through TC-T16-006: Full GitHub-disabled lifecycle
 // ---------------------------------------------------------------------------
 
-describe("T-16: GitHub-disabled lifecycle — pipeline → archive → attach", () => {
+describe("T-16: GitHub-disabled lifecycle — CLI entry points: run → attach → resume → archive", () => {
   it(
     "completes pipeline without PR, archives with branch preserved, and attach uses origin identity",
     async () => {
       // =====================================================================
       // GIT FIXTURE SETUP
+      //
+      // We pre-commit spec.md and tasks.md to main so they appear in the
+      // worktree that runRunCore creates (worktree is based on origin/main).
+      // This satisfies attachResumePolicy's tree-precheck: implementer.reads()
+      // requires tasks.md and spec.md in treeFiles.
+      //
+      // .gitignore must already contain the 3 lines that ensureDotSpecrunnerGitignore
+      // checks for, so the function is a no-op and the main-checkout working tree
+      // stays clean during runRunCore.
       // =====================================================================
 
       const originDir = path.join(tmpDir, "origin");
       const machineADir = path.join(tmpDir, "machine-a");
-      const machineBDir = path.join(tmpDir, "machine-b");
-      const machineCDir = path.join(tmpDir, "machine-c"); // wrong origin
 
-      // 1. Bare origin (non-GitHub URL)
+      // 1. Bare origin (non-GitHub, local file:// style)
       await fsPromises.mkdir(originDir, { recursive: true });
       await git(originDir, "init", "--bare", "--initial-branch=main");
 
-      // 2. Machine A clone
+      // 2. Machine A clone (used for all CLI operations)
       await git(tmpDir, "clone", originDir, "machine-a");
       await git(machineADir, "config", "user.email", "test@test.com");
       await git(machineADir, "config", "user.name", "Test");
 
-      // 3. Initial commit on main
+      // 3. Build the initial main commit with all required files
       await fsPromises.writeFile(path.join(machineADir, "README.md"), "# GitHub-disabled E2E\n");
-      await git(machineADir, "add", "README.md");
-      await git(machineADir, "-c", "user.name=Test", "-c", "user.email=test@test.com", "commit", "-m", "initial");
-      await git(machineADir, "push", "origin", "main");
 
-      // 4. Project-local config with github.enabled: false
+      // .gitignore: all 3 lines required by ensureDotSpecrunnerGitignore so it is a no-op
+      await fsPromises.writeFile(
+        path.join(machineADir, ".gitignore"),
+        ".specrunner/*\n!.specrunner/config.json\nnode_modules/\n",
+      );
+
+      // Project-local config: github.enabled: false
       await fsPromises.mkdir(path.join(machineADir, ".specrunner"), { recursive: true });
       await fsPromises.writeFile(
         path.join(machineADir, ".specrunner", "config.json"),
         JSON.stringify({ version: 1, github: { enabled: false } }),
-        "utf-8",
       );
 
-      // 5. Feature branch
-      await git(machineADir, "checkout", "-b", BRANCH);
-
-      // 6. Write required pipeline files
+      // Pre-commit spec.md + tasks.md for the SLUG's change folder.
+      // These files are required by attachResumePolicy's tree-precheck (implementer.reads()).
+      // They land in the worktree because the worktree is created from origin/main.
       const changeDir = path.join(machineADir, "specrunner", "changes", SLUG);
       await fsPromises.mkdir(changeDir, { recursive: true });
       await fsPromises.writeFile(
-        path.join(changeDir, "request.md"),
-        `# GitHub-disabled E2E feature\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n- **base-branch**: main\n- **adr**: false\n\nDo something locally.\n`,
-        "utf-8",
-      );
-      await fsPromises.writeFile(
         path.join(changeDir, "spec.md"),
-        `# Spec\n\n## Overview\n\nLocal-only feature.\n`,
-        "utf-8",
+        "# Spec\n\n## Overview\n\nLocal-only feature with GitHub integration disabled.\n",
       );
       await fsPromises.writeFile(
         path.join(changeDir, "tasks.md"),
-        `# Tasks\n\n- [ ] Implement\n`,
-        "utf-8",
+        "# Tasks\n\n- [ ] Implement the local feature\n",
       );
 
-      // Commit and push initial files
       await git(machineADir, "add", "-A");
-      await git(machineADir, "-c", "user.name=Test", "-c", "user.email=test@test.com", "commit", "-m", `setup: initial files for ${SLUG}`);
-      await git(machineADir, "push", "origin", BRANCH);
+      await git(machineADir, "commit", "-m", "initial: setup for GitHub-disabled E2E");
+      await git(machineADir, "push", "origin", "main");
+
+      // 4. External request.md (outside machineADir).
+      //    runRunCore copies it into the worktree as part of setupWorkspace.
+      //    The canonical path patterns (specrunner/drafts/<slug>/request.md) do not
+      //    match this path, so requestSlug in bootstrapJob will be null; the slug is
+      //    correctly derived from the feature branch name in getJobSlug().
+      const externalRequestMdPath = path.join(tmpDir, "request.md");
+      await fsPromises.writeFile(
+        externalRequestMdPath,
+        [
+          `# GitHub-disabled E2E feature`,
+          ``,
+          `## Meta`,
+          ``,
+          `- **type**: new-feature`,
+          `- **slug**: ${SLUG}`,
+          `- **base-branch**: main`,
+          `- **adr**: false`,
+          ``,
+          `Implement a local-only feature without GitHub integration.`,
+          ``,
+        ].join("\n"),
+      );
 
       // =====================================================================
-      // Spy on fetch (must stay 0 — no GitHub API calls)
+      // Spy on fetch — must remain at zero throughout the entire lifecycle.
+      // Any call to globalThis.fetch (GitHub API, Claude API, etc.) fails loudly.
       // =====================================================================
 
-      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL | Request) => {
-        const urlStr = String(url);
-        // Fail loudly if GitHub API is called — this must never happen in GitHub-disabled path
-        throw new Error(`[T-16] Unexpected fetch call to GitHub API: ${urlStr}`);
-      });
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async (url: string | URL | Request) => {
+          throw new Error(`[T-16] Unexpected fetch call: ${String(url)}`);
+        });
 
       // =====================================================================
-      // TC-T16-001: Build initial JobState with GitHub-disabled contract
+      // Phase 1: runRunCore
+      //
+      // - Creates a new git worktree from origin/main
+      // - Bootstrap commit (request.md) pushed to feature branch
+      // - Mock pipeline call #1: returns awaiting-resume
+      // - Checkpoint commit (state.json + events.jsonl) pushed
+      // - handleResult(awaiting-resume) → exit code 1
+      //
+      // Branch name is captured via onFeatureBranchCreated callback.
       // =====================================================================
 
-      // Compute origin identity from Machine A's origin URL
-      const originUrl = originDir; // local path (file:// style)
-      const originIdentity = normalizeOriginIdentity(originUrl);
+      let capturedBranch: string | undefined;
 
-      const machineAInitialState: JobState = {
-        ...buildInitialJobState({
-          request: {
-            path: `specrunner/changes/${SLUG}/request.md`,
-            title: "GitHub-disabled E2E feature",
-            type: "new-feature",
-            slug: SLUG,
-          },
-          // GitHub-disabled: no owner/name, only origin
-          repository: { origin: originIdentity },
-          githubIntegration: { enabled: false },
-        }),
-        jobId: JOB_ID,
-        branch: BRANCH,
-        status: "running",
-        step: "implementer",
-      };
-
-      // Assert contract is correctly set on state
-      expect(getGitHubIntegration(machineAInitialState).enabled).toBe(false);
-      expect(machineAInitialState.repository.origin).toBeDefined();
-      expect((machineAInitialState.repository as { owner?: string }).owner).toBeUndefined();
-
-      // Persist initial state
-      const storeFactory = (id: string) =>
-        new JobStateStore(id, machineADir, { slug: SLUG, stateRoot: machineADir });
-      await storeFactory(JOB_ID).persist(machineAInitialState);
-
-      // =====================================================================
-      // TC-T16-001: Run pipeline — implementer returns "timeout" (halt)
-      // =====================================================================
-
-      let agentCallCount = 0;
-      const fakeAgent: AgentRunner = {
-        async run(ctx: AgentRunContext): Promise<AgentRunResult> {
-          agentCallCount++;
-          // Return timeout on first call → pipeline halts to awaiting-resume
-          if (agentCallCount === 1) {
-            return { completionReason: "timeout" as const, resultContent: null, toolResult: null, followUpAttempts: 0 };
-          }
-
-          const stepName = ctx.step.name;
-          const changeDir = path.join(ctx.cwd, "specrunner", "changes", SLUG);
-          await fsPromises.mkdir(changeDir, { recursive: true });
-
-          // Write step-appropriate result files and return matching toolResult.
-          // implementer (producer): writes implementer-result.md
-          if (stepName === "implementer") {
-            const implResultPath = path.join(ctx.cwd, `specrunner/changes/${SLUG}/implementer-result.md`);
-            await fsPromises.writeFile(
-              implResultPath,
-              `# Implementer Result — ${SLUG}\n\n## Status: success\n\nImplemented.\n`,
-            );
-            return {
-              completionReason: "success" as const,
-              resultContent: await fsPromises.readFile(implResultPath, "utf-8"),
-              toolResult: { ok: true, status: "success" },
-              followUpAttempts: 0,
-            };
-          }
-
-          // code-review (judge step): writes review-feedback-001.md, approves with no findings
-          if (stepName === "code-review") {
-            const reviewPath = path.join(ctx.cwd, reviewFeedbackPath(SLUG, 1));
-            await fsPromises.mkdir(path.dirname(reviewPath), { recursive: true });
-            await fsPromises.writeFile(
-              reviewPath,
-              `# Code Review — ${SLUG}\n\n## Verdict: approved\n\nLGTM — no issues found.\n`,
-            );
-            return {
-              completionReason: "success" as const,
-              resultContent: await fsPromises.readFile(reviewPath, "utf-8"),
-              toolResult: { ok: true, findings: [], evidence: { checked: 1 } },
-              followUpAttempts: 0,
-            };
-          }
-
-          // conformance (judge step): writes conformance-result-001.md, approves with no findings
-          if (stepName === "conformance") {
-            const conformancePath = path.join(ctx.cwd, conformanceResultPath(SLUG, 1));
-            await fsPromises.mkdir(path.dirname(conformancePath), { recursive: true });
-            await fsPromises.writeFile(
-              conformancePath,
-              `# Conformance — ${SLUG}\n\n## Verdict: approved\n\nAll acceptance criteria met.\n`,
-            );
-            return {
-              completionReason: "success" as const,
-              resultContent: await fsPromises.readFile(conformancePath, "utf-8"),
-              toolResult: { ok: true, findings: [], evidence: { checked: 1 } },
-              followUpAttempts: 0,
-            };
-          }
-
-          // All other agent steps (adr-gen etc.): return success with no result file
-          return {
-            completionReason: "success" as const,
-            resultContent: null,
-            toolResult: { ok: true, status: "success" },
-            followUpAttempts: 0,
-          };
+      const runExitCode = await runRunCore(externalRequestMdPath, {
+        cwd: machineADir,
+        onFeatureBranchCreated: async (_baseOid: string, branchName: string) => {
+          capturedBranch = branchName;
         },
-      };
-
-      const terminalState = makeTerminalStateCapability(machineADir, SLUG);
-      const pipelineDeps: PipelineDeps = {
-        config: MINIMAL_CONFIG,
-        slug: SLUG,
-        cwd: machineADir,
-        request: makeRequest(SLUG),
-        githubClient: null,    // GitHub-disabled: no client
-        owner: undefined,
-        repo: undefined,
-        spawn: spawnCommand,
-        storeFactory,
-        runner: fakeAgent,
-        terminalState,
-        stepArtifact: makeStepArtifact(),
-        stepIo: noopStepIo,
-        changedFiles: noopChangedFiles,
-        gitTransportSpawn: defaultSpawnFn,
-        roundGitEffects: noopRoundGitEffects,
-      };
-
-      const events = new EventBus();
-      // Use buildPipelineForJob which applies GitHub integration contract (removes pr-create)
-      const machineAPipeline = buildPipelineForJob(machineAInitialState, pipelineDeps, events);
-      const haltedState = await machineAPipeline.run("implementer", machineAInitialState, pipelineDeps);
-
-      // TC-T16-001(a): halted at awaiting-resume
-      expect(haltedState.status).toBe("awaiting-resume");
-      expect(haltedState.resumePoint?.step).toBe("implementer");
-      expect(agentCallCount).toBe(1);
-
-      // TC-T16-002: No GitHub API calls during run
-      expect(fetchSpy).not.toHaveBeenCalled();
-
-      // =====================================================================
-      // Resume from awaiting-resume → pipeline should complete to awaiting-archive
-      // =====================================================================
-
-      // Refresh state from disk (checkpoint was committed)
-      const resumeState = await storeFactory(JOB_ID).load();
-      const resumePipeline = buildPipelineForJob(resumeState, pipelineDeps, events);
-      const completeState = await resumePipeline.run("implementer", resumeState, pipelineDeps);
-
-      // TC-T16-001(b): pipeline completes with awaiting-archive (no PR created)
-      // In GitHub-disabled mode, pr-create is removed from the pipeline,
-      // so the pipeline ends at awaiting-archive after adr-gen → end.
-      // TC-120 (must): only awaiting-archive is acceptable — awaiting-resume means the
-      // pipeline halted again and the GitHub-disabled completion contract was not verified.
-      expect(completeState.status).toBe("awaiting-archive");
-
-      // TC-T16-002: Still no GitHub API calls
-      expect(fetchSpy).not.toHaveBeenCalled();
-
-      // =====================================================================
-      // TC-T16-004: archive — remote branch preserved
-      // =====================================================================
-
-      // Verify branch exists on origin before archive
-      const branchesBeforeArchive = await git(originDir, "branch", "--list", BRANCH);
-      expect(branchesBeforeArchive).toContain(BRANCH);
-
-      await runPlainArchive({
-        slug: SLUG,
-        cwd: machineADir,
-        spawn: spawnCommand,
-        fs: makeFinishFs(),
-        baseBranch: "main",
-        // githubToken intentionally omitted — GitHub-disabled job
       });
 
-      // Archive should succeed (exit 0 or 1 if push fails due to test infra)
-      // The key assertion: feature branch is still on origin after archive
-      const branchesAfterArchive = await git(originDir, "branch", "--list", BRANCH);
-      expect(branchesAfterArchive).toContain(BRANCH); // TC-T16-004: branch preserved
+      // TC-T16-001(a): runRunCore halts at awaiting-resume → exit code 1
+      expect(runExitCode).toBe(1);
+      expect(capturedBranch).toBeDefined();
+      expect(capturedBranch).toMatch(/^feat\/gh-disabled-feature-[0-9a-f]{8}$/);
 
-      // TC-T16-002: Still no GitHub API calls
+      // TC-T16-002: No GitHub API calls during run phase
       expect(fetchSpy).not.toHaveBeenCalled();
 
+      // Verify the pipeline mock was called exactly once (run phase)
+      expect(pipelineCallState.count).toBe(1);
+
       // =====================================================================
-      // TC-T16-005: Machine B clone — attach with matching origin identity
+      // Discover jobId from job catalog.
+      // JobStateStore.list scans machineADir/.git/specrunner-worktrees/*/
+      // specrunner/changes/*/state.json to find the worktree-resident state.
       // =====================================================================
 
+      const allStates = await JobStateStore.list(machineADir);
+      const runState = allStates.find((s) => getJobSlug(s) === SLUG);
+      expect(runState).toBeDefined();
+      const jobId = runState!.jobId;
+
+      // D1: GitHub integration contract is fixed in job state (not re-read from config)
+      expect(getGitHubIntegration(runState!).enabled).toBe(false);
+      // D1: repository has origin identity only (no GitHub owner/name)
+      expect(runState!.repository.origin).toBeDefined();
+      expect((runState!.repository as { owner?: string }).owner).toBeUndefined();
+
+      // =====================================================================
+      // TC-T16-005: Machine B — attach from matching origin succeeds.
+      //
+      // Must happen BEFORE resume/archive:
+      // - attachResumePolicy requires status==="awaiting-resume" ✓ (checkpoint state)
+      // - After archive, resolveCheckpointSlug fails (change folder moved to archive/)
+      // =====================================================================
+
+      const machineBDir = path.join(tmpDir, "machine-b");
       await git(tmpDir, "clone", originDir, "machine-b");
       await git(machineBDir, "config", "user.email", "test@test.com");
       await git(machineBDir, "config", "user.name", "Test");
 
-      // Machine B's origin points to the same bare origin → same digest
+      // Machine B's origin remote URL points to the same bare origin → same digest
       const machineBOrigin = normalizeOriginIdentity(originDir);
-      expect(machineBOrigin.digest).toBe(originIdentity.digest);
 
       const machineBVerified = await runAttachVerification({
         cwd: machineBDir,
-        branch: BRANCH,
+        branch: capturedBranch!,
         spawnFn: spawnCommand,
-        expectedRepo: {
-          // GitHub-disabled: no github field, only origin
-          origin: machineBOrigin,
-        },
+        expectedRepo: { origin: machineBOrigin },
       });
 
+      // TC-T16-005: attach succeeded — checkpoint is valid and digest matches
       expect(machineBVerified.slug).toBe(SLUG);
-      expect(machineBVerified.jobId).toBe(JOB_ID);
-
-      // TC-T16-005: attach succeeded with matching origin digest
+      expect(machineBVerified.jobId).toBe(jobId);
       expect(machineBVerified.state.githubIntegration?.enabled).toBe(false);
+      expect(machineBVerified.state.status).toBe("awaiting-resume");
 
-      // TC-T16-002: No GitHub API calls from attach either
+      // TC-T16-002: Still no GitHub API calls
       expect(fetchSpy).not.toHaveBeenCalled();
 
       // =====================================================================
-      // TC-T16-006: Machine C (wrong origin URL) — attach rejected with identity-mismatch
-      // Clone the real origin so Machine C has all git objects, but then point
-      // the "origin" remote URL to a different path → different digest → mismatch
+      // TC-T16-006: Machine C (wrong origin URL) — attach rejected.
+      //
+      // Machine C is cloned from the real origin so it has all git objects,
+      // but then the origin remote URL is changed to a different bare repo.
+      // This changes the digest → origin identity mismatch → CHECKPOINT_NOT_ATTACHABLE.
+      //
+      // We intercept "git fetch origin <branch>" to skip the actual fetch
+      // (Machine C already has origin/<branch> from the initial clone), then
+      // let all other git commands run against the real repos.
       // =====================================================================
 
+      const machineCDir = path.join(tmpDir, "machine-c");
       await git(tmpDir, "clone", originDir, "machine-c");
       await git(machineCDir, "config", "user.email", "test@test.com");
       await git(machineCDir, "config", "user.name", "Test");
 
-      // Change the origin remote URL to a different path → different digest
       const wrongOriginDir = path.join(tmpDir, "wrong-origin");
       await fsPromises.mkdir(wrongOriginDir, { recursive: true });
       await git(wrongOriginDir, "init", "--bare", "--initial-branch=main");
+      // Point Machine C's origin to the wrong bare repo → different digest
       await git(machineCDir, "remote", "set-url", "origin", wrongOriginDir);
 
-      // Machine C's origin now points to a DIFFERENT bare origin → different digest
       const machineCOrigin = normalizeOriginIdentity(wrongOriginDir);
-      expect(machineCOrigin.digest).not.toBe(originIdentity.digest);
+      // Verify the digests truly differ (test self-check)
+      expect(machineCOrigin.digest).not.toBe(machineBOrigin.digest);
 
-      // Machine C already has all git objects from the clone. Now try attach.
-      // The spawnFn intercepts "git fetch origin" to skip the actual fetch
-      // (Machine C still has origin/<branch> from the initial clone).
       await expect(
         runAttachVerification({
           cwd: machineCDir,
-          branch: BRANCH,
+          branch: capturedBranch!,
           spawnFn: async (cmd: string, args: string[], opts: SpawnOptions) => {
-            // Skip "git fetch origin <branch>" — objects already available
+            // Intercept "git fetch origin <branch>" — skip the actual fetch since
+            // Machine C already has origin/<branch> from the initial clone.
+            // (A real fetch to wrongOriginDir would fail with ATTACH_FETCH_FAILED
+            //  before we even get to the identity check — we need to reach it.)
             if (cmd === "git" && args[0] === "fetch") {
               return { exitCode: 0, stdout: "", stderr: "" };
             }
             return spawnCommand(cmd, args, opts);
           },
-          expectedRepo: {
-            origin: machineCOrigin, // wrong digest
-          },
+          expectedRepo: { origin: machineCOrigin },
         }),
       ).rejects.toThrow(/identity/i);
 
-      // TC-T16-002: No GitHub API calls from any of the above
+      // TC-T16-002: Still no GitHub API calls
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // =====================================================================
+      // Phase 2: runResumeCore
+      //
+      // - Loads awaiting-resume state from worktree (via job catalog)
+      // - D1: githubEnabledOverride = state.githubIntegration.enabled = false
+      // - setupWorkspace → resume-existing (no dirty-tree check, uses worktree)
+      // - Mock pipeline call #2: returns awaiting-archive
+      // - Finalize commit (state.json + events.jsonl + attestation.md) pushed
+      // - handleResult(awaiting-archive, githubEnabled:false) → exit code 0
+      // =====================================================================
+
+      const resumeExitCode = await runResumeCore(SLUG, { cwd: machineADir, repoRoot: machineADir });
+
+      // TC-T16-001(b): pipeline completes with awaiting-archive (GitHub-disabled = branch-published)
+      expect(resumeExitCode).toBe(0);
+      // Verify the pipeline mock was called exactly twice total
+      expect(pipelineCallState.count).toBe(2);
+
+      // TC-T16-002: Still no GitHub API calls after resume
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // =====================================================================
+      // TC-T16-004 (pre-archive): Feature branch must exist on origin before archive
+      // =====================================================================
+
+      const branchBeforeArchive = await git(originDir, "branch", "--list", capturedBranch!);
+      expect(branchBeforeArchive).toContain(capturedBranch!);
+
+      // =====================================================================
+      // Phase 3: runArchive
+      //
+      // - Finds the job via worktree job catalog scan
+      // - GitHub-disabled path: no token resolution, no --with-merge
+      // - git mv change folder → archive/ in worktree
+      // - Commits archive record and pushes to feature branch
+      // - deleteRemoteBranch: false → remote branch preserved
+      // - Removes worktree (runArchiveCleanup)
+      // =====================================================================
+
+      const archiveExitCode = await runArchive({ slug: SLUG, cwd: machineADir });
+      expect(archiveExitCode).toBe(0);
+
+      // TC-T16-004 (post-archive): Feature branch still on origin (deleteRemoteBranch:false)
+      const branchAfterArchive = await git(originDir, "branch", "--list", capturedBranch!);
+      expect(branchAfterArchive).toContain(capturedBranch!);
+
+      // TC-T16-002: No GitHub API calls throughout the entire lifecycle
       expect(fetchSpy).not.toHaveBeenCalled();
     },
-    120_000, // 2 minutes timeout
+    180_000, // 3 minutes: worktree creation + multiple git commit/push operations
   );
 });

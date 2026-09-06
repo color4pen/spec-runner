@@ -64,7 +64,9 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   const repo = stateOwner && stateName ? { owner: stateOwner, name: stateName } : null;
   // D1: use the job's stored githubIntegration.enabled as the authoritative value so that
   // a config change after job start does not switch the resume path to a different mode.
-  const githubEnabledOverride = getGitHubIntegration(state).enabled;
+  // When state is null (terminal or not found), ResumeCommand.prepare() handles the error
+  // path with appropriate messaging; default to enabled for backward compatibility.
+  const githubEnabledOverride = state !== null ? getGitHubIntegration(state).enabled : true;
 
   let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
   let config: Awaited<ReturnType<typeof bootstrap>>["config"];
