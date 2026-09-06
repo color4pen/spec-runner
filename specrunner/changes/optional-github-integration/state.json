@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T14:49:23.002Z",
+  "updatedAt": "2026-09-06T15:06:29.783Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -82,7 +82,9 @@
     "3a3cd25a41263041fb51c18443a1cec477a5c9d4",
     "8df2b9a2276e1746bddebecb2af2d7664f70847d",
     "bbde218b4f32ef6331c84676414dcae971615dd2",
-    "f3ab36662b33b3d925ab8c6fe3189f054940c478"
+    "f3ab36662b33b3d925ab8c6fe3189f054940c478",
+    "c56b64dc7bf9639dfee98843700c1623550fdd73",
+    "b2f32dc2c3975b2fc0bda350da0443b14ef6de84"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,20 +166,62 @@
       "src/core/attach/orchestrator.ts"
     ],
     "code-fixer": [
-      "src/cli/bootstrap.ts",
-      "src/cli/resume.ts",
-      "src/config/github-integration.ts",
-      "src/core/command/runner.ts",
-      "src/core/command/run-result.ts",
-      "src/state/github-integration.ts",
-      "tests/unit/core/command/run-result.test.ts",
-      "src/util/paths.ts"
+      "tests/github-disabled-e2e.test.ts",
+      "src/cli/archive.ts",
+      "src/cli/github-composition.ts",
+      "src/state/schema/operations.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/apply-github-integration.ts",
+      "src/util/paths.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-context-builder.ts",
+      "tests/attach/attach-resume-e2e.test.ts",
+      "src/core/pipeline/run.ts",
+      "src/config/getAgentId.ts",
+      "src/core/pipeline/types.ts",
+      "src/kernel/step-names.ts",
+      "tests/unit/cli/archive-usage-text.test.ts",
+      "tests/unit/state/github-integration.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "c56b64dc7bf9639dfee98843700c1623550fdd73",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/optional-github-integration/design.md:sha256:6b3191ec02705826be5406308f3f47e5950c42ec7cce6a5a0c512bc338efb243|specrunner/changes/optional-github-integration/request.md:sha256:8b60a5621c57cfcb946de66246055cf9e2539324a035aa0425d7b656f065b881|specrunner/changes/optional-github-integration/spec.md:sha256:78a270df8a9e539715729e187cae5b3ccc128ab59cf0ef22fa03f97a11382c2b|specrunner/changes/optional-github-integration/tasks.md:sha256:2f58f4bb3600f02182f9d34b8837c70fb426e4f6f363eb56698e22d04b436ce8|specrunner/changes/optional-github-integration/test-cases.md:sha256:20fb14e35523b4fdddfde3419a72f61d7b96a5cbf9fb97ca8295df7fca483d6c"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "c56b64dc7bf9639dfee98843700c1623550fdd73",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/optional-github-integration/design.md:sha256:6b3191ec02705826be5406308f3f47e5950c42ec7cce6a5a0c512bc338efb243|specrunner/changes/optional-github-integration/request.md:sha256:8b60a5621c57cfcb946de66246055cf9e2539324a035aa0425d7b656f065b881|specrunner/changes/optional-github-integration/spec.md:sha256:78a270df8a9e539715729e187cae5b3ccc128ab59cf0ef22fa03f97a11382c2b|specrunner/changes/optional-github-integration/tasks.md:sha256:2f58f4bb3600f02182f9d34b8837c70fb426e4f6f363eb56698e22d04b436ce8|specrunner/changes/optional-github-integration/test-cases.md:sha256:20fb14e35523b4fdddfde3419a72f61d7b96a5cbf9fb97ca8295df7fca483d6c"
+    }
+  ],
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 95,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -187,7 +231,10 @@
       "implementer": 6,
       "verification": 5,
       "code-review": 3,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
