@@ -2,6 +2,7 @@ import { SpecRunnerError } from "../errors.js";
 import { setLogLevel, logError, stderrWrite, type LogLevel } from "../logger/stdout.js";
 import { resolveJobStateBySlug } from "../core/resume/resolve-job.js";
 import { bootstrap } from "./bootstrap.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 import { ResumeCommand } from "../core/command/resume.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
@@ -61,11 +62,14 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   const stateOwner = state?.repository.owner;
   const stateName = state?.repository.name;
   const repo = stateOwner && stateName ? { owner: stateOwner, name: stateName } : null;
+  // D1: use the job's stored githubIntegration.enabled as the authoritative value so that
+  // a config change after job start does not switch the resume path to a different mode.
+  const githubEnabledOverride = getGitHubIntegration(state).enabled;
 
   let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
   let config: Awaited<ReturnType<typeof bootstrap>>["config"];
   try {
-    ({ runtime, config } = await bootstrap(cwd, repo, options.repoRoot ?? null));
+    ({ runtime, config } = await bootstrap(cwd, repo, options.repoRoot ?? null, githubEnabledOverride));
   } catch (err) {
     const e = err as Error & { hint?: string };
     logError(e.message);

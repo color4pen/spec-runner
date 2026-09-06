@@ -46,8 +46,7 @@ export function traceGitHubIntegration(
   const projectLocalRaw = loadResult.projectLocal.migrated;
   if (
     projectLocalRaw !== null &&
-    typeof projectLocalRaw === "object" &&
-    projectLocalRaw !== null
+    typeof projectLocalRaw === "object"
   ) {
     const pl = projectLocalRaw as Record<string, unknown>;
     const github = pl["github"];

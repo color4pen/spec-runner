@@ -33,14 +33,20 @@ export interface BootstrapResult {
  * Load config, resolve GitHub client (when integration is enabled), and create runtime for the given working directory and repo.
  * Throws on config load failure or missing GitHub token when enabled — callers handle the error.
  *
- * @param cwd       Invoker working directory (used for runtime setup).
- * @param repo      Origin info (owner/name). null when GitHub integration is disabled.
- * @param repoRoot  Dispatch-resolved repo root, or null when outside a repo. When null,
- *                  config is loaded from the global config only (no project-local overlay).
+ * @param cwd                  Invoker working directory (used for runtime setup).
+ * @param repo                 Origin info (owner/name). null when GitHub integration is disabled.
+ * @param repoRoot             Dispatch-resolved repo root, or null when outside a repo. When null,
+ *                             config is loaded from the global config only (no project-local overlay).
+ * @param githubEnabledOverride When provided, use this value instead of re-reading github.enabled
+ *                             from the current config. Must be set on resume/reopen/attach/archive
+ *                             paths so the stored job state (D1) is authoritative, not the current
+ *                             config (which may have changed since the job was started).
  */
-export async function bootstrap(cwd: string, repo: OriginInfo | null, repoRoot: string | null = null): Promise<BootstrapResult> {
+export async function bootstrap(cwd: string, repo: OriginInfo | null, repoRoot: string | null = null, githubEnabledOverride?: boolean): Promise<BootstrapResult> {
   const config = await loadConfig(repoRoot ?? undefined);
-  const { enabled: githubEnabled } = resolveGitHubIntegrationConfig(config);
+  const { enabled: githubEnabled } = githubEnabledOverride !== undefined
+    ? { enabled: githubEnabledOverride }
+    : resolveGitHubIntegrationConfig(config);
   const { githubClient, githubToken } = await composeGitHubIntegrationForJob({
     enabled: githubEnabled,
     config,
