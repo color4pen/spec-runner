@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T17:10:59.635Z",
+  "updatedAt": "2026-09-06T17:15:42.831Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
   "pipelineId": "standard",
@@ -91,7 +91,8 @@
     "9bc3d847fba8f4db43ed4d2000007ea44a633313",
     "2b251fae4ede64a3011383f18c8290d0a81f7e54",
     "3c7f31b1fc81680a5f80675b7fb6e2fe39308c36",
-    "1c6422d0aead151ce331ba5276532e91b071f551"
+    "1c6422d0aead151ce331ba5276532e91b071f551",
+    "97f70046aa1c001c2954f6211ac51a984872e1da"
   ],
   "touchedFiles": {
     "request-review": [
@@ -278,6 +279,10 @@
       "architecture/model.md",
       "src/config/schema/validation.ts",
       "src/core/runtime/local.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-04-pipeline-descriptor-registry.md",
+      "specrunner/adr/2026-09-06-optional-github-integration.md"
     ]
   },
   "resumePoint": null,
@@ -313,8 +318,13 @@
       "canonHash": "specrunner/changes/optional-github-integration/design.md:sha256:6b3191ec02705826be5406308f3f47e5950c42ec7cce6a5a0c512bc338efb243|specrunner/changes/optional-github-integration/request.md:sha256:8b60a5621c57cfcb946de66246055cf9e2539324a035aa0425d7b656f065b881|specrunner/changes/optional-github-integration/spec.md:sha256:78a270df8a9e539715729e187cae5b3ccc128ab59cf0ef22fa03f97a11382c2b|specrunner/changes/optional-github-integration/tasks.md:sha256:2f58f4bb3600f02182f9d34b8837c70fb426e4f6f363eb56698e22d04b436ce8|specrunner/changes/optional-github-integration/test-cases.md:sha256:20fb14e35523b4fdddfde3419a72f61d7b96a5cbf9fb97ca8295df7fca483d6c"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1126",
+    "number": 1126,
+    "createdAt": "2026-09-06T17:15:42.153Z"
+  },
   "_journal": {
-    "historyCount": 125,
+    "historyCount": 130,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -329,7 +339,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
