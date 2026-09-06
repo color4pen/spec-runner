@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-06T06:23:54.584Z",
+  "updatedAt": "2026-09-06T06:28:46.245Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
@@ -95,7 +95,9 @@
     "9946e3f37b8cbbfb4fdc32d2a54578a1d8353e7d",
     "3e7bdb8f5dc81440e55342ba77e2c742574643bc",
     "34b28be216c053d093ca52ab28df927e9d9564d6",
-    "89581422ce43f10be645c49ed3ec2151e3b834b6"
+    "89581422ce43f10be645c49ed3ec2151e3b834b6",
+    "46711b018229ccd08a35b87c69a21b905b78b23c",
+    "2a0c30d43280894e46459b146f54637b14d97c08"
   ],
   "touchedFiles": {
     "request-review": [
@@ -172,7 +174,12 @@
     ],
     "code-fixer": [
       "src/prompts/__tests__/fragment-coverage.test.ts",
-      "src/prompts/judge-rules.ts"
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/prompts/judge-rules.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/code-review-system.ts",
+      "src/kernel/report-result.ts"
     ],
     "regression-gate": [
       "src/core/step/canon-escalation.ts",
@@ -207,7 +214,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "a7fe2ae0456f7ee2fd92d56491100d6f02243dcb",
+      "approvedAtCommit": "46711b018229ccd08a35b87c69a21b905b78b23c",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -218,7 +225,7 @@
         "src/core/verification/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/finding-remediation-contract/design.md:sha256:854138cbcb490711fe6455f1d0960ffe8633dcb120e0ee0e059deb7e6d4965ff|specrunner/changes/finding-remediation-contract/request.md:sha256:73836da144d339cdda49186c4063163098cec368888c203bca2e15d507b3eaaf|specrunner/changes/finding-remediation-contract/spec.md:sha256:4a01ce0c4b8c35d3dab121bf2bc2f3923659fd931296f005e01d534cc9645e75|specrunner/changes/finding-remediation-contract/tasks.md:sha256:7f075096addbf72b1f484d00723fe6ef9b2d79c95b66812c38eb0c4606c80f80|specrunner/changes/finding-remediation-contract/test-cases.md:sha256:158a353c32c4449a6efd2de25684aa05be3e506d2c25cf166a0c83c16b8f851f"
+      "canonHash": "specrunner/changes/finding-remediation-contract/design.md:sha256:a6d2fbe631f6d99347c44cf5c2b24d7add0d66b45bdd28a277b52ec3427188ee|specrunner/changes/finding-remediation-contract/request.md:sha256:73836da144d339cdda49186c4063163098cec368888c203bca2e15d507b3eaaf|specrunner/changes/finding-remediation-contract/spec.md:sha256:4a01ce0c4b8c35d3dab121bf2bc2f3923659fd931296f005e01d534cc9645e75|specrunner/changes/finding-remediation-contract/tasks.md:sha256:7f075096addbf72b1f484d00723fe6ef9b2d79c95b66812c38eb0c4606c80f80|specrunner/changes/finding-remediation-contract/test-cases.md:sha256:158a353c32c4449a6efd2de25684aa05be3e506d2c25cf166a0c83c16b8f851f"
     },
     {
       "name": "scale-tolerance",
@@ -253,7 +260,7 @@
     "createdAt": "2026-09-05T16:10:10.907Z"
   },
   "_journal": {
-    "historyCount": 142,
+    "historyCount": 151,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -263,10 +270,10 @@
       "implementer": 2,
       "verification": 5,
       "code-review": 3,
-      "code-fixer": 6,
-      "cross-boundary-invariants": 5,
+      "code-fixer": 7,
+      "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
-      "custom-reviewers": 6,
+      "custom-reviewers": 7,
       "regression-gate": 2,
       "conformance": 2,
       "adr-gen": 1,
