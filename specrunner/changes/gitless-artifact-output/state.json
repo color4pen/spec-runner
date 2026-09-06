@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-06T05:17:07.713Z",
+  "updatedAt": "2026-09-06T05:32:02.096Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
@@ -95,7 +95,8 @@
     "e5682a006d27aaecb074ac9955e7ec4e459bb77e",
     "747ab7b16831c754ab5fd14766a031be2c9dc438",
     "a74306b8d48f967040be8bc359809c38b5dd9779",
-    "eed52efc03642864ac378fb877c2fa2c92397420"
+    "eed52efc03642864ac378fb877c2fa2c92397420",
+    "a623fe3adaa9a6e364d2051933dbe73a4aceb310"
   ],
   "touchedFiles": {
     "request-review": [
@@ -125,17 +126,26 @@
       "src/core/artifact-output/__tests__/run.test.ts"
     ],
     "code-review": [
-      "src/core/artifact-output/context.ts",
-      "src/core/snapshot/digest.ts",
       "src/core/artifact-output/run.ts",
-      "src/core/artifact-output/manifest.ts",
+      "src/core/snapshot/collect.ts",
+      "src/core/artifact-output/revision-binding.ts",
+      "src/core/artifact-output/artifact-writer.ts",
+      "src/core/artifact-output/patch.ts",
       "src/core/snapshot/compare.ts",
-      "src/core/artifact-output/__tests__/context-binding.test.ts",
-      "src/core/snapshot/__tests__/digest.test.ts",
+      "src/core/snapshot/__tests__/compare.test.ts",
       "src/core/artifact-output/__tests__/run.test.ts",
-      "src/core/artifact-output/__tests__/manifest.test.ts",
-      "src/core/snapshot/types.ts",
-      "src/core/snapshot/__tests__/compare.test.ts"
+      "src/core/artifact-output/manifest.ts",
+      "tests/artifact-output-vertical.test.ts",
+      "src/core/artifact-output/__tests__/artifact-writer.test.ts",
+      "src/core/artifact-output/source-guard.ts",
+      "src/core/artifact-output/run-layout.ts",
+      "src/core/artifact-output/execution-profile.ts",
+      "src/core/artifact-output/preflight.ts",
+      "tests/unit/architecture/artifact-output-git-free.test.ts",
+      "src/core/snapshot/digest.ts",
+      "src/util/unified-diff.ts",
+      "src/core/command/guide.ts",
+      "src/core/artifact-output/context.ts"
     ],
     "code-fixer": [
       "src/core/artifact-output/run.ts",
@@ -253,7 +263,7 @@
     "createdAt": "2026-09-05T22:43:56.956Z"
   },
   "_journal": {
-    "historyCount": 146,
+    "historyCount": 150,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -262,7 +272,7 @@
       "spec-fixer": 2,
       "implementer": 3,
       "verification": 5,
-      "code-review": 8,
+      "code-review": 9,
       "code-fixer": 5,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,

@@ -340,8 +340,20 @@ describe("TC-079: cross-phase digest mismatch causes halt", () => {
       spawn: makeNoopSpawn(),
     });
 
-    // Must halt (revision-drift during review or cross-phase digest mismatch)
-    expect(["halted", "failed"]).toContain(result.kind);
+    // Must halt (revision-drift during review causes cross-phase digest mismatch)
+    expect(result.kind).toBe("halted");
+
+    // artifact/ must not exist — drift-halted runs must not finalize
+    const runRoot = "runRoot" in result ? result.runRoot : undefined;
+    if (runRoot) {
+      const artifactPath = path.join(runRoot, "artifact");
+      let exists = false;
+      try {
+        await fs.access(artifactPath);
+        exists = true;
+      } catch { /* expected */ }
+      expect(exists, "artifact/ must not exist after a revision-drift halt").toBe(false);
+    }
   });
 
   it("non-executable pipeline returns halted at preflight stage", async () => {

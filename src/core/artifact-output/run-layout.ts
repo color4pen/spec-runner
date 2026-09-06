@@ -117,6 +117,9 @@ export async function createRunRoot(parentDir: string, runId: string): Promise<s
   await fs.mkdir(runRoot, { recursive: false });
   await fs.mkdir(nodePath.join(runRoot, "baseline"), { recursive: false });
   await fs.mkdir(candidateDir(runRoot), { recursive: false });
+  // steps/ is a D5-specified layout directory reserved for future per-step evidence.
+  // It is created here to establish the layout contract but is not written to in the
+  // current implementation. Do not remove it — downstream tools may depend on its presence.
   await fs.mkdir(stepsDir(runRoot), { recursive: false });
 
   return runRoot;

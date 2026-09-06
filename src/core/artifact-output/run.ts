@@ -191,10 +191,12 @@ export async function runArtifactOutput(
 
   // Write initial run.json — phases 1 (preflight) and 3 (baseline-snapshot) are complete;
   // entering phase 4 (materialize). Phases 2-3 cannot be tracked before the run root exists.
+  // The initial phase reflects the current phase being entered (materialize), not the last
+  // completed phase (baseline-snapshot), to avoid immediately stale phase fields.
   const runJson: RunJson = {
     runId,
     status: "running",
-    phase: "baseline-snapshot",
+    phase: "materialize",
     baselineDigest,
     resume: { supported: false, reason: "artifact-output profile does not support resume" },
     preflightReport,
@@ -207,10 +209,6 @@ export async function runArtifactOutput(
 
     // Write baseline snapshot evidence
     await writeJson(baselineSnapshotPath(runRoot), baselineSnapshot);
-
-    // Phase 4: Materialize candidate
-    runJson.phase = "materialize";
-    await writeRunJson(runRoot, runJson);
 
     const candidateRoot = candidateDir(runRoot);
     try {
@@ -597,10 +595,10 @@ async function checkSourceUnchanged(
     // guardResult.kind === "unchanged" → no action needed
     return false;
   } catch {
-    // If mutation was detected but writeRunJson threw, still return true (fail-closed).
-    // If assertSourceUnchanged itself threw, we cannot verify source state → treat as unchanged
-    // (best-effort; the guard cannot confirm mutation either way).
-    return mutationDetected;
+    // Fail-closed: if anything throws (including assertSourceUnchanged itself),
+    // we cannot confirm source is unchanged.
+    // D6: "snapshot 不能は unchanged に畳まない" — always return true (mutation detected).
+    return true;
   }
 }
 

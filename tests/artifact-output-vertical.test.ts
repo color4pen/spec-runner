@@ -15,6 +15,7 @@
  * TC-067: 1000 ファイル規模の fixture で縦断が完走し metrics が揃う
  * TC-068: 縦断実行中に SpecRunner 自身が発行した spawn に git・gh が 0 件
  * TC-073: run.json に resume.supported === false が記録される
+ * TC-077: review 中の candidate 変更で run が revision-drift として halt する
  * TC-078: escape symlink fail-closed ケース
  */
 import { describe, it, expect, afterEach } from "vitest";
@@ -436,6 +437,12 @@ describe("TC-078: agent adding escape symlink causes halt", () => {
     const runParentDir = await mktemp("ao-run-");
     await fs.writeFile(path.join(sourceDir, "a.txt"), "content");
 
+    // Take baseline snapshot before the run so we can verify source is unmodified after.
+    const { collectSnapshot } = await import("../src/core/snapshot/collect.js");
+    const sourceBefore = await collectSnapshot(sourceDir);
+    expect(sourceBefore.kind).toBe("ok");
+    const baselineSourceDigest = sourceBefore.kind === "ok" ? sourceBefore.snapshot.digest : null;
+
     const result = await runArtifactOutput({
       sourceRoot: sourceDir,
       runParentDir,
@@ -467,10 +474,15 @@ describe("TC-078: agent adding escape symlink causes halt", () => {
       expect(exists).toBe(false);
     }
 
-    // Source is unchanged
-    const { collectSnapshot } = await import("../src/core/snapshot/collect.js");
+    // Source is unchanged: both kind=ok and digest matches baseline.
     const sourceAfter = await collectSnapshot(sourceDir);
     expect(sourceAfter.kind).toBe("ok");
+    if (sourceAfter.kind === "ok" && baselineSourceDigest !== null) {
+      expect(
+        sourceAfter.snapshot.digest,
+        "Source digest must match the pre-run baseline — source was mutated during the run",
+      ).toBe(baselineSourceDigest);
+    }
   }, 30000);
 });
 
@@ -646,6 +658,63 @@ describe("TC-027: candidate drift during verification causes halted result", () 
   }, 30000);
 });
 
+// ─── TC-077: review-time candidate mutation → revision-drift halt ─────────────
+
+describe("TC-077: review 中の candidate 変更で run が revision-drift として halt する", () => {
+  it("ReviewSeam that mutates candidate workspace causes revision-drift halt with no artifact/", async () => {
+    const sourceDir = await mktemp("ao-src-");
+    const runParentDir = await mktemp("ao-run-");
+    await fs.writeFile(path.join(sourceDir, "a.txt"), "original content\n");
+
+    // A ReviewSeam that writes to the candidate workspace during review,
+    // causing the candidate digest at review time to differ from the digest
+    // observed during the post-review finalize phase (revision-drift).
+    const driftingReview: ReviewSeam = {
+      async run(candidateRoot: string, contextBlock: string): Promise<ReviewRecord> {
+        // Mutate the candidate during review to trigger drift detection
+        await fs.writeFile(
+          path.join(candidateRoot, "review-drift-injected.txt"),
+          "written by reviewer — this causes candidate drift\n",
+        );
+        const match = contextBlock.match(/\*\*Candidate digest\*\*: (sha256:[0-9a-f]{64})/);
+        const candidateDigest = match?.[1] ?? "sha256:" + "0".repeat(64);
+        return {
+          candidateDigest,
+          outcome: "approved",
+        };
+      },
+    };
+
+    const result = await runArtifactOutput({
+      sourceRoot: sourceDir,
+      runParentDir,
+      runId: "test-run-077",
+      requestContent: "Test request",
+      pipelineDescriptor: DESIGN_ONLY_DESCRIPTOR,
+      profileId: EXECUTION_PROFILE_IDS.ARTIFACT_OUTPUT,
+      agent: makeNoopAgent(),
+      verify: makePassingVerify(),
+      review: driftingReview,
+      spawn: makeSpawnRecorder().spawn,
+    });
+
+    // Candidate was mutated during review → revision-drift → must halt
+    expect(result.kind).toBe("halted");
+
+    // artifact/ must not exist — drift-halted runs must not finalize
+    const runRoot = "runRoot" in result ? result.runRoot : undefined;
+    if (runRoot) {
+      const artifactPath = path.join(runRoot, "artifact");
+      let exists = false;
+      try {
+        await fs.access(artifactPath);
+        exists = true;
+      } catch { /* expected */ }
+      expect(exists, "artifact/ must not exist after a revision-drift halt").toBe(false);
+    }
+  }, 30000);
+});
+
 // ─── TC-006: source mutation during run is detected ─────────────────────────
 
 describe("TC-006: source mutation during run is detected and recorded in run.json", () => {
@@ -725,15 +794,16 @@ describe("TC-006: source mutation during run is detected and recorded in run.jso
       error?: string;
     };
 
-    // Source was mutated (extra.txt added) → should record source-mutated.
+    // Source was mutated (extra.txt added) → should record source-mutated in the error field.
+    // D6: a generic failed status is insufficient; the error field must carry the specific cause
+    // so that source-mutation is distinguishable from other failure modes.
     const recordsMutation =
-      runJson.status === "failed" ||
       (runJson.error?.includes("source-mutated") ?? false) ||
       (runJson.error?.includes("source-unverifiable") ?? false);
 
     expect(
       recordsMutation,
-      `Expected run.json to record source mutation/unverifiable. status=${runJson.status}, error=${runJson.error ?? "(none)"}`,
+      `Expected run.json error field to contain 'source-mutated' or 'source-unverifiable'. status=${runJson.status}, error=${runJson.error ?? "(none)"}`,
     ).toBe(true);
   }, 30000);
 });

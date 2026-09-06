@@ -33,7 +33,7 @@ export interface ChangeEntry {
 }
 
 export type ChangeSetResult =
-  | { kind: "ok"; changes: readonly ChangeEntry[] }
+  | { kind: "success"; changes: readonly ChangeEntry[] }
   | { kind: "unavailable"; reason: string };
 
 // ─── Comparison ───────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ export function deriveChangeSet(
   // Sort by path (UTF-8 byte order)
   changes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 
-  return { kind: "ok", changes };
+  return { kind: "success", changes };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
