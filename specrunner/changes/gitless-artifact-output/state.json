@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a45cdc-dd5f-4f81-b741-b838cd8d1f11",
   "createdAt": "2026-09-05T12:39:23.630Z",
-  "updatedAt": "2026-09-05T22:43:57.498Z",
+  "updatedAt": "2026-09-06T05:17:07.713Z",
   "request": {
     "title": "Git非依存 artifact-output profile の成立性を設計・実測する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "code-review",
+  "status": "running",
   "branch": "feat/gitless-artifact-output-24a45cdc",
   "error": null,
   "pipelineId": "standard",
@@ -93,7 +93,9 @@
     "f216a81f5a44427111d77f1c625d21fadda69d08",
     "75121e920eb17deec0435d1b0bb949d70f92656f",
     "e5682a006d27aaecb074ac9955e7ec4e459bb77e",
-    "747ab7b16831c754ab5fd14766a031be2c9dc438"
+    "747ab7b16831c754ab5fd14766a031be2c9dc438",
+    "a74306b8d48f967040be8bc359809c38b5dd9779",
+    "eed52efc03642864ac378fb877c2fa2c92397420"
   ],
   "touchedFiles": {
     "request-review": [
@@ -209,6 +211,11 @@
       "text": "Operator ruling for review-feedback-007 (code-review escalation). Address everything below in this single iteration; do not widen scope beyond it.\n\nDecision 1 (verification seam receives empty changes list): RESOLVED as option 1 (document as known constraint). The operator has already committed the design.md change (commit 5da39ac7: D14 gained a known-constraint bullet + alternative (b) rejected, OQ-4 extended). Do NOT edit design.md. One small code change follows from D14's existing rationale (an empty list must not read as 'no changes'): in src/core/artifact-output/context.ts, when the change set has not been derived yet (verification-time call from run.ts, currently changes: []), the context block's Changed files section must explicitly say that the change set is not yet derived at verification time (derived after verification), instead of '(no changes)'. Implement this via an explicit input flag/mode (e.g. changeSetState: 'not-yet-derived' | 'derived'), keep the review-time call passing the derived change set, and add a unit test for the wording.\n\nDecision 2 (computeSymlinkDigest lacks D3 kind tag): RESOLVED as option 1. In src/core/snapshot/digest.ts hash the input with a 'symlink:' kind-tag prefix followed by the target bytes, so the digest is reproducible from the D3 text. This profile is an unwired preview with no persisted snapshots, so no schema version bump is needed; update tests that derive expectations (they call computeSymlinkDigest, so no hardcoded digests should break) and add one assertion that the digest differs from plain sha256 of the target string.\n\nFixable [MEDIUM] checkSourceUnchanged fail-open when writeRunJson throws (src/core/artifact-output/run.ts): implement the reviewer's Option B: compute mutated/unverifiable/exception -> mutated=true first, then attempt writeRunJson best-effort inside its own try/catch, and always return the correct boolean; a thrown guard also counts as mutated (fail-closed). Add a unit test where writeRunJson (or the fs write) throws after mutation is detected and assert result.kind === 'failed'.\n\nFixable [LOW] ArtifactManifest missing file-level unsupported array (src/core/artifact-output/manifest.ts): add `unsupported: readonly SnapshotFailure[]` (D9 'unsupported 配列') and emit [] from buildManifest; keep unsupportedOperations as is. Update manifest tests/schema assertions accordingly.\n\nFixable [LOW] naming inconsistency SnapshotResult kind 'ok' vs ChangeSetResult kind 'success': align ChangeSetResult to kind: 'ok' (SnapshotResult is the more foundational type) and update all call sites.\n\nRun the full test suite, typecheck and lint before finishing.",
       "step": "code-review",
       "recordedAt": "2026-09-05T22:10:08.212Z"
+    },
+    {
+      "text": "operator-apply commit a74306b8 で PR #1122 のレビュー指摘 6 件を修正済み（src/util/unified-diff.ts, src/core/artifact-output/{patch,artifact-writer,manifest,context,run,run-layout}.ts と design.md D5/D8/D9）。この commit の内容を前提に verification と code-review を行うこと。design.md の D8（計算量予算・payload 正本）/ D9（payload 全件収録と APPLY.md 手順）/ D5（run root と source の分離検査）は operator 裁定であり変更しないこと。",
+      "step": "verification",
+      "recordedAt": "2026-09-06T05:12:31.166Z"
     }
   ],
   "reviewerStatuses": [
@@ -246,7 +253,7 @@
     "createdAt": "2026-09-05T22:43:56.956Z"
   },
   "_journal": {
-    "historyCount": 137,
+    "historyCount": 146,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -254,7 +261,7 @@
       "spec-review": 2,
       "spec-fixer": 2,
       "implementer": 3,
-      "verification": 4,
+      "verification": 5,
       "code-review": 8,
       "code-fixer": 5,
       "cross-boundary-invariants": 1,
