@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T10:11:30.757Z",
+  "updatedAt": "2026-09-06T10:14:16.522Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -63,10 +63,28 @@
   "issueNumber": 1125,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "5c3f7e10838f961fcd1d591c43b471d9093d0145"
+    "5c3f7e10838f961fcd1d591c43b471d9093d0145",
+    "a7a8c203f19a75841bb2f2fb9a40cc8e8307eb94"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/preflight.ts",
+      "src/cli/bootstrap.ts",
+      "src/git/remote.ts",
+      "src/git/transport-auth.ts",
+      "src/core/command/reopen.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/runtime/factory.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/step/pr-create.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
