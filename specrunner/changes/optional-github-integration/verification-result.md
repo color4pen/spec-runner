@@ -7,9 +7,9 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.6s | 0 |
-| 2 | typecheck | failed | 15.5s | 2 |
-| 3 | test | skipped | — | — |
-| 4 | lint | skipped | — | — |
+| 2 | typecheck | passed | 17.0s | 0 |
+| 3 | test | passed | 110.2s | 0 |
+| 4 | lint | failed | 16.0s | 1 |
 | 5 | changed-line-coverage | skipped | — | — |
 | 6 | lockfile-sync | skipped | — | — |
 
@@ -24,7 +24,7 @@
 [34mCLI[39m Cleaning output folder
 [34mESM[39m Build start
 [32mESM[39m [1mdist/specrunner.js [22m[32m1.62 MB[39m
-[32mESM[39m ⚡️ Build success in 207ms
+[32mESM[39m ⚡️ Build success in 238ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -33,2531 +33,1295 @@ $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
 
 ## Phase: typecheck
 
-Step 'typecheck' failed
-
 ```
-src/cli/archive-from-issue.ts(147,29): error TS2353: Object literal may only specify known properties, and 'owner' does not exist in type '{ github?: { owner: string; name: string; } | undefined; origin?: RepositoryOrigin | undefined; }'.
-src/cli/ps.ts(47,50): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/cli/resume-from-issue.ts(165,27): error TS2353: Object literal may only specify known properties, and 'owner' does not exist in type '{ github?: { owner: string; name: string; } | undefined; origin?: RepositoryOrigin | undefined; }'.
-src/cli/resume.ts(68,49): error TS2345: Argument of type '{ owner: string | undefined; name: string | undefined; }' is not assignable to parameter of type 'OriginInfo'.
-  Types of property 'owner' are incompatible.
-    Type 'string | undefined' is not assignable to type 'string'.
-      Type 'undefined' is not assignable to type 'string'.
-src/core/attach/__tests__/checkpoint-policy.test.ts(193,25): error TS2353: Object literal may only specify known properties, and 'owner' does not exist in type '{ github?: { owner: string; name: string; } | undefined; origin?: RepositoryOrigin | undefined; }'.
-src/core/command/runner.ts(374,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/notify/issue-notifier.ts(185,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/core/pipeline/__tests__/iteration-display.test.ts(155,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/iteration-display.test.ts(207,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(265,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(284,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(319,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(354,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(384,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(408,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(436,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(457,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(483,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(515,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(554,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(604,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(656,81): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-canon.test.ts(689,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(220,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(248,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(275,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(293,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(311,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(331,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(358,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(389,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(412,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(450,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(476,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(494,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(514,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(532,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(569,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(590,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(608,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(676,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(689,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(706,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(761,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(774,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(791,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(861,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(874,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(895,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(913,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(970,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(989,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1025,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1047,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1073,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1110,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1150,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1177,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts(1213,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(246,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(301,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(331,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(366,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(405,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(433,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(485,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(514,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(582,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(637,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts(690,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-resume.test.ts(208,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-resume.test.ts(229,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-resume.test.ts(253,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-resume.test.ts(279,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-resume.test.ts(302,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(201,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(219,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(241,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(272,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(285,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(298,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(311,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(328,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(347,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(362,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts(387,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts(183,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts(209,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts(236,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts(258,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/run.ts(144,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/pipeline/run.ts(166,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/runtime/factory.ts(78,82): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(158,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(182,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(215,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(225,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(261,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(286,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator-touched-files.test.ts(318,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(207,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(229,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(364,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(379,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(398,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(446,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(491,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(542,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(583,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(614,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(644,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/commit-orchestrator.test.ts(675,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-commit-mutex.test.ts(155,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-commit-mutex.test.ts(156,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-commit-mutex.test.ts(210,60): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(182,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(212,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(238,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(259,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(281,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(307,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(323,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-drift-detection.test.ts(356,49): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(193,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(225,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(248,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(267,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(288,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(309,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(380,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(406,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(433,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(496,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(709,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(740,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(765,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(796,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(833,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(865,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(901,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(932,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(963,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(995,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-no-op.test.ts(1025,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-oid-capture.test.ts(165,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-oid-capture.test.ts(236,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-oid-capture.test.ts(286,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-resume-context.test.ts(132,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-resume-context.test.ts(141,60): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-commit.test.ts(143,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-commit.test.ts(170,70): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-commit.test.ts(171,69): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-commit.test.ts(198,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-commit.test.ts(218,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(155,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(195,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(231,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(262,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(288,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(313,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-round-produce.test.ts(341,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(204,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(219,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(231,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(245,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(264,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(276,49): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(292,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(306,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(325,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(337,49): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(355,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(370,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(383,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(413,67): error TS2345: Argument of type '{ cwd: string; client?: SessionClient; sleepFn?: (ms: number) => Promise<void>; githubClient: GitHubClient | null; githubToken?: string; ... 21 more ...; pushCapability?: PushCapability | null; }' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(427,47): error TS2345: Argument of type '{ cwd: string; client?: SessionClient; sleepFn?: (ms: number) => Promise<void>; githubClient: GitHubClient | null; githubToken?: string; ... 21 more ...; pushCapability?: PushCapability | null; }' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/executor-sequential-regression.test.ts(442,47): error TS2345: Argument of type '{ cwd: string; client?: SessionClient; sleepFn?: (ms: number) => Promise<void>; githubClient: GitHubClient | null; githubToken?: string; ... 21 more ...; pushCapability?: PushCapability | null; }' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/judge-verdict.test.ts(384,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/judge-verdict.test.ts(412,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(246,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(289,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(335,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(374,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(410,67): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(462,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(540,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/lineage-output-attribution.test.ts(657,59): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/request-review-step-completion-evidence.test.ts(115,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/request-review-step-completion-evidence.test.ts(148,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/request-review-step-completion-evidence.test.ts(182,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/request-review-step-completion-evidence.test.ts(207,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(291,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(354,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(405,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(453,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(639,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(726,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(780,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(988,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(1140,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(1192,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-fixer-routing.test.ts(1303,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-prior-round-context.test.ts(376,57): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-prior-round-context.test.ts(417,57): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/spec-review-prior-round-context.test.ts(458,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-evidence-diagnostic.test.ts(117,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-evidence-diagnostic.test.ts(143,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-evidence-diagnostic.test.ts(173,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(225,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(267,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(311,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(409,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(502,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-completion-missing-file-finding.test.ts(744,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(140,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(163,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(187,37): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(199,37): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(238,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(300,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(362,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-src/core/step/__tests__/step-context-builder.test.ts(398,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/attach/attach-resume-e2e.test.ts(325,90): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(303,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(349,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(397,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(434,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(495,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(543,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/canon-binding-e2e.test.ts(586,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/cli-stdout-snapshot.test.ts(231,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/cli-stdout-snapshot.test.ts(291,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/cli-stdout-snapshot.test.ts(346,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(694,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(707,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(740,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(783,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(801,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(836,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(866,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(938,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(963,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(977,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1077,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1162,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1238,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1294,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1341,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1558,66): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts(1756,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.guard-halt.test.ts(208,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.guard-halt.test.ts(262,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.guard-halt.test.ts(347,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.guard-halt.test.ts(401,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.guard-halt.test.ts(475,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(364,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(397,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(423,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(482,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(509,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(546,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(573,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(682,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(715,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(755,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(784,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(815,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(851,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/pipeline/pipeline.test.ts(923,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/step/step-interface.test.ts(273,7): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/step/step-interface.test.ts(280,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/step/step-interface.test.ts(344,7): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/step/step-interface.test.ts(352,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/steps/spec-review.test.ts(138,5): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/core/steps/spec-review.test.ts(143,53): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/error-path-integration.test.ts(236,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/error-path-integration.test.ts(284,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/github-disabled-e2e.test.ts(199,5): error TS2322: Type '(p: string, opts?: { recursive?: boolean; }) => Promise<string | undefined>' is not assignable to type '(path: string, opts: { recursive: boolean; }) => Promise<void>'.
-  Type 'Promise<string | undefined>' is not assignable to type 'Promise<void>'.
-    Type 'string | undefined' is not assignable to type 'void'.
-      Type 'string' is not assignable to type 'void'.
-tests/github-disabled-e2e.test.ts(308,85): error TS2552: Cannot find name 'RequestInfo'. Did you mean 'RequestInit'?
-tests/github-disabled-e2e.test.ts(402,91): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/github-disabled-e2e.test.ts(419,82): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/github-disabled-e2e.test.ts(512,11): error TS2322: Type '(cmd: string, args: string[], opts?: Record<string, unknown>) => Promise<SpawnResult>' is not assignable to type 'SpawnFn'.
-  Types of parameters 'opts' and 'opts' are incompatible.
-    Type 'SpawnOptions' is not assignable to type 'Record<string, unknown>'.
-      Index signature for type 'string' is missing in type 'SpawnOptions'.
-tests/github-disabled-e2e.test.ts(517,44): error TS2352: Conversion of type 'Record<string, unknown> | undefined' to type 'SpawnOptions' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-  Property 'cwd' is missing in type 'Record<string, unknown>' but required in type 'SpawnOptions'.
-tests/pipeline-sole-committer-e2e.test.ts(492,58): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/pipeline-sole-committer-e2e.test.ts(639,58): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/spec-review-step.test.ts(142,5): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/spec-review-step.test.ts(147,53): error TS2345: Argument of type 'Omit<PipelineDeps, "client"> & { client: SessionClient; }' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/implementer-recovery.test.ts(134,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/implementer-recovery.test.ts(188,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/implementer-recovery.test.ts(214,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/implementer-recovery.test.ts(392,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/implementer-recovery.test.ts(410,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts(271,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts(438,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(275,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(307,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(357,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(426,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(484,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(529,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/agent-runner-port.test.ts(589,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(218,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(310,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(402,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(483,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(568,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(649,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(729,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(965,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts(1046,55): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/architecture/composite-deps-ownership.test.ts(35,60): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/architecture/composite-deps-ownership.test.ts(36,67): error TS2322: Type 'PipelineDeps' is not assignable to type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/architecture/composite-deps-ownership.test.ts(37,72): error TS2322: Type 'PipelineDeps' is not assignable to type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/contract/golden-cases.test.ts(191,79): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/contract/golden-cases.test.ts(205,79): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/contract/golden-cases.test.ts(220,79): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/command/pipeline-run-duplicate-guard.test.ts(58,3): error TS2739: Type '{ config: { version: 1; runtime: "local"; agents: {}; }; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/command/pipeline-run-gate.test.ts(87,3): error TS2739: Type '{ config: { version: 1; runtime: "local"; agents: {}; }; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/command/pipeline-run-inbox-origin.test.ts(59,3): error TS2739: Type '{ config: { version: 1; runtime: "local"; agents: {}; }; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/command/pipeline-run-input-completeness.test.ts(188,3): error TS2739: Type '{ config: { version: 1; runtime: "local"; agents: {}; }; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts(93,3): error TS2739: Type '{ config: { version: 1; runtime: "local"; agents: {}; }; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/command/pipeline-run.test.ts(62,3): error TS2739: Type '{ config: SpecRunnerConfig; repo: { owner: string; name: string; }; request: ParsedRequest; githubToken: string; githubTokenSource: "env"; }' is missing the following properties from type 'PreflightResult': githubEnabled, origin
-tests/unit/core/pipeline/pipeline-roles.test.ts(431,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline-roles.test.ts(491,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts(343,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts(385,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts(509,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts(601,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(219,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(254,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(288,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(322,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(357,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(391,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(433,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(483,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.cli-step-output.test.ts(520,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(253,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(293,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(336,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(371,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(398,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(421,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(447,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(498,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.conformance-routing.test.ts(566,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.crash-state.test.ts(146,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.crash-state.test.ts(189,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.crash-state.test.ts(229,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.episode-reset.test.ts(266,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.episode-reset.test.ts(345,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.episode-reset.test.ts(408,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.episode-reset.test.ts(524,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.episode-reset.test.ts(581,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(197,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(239,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(273,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(306,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(347,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(378,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(427,47): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(483,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts(524,46): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.notification.test.ts(193,60): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.notification.test.ts(238,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.notification.test.ts(289,60): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.notification.test.ts(333,60): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(270,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(349,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(430,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(512,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(559,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(594,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.reverification.test.ts(680,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.storeFactory.test.ts(171,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.storeFactory.test.ts(233,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.storeFactory.test.ts(277,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(555,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(648,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(765,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(833,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(942,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(1007,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/pipeline/pipeline.transitions.test.ts(1054,59): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(201,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(233,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(283,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(339,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(382,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(415,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(461,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(489,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(507,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(661,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(730,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(790,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(828,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(869,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-context-metrics.test.ts(947,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(216,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(270,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(310,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(339,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(369,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(393,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(431,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(489,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(553,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(606,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(648,58): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(694,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(965,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1018,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1091,7): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1152,9): error TS2322: Type 'PipelineDeps' is not assignable to type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1193,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1218,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-rollover.test.ts(1249,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts(200,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts(247,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-cli-entry-oid.test.ts(194,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-cli-entry-oid.test.ts(230,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-cli-entry-oid.test.ts(267,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-cli-entry-oid.test.ts(297,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(203,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(224,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(241,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(258,74): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(275,86): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(291,86): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(307,86): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(325,87): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(341,79): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(382,82): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(399,82): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor-verdict.test.ts(421,82): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(163,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(190,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(217,59): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(221,42): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(240,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(270,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(305,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(326,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(347,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(348,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(381,59): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(382,42): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(444,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/executor.test.ts(469,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(254,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(272,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(290,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(308,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(329,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(349,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(369,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(387,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(418,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(439,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(469,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(491,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(512,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(540,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/fast-scope-checkpoint.test.ts(565,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(345,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(375,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(393,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(416,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(446,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(477,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(521,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(698,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(890,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(908,44): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(926,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(948,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(968,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1095,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1131,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1150,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1168,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1232,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1251,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1273,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1293,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1319,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/scope-escalation.test.ts(1338,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts(279,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts(349,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts(406,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-review-scope-exclusion.test.ts(255,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-review-scope-exclusion.test.ts(309,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-review-scope-exclusion.test.ts(356,63): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/spec-review-scope-exclusion.test.ts(391,80): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/step-completion-canon.test.ts(148,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/step-completion-canon.test.ts(181,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/step-completion-canon.test.ts(213,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/step-completion-canon.test.ts(243,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/verification-phase-outcome-executor.test.ts(184,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/verification-phase-outcome-executor.test.ts(216,73): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/verification-phase-outcome-executor.test.ts(252,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/core/step/verification-phase-outcome-executor.test.ts(294,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(298,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(353,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(441,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'ParallelReviewRoundDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/pipeline/transition-when.test.ts(541,45): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'PipelineOrchestrationDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(368,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(413,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(447,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(489,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(533,9): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(573,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(616,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(650,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(681,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(714,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(745,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/commit-and-push.test.ts(786,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(173,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(203,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(236,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(261,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(291,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(323,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(354,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(387,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(413,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(441,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(467,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(500,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-activation.test.ts(531,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-commit-mutex.test.ts(185,59): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-commit-mutex.test.ts(223,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-commit-mutex.test.ts(224,57): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-commit-mutex.test.ts(264,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-commit-mutex.test.ts(265,57): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-drift-detection.test.ts(181,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-drift-detection.test.ts(204,49): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-drift-detection.test.ts(233,62): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-drift-detection.test.ts(257,49): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-input-validation.test.ts(202,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-input-validation.test.ts(257,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-input-validation.test.ts(316,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-lifecycle-ordering.test.ts(164,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-lifecycle-ordering.test.ts(206,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-lifecycle-ordering.test.ts(272,54): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-no-op.test.ts(233,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-no-op.test.ts(256,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-no-op.test.ts(278,73): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-no-op.test.ts(298,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(202,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(229,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(266,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(291,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(315,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(356,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-output-gate.test.ts(387,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-resume-context.test.ts(207,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-resume-context.test.ts(229,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-resume-context.test.ts(252,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-resume-context.test.ts(281,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(136,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(166,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(196,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(216,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(244,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-skip-when.test.ts(280,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verbose-log.test.ts(191,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verbose-log.test.ts(213,65): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verbose-log.test.ts(237,72): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(191,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(215,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(254,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(294,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(316,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(349,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(413,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(474,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(536,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor-verdict.test.ts(570,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(327,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(373,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(421,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(465,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(507,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(550,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(601,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(644,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(690,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(729,37): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.commit.test.ts(769,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.store-cache.test.ts(145,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.store-cache.test.ts(146,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.store-cache.test.ts(147,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.store-cache.test.ts(178,42): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.store-cache.test.ts(179,42): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(32,5): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(188,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(262,51): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(334,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(398,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(465,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(527,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(589,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(652,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(768,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(882,43): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(985,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1001,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1028,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1113,50): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1191,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1272,64): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1358,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1381,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1405,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/executor.test.ts(1429,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/review-exit-contract.test.ts(503,5): error TS2322: Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-  Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/review-exit-contract.test.ts(570,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/review-exit-contract.test.ts(636,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/review-exit-contract.test.ts(704,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/review-exit-contract.test.ts(770,56): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/severity-fixability-split.test.ts(572,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/severity-fixability-split.test.ts(627,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(269,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(288,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(308,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(328,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(352,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(369,68): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(370,71): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(389,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(408,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-contract.test.ts(433,7): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-escalation.test.ts(253,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-escalation.test.ts(284,41): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-escalation.test.ts(312,61): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-escalation.test.ts(354,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-tests/unit/step/unpushable-path-escalation.test.ts(382,48): error TS2345: Argument of type 'PipelineDeps' is not assignable to parameter of type 'StepExecutionDeps'.
-  Types of property 'githubClient' are incompatible.
-    Type 'GitHubClient | null' is not assignable to type 'GitHubClient'.
-      Type 'null' is not assignable to type 'GitHubClient'.
-
 $ tsc --noEmit
 
 ```
 
 ## Phase: test
 
-_(skipped — previous command failed)_
+```
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m.[39m
+
+ [32m✓[39m tests/unit/core/archive/merge-then-archive.test.ts [2m([22m[2m37 tests[22m[2m)[22m[33m 463[2mms[22m[39m
+     [33m[2m✓[22m[39m 記帳(runArchiveOrchestrator)と mergePullRequest を呼ばず、runArchiveCleanup を呼ぶ [33m 392[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope-bypass-closure.test.ts [2m([22m[2m42 tests[22m[2m)[22m[33m 339[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner.test.ts [2m([22m[2m76 tests[22m[2m)[22m[33m 566[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/agent-runner.test.ts [2m([22m[2m55 tests[22m[2m)[22m[33m 436[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/core-invariants.test.ts [2m([22m[2m72 tests[22m[2m)[22m[33m 679[2mms[22m[39m
+ [32m✓[39m tests/unit/step/commit-push-write-scope.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 242[2mms[22m[39m
+ [32m✓[39m tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts [2m([22m[2m30 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[33m 385[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 509[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/spec-observation-autofix.test.ts [2m([22m[2m59 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-rollover.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 175[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/merge-then-archive.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/orchestrator.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 227[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/scope-escalation.test.ts [2m([22m[2m62 tests[22m[2m)[22m[33m 521[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts [2m([22m[2m85 tests[22m[2m)[22m[33m 373[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/test-case-gen-design-phase.test.ts [2m([22m[2m49 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/spec-review-fixer-routing.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/local.test.ts [2m([22m[2m42 tests[22m[2m)[22m[33m 658[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/repo-root-exactly-once.test.ts [2m([22m[2m49 tests[22m[2m)[22m[33m 3497[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-024: COMMANDS.init has requiresRepo: true [33m 2750[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/commit-orchestrator-rollover.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 142[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/verdict-channel-unification.test.ts [2m([22m[2m102 tests[22m[2m)[22m[32m 155[2mms[22m[39m
+ [32m✓[39m tests/pipeline-integration.test.ts [2m([22m[2m31 tests[22m[2m)[22m[33m 6941[2mms[22m[39m
+     [33m[2m✓[22m[39m returns status='awaiting-merge', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps [33m 1627[2mms[22m[39m
+     [33m[2m✓[22m[39m allows verification to pass after 2 implementer recovery runs, completes successfully [33m 338[2mms[22m[39m
+     [33m[2m✓[22m[39m spec-review exhaustion halts at awaiting-resume; resume from resumePoint.step completes to awaiting-archive [33m 301[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/post-fix-context.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/core/pipeline/pipeline.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 336[2mms[22m[39m
+ [32m✓[39m tests/unit/step/factcheck-attestation.test.ts [2m([22m[2m84 tests[22m[2m)[22m[33m 655[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-pr.test.ts [2m([22m[2m57 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-push-exclusion.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 133[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-no-op.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/unit/step/pipeline-sole-committer-synthesis.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 125[2mms[22m[39m
+ [32m✓[39m tests/custom-reviewers-e2e.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 3625[2mms[22m[39m
+     [33m[2m✓[22m[39m security reviewer runs after code-review and pipeline completes [33m 554[2mms[22m[39m
+     [33m[2m✓[22m[39m code-fixer goes back to security reviewer after needs-fix [33m 393[2mms[22m[39m
+     [33m[2m✓[22m[39m code-fixer receives findings attributed to the active reviewer (unit check) [33m 340[2mms[22m[39m
+     [33m[2m✓[22m[39m regression-gate reports high/fixable → code-fixer → gate re-runs → approved → conformance [33m 372[2mms[22m[39m
+     [33m[2m✓[22m[39m regression-gate with maxIterations=1 exhausts after budget [33m 324[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/spec-review-prior-round-context.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 216[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts [2m([22m[2m354 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/checkpoint-restack.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/test-coverage.test.ts [2m([22m[2m58 tests[22m[2m)[22m[32m 230[2mms[22m[39m
+ [32m✓[39m tests/adapter/managed-agent/agent-runner.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 80[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.transitions.test.ts [2m([22m[2m71 tests[22m[2m)[22m[33m 389[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/runner-fidelity-gate.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 420[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/custom-reviewer-round-context.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-push-egress-invariant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 112[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/adr-gen.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-operator-guidance.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/guide.test.ts [2m([22m[2m190 tests[22m[2m)[22m[32m 96[2mms[22m[39m
+ [32m✓[39m tests/store/event-journal.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 161[2mms[22m[39m
+ [32m✓[39m tests/unit/core/decision/wontfix.test.ts [2m([22m[2m45 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/core/worktree/manager.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/job-wait.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/commit-orchestrator-context-metrics.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 132[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-adopt-commits.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+ [32m✓[39m tests/package-smoke-contract.test.ts [2m([22m[2m63 tests[22m[2m)[22m[32m 192[2mms[22m[39m
+ [32m✓[39m tests/unit/step/review-exit-contract.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor.commit.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 266[2mms[22m[39m
+ [32m✓[39m tests/unit/no-worktree-mode.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 994[2mms[22m[39m
+ [32m✓[39m tests/unit/step/commit-and-push.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 308[2mms[22m[39m
+ [32m✓[39m tests/unit/core/cancel/runner.test.ts [2m([22m[2m39 tests[22m[2m)[22m[33m 687[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/runner.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 373[2mms[22m[39m
+ [32m✓[39m tests/store/job-state-store.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32m✓[39m tests/unit/core/prune/sidecar-runner.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.reverification.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 409[2mms[22m[39m
+ [32m✓[39m tests/unit/step/unpushable-path-escalation.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 177[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/step-completion-missing-file-finding.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/architecture-ratchet.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 6865[2mms[22m[39m
+     [33m[2m✓[22m[39m only command-registry.ts itself references 'command-registry' (AST-based, detects multi-line imports) [33m 645[2mms[22m[39m
+     [33m[2m✓[22m[39m the src/cli/ value-import graph has no strongly connected component of size ≥ 2 [33m 383[2mms[22m[39m
+     [33m[2m✓[22m[39m no src/cli/*.ts file uses import('./...') to load a sibling module [33m 466[2mms[22m[39m
+     [33m[2m✓[22m[39m no src/cli production .ts file contains a process.exit() call (AST-based) [33m 422[2mms[22m[39m
+     [33m[2m✓[22m[39m every registry handler resolves to an exported src/cli function returning exactly Promise<number> [33m 328[2mms[22m[39m
+     [33m[2m✓[22m[39m no exported handle* function in src/cli/ has a Promise<void> return type annotation [33m 339[2mms[22m[39m
+     [33m[2m✓[22m[39m the set of files containing process.exit() equals the allowlist exactly [33m 4072[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/agent-runner.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 109[2mms[22m[39m
+ [32m✓[39m tests/halt-checkpoint-restack-e2e.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1827[2mms[22m[39m
+     [33m[2m✓[22m[39m pushes restacked checkpoint to origin when direct push is rejected [33m 813[2mms[22m[39m
+     [33m[2m✓[22m[39m commitFinalState resolves without throwing when all pushes (direct + restack) are rejected [33m 514[2mms[22m[39m
+     [33m[2m✓[22m[39m restack skips with remote-diverged when origin/<branch> has been advanced by another runner [33m 498[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-partial-canon.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 192[2mms[22m[39m
+ [32m✓[39m tests/unit/inbox/planner.test.ts [2m([22m[2m61 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/inbox/orchestrator.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 63[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/orchestrator.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/fixer-push-capability.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/step/test-coverage-violation-detail.test.ts [2m([22m[2m19 tests[22m[2m | [22m[90m2 todo[39m[2m)[22m[32m 103[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/achieved-assurance-revision-binding-integration.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 168[2mms[22m[39m
+ [32m✓[39m tests/unit/core/job-list/operations-view.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/findings-ledger.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/reviewer-chain.test.ts [2m([22m[2m56 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/step/severity-fixability-split.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/reopen-command.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-canon.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.conformance-routing.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 410[2mms[22m[39m
+ [32m✓[39m src/core/design-layer/__tests__/topic-emission.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/resume-worktree-reconciliation-e2e.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 848[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/job-stats.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 133[2mms[22m[39m
+ [32m✓[39m tests/attach/verify-checkpoint.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m tests/pipeline-sole-committer-e2e.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 443[2mms[22m[39m
+ [32m✓[39m tests/reviewer-activation-e2e.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1658[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/plain-archive.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/command-spec-api.test.ts [2m([22m[2m94 tests[22m[2m)[22m[32m 114[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/changed-line-coverage-type-only.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/core/provider-readiness-gate.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/unit/step/content-format-detection.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 167[2mms[22m[39m
+ [32m✓[39m tests/unit/contract/provider-lifecycle/contract-ratchet.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 130[2mms[22m[39m
+ [32m✓[39m tests/unit/core/notify/issue-notifier.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m src/git/__tests__/transport-auth.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-orchestrator.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/dead-code-adapter-cli.test.ts [2m([22m[2m75 tests[22m[2m)[22m[33m 5730[2mms[22m[39m
+     [33m[2m✓[22m[39m assertBreakAfterCompletion has no references [33m 479[2mms[22m[39m
+     [33m[2m✓[22m[39m REPORT_TOOL_CUSTOM_TOOL_SPEC has no references [33m 506[2mms[22m[39m
+     [33m[2m✓[22m[39m checkConfigComplete has no references [33m 505[2mms[22m[39m
+     [33m[2m✓[22m[39m MANAGED_RESET_USAGE has no references [33m 483[2mms[22m[39m
+     [33m[2m✓[22m[39m runManagedAgentSession has no references in src/ bin/ tests/ [33m 561[2mms[22m[39m
+     [33m[2m✓[22m[39m ManagedAgentSessionInput has no references in src/ bin/ tests/ [33m 445[2mms[22m[39m
+     [33m[2m✓[22m[39m ManagedAgentSessionResult has no references in src/ bin/ tests/ [33m 303[2mms[22m[39m
+     [33m[2m✓[22m[39m session-runner string has no references in src/ bin/ tests/ [33m 365[2mms[22m[39m
+     [33m[2m✓[22m[39m no file in src/ bin/ tests/ references checkConfigComplete [33m 313[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.episode-reset.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 202[2mms[22m[39m
+ [32m✓[39m tests/unit/core/attestation/build-attestation.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/transition-when.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+ [32m✓[39m src/core/command/__tests__/detach-ack.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/request.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 171[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/context-observer.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 110[2mms[22m[39m
+ [32m✓[39m tests/error-path-integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 649[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline-roles.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 70[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/lineage-output-attribution.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/runtime-strategy-ratchet.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 3909[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-012: `as unknown as RuntimeStrategy` が tests/ および src/__tests__/ に 0 件 [33m 339[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-012b: `as any as RuntimeStrategy` が tests/ および src/__tests__/ に 0 件 [33m 339[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-031: `RealRuntimeStrategy` が tests/ に 0 件 [33m 327[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-037a: RuntimeStrategy named imports absent from test files [33m 413[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-039a: RuntimeFacade named imports absent from test files (except command-lifecycle-contract) [33m 385[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-039b: runtime argument as never absent from ResumeCommand/PipelineRunCommand/subclass constructors in test files [33m 455[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-039c: local `type CommandRunnerRuntime =` re-definitions absent from all test files [33m 435[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/judge-verdict-canon.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 157[2mms[22m[39m
+ [32m✓[39m tests/attach/attach-integration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 2115[2mms[22m[39m
+     [33m[2m✓[22m[39m checkpointOid from runAttachVerification matches the commit OID that commitFinalState pushed [33m 398[2mms[22m[39m
+     [33m[2m✓[22m[39m worktree HEAD is the pre-advance OID even when origin branch moved after runAttachVerification [33m 380[2mms[22m[39m
+ [32m✓[39m tests/config/schema.test.ts [2m([22m[2m69 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-push-guarded-staging.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/unit/dead-code-core.test.ts [2m([22m[2m124 tests[22m[2m)[22m[33m 1475[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 116[2mms[22m[39m
+ [32m✓[39m tests/attach/attach-resume-e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 702[2mms[22m[39m
+     [33m[2m✓[22m[39m Machine A creates awaiting-resume checkpoint on origin; Machine B attaches and resumes implementer via real ResumeCommand [33m 699[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/query-one-shot.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+ [32m✓[39m tests/operator-canon-apply-on-resume-e2e.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 741[2mms[22m[39m
+ [32m✓[39m tests/canon-binding-e2e.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 525[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/fast-scope-checkpoint.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 289[2mms[22m[39m
+ [32m✓[39m tests/github-disabled-e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 684[2mms[22m[39m
+     [33m[2m✓[22m[39m completes pipeline without PR, archives with branch preserved, and attach uses origin identity [33m 682[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-push-staged-bytes-guard.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/agent-runner-port.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 177[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/merge-then-archive-floor.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 168[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/reverification.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/canon-escalation.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-reconcile.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-apply-canon.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+ [32m✓[39m tests/init.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 1017[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-001: COMMANDS.init.requiresRepo === true（dispatch レベルで repo 必須が宣言されている） [33m 754[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/config/step-config.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/state/lifecycle.test.ts [2m([22m[2m105 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/from-issue.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/remediation-parse.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/step/code-fixer.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-integrity.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 188[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/finding-recency.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope-bypass-closure-integration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 546[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/job-stats-metrics.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 106[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/prior-round-context.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/contract/provider-lifecycle/provider-lifecycle-parity.test.ts [2m([22m[2m64 tests[22m[2m)[22m[32m 229[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/achieved-assurance-completeness-integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 142[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/runner-reload-egress-e2e.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 514[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 75[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-request.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/resume-partial-canon-quarantine-e2e.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 583[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.cli-step-output.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m tests/anthropic-step-model-refresh.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 112[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/achieved-assurance-completeness-unit.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-verdict.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/write-scope-invariants.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 206[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-activation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 224[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/test-coverage-gate-exclusion.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 104[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/lockfile-sync.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m src/core/issue-target/__tests__/resume.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 157[2mms[22m[39m
+ [32m✓[39m tests/unit/step/pr-create.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 112[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/progress.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/managed.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 483[2mms[22m[39m
+     [33m[2m✓[22m[39m returns exit code 1 when SPECRUNNER_API_KEY is not set [33m 374[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/changed-line-coverage.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m tests/unit/core/occupancy/guard.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/runner-reload-after-setup.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m tests/pipeline.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 530[2mms[22m[39m
+     [33m[2m✓[22m[39m records all required history steps on success [33m 352[2mms[22m[39m
+ [32m✓[39m tests/completion.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m tests/core/pipeline/pipeline.guard-halt.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/fragment-coverage.test.ts [2m([22m[2m133 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m src/core/lifecycle/__tests__/exit-guard.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 857[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/job-show.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 169[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/value-import-scc.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 1171[2mms[22m[39m
+     [33m[2m✓[22m[39m no strongly-connected components with size > 1 exist in src/ [33m 1103[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/resume-from-issue.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/read-file-at-commit.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/finish-ps-integration.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 119[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/reviewer-status-canon.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/core/port/report-result-findings.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/dedup-verified-safe.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 3093[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-005: 'computeCodeReviewIteration' call/definition is absent from src/ and tests/ [33m 633[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-005: 'computeSpecReviewIteration' call/definition is absent from src/ and tests/ [33m 593[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-005: 'computeRequestReviewIteration' call/definition is absent from src/ and tests/ [33m 619[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-005: 'computeConformanceIteration' call/definition is absent from src/ and tests/ [33m 581[2mms[22m[39m
+ [32m✓[39m tests/spec-review-step.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 411[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/executor-verdict.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 244[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/event-journal-checkpoint-restack.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/reviewer-status.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/executor.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 251[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m tests/adapter/claude-code/provider-readiness-probe.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/resolve-scope.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/managed.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 135[2mms[22m[39m
+ [32m✓[39m tests/unit/contract/agent-runner-contracts.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/archive-from-issue.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-output-gate.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 171[2mms[22m[39m
+ [32m✓[39m src/core/inbox/__tests__/run-inbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/custom-reviewer-step.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-scoped-paths.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m tests/unit/step/unpushable-path-contract.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/util/detect-pm.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/step/code-review.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/config/schema.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/apply-canon.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 378[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-sequential-regression.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 99[2mms[22m[39m
+ [32m✓[39m tests/unit/core/decision/decision-ledger.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/step/step-io-contracts.test.ts [2m([22m[2m76 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/adopt-commits.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 735[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/apply-canon-provenance.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/judge-verdict-conformance.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/strict-schema.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 80[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/result-yaml-ownership.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/step/output-verify.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/shared/artifact-bundle.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m tests/unit/git/push-capability.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/state/pipeline-sole-committer-state.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/evidence-enforcement.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/step-context-builder.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/config/runtime-config.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 401[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-input-completeness.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/staging-containment.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/artifact-observability.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/test-coverage-manual-exclusion.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime/validate-step-outputs.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 142[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/resume.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2051[2mms[22m[39m
+     [33m[2m✓[22m[39m runs pipeline and returns exit code 0 when job is awaiting-resume [33m 619[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/login.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/util/copy-artifacts.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-wontfix.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/staged-bytes-containment.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/reconcile-worktree.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/exclusion-aware-validation.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/workflow-ci-detection.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/judge-verdict.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m tests/credentials.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 109[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/completion-contract-injection.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m tests/unit/absorb-build-fixer/implementer-recovery.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/step/staging-exclusion-pipeline-integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 331[2mms[22m[39m
+ [32m✓[39m tests/core/step/step-interface.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/spec-review-scope-exclusion.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m tests/cli-stdout-snapshot.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/round-git-scope.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/resume.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 89[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/capability-consumers.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/git-command-classifier.test.ts [2m([22m[2m94 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/conformance.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/doctor-repo-root.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 612[2mms[22m[39m
+     [33m[2m✓[22m[39m runDoctor with extended opts { repoRoot: null } completes and returns non-zero exit code [33m 473[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/signal-name-in-interruption.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m tests/templates/step-output-templates.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/core/port/report-result-observations.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/core/issue-target/__tests__/archive.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+ [32m✓[39m src/core/command/__tests__/detach.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-drift-detection.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/scope-guidance-injection.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-no-op.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/judge-verdict-evidence.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 132[2mms[22m[39m
+ [32m✓[39m tests/finish-job-state.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 97[2mms[22m[39m
+ [32m✓[39m tests/core/usage/usage-summary.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/inbox/__tests__/planner.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/step/fixer-findings.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/attach/checkpoint-policy.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/sandbox-scope.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/managed-runtime-capabilities.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-lifecycle-ordering.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/findings-ledger-canon.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.notification.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/cancel/runner-process-gate.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/agent-runner-transient-retry.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/rules-new.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 128[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/verification-phase-outcome-executor.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m tests/unit/store/finding-recency-journal.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/request/store.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 87[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-input-validation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-gate.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m tests/state-store.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 202[2mms[22m[39m
+ [32m✓[39m tests/unit/absorb-build-fixer/transitions.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/core/gate/issue-fidelity-gate.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-resume-context.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/safety.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/specrunner-resume-dispatch.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 1737[2mms[22m[39m
+     [33m[2m✓[22m[39m calls runResumeCore with the slug argument [33m 678[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/event-journal-operator-event.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/core/design-layer/orchestrator-hook.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 172[2mms[22m[39m
+ [32m✓[39m tests/attach/orchestrator.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/removed-commands.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 1665[2mms[22m[39m
+     [33m[2m✓[22m[39m specrunner ps → 'Unknown command: ps' を出力し exit 2 で終了 [33m 517[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-operator-adjudication.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/core/sidecar/orphan.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/transition-parity.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/bootstrap-egress-ledger-e2e.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 347[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-coverage-gate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-drift-detection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 116[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/canon-write-scope.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 189[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/agent-runner-completion-report.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/parser.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/state/helpers.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/spawn-background-detach.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-lockfile-gate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m tests/core/usage/pricing.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/local-read-revision-content.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-from-exit-code.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-resume.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/executor-cli-entry-oid.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m tests/store/journal-integrity.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/regression-gate-step.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/prompts/design-system.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/resolve-step.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-commit-mutex.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 119[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/scope-guidance-provider-isolation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 187[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/local-power-assertion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 99[2mms[22m[39m
+ [32m✓[39m src/git/__tests__/push-capability.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/touched-files-recorder.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/type-only.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-push-restack-integration.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/main-checkout-guard.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 123[2mms[22m[39m
+No jobs found.
+[実行中]
+JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
+job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	248d
+{
+  "categories": []
+}
+ [32m✓[39m tests/unit/cli/ps-filter.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/flag-parser.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/inbox/occupancy-propagation.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/staging-config-validation.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/core/worktree/orphan.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-invocation-metrics.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/pipeline-sole-committer-final-state.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/state/satisfies-floor.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/select-pending-revision-binding.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/post-merge-integrity.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/util/gitignore.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 80[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/request-new-repo-root.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 840[2mms[22m[39m
+     [33m[2m✓[22m[39m exits with code 2 when there is no git repository (repoRoot is null) [33m 530[2mms[22m[39m
+ [32m✓[39m tests/unit/generate-chain-removed.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m tests/error-codes.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/safety.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/compose-reviewers.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.storeFactory.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/descriptor-input-completeness.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/dispatch-workflow-reopen-action.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/hint-command-references.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 82[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/routed-findings.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/doctor/orphan-sidecars-check.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/resume-help.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 1701[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-007: job resume --help で exit 0 [33m 507[2mms[22m[39m
+ [32m✓[39m tests/unit/agent/syncer.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/usage-show-context-metrics.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m src/logger/__tests__/pipeline-logger.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/commit-orchestrator-touched-files.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/scope-warning.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-hard-crash.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/post-work-prompt-invariant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/conformance-revision-binding.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/extract-section.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/core/steps/spec-review.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 159[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-round-produce.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/workspace-materializer-link.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/reopen-approval-invalidation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/verify-finding-refs.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/reconcile-worktree-exclusion.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/local-no-jobs-dir-writes.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 248[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/operator-adjudication-schema.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor/next-steps.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/run-result.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime/unpushable-path-validate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/archive-cleanup.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/config/store.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/report-result.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/doctor-config-overlay.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/prune-combined.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/core/cancel/sidecar-teardown.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/test-gen-exemption.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/detach-output-contract.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/job-stats-repo-root.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 871[2mms[22m[39m
+     [33m[2m✓[22m[39m reports the same run count when invoked from subdir vs repo root [33m 684[2mms[22m[39m
+ [32m✓[39m tests/unit/step/pipeline-sole-committer-egress.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/runtime-capability-gate.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/lifecycle/exit-guard.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 397[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/cancel.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 257[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/job-state-store-list-with-source-dirs.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m src/core/command/__tests__/resume-member-context.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime/validate-step-inputs.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 74[2mms[22m[39m
+ [32m✓[39m src/core/reviewers/__tests__/load-validate.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/regression-gate-false-loop.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 277[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32m✓[39m tests/dispatch-workflow-archive-action.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-oid-capture.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m tests/unit/no-worktree-archive.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/credential-injection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/config/schema-minimum-assurance.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/round-git-scope-pipeline-managed.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/multi-layer-defense.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 807[2mms[22m[39m
+     [33m[2m✓[22m[39m design → spec-review(approved) → awaiting-merge [33m 510[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/types.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/prune/runner.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/step/pr-create-attestation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 113[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/resolve-step.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/prompts/test-case-gen-system.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/job-stats-cross-slug.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 147[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/transient-error.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/adapter/managed-agent/error-helpers.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/request-review-verdict-evidence.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/runner-abort-hub.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-inbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/invariant-catalog-parity.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/codex/scoped-codex-auth.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-skip-when.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/fast-descriptor.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/doctor-repair.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 929[2mms[22m[39m
+     [33m[2m✓[22m[39m calls process.exit(2) when no slug is provided [33m 530[2mms[22m[39m
+ [32m✓[39m tests/test-case-gen-step.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/core/runtime/provider-readiness.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 275[2mms[22m[39m
+ [32m✓[39m tests/unit/core/occupancy/scan.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/cli.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 748[2mms[22m[39m
+     [33m[2m✓[22m[39m exits with code 2 when config does not exist (CONFIG_MISSING → ARG_ERROR) [33m 678[2mms[22m[39m
+ [32m✓[39m tests/unit/step/push-capability-notice.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/contract/golden-cases.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/verification-config-reload.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pr-create/runner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+Detached pipeline started for: integration-slug
+  Monitor: specrunner job wait integration-slug
+  Details: specrunner job show integration-slug
+Detached pipeline started for: ordering-test-slug
+  Monitor: specrunner job wait ordering-test-slug
+  Details: specrunner job show ordering-test-slug
+Detached pipeline started for: wait-compat-slug
+  Monitor: specrunner job wait wait-compat-slug
+  Details: specrunner job show wait-compat-slug
+ [32m✓[39m src/core/command/__tests__/detach-integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/core/attach/__tests__/checkpoint-policy.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-helpers.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-duplicate-guard.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/changed-lines-origin-fallback.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/evidence-backward-compat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/help-flag-dispatch.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 1949[2mms[22m[39m
+     [33m[2m✓[22m[39m exits with code 0 [33m 767[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/templates/__tests__/step-output-templates.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/detach-flag-cli.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor-verbose-log.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/adoption-halt.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/agent/syncer-rollback.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/prompts/test-placement.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.crash-state.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m tests/unit/core/occupancy/repair.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/local-duplicate-guard.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/scope.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/agent-runner-inactivity-timeout.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/prompts/spec-review-system.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/state-based-resolve.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/step-completion-canon.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/test-coverage-comment-form.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/core/usage/store.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/adapter/shared/__tests__/touched-files-bundle.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/command/request-prompt.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/core/doctor/checks/storage/slug-occupancy.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/fixer-helpers-conformance.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/test-coverage-boundary.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/fragments.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/commit-final-state.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime/list-changed-files.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/core/credentials/__tests__/credentials-io.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/prompts/dynamic-context-prompts.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/reload-coverage-config.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m tests/git/checkpoint-ref.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/local-round-git.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/config/migrate.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/command-lifecycle-contract.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/command-registry-reopen.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/login.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/log-level.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/verification/runner-test-gen-exemption.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/achieved-assurance.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/spec-exempt-runtime.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/verification-step.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/step/judge-verdict.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/usage/context-metrics-types.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/local-runtime-capabilities.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/core/step/rules-delivery.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/config/schema-coverage.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/reviewers/__tests__/activation.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/no-op-detect-exemption.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/verbose-log.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/command-context.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/touched-files-injection.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/util/copy-artifacts.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/test-coverage-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/agent/registry.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/step/test-cases-decouple.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/schema.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/archive-minimum-assurance.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 280[2mms[22m[39m
+ [32m✓[39m tests/unit/remove-session-timeout.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 204[2mms[22m[39m
+ [32m✓[39m tests/config/model-registry.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/util/git-exec.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/member-resume-routing.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/touched-files-injection.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/request-entrance-llm-boundary.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 180[2mms[22m[39m
+ [32m✓[39m tests/unit/step/spec-review-lightweight.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/cli-run-verdict.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/util/glob-match.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-local.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/request-review-evidence-parse.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/store/job-state-store-changedir.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pr-create/body-template.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/archive-plain-merge-detection.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 278[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/request-review-legacy-compat.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope-bypass-closure-write-scope.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/evidence-fragment-coverage.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/request-review-step-completion-evidence.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/core/credentials/anthropic.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 137[2mms[22m[39m
+ [32m✓[39m tests/config/merge.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/specrunner-worktree-guard.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1285[2mms[22m[39m
+     [33m[2m✓[22m[39m exits with code 2 and prints worktree guard error [33m 659[2mms[22m[39m
+ [32m✓[39m tests/attach/verify-checkpoint-r1-assurance.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/config/type-config.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/state/job-slug.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/agent-runner-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m src/core/reviewers/__tests__/definition.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/occupancy-e2e.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/local-job-index.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m tests/unit/state/github-integration.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/reopen-terminal-slug.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m tests/core/credentials/github.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 120[2mms[22m[39m
+ [32m✓[39m tests/prompts/implementer-system.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/core/step/step-names.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/jobs-dir-no-readdir.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32m✓[39m src/core/doctor/checks/runtime/__tests__/aozu-cli.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/step/regression-gate-skip-when.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/core/port/report-result.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/lifecycle-reopen.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-skip-detect.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 99[2mms[22m[39m
+ [32m✓[39m tests/unit/core/attestation/render-comment.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/verification/runner-commands.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 130[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/reviewer-capability.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/step/executor.store-cache.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/iteration-display.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/last-commit-touching-path.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/implementer-materialize.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/egress-resolution-options.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope-rules-consistency.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/issue-flag.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/inbox-run.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/core/doctor/checks/config/__tests__/claude-code-token-present.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/session-log-writer.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/core/occupancy/claim.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-dev-links.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/attach/workspace-materializer-attach.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/hint-command-existence.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/touched-files-schema.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/cli-exit-contract.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 2255[2mms[22m[39m
+     [33m[2m✓[22m[39m EC-01-success-zero [33m 758[2mms[22m[39m
+ [32m✓[39m tests/unit/state/bite-evidence-record-schema.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/state/profile-roundtrip.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/usage/store-backward-compat.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-commit-mutex.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32m✓[39m tests/core/step/fixer-helpers.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/doctor-help.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 915[2mms[22m[39m
+     [33m[2m✓[22m[39m doctor --help で exit 0 [33m 524[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/registry-invariants.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-path-mask.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/local-snapshot-guard.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/step/agent-definition.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/usage-show-metrics.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-round-commit.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/artifact-bundle-injection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/design-system.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/design-spec-exempt-contract.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/provider-sdk-loader.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/core/job/__tests__/start-from-issue.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/cancel-process-group-integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 565[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-021 (破壊確認): child survives when isGroupLeader returns false [33m 358[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/paths-canonical.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/cancel/pid-kill.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/core/job-access/resolve-state-store.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-hub.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/agent-runner-observability.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/core/usage/invocation-types.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor/xdg-config-file-exists.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/apply-github-integration.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/test-case-gen-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime/git-fetch-error.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/attach.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/runner-git-show-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/agent-redirect-integration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/util/spawn-background.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/touched-files-resume.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/archive/__tests__/archived-slug-by-job-id.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/prompt-rules-injection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/unit/git/git-spawn-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/issue-fidelity-comparator.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/fail-closed-drift-guard.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/list-pull-request-files.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/absorb-build-fixer/state-compat.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/capability-contracts.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/test-coverage-manual-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/step-completion-evidence-diagnostic.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/managed-verify-finding-refs.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/util/atomic-write.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/storage/journal-integrity.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/step/spec-fixer.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/load-by-job-id.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m tests/unit/core/design-layer/check-gate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/core/preflight.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/staged-bytes-config-validation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/core/occupancy/errors.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/transient-retry-state.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/adapter/codex/agent-runner-output-verification.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/core/credentials/__tests__/github.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-get-issue.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/progress-halt-guidance.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/command-registry-apply-canon.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/propagate.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/factory.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/doctor-cli.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 1169[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-062: writes USAGE to stderr and exits 2 when no command given [33m 735[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/job-stats-jobid-filter.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor/xdg-integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/store/compose-split-layout-from-content.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline-fatal-codes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/logger/__tests__/log-retention.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/run-json-flag.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1208[2mms[22m[39m
+     [33m[2m✓[22m[39m calls runRunCore with json: true when --json is specified [33m 647[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/codex/agent-runner-env.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/adapter/shared/__tests__/last-tool-tracker.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/doctor/formatter-detailshuman.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/draft-move.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/doctor-readiness.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/design-layer/mark-hook.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/job-show-detach-log.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/state/session-timeout-migration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m tests/unit/core/doctor/orphan-worktrees-check.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 253[2mms[22m[39m
+ [32m✓[39m tests/unit/core/cancel/pid-kill-group.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/report-tool-evidence-schema.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/doc-drift-sync.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/test-coverage-docs-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/resolve-job-id.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m tests/unit/core/finish/archive-change-folder.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/attach/attach-cli.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 818[2mms[22m[39m
+     [33m[2m✓[22m[39m command-registry exits 2 when --branch is omitted [33m 716[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/command-registry-adopt-commits.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/lcov.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/config/github-integration.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/core/credentials/credentials-io.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+ [32m✓[39m src/adapter/codex/__tests__/resume-prompt-injection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/core/worktree/detection.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m src/core/credentials/__tests__/claude-code.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/parse-result.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/version-flag.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 884[2mms[22m[39m
+     [33m[2m✓[22m[39m exits with code 0 [33m 517[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-inbox-origin.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/core/worktree/setup.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/util/paths.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/pipeline-logger-rollover.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/state/reviewer-activation-state.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/resume-context.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/config-effective.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+ [32m✓[39m tests/unit/verification/commands.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-issue-comment.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/state/io.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/regression-gate-source-checks.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32m✓[39m tests/grep-workflow-actions-pinned.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/ps-pr-hint.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/core/event/event-bus.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/operations-recovery-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/github-device.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/spec-exempt-prompt.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/config/github-token-present.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/formatter.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/from-flag-no-enum.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/view-commands-worktree-guard.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/dispatch-boundary-mask.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 942[2mms[22m[39m
+     [33m[2m✓[22m[39m SpecRunnerError path: message and hint are masked, layout unchanged [33m 759[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/spec-review-full-enumeration-prompt.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/git/dynamic-context.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 161[2mms[22m[39m
+ [32m✓[39m tests/grep-no-step-name-hardcode.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m src/adapter/shared/__tests__/inactivity-watchdog.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/finish-commit-archive.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/request-review-evidence-prompt.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/sse-stream-verbose-log.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/compose-reviewers.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/query-one-shot-metrics.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/step/implementer.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/state/profile.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/verbose-log-errors.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/git/origin-not-configured.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/artifact-hygiene-discipline.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/prompts/request-review-seam.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/bite-evidence-schema.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/config/design-layer-config.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/version.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/agent-runner-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/config/step-config-trace.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/github-client-graphql.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/state/inbox-origin-schema.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/resolve-request-path.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/session-client.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/step/implementer-lockfile.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/fixer-reviewer.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/get-raw-file.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/job-state-store-archive-skip.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/exit-code-standardization.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/step/__tests__/executor-resume-context.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/core/archive/protected-paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/core/step/rules-resolve.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/rules-md.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/contract/invariants.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/unit/errors/repo-required-error.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/resume/resolve-job.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/state/base-branch-roundtrip.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/step/spec-review-reads.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/request-new.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 182[2mms[22m[39m
+ [32m✓[39m tests/unit/core/finish/resolve-canonical-state-dir.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m tests/finish-archive-change-folder.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/verification-hint.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/step/io-iteration.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/git-remote.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/transient-retry-config.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/power-assertion.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/custom-reviewer-system.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow/specrunner-dispatch.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/round-all-skip-pass-through-static.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/state/__tests__/reviewers-schema.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/prompts/__tests__/tc-source-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/get-ref-sha.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/init-provider-notice.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 247[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/ps-check-pr-merged.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/util/retry.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/step/verification.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/command-registry-resume.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/message-types.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/inbox/run-inbox-inbox-origin.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/adapter/shared/prompt-builder.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/runtime-tc.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 663[2mms[22m[39m
+     [33m[2m✓[22m[39m specrunner runtime status → runManagedStatus が呼ばれる [33m 548[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/pipeline.conformance-resume.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/adapter/dispatching/agent-runner.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/doctor/aozu-cli-check.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 321[2mms[22m[39m
+     [33m[2m✓[22m[39m is in commonChecks [33m 305[2mms[22m[39m
+ [32m✓[39m tests/unit/errors/issue-fidelity-error-codes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/step/write-scope-error.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/config/file-exists.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/context-rollover-config.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/config/inbox-config.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/step/step-model-maxturn-config.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/core/cancel/__tests__/runner-branch-delete.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/util/detect-pm-lockfile.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/skip-detect.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/auth/managed-key-valid.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/runtime/codex-cli.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/run-worktree-signal.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/storage/jobs-writable.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/core/lifecycle/query-abort-hub.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/signal-handler-order.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/completion-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/templates/test-cases-template-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/issue-fidelity-prompt-contract.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/runtime/package-manager.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/util/env-filter.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/changed-lines-filelist.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/config/getAgentId.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/command/reviewers-new.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/run-worktree-git-staging.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/core/preflight.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/composite-deps-ownership.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m src/core/lifecycle/__tests__/diagnostic.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/git/normalize-origin-identity.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/auth/github-token-valid.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/validation-tc.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 155[2mms[22m[39m
+ [32m✓[39m tests/core/credentials/claude-code.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 94[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/progress-retry.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/common-context-catch.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/base-branch-required.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/grep-no-bun-imports.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 523[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor/workflow-structure-hint.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/util/path-mask.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/design-layer/template-section.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/resume/__tests__/resume-context.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/util/spawn.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 225[2mms[22m[39m
+ [32m✓[39m src/adapter/github/__tests__/github-client-closing-prs.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/prompts/request-review-system.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor/token-hint.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/repo/workflow-structure.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/init-git-guard.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 824[2mms[22m[39m
+     [33m[2m✓[22m[39m TC-002: COMMANDS.init.requiresRepo === true (ゲートが dispatch レベルに移動した) [33m 810[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/reviewer-chain-skipped.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/config/config-source-metadata.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/core/port/issue-fidelity-comparator-layering.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/architecture/module-boundary.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m tests/adapter/shared/follow-up.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/dead-guidance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 371[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/bootstrap.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 577[2mms[22m[39m
+     [33m[2m✓[22m[39m returns config, githubClient, and runtime when config is valid [33m 486[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/rollover-prompt.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/xdg-read-sidecar-tail.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/agents/definition-drift.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/core/runtime/workspace-materializer.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/github/verify-path.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/util/repo-root.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/stdout-mask.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/util/paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/step/requires-commit-flags.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/pipeline/resume-from-pr-create-disabled.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/readme-quickstart.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/managed-round-git.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/adr-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/adapter/claude-code/__tests__/agent-redirect.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/core/command/pipeline-run-canonical.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/core/pipeline/__tests__/standard-transitions.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/core/verification/changed-lines.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/managed-agent/usage.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/fragment-coverage.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/slug-required.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/runner.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/core/step/rules-followup-prompts.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/remove-bite-evidence-config-validation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/init-snippet.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/logger/__tests__/mask-sensitive.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/help-output-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 837[2mms[22m[39m
+     [33m[2m✓[22m[39m USAGE には 'Request commands' ブロックが含まれる [33m 828[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/doctor-execfile-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/agent/hash.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/step/custom-reviewer-activation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/codex/agent-runner-context-metrics.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/credentials/requirements.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/core/validation/registry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m src/core/pr-create/__tests__/body-template.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/core/liveness/resolve-pid.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/rule-name-typesafe.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/job-start-file-path.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 619[2mms[22m[39m
+     [33m[2m✓[22m[39m 既存ファイルパスが指定された場合は slug lookup をスキップして preflight に進む [33m 616[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/request-md.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/finish-escalation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/config/managed-key-present.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/cli/__tests__/cli-contract-snapshot.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/xdg-detach-log.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/core/runtime/__tests__/workspace-materializer-structure.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/adr.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/github-host.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/git/__tests__/branch.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/config/__tests__/type-config.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/readme-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/repo/github-origin.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/request-authoring-granularity.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/core/credentials/__tests__/requirements.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/prune-usage.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/dependabot-config.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/core/lifecycle/__tests__/keepalive-integration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/logger/stdout-verbose.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/agent-definition.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 148[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/run.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 296[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/agents/agents-registered.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/core/verification/__tests__/lockfile-sync-phase-constant.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/adapter/claude-code/completion-directive.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/cli/archive-usage-text.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/core/lifecycle/__tests__/keepalive.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/runtime/node.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/security-policy.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/readme-pipeline-sync.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/agents/environment-registered.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/adr-required.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/adr-valid.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/repo/git-repository.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/repo/specrunner-project-md.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/storage/old-state-files.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/prompts/builder.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/type-known.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/runtime/git.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/auth/constants.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/core/doctor/checks/env/github-client-id.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/core/port/__tests__/agent-runner.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/registry-integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/inbox/draft-writer.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/state/pipeline-id.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/title-required.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/util/__tests__/git-push.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/util/xdg.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/parser/rules/type-required.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/docs/readme-resume-command.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/core/pipeline/buildMockPipeline.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m849 passed[39m[22m[90m (849)[39m
+[2m      Tests [22m [1m[32m12933 passed[39m[22m[2m | [22m[33m1 skipped[39m[2m | [22m[90m2 todo[39m[90m (12936)[39m
+[2m   Start at [22m 13:51:39
+[2m   Duration [22m 109.58s[2m (transform 23.27s, setup 14.89s, import 118.47s, tests 126.67s, environment 162ms)[22m
+
+
+$ vitest run
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
+GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[design] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): vendor/x.js — 退避先: /tmp/fake-repo-exclusion-test/.specrunner/local/test-slug/write-scope-violation-design-1788702709186.md
+[design] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): specrunner/changes/test-slug/spec.md — 退避先: /tmp/fake-repo-exclusion-test/.specrunner/local/test-slug/write-scope-violation-design-1788702709198.md
+[design] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): specrunner/changes/test-slug/spec.md — 退避先: /tmp/fake-repo-exclusion-test/.specrunner/local/test-slug/write-scope-violation-design-1788702709203.md
+[design] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): specrunner/changes/test-slug/review-feedback-001.md — 退避先: /tmp/fake-repo-exclusion-test/.specrunner/local/test-slug/write-scope-violation-design-1788702709239.md
+[design] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): specrunner/changes/test-slug/code-review-result-001.md — 退避先: /tmp/fake-repo-exclusion-test/.specrunner/local/test-slug/write-scope-violation-design-1788702709249.md
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+Warning: checkpoint-restack: journal append failed for test-restack-slug: journal-write-failed
+Warning: checkpoint-restack: persistCommit (restack OID) failed for test-restack-slug: ledger-write-failed
+Warning: checkpoint-restack: graft: persistCommit (merge OID) failed for test-restack-slug: ledger-write-failed
+Warning: checkpoint-restack: containment violation — path outside change folder: src/foo.ts; skipping push for test-restack-slug
+Warning: checkpoint-restack: push failed for test-restack-slug to origin/test/restack-branch-abc12345. git stderr: remote: error: push rejected by pre-receive hook
+Warning: checkpoint-restack: git read-tree failed for test-restack-slug
+Warning: checkpoint-restack: graft: git update-ref failed for test-restack-slug
+Warning: checkpoint-restack: remote divergence detected for test-restack-slug — origin/test/restack-branch-abc12345 is not an ancestor of local HEAD; skipping restack to avoid overwriting remote state
+Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
+Info: checkpoint-restack: skipped for test-slug (reason: no-remote-tip)
+Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
+Warning: issue-notifier: failed to write comment to issue #42: network error
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+failure reason
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+stale resume log
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+line1
+line2
+failure reason
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+spawn error: ENOENT
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+spawn pid undefined
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+(detach log is empty)
+Error: Detached pipeline for 'test-slug' failed to start.
+Detach log: /repo/.specrunner/logs/test-slug.detach.log
+--- log tail ---
+log content
+[specrunner] warn: output verification repair turn 1 failed for 'spec-review'. Continuing.
+
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[specrunner] warn: session resume failed for 'implementer' (session: old-session-id): session not found: old-session-id. Falling back to new session.
+[codex] completion report parse failed (main turn): no-json-found; fragment: ""
+[codex] completion report parse failed (main turn): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 1/1): no-json-found; fragment: ""
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Task completed. No JSON here — this is plain prose."
+[specrunner] warn: step 'implementer' context exhausted (rollover 1/1). Starting fresh session in same worktree.
+
+[specrunner] warn: step 'implementer' context exhausted (rollover 1/1). Starting fresh session in same worktree.
+
+[codex] completion report parse failed (main turn): no-json-found; fragment: ""
+Warning: resume-from-issue: skipping branch 'feat/broken': fetch failed (exit 1)
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[implementer] no-op detected: no source files changed — overriding verdict to needs-fix
+[implementer] no-op detected: no source files changed — overriding verdict to needs-fix
+Warning: archive-from-issue: skipping PR #99 (branch 'feat/my-feature'): 4-field identity mismatch (jobId=job-abc, issueNumber=5, branch=feat/my-feature, prNumber=42)
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+Mapping resumePoint.step "bite-evidence" → "verification" (legacy alias)
+Mapping --from "build-fixer" → "implementer" (legacy alias)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping --from "bite-evidence" → "verification" (legacy alias)
+Mapping --from "bite-evidence" → "verification" (legacy alias)
+Mapping resumePoint.step "bite-evidence" → "verification" (legacy alias)
+Mapping state.step "bite-evidence" → "verification" (legacy alias)
+Warning: checkpoint egress check failed for test-slug-restack: Egress backstop: unknown commit deadbeef-unknown-oid-033 in publish range for branch 'fix/test-branch-restack-int'.. Skipping push to prevent unauthorized commit publication.
+[inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
+Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
+Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: linked branch registration failed: link failed
+Warning: pr-create: attestation comment failed: GitHub API error
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
+Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "build-fixer" → "implementer" (legacy alias)
+Mapping state.step "build-fixer" → "implementer" (legacy alias)
+Error: Detached pipeline for 'failure-slug' failed to start.
+Detach log: /repo/.specrunner/logs/failure-slug.detach.log
+--- log tail ---
+Error: request.md preflight failed
+Error: Detached pipeline for 'failure-discoverability-slug' failed to start.
+Detach log: /repo/.specrunner/logs/failure-discoverability-slug.detach.log
+--- log tail ---
+preflight: provider not ready
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Warning: /tmp/cred-test-4mC1eW/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /tmp/cred-test-qF1NOv/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+Mapping --from "build-fixer" → "implementer" (legacy alias)
+Mapping resumePoint.step "build-fixer" → "implementer" (legacy alias)
+ERROR: file not found
+spawn ENOENT
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+[inbox] started job slug=fix-login-bug from issue#99
+
+```
 
 ## Phase: lint
 
-_(skipped — previous command failed)_
+Step 'lint' failed
+
+```
+
+src/cli/archive.ts
+   20:10  warning  'getOriginInfo' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  184:9   warning  'githubHost' is assigned a value but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+  185:9   warning  'githubApiBaseUrl' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+src/cli/attach.ts
+  23:10  warning  'getOriginInfo' is defined but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+  24:10  warning  'resolveGitHubHost' is defined but never used. Allowed unused vars must match /^_/u               @typescript-eslint/no-unused-vars
+  37:10  warning  'resolveGitHubIntegrationConfig' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+src/cli/doctor.ts
+  14:10  warning  'commonChecks' is defined but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  14:24  warning  'managedChecks' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  14:39  warning  'localChecks' is defined but never used. Allowed unused vars must match /^_/u    @typescript-eslint/no-unused-vars
+
+src/git/remote.ts
+  97:9  warning  'path' is never reassigned. Use 'const' instead  prefer-const
+
+tests/github-disabled-e2e.test.ts
+   36:10  warning  'STEP_NAMES' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   48:10  warning  'LocalRuntime' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+   55:10  warning  'prCreateResultPath' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+   56:13  warning  'fsSync' is defined but never used. Allowed unused vars must match /^_/u                  @typescript-eslint/no-unused-vars
+  445:13  warning  'archiveResult' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 15 problems (0 errors, 15 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+
+$ eslint ./src ./tests --max-warnings 0
+ESLint found too many warnings (maximum: 0).
+error: script "lint" exited with code 1
+
+```
 
 ## Phase: changed-line-coverage
 
