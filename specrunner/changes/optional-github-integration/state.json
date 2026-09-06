@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T14:08:33.662Z",
+  "updatedAt": "2026-09-06T14:09:47.650Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "verification",
-  "status": "awaiting-resume",
+  "step": "implementer",
+  "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
-  "error": {
-    "code": "VERIFICATION_RETRIES_EXHAUSTED",
-    "message": "verification did not pass after 2 iterations",
-    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -147,15 +143,10 @@
       "tests/unit/cli/reopen-github-disabled.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "verification did not pass after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

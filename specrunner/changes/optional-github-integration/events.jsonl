@@ -80,3 +80,5 @@
 {"type":"lineage","step":"verification","ts":"2026-09-06T14:08:33.656Z","outputs":[{"path":"specrunner/changes/optional-github-integration/verification-result.md","hash":"sha256:9fca2a4cd00dbb7236924ebf49180a38e572e84bcfbd441632843e8f579e59d4"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-09-06T14:08:33.661Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-09-06T14:08:33.662Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-09-06T14:09:47.195Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-09-06T14:09:47.650Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

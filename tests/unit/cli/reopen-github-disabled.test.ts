@@ -104,7 +104,7 @@ function makeJobState(
   } as JobState;
 
   if (!githubEnabled) {
-    (base as Record<string, unknown>).githubIntegration = { enabled: false };
+    (base as unknown as Record<string, unknown>).githubIntegration = { enabled: false };
   }
 
   return base;
