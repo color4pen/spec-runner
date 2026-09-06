@@ -127,7 +127,7 @@
     "flags": {},
     "help": {
       "group": "Guide",
-      "summary": "  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)"
+      "summary": "  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject artifact-output inbox)"
     },
     "hasHandler": true,
     "children": {},
