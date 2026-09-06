@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d394de74-d2d0-4fe8-a5fa-ccc18ea74177",
   "createdAt": "2026-09-05T12:39:23.164Z",
-  "updatedAt": "2026-09-06T06:43:38.086Z",
+  "updatedAt": "2026-09-06T06:44:27.144Z",
   "request": {
     "title": "feat: reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/finding-remediation-contract-d394de74",
   "error": null,
   "pipelineId": "standard",
@@ -100,7 +100,8 @@
     "2a0c30d43280894e46459b146f54637b14d97c08",
     "bb0a4c72c4927f59ee102fcd202a8815ce07dc80",
     "0e1cecb6d09e087c952a29b0458ba7b3b55ca864",
-    "e4e632d23549566425509cf095d5e1b57069fd6a"
+    "e4e632d23549566425509cf095d5e1b57069fd6a",
+    "c1815324333a62780f620b17d4903e72cd40f343"
   ],
   "touchedFiles": {
     "request-review": [
@@ -207,7 +208,6 @@
       "src/core/decision/decision-ledger.ts"
     ],
     "adr-gen": [
-      "specrunner/adr/2026-06-04-step-io-contracts.md",
       "specrunner/adr/2026-09-05-finding-remediation-contract.md"
     ]
   },
@@ -258,10 +258,10 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/1121",
     "number": 1121,
-    "createdAt": "2026-09-05T16:10:10.907Z"
+    "createdAt": "2026-09-06T06:44:26.496Z"
   },
   "_journal": {
-    "historyCount": 165,
+    "historyCount": 170,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -277,8 +277,8 @@
       "custom-reviewers": 7,
       "regression-gate": 3,
       "conformance": 3,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
