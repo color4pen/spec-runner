@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T14:09:47.650Z",
+  "updatedAt": "2026-09-06T14:27:26.037Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
-  "status": "running",
+  "step": "code-review",
+  "status": "awaiting-resume",
   "branch": "feat/optional-github-integration-c0a99891",
-  "error": null,
+  "error": {
+    "code": "STEP_OUTPUT_MISSING",
+    "message": "Step 'code-review' output contract(s) not satisfied on branch 'feat/optional-github-integration-c0a99891': specrunner/changes/optional-github-integration/review-feedback-001.md",
+    "hint": "Required step output(s) missing or incomplete on branch 'feat/optional-github-integration-c0a99891'.\nViolations:\n  - specrunner/changes/optional-github-integration/review-feedback-001.md"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -77,7 +81,9 @@
     "3c7aea9f03a9f7743b50de84b3a0f64b9db47991",
     "4bdb4245ef6715b22c12fbbc65b510fa72472142",
     "8347a6bea4425354b9f9b3a6b1efaa76495b7a0a",
-    "8a7497b1f8d9b5bf24ba4140dff289a1b0f3d61a"
+    "8a7497b1f8d9b5bf24ba4140dff289a1b0f3d61a",
+    "a7449f5b3098b06ba9e2a5507f4c3bd5f253717e",
+    "3a3cd25a41263041fb51c18443a1cec477a5c9d4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -132,29 +138,26 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/cli/reopen.ts",
-      "src/core/attestation/render-markdown.ts",
-      "tests/unit/core/command/reopen-terminal-slug.test.ts",
-      "tests/unit/core/attestation/build-attestation.test.ts",
-      "tests/dispatch-workflow-reopen-action.test.ts",
-      "src/core/attestation/types.ts",
-      "src/state/github-integration.ts",
-      "tests/unit/core/attestation/render-markdown.test.ts",
       "tests/unit/cli/reopen-github-disabled.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "Step 'code-review' output contract(s) not satisfied on branch 'feat/optional-github-integration-c0a99891': specrunner/changes/optional-github-integration/review-feedback-001.md",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 5,
-      "verification": 4
+      "implementer": 6,
+      "verification": 5,
+      "code-review": 1
     }
   }
 }
