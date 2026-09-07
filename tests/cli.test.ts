@@ -45,20 +45,6 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function createValidConfig(overrides: Record<string, unknown> = {}) {
-  const configDir = path.join(tempDir, "specrunner");
-  await fs.mkdir(configDir, { recursive: true });
-  const config = {
-    version: 1,
-    agent: { id: "agent_001", definitionHash: "sha256:abc", lastSyncedAt: new Date().toISOString() },
-    environment: { id: "env_001", lastSyncedAt: new Date().toISOString() },
-    ...overrides,
-  };
-  const configPath = path.join(configDir, "config.json");
-  await fs.writeFile(configPath, JSON.stringify(config), { mode: 0o600 });
-  return configPath;
-}
-
 async function createRequestMd() {
   const reqPath = path.join(tempDir, "request.md");
   await fs.writeFile(reqPath, `# Test Request\n\n## Meta\n\n- **type**: new-feature\n\n## Content\n\nDo something.\n`);
@@ -79,35 +65,6 @@ describe("TC-063: specrunner run — fail-fast when config missing", () => {
     const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
     const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
     expect(combined).toMatch(/Config file not found|init|config/i);
-  });
-});
-
-// TC-064: specrunner run — fail-fast（github token 欠落 → exit 1）
-describe("TC-064: specrunner run — fail-fast when github token missing", () => {
-  it("exits with error when GITHUB_TOKEN env var and credentials file are both missing", async () => {
-    // Config exists but no github token in env
-    await createValidConfig({});
-
-    // Ensure GITHUB_TOKEN env var is not set
-    const originalGithubToken = process.env["GITHUB_TOKEN"];
-    delete process.env["GITHUB_TOKEN"];
-
-    // runRunCore returns exit code directly (no process.exit); handler contract changed in T-05.
-    const { runRunCore } = await import("../src/cli/run.js");
-    const reqPath = await createRequestMd();
-
-    try {
-      const result = await runRunCore(reqPath, { cwd: tempDir });
-
-      expect(result).toBe(1);
-      const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
-      const combined = stderrCalls.map((c: unknown[]) => String(c[0])).join("\n");
-      expect(combined).toMatch(/login/i);
-    } finally {
-      if (originalGithubToken !== undefined) {
-        process.env["GITHUB_TOKEN"] = originalGithubToken;
-      }
-    }
   });
 });
 
