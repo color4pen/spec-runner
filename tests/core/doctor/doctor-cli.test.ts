@@ -15,11 +15,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../../src/core/doctor/runner.js", () => ({
   runChecks: vi.fn(),
 }));
-vi.mock("../../../src/core/doctor/checks/index.js", () => ({
-  commonChecks: [],
-  managedChecks: [],
-  localChecks: [],
-}));
+vi.mock("../../../src/core/doctor/checks/index.js", () => {
+  const commonChecks: unknown[] = [];
+  const managedChecks: unknown[] = [];
+  const localChecks: unknown[] = [];
+  return {
+    commonChecks,
+    managedChecks,
+    localChecks,
+    // T-12: selectChecks is used by runDoctor
+    selectChecks: vi.fn().mockImplementation((runtime: string, _githubEnabled: boolean) => {
+      return [...commonChecks, ...(runtime === "managed" ? managedChecks : localChecks)];
+    }),
+  };
+});
 vi.mock("../../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({
     version: 1,

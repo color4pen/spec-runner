@@ -137,7 +137,12 @@ export class ManagedRuntime implements RuntimeStrategy {
    */
   async bootstrapJob(
     _repoRoot: string,
-    params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
+    params: {
+      request: RequestInfo;
+      repository: RepositoryInfo;
+      pipelineId?: string;
+      githubIntegration?: { enabled: boolean };
+    },
   ): Promise<JobState> {
     return buildInitialJobState(params);
   }

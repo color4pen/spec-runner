@@ -77,6 +77,15 @@ export function prCreateResultPath(slug: string): string {
 }
 
 /**
+ * Returns the relative path to the attestation Markdown file for the given slug.
+ * Written by LocalRuntime.commitFinalState when GitHub integration is disabled.
+ * Example: attestationPath("my-change") → "specrunner/changes/my-change/attestation.md"
+ */
+export function attestationPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/attestation.md`;
+}
+
+/**
  * Returns the relative path to the request.md file for the given slug.
  * Example: requestMdPath("my-change") → "specrunner/changes/my-change/request.md"
  */

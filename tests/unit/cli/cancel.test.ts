@@ -11,6 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../../src/store/job-state-store.js", () => ({
   JobStateStore: {
     resolveId: vi.fn().mockResolvedValue("test-job-id-cancel-5678"),
+    // list is called to determine job's GitHub integration contract (cancel.ts T-cancel).
+    // Default: empty list → jobGithubEnabled defaults to true (backward compat).
+    list: vi.fn().mockResolvedValue([]),
   },
 }));
 

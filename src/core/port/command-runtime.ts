@@ -55,7 +55,13 @@ export interface JobBootstrapCapability {
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
   bootstrapJob(
     repoRoot: string,
-    params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
+    params: {
+      request: RequestInfo;
+      repository: RepositoryInfo;
+      pipelineId?: string;
+      /** GitHub integration contract to fix at job start. Absent = enabled (backward compat). */
+      githubIntegration?: { enabled: boolean };
+    },
   ): Promise<JobState>;
 }
 

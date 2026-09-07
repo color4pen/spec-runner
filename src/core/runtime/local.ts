@@ -28,7 +28,7 @@ import { defaultSpawnFn } from "../../util/git-exec.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import type { RequestInfo, RepositoryInfo } from "../../state/schema.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { changeFolderPath, livenessJsonPath } from "../../util/paths.js";
+import { changeFolderPath, livenessJsonPath, slugEventsPath, usageJsonPath, attestationPath } from "../../util/paths.js";
 import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.js";
 import {
   copyRulesToChangeFolder,
@@ -93,11 +93,20 @@ function getInternals(handle: CleanupHandle): LocalCleanupInternals {
 
 export interface LocalRuntimeOptions {
   cwd: string;
-  githubClient: GitHubClient;
+  /**
+   * GitHub API client. null when GitHub integration is disabled.
+   * Steps that require a GitHub client (e.g. pr-create) must not be reached
+   * when disabled — applyGitHubIntegration removes them from the pipeline descriptor.
+   */
+  githubClient: GitHubClient | null;
+  /**
+   * GitHub personal access token. undefined when GitHub integration is disabled.
+   * createTransportAuth({ token: undefined }) disables token injection into git transport.
+   */
   githubToken?: string;
-  /** GitHub repository owner (e.g. "octocat"). */
+  /** GitHub repository owner (e.g. "octocat"). undefined when integration disabled. */
   owner?: string;
-  /** GitHub repository name (e.g. "my-repo"). */
+  /** GitHub repository name (e.g. "my-repo"). undefined when integration disabled. */
   repo?: string;
   manager?: ReturnType<typeof createWorktreeManager>;
   spawnFn?: SpawnFn;
@@ -122,10 +131,10 @@ export interface LocalRuntimeOptions {
 
 export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
   readonly cwd: string;
-  private readonly githubClient: GitHubClient;
-  private readonly githubToken: string;
-  private readonly owner: string;
-  private readonly repo: string;
+  private readonly githubClient: GitHubClient | null;
+  private readonly githubToken: string | undefined;
+  private readonly owner: string | undefined;
+  private readonly repo: string | undefined;
   readonly manager: ReturnType<typeof createWorktreeManager>;
   readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
@@ -160,9 +169,11 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
   constructor(opts: LocalRuntimeOptions) {
     this.cwd = opts.cwd;
     this.githubClient = opts.githubClient;
-    this.githubToken = opts.githubToken ?? "";
-    this.owner = opts.owner ?? "";
-    this.repo = opts.repo ?? "";
+    // undefined = integration disabled; createTransportAuth({ token: undefined }) disables injection
+    this.githubToken = opts.githubToken;
+    // undefined when GitHub integration is disabled (no empty-string fallback).
+    this.owner = opts.owner;
+    this.repo = opts.repo;
     this.manager = opts.manager ?? createWorktreeManager();
     this.spawnFn = opts.spawnFn ?? spawnCommand;
     this.queryFn = opts.queryFn ?? defaultQueryFn;
@@ -230,7 +241,12 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
    */
   async bootstrapJob(
     _repoRoot: string,
-    params: { request: RequestInfo; repository: RepositoryInfo; pipelineId?: string },
+    params: {
+      request: RequestInfo;
+      repository: RepositoryInfo;
+      pipelineId?: string;
+      githubIntegration?: { enabled: boolean };
+    },
   ): Promise<JobState> {
     return buildInitialJobState(params);
   }
@@ -868,6 +884,34 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
             await store.appendCheckpointRestack(record);
           }
         : undefined;
+
+    // When GitHub integration is disabled and the job is completing (awaiting-archive),
+    // write attestation.md to the feature branch instead of posting a PR comment.
+    // Best-effort: attestation write failures are swallowed so finalize still proceeds.
+    if (state.status === "awaiting-archive" && state.githubIntegration?.enabled === false) {
+      try {
+        const { buildAttestation } = await import("../attestation/build-attestation.js");
+        const { renderAttestationMarkdown } = await import("../attestation/render-markdown.js");
+        const { readUsageFile } = await import("../usage/store.js");
+
+        const eventsAbsPath = path.join(effectiveCwd, slugEventsPath(slug));
+        const usageAbsPath = path.join(effectiveCwd, usageJsonPath(slug));
+        let journalContent = "";
+        try {
+          journalContent = await fs.readFile(eventsAbsPath, "utf-8");
+        } catch {
+          // events.jsonl may be absent (no events emitted) — use empty string
+        }
+        const usage = await readUsageFile(usageAbsPath);
+        const attestation = buildAttestation({ journalContent, usage });
+        const markdown = renderAttestationMarkdown(attestation);
+        const attAbsPath = path.join(effectiveCwd, attestationPath(slug));
+        await fs.mkdir(path.dirname(attAbsPath), { recursive: true });
+        await fs.writeFile(attAbsPath, markdown, "utf-8");
+      } catch {
+        // Best-effort: attestation write failure must not block finalize commit.
+      }
+    }
 
     await commitFinalState({
       cwd: effectiveCwd,

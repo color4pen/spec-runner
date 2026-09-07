@@ -29,7 +29,7 @@ const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" })
 function makeExecutor(events: EventBus, deps: PipelineDeps): StepExecutor {
   const runner = createManagedAgentRunner({
     sessionClient: deps.client!,
-    githubClient: deps.githubClient,
+    githubClient: deps.githubClient!,
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });

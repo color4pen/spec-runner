@@ -19,6 +19,7 @@ import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/p
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { loadConfig } from "../config/store.js";
 import { resolveGitHubHost } from "../config/github-host.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 
 export interface RunCancelOptions {
   jobId?: string;
@@ -113,12 +114,32 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
 
   // Optionally resolve GitHub token for authenticated remote branch delete (C10).
   // Failure is suppressed — cancel local cleanup must not depend on token availability.
+  // B-19 / T-cancel: skip token resolution entirely for GitHub-disabled jobs.
   let cancelToken: string | undefined;
   try {
-    let githubHost = "github.com";
-    try { const cfg = await loadConfig(); githubHost = resolveGitHubHost(cfg.github); } catch { /* default host */ }
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-    cancelToken = resolved.token;
+    // Check if the target job's contract is GitHub-disabled (job state is authoritative).
+    let jobGithubEnabled = true; // default: enabled (backward compat)
+    try {
+      // includeArchived: a job whose change folder was moved to changes/archive/ by a partial
+      // archive (status still awaiting-archive) must resolve its stored contract, otherwise a
+      // disabled job would fall back to the enabled default and resolve a token.
+      const allStates = await JobStateStore.list(repoRoot!, { includeArchived: true });
+      const matchingState = allStates.find((s) => s.jobId === resolvedJobId);
+      if (matchingState) {
+        jobGithubEnabled = getGitHubIntegration(matchingState).enabled;
+      }
+    } catch {
+      // Could not read job state — assume enabled (fail-safe)
+    }
+
+    if (jobGithubEnabled) {
+      let githubHost = "github.com";
+      try { const cfg = await loadConfig(); githubHost = resolveGitHubHost(cfg.github); } catch { /* default host */ }
+      const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+      cancelToken = resolved.token;
+    }
+    // For disabled jobs: cancelToken stays undefined — createTransportAuth({ token: undefined })
+    // disables HTTPS extraheader injection (no token, no auth header).
   } catch {
     // Token not required — best-effort for remote branch delete
   }

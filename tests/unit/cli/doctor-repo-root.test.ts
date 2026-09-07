@@ -38,11 +38,20 @@ vi.mock("../../../src/adapter/github/github-client.js", () => ({
   }),
 }));
 
-vi.mock("../../../src/core/doctor/checks/index.js", () => ({
-  commonChecks: [],
-  managedChecks: [],
-  localChecks: [],
-}));
+vi.mock("../../../src/core/doctor/checks/index.js", () => {
+  const commonChecks: unknown[] = [];
+  const managedChecks: unknown[] = [];
+  const localChecks: unknown[] = [];
+  return {
+    commonChecks,
+    managedChecks,
+    localChecks,
+    // T-12: selectChecks is used by runDoctor
+    selectChecks: vi.fn().mockImplementation((runtime: string, _githubEnabled: boolean) => {
+      return [...commonChecks, ...(runtime === "managed" ? managedChecks : localChecks)];
+    }),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Mock helpers for check-level tests

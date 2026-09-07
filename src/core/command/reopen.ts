@@ -30,6 +30,7 @@ import { getJobSlug } from "../../state/job-slug.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import type { GitHubClient } from "../port/github-client.js";
+import { getGitHubIntegration, requireGitHubRepository } from "../../state/github-integration.js";
 
 export interface ReopenOptions {
   /** Required: operator-supplied reason for the reopen (--reason). */
@@ -130,54 +131,59 @@ export class ReopenCommand {
       return 1;
     }
 
-    // PR gate: job must have a recorded PR and the PR must be OPEN
-    if (!state.pullRequest?.number) {
-      logError(`Job '${this.slug}' has no recorded PR to reopen against.`);
-      return 1;
-    }
+    // PR gate: only enforced when GitHub integration is enabled.
+    // For disabled jobs (no PR exists), the gate is skipped entirely.
+    if (getGitHubIntegration(state).enabled) {
+      // PR gate: job must have a recorded PR and the PR must be OPEN
+      if (!state.pullRequest?.number) {
+        logError(`Job '${this.slug}' has no recorded PR to reopen against.`);
+        return 1;
+      }
 
-    // Fail-closed: no client → cannot determine PR state → reject
-    if (!this.options.githubClient) {
-      logError(
-        `Cannot verify PR state for job '${this.slug}': no GitHub credentials available. ` +
-        `Run 'specrunner login' to authenticate.`,
-      );
-      return 1;
-    }
+      // Fail-closed: no client → cannot determine PR state → reject
+      if (!this.options.githubClient) {
+        logError(
+          `Cannot verify PR state for job '${this.slug}': no GitHub credentials available. ` +
+          `Run 'specrunner login' to authenticate.`,
+        );
+        return 1;
+      }
 
-    let prState: string;
-    try {
-      const pr = await this.options.githubClient.getPullRequest(
-        state.repository.owner,
-        state.repository.name,
-        state.pullRequest.number,
-      );
-      prState = pr.state;
-    } catch (err) {
-      logError(
-        `Failed to query PR #${state.pullRequest.number} state: ${(err as Error).message}. ` +
-        `Run 'specrunner login' to refresh credentials.`,
-      );
-      return 1;
-    }
+      let prState: string;
+      try {
+        const { owner, name: repoName } = requireGitHubRepository(state);
+        const pr = await this.options.githubClient.getPullRequest(
+          owner,
+          repoName,
+          state.pullRequest.number,
+        );
+        prState = pr.state;
+      } catch (err) {
+        logError(
+          `Failed to query PR #${state.pullRequest.number} state: ${(err as Error).message}. ` +
+          `Run 'specrunner login' to refresh credentials.`,
+        );
+        return 1;
+      }
 
-    if (prState === "MERGED") {
-      logError(
-        `PR #${state.pullRequest.number} has already been merged. ` +
-        `Reopening a job with a merged PR is not supported.`,
-      );
-      return 1;
-    }
+      if (prState === "MERGED") {
+        logError(
+          `PR #${state.pullRequest.number} has already been merged. ` +
+          `Reopening a job with a merged PR is not supported.`,
+        );
+        return 1;
+      }
 
-    if (prState === "CLOSED") {
-      logError(
-        `PR #${state.pullRequest.number} is closed. ` +
-        `Only jobs with an OPEN PR can be reopened.`,
-      );
-      return 1;
+      if (prState === "CLOSED") {
+        logError(
+          `PR #${state.pullRequest.number} is closed. ` +
+          `Only jobs with an OPEN PR can be reopened.`,
+        );
+        return 1;
+      }
+      // Only OPEN PRs are allowed to proceed
     }
-
-    // Only OPEN PRs are allowed to proceed
+    // GitHub-disabled jobs: no PR gate — proceed directly to transition
 
     // Build the job state store (needed for appendOperatorEvent + persist).
     // D6: a durable store is required — fail-closed when sidecar is missing.

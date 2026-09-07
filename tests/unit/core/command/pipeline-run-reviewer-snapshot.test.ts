@@ -96,6 +96,8 @@ function makeFakePreflightResult(pipelineId?: string): PreflightResult {
     request,
     githubToken: "ghp_test_token",
     githubTokenSource: "env",
+    githubEnabled: true,
+    origin: { url: "https://github.com/testowner/testrepo.git", digest: "abc123" },
   };
 }
 

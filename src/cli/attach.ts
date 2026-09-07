@@ -10,17 +10,20 @@
  *   5. On success: setupWorkspace with attachCheckpoint using verified.checkpointOid
  *      (the OID that was verified — never re-evaluates origin/<branch>).
  *   6. Print success and next-step hint (does NOT start pipeline).
+ *
+ * B-19: GitHub token resolution and client construction are confined to
+ * src/cli/github-composition.ts. attach.ts delegates to composeGitHubIntegration
+ * and composeGitHubIntegrationForJob.
  */
 import * as path from "node:path";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { runAttachVerification } from "../core/attach/orchestrator.js";
 import { attachQuiescentPolicy } from "../core/attach/checkpoint-policy.js";
 import { loadConfig } from "../config/store.js";
-import { resolveGitHubToken } from "../core/credentials/github.js";
-import { getOriginInfo } from "../git/remote.js";
-import { resolveGitHubHost } from "../config/github-host.js";
 import { createTransportAuth } from "../git/transport-auth.js";
+import { readStateJsonFromRef } from "../git/checkpoint-ref.js";
 import { spawnCommand } from "../util/spawn.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 import {
   SpecRunnerError,
   EXIT_CODE,
@@ -31,8 +34,7 @@ import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
 import { logResult, logError, stderrWrite, resolveLogLevel, type LogLevel, setLogLevel } from "../logger/stdout.js";
 import { LocalRuntime } from "../core/runtime/local.js";
-import { createGitHubClient } from "../adapter/github/github-client.js";
-import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
+import { composeGitHubIntegration, composeGitHubIntegrationForJob } from "./github-composition.js";
 
 export interface RunAttachOptions {
   branch: string;
@@ -70,9 +72,6 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   const repoRoot = opts.repoRoot ?? cwd;
 
   let config: import("../config/schema.js").SpecRunnerConfig;
-  let githubToken: string;
-  let owner: string;
-  let repoName: string;
 
   try {
     config = await loadConfig(repoRoot);
@@ -91,13 +90,59 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
     return err.exitCode;
   }
 
+  // Phase 1: Probe the checkpoint with plain (unauthenticated) git to read the stored
+  // githubIntegration contract. This prevents composeGitHubIntegration from using the
+  // current config's github.enabled when it may have changed after job start (e.g. from
+  // disabled → enabled). If the probe fails (e.g. auth required), fall back to the
+  // current config's enabled value — Phase 2 will then compose accordingly.
+  //
+  // When the probe succeeds, the stored state is authoritative even if it predates the
+  // githubIntegration field: a legacy checkpoint resolves to enabled (same backward-compat
+  // rule as getGitHubIntegration / verifyCheckpoint), never to the current config.
+  let checkpointGithubEnabled: boolean = config.github?.enabled ?? true;
   try {
-    const githubHost = resolveGitHubHost(config.github);
-    const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-    githubToken = resolved.token;
-    const originInfo = await getOriginInfo(cwd, githubHost);
-    owner = originInfo.owner;
-    repoName = originInfo.name;
+    const probeFetch = await spawnCommand("git", ["fetch", "origin", opts.branch], { cwd: repoRoot });
+    if (probeFetch.exitCode === 0) {
+      const probeRev = await spawnCommand(
+        "git", ["rev-parse", `origin/${opts.branch}^{commit}`], { cwd: repoRoot },
+      );
+      if (probeRev.exitCode === 0) {
+        const probeOid = probeRev.stdout.trim();
+        const { stateJson } = await readStateJsonFromRef(spawnCommand, repoRoot, probeOid);
+        const rawState = JSON.parse(stateJson) as Record<string, unknown>;
+        const gi = rawState["githubIntegration"] as Record<string, unknown> | null | undefined;
+        if (gi !== null && gi !== undefined && typeof gi["enabled"] === "boolean") {
+          checkpointGithubEnabled = gi["enabled"];
+        } else {
+          // Probe succeeded, legacy state without githubIntegration → enabled.
+          checkpointGithubEnabled = getGitHubIntegration(rawState as { githubIntegration?: { enabled: boolean } }).enabled;
+        }
+      }
+    }
+  } catch {
+    // Phase 1 probe failed — fall back to current config (Phase 2 may still succeed)
+  }
+
+  // Phase 2: Compose using the checkpoint's githubIntegration contract as the authority.
+  // overrideEnabled ensures the current config's github.enabled is not used.
+  let githubToken: string | undefined;
+  let owner: string = "";
+  let repoName: string = "";
+  let invokerOrigin: import("../state/schema/types.js").RepositoryOrigin | undefined;
+
+  try {
+    const composition = await composeGitHubIntegration(
+      config,
+      cwd,
+      process.env as Record<string, string | undefined>,
+      { overrideEnabled: checkpointGithubEnabled },
+    );
+    githubToken = composition.githubToken;
+    invokerOrigin = composition.origin;
+    if (composition.enabled && composition.repository) {
+      owner = composition.repository.owner;
+      repoName = composition.repository.name;
+    }
   } catch (err: unknown) {
     const e = err instanceof SpecRunnerError ? err : null;
     logError(e ? e.message : `Setup failed: ${(err as Error).message}`);
@@ -115,7 +160,12 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
       cwd: repoRoot,
       branch: opts.branch,
       spawnFn,
-      expectedRepo: { owner, name: repoName },
+      // T-10: pass both github and origin identity so verifyCheckpoint can
+      // branch on the checkpoint's githubIntegration contract.
+      expectedRepo: {
+        github: owner && repoName ? { owner, name: repoName } : undefined,
+        origin: invokerOrigin,
+      },
       policy: attachQuiescentPolicy,
     });
   } catch (err: unknown) {
@@ -129,14 +179,26 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   }
 
   // 5. Materialize worktree from checkpoint (verification succeeded)
-  const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
-  const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
+  // Use the checkpoint's contract (not the invoker's config) for the LocalRuntime.
+  // This preserves the job's original integration state.
+  const checkpointEnabled = verified.state.githubIntegration?.enabled ?? true;
+  const { githubClient: checkpointGithubClient, githubToken: checkpointToken } =
+    await composeGitHubIntegrationForJob({
+      enabled: checkpointEnabled,
+      config,
+      env: process.env as Record<string, string | undefined>,
+    });
+
+  // Resolve owner/repo from the checkpoint state (for enabled jobs)
+  const checkpointOwner = verified.state.repository?.owner ?? "";
+  const checkpointRepo = verified.state.repository?.name ?? "";
+
   const runtime = new LocalRuntime({
     cwd: repoRoot,
-    githubClient,
-    githubToken,
-    owner,
-    repo: repoName,
+    githubClient: checkpointGithubClient,
+    githubToken: checkpointToken,
+    owner: checkpointOwner,
+    repo: checkpointRepo,
     workspaceSetup: config.workspace?.setup,
   });
 
@@ -166,7 +228,14 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   // 6. Success — print next-step hint (do NOT resume pipeline)
   logResult(`Attached job '${verified.slug}' (jobId: ${verified.jobId}) from branch '${verified.branch}'.`);
   if (verified.state.status === "awaiting-archive") {
-    stderrWrite(`Run 'specrunner job archive ${verified.slug} --with-merge' to take the job in.`);
+    // Use the checkpoint's saved contract (not the current invoker config) for the hint.
+    // GitHub-disabled jobs have no PR to merge, so --with-merge is not applicable.
+    const checkpointGithubEnabled = verified.state.githubIntegration?.enabled ?? true;
+    if (checkpointGithubEnabled) {
+      stderrWrite(`Run 'specrunner job archive ${verified.slug} --with-merge' to take the job in.`);
+    } else {
+      stderrWrite(`Run 'specrunner job archive ${verified.slug}' to archive this job (GitHub integration is disabled; the remote feature branch will be preserved).`);
+    }
   } else {
     stderrWrite(`Run 'specrunner job resume ${verified.slug}' to resume the pipeline.`);
   }

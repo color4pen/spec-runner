@@ -24,7 +24,7 @@ const SLUG = "my-feature";
 const JOB_ID = "test-job-id-12345678";
 const CHECKPOINT_OID = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
 const _REF = CHECKPOINT_OID; // After T-01: OID is used as ref for read operations
-const EXPECTED_REPO = { owner: "acme", name: "repo" };
+const EXPECTED_REPO = { github: { owner: "acme", name: "repo" } };
 
 const VALID_STATE_JSON = JSON.stringify({
   version: 2,
@@ -37,7 +37,7 @@ const VALID_STATE_JSON = JSON.stringify({
     type: "new-feature",
     slug: SLUG,
   },
-  repository: { owner: EXPECTED_REPO.owner, name: EXPECTED_REPO.name },
+  repository: { owner: EXPECTED_REPO.github.owner, name: EXPECTED_REPO.github.name },
   session: null,
   step: "implementer",
   status: "awaiting-resume",

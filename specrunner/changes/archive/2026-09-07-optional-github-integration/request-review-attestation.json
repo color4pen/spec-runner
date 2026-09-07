@@ -1,0 +1,29 @@
+{
+  "requestHash": "sha256:8b60a5621c57cfcb946de66246055cf9e2539324a035aa0425d7b656f065b881",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/preflight.ts: resolveGitHubToken unconditionally resolved",
+    "src/core/preflight.ts: getOriginInfo requires GitHub-format origin",
+    "src/cli/bootstrap.ts: resolveGitHubToken called unconditionally",
+    "src/cli/bootstrap.ts: createGitHubClient always constructed",
+    "src/cli/bootstrap.ts: createRuntime receives githubClient and githubToken",
+    "src/core/runtime/factory.ts: createRuntime signature requires GitHubClient and githubToken",
+    "src/core/runtime/factory.ts: both local and managed runtimes receive githubClient/githubToken",
+    "src/git/remote.ts: getOriginInfo mixes Git remote check with GitHub owner/name extraction",
+    "src/git/remote.ts: parseRemoteUrl throws remoteNotGitHubError for non-GitHub hosts",
+    "src/git/transport-auth.ts: buildTransportAuthArgs returns [] when token is absent/empty",
+    "src/git/transport-auth.ts: SSH and non-HTTPS origins receive no token injection",
+    "src/core/pipeline/registry.ts: standard pipeline terminal step is PrCreateStep",
+    "src/core/pipeline/registry.ts: fast pipeline terminal step is PrCreateStep",
+    "src/core/pipeline/registry.ts: design-only pipeline terminal is 'end' (no PR step)",
+    "src/core/step/pr-create.ts: calls runPrCreate with GitHub REST API",
+    "src/core/step/pr-create.ts: posts attestation comment to PR",
+    "src/core/attach/orchestrator.ts: runAttachVerification uses Git only (no GitHub API)",
+    "src/core/command/reopen.ts: requires state.pullRequest.number (recorded PR mandatory)",
+    "src/core/command/reopen.ts: fail-closed when githubClient is null",
+    "src/core/command/reopen.ts: PR state must be OPEN via GitHub API check",
+    "src/core/archive/plain-archive.ts: no GitHub PR state query, no GitHub API client",
+    "src/state/schema/types.ts: RepositoryInfo has mandatory owner: string and name: string"
+  ],
+  "sourceRevision": "6c37dc52027be8ff6f6a699a73e5a959b9ea7cfa"
+}

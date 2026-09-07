@@ -402,6 +402,17 @@ export interface GitHubHostConfig {
   host?: string;
   /** Override API base URL (e.g. "https://ghes.corp.example.com/api/v3"). Derived from host when absent. */
   apiBaseUrl?: string;
+  /**
+   * Enable GitHub integration (PR creation, issue linking, GitHub API calls).
+   * When false, specrunner runs against a plain Git repository and remote without requiring
+   * GitHub credentials, a GitHub host, or GitHub API access.
+   *
+   * Default: true (when absent or undefined, GitHub integration is enabled for backward compatibility).
+   *
+   * This value is declared at the project level and fixed per job at start time.
+   * Changing it after a job starts does not affect the running job.
+   */
+  enabled?: boolean;
 }
 
 /**

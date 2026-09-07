@@ -65,7 +65,7 @@ import type { PipelineDeps, PipelineDepsBuilder } from "../types.js";
 export type CommandRunnerRuntime = ProviderReadinessCapability & WorkspaceLifecycleCapability & JobStatePersistenceCapability & PipelineDepsBuilder;
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
-import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
+import { specReviewResultPath, requestMdPath, attestationPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { buildRunResult, formatRunResultJson } from "./run-result.js";
 import { transitionJob } from "../../state/lifecycle.js";
@@ -287,13 +287,20 @@ export abstract class CommandRunner {
       // Fires only when startStep === "request-review" AND issueNumber is set AND
       // not an inbox job. Fail-closed: any error (fetch / parse / wiring) halts.
       // Non-propagation: issue body is never stored in state or logs.
+      // When githubClient is null (integration disabled) and issueNumber is set,
+      // the gate is fail-closed: getIssue always throws → halt(ISSUE_FETCH_FAILED).
       const gateDecision = await evaluateIssueFidelityGate({
         startStep,
         issueNumber: jobState.issueNumber,
         inboxOrigin: jobState.inboxOrigin,
-        owner: deps.owner,
-        repo: deps.repo,
-        getIssue: (owner, repo, n) => deps.githubClient.getIssue(owner, repo, n),
+        owner: deps.owner ?? "",
+        repo: deps.repo ?? "",
+        getIssue: (owner, repo, n) => {
+          if (!deps.githubClient) {
+            throw new Error("GitHub integration is disabled; cannot fetch issue for fidelity gate");
+          }
+          return deps.githubClient.getIssue(owner, repo, n);
+        },
         readRequestMd: () =>
           nodeFs.readFile(
             nodePath.join(workspace?.cwd ?? repoRoot, requestMdPath(slug)),
@@ -400,7 +407,7 @@ export abstract class CommandRunner {
       }
 
       // Step 6: handleResult (computes exit code)
-      const exitCode = await handleResult(finalState, slug, json);
+      const exitCode = await handleResult(finalState, slug, json, repoRoot);
 
       // Display verbose log path if active
       const logPath = getVerboseLogFilePath();
@@ -437,8 +444,11 @@ export abstract class CommandRunner {
  * When json=true, emits a RunResultContract JSON to stdout before human-readable output.
  * SPEC_REVIEW_RESULT_NOT_FOUND is treated as a hard failure for JSON output even though
  * the pipeline may have set state.status to "awaiting-resume".
+ *
+ * @param repoRoot  Absolute path to the git repository root. Used to resolve the attestation
+ *                  file path for GitHub-disabled jobs (TC-051).
  */
-async function handleResult(finalState: JobState, slug: string, json: boolean): Promise<number> {
+async function handleResult(finalState: JobState, slug: string, json: boolean, repoRoot: string): Promise<number> {
   if (json) {
     stdoutWrite(formatRunResultJson(buildRunResult(finalState, slug)));
   }
@@ -455,10 +465,32 @@ async function handleResult(finalState: JobState, slug: string, json: boolean): 
   outputSpecReviewVerdict(finalState, slug);
 
   if (finalState.status === "awaiting-archive") {
-    if (finalState.pullRequest?.url) {
-      logInfo(`PR: ${finalState.pullRequest.url}`);
+    if (finalState.githubIntegration?.enabled !== false) {
+      // GitHub-enabled job (or legacy state without githubIntegration field).
+      if (finalState.pullRequest?.url) {
+        logInfo(`PR: ${finalState.pullRequest.url}`);
+      }
+      logInfo(`Pipeline completed; awaiting archive. Branch: ${finalState.branch}`);
+    } else {
+      // GitHub integration disabled — branch published locally, no PR created.
+      logInfo(`Branch published: ${finalState.branch}`);
+      // TC-051: display final commit OID when available.
+      const finalOid = finalState.synthesizedCommits?.at(-1);
+      if (finalOid) {
+        logInfo(`Final revision: ${finalOid}`);
+      }
+      // TC-051: display attestation path when the file exists.
+      const relAttest = attestationPath(slug);
+      const absAttest = nodePath.join(repoRoot, relAttest);
+      try {
+        await nodeFs.access(absAttest);
+        logInfo(`Attestation: ${relAttest}`);
+      } catch {
+        // Attestation file absent — skip display without error.
+      }
+      logInfo(`Pipeline completed (GitHub integration disabled); awaiting archive.`);
+      logInfo(`Run 'specrunner job archive ${slug}' to archive the job.`);
     }
-    logInfo(`Pipeline completed; awaiting archive. Branch: ${finalState.branch}`);
     return 0;
   }
 

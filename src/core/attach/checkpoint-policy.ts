@@ -71,7 +71,7 @@ export const attachResumePolicy: CheckpointVerificationPolicy = {
         undefined,
         state.resumePoint ?? null,
         state.step,
-        buildAllowedStepSet(state.reviewers),
+        buildAllowedStepSet(state.reviewers, state.githubIntegration),
         state.reviewers,
       );
     } catch (err: unknown) {

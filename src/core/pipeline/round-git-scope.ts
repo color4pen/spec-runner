@@ -9,7 +9,7 @@
  *   2. Detect undeclared file changes that trigger a round halt (offending).
  */
 
-import { slugStateJsonPath, slugEventsPath, usageJsonPath, prCreateResultPath, changesDirRel, isCanonicalDocPath } from "../../util/paths.js";
+import { slugStateJsonPath, slugEventsPath, usageJsonPath, prCreateResultPath, attestationPath, changesDirRel, isCanonicalDocPath } from "../../util/paths.js";
 
 /**
  * Filter out pipeline-managed change folder paths from a list of files.
@@ -103,7 +103,7 @@ export function excludePipelineManagedChangePaths(files: string[]): string[] {
  * @returns Array of pipeline-managed worktree-relative paths.
  */
 export function pipelineManagedPaths(slug: string): string[] {
-  return [slugStateJsonPath(slug), slugEventsPath(slug), usageJsonPath(slug), prCreateResultPath(slug)];
+  return [slugStateJsonPath(slug), slugEventsPath(slug), usageJsonPath(slug), prCreateResultPath(slug), attestationPath(slug)];
 }
 
 /**

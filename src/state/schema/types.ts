@@ -95,9 +95,40 @@ export interface RequestInfo {
   baseBranch?: string | null;
 }
 
+/**
+ * Forge-agnostic origin identity for a git repository remote.
+ *
+ * - url:    The normalized origin URL (userinfo stripped, scheme/port normalized).
+ *           Does NOT contain any credentials.
+ * - digest: SHA-256 of the normalized canonical form (host/path, no scheme/port/trailing-slash).
+ *           Stable across HTTPS/SSH/local URL variants for the same repository.
+ *
+ * Used for identity verification when GitHub integration is disabled.
+ */
+export interface RepositoryOrigin {
+  url: string;
+  digest: string;
+}
+
 export interface RepositoryInfo {
-  owner: string;
-  name: string;
+  /**
+   * GitHub repository owner (organization or username).
+   * Required when githubIntegration.enabled is true (or absent/legacy).
+   * Must be absent when githubIntegration.enabled is false.
+   */
+  owner?: string;
+  /**
+   * GitHub repository name.
+   * Required when githubIntegration.enabled is true (or absent/legacy).
+   * Must be absent when githubIntegration.enabled is false.
+   */
+  name?: string;
+  /**
+   * Forge-agnostic origin identity derived from the git remote URL.
+   * Required when githubIntegration.enabled is false.
+   * Optional (may be absent) for GitHub-enabled jobs and legacy state files.
+   */
+  origin?: RepositoryOrigin;
 }
 
 export interface ErrorInfo {
@@ -598,6 +629,22 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   touchedFiles?: Record<string, string[]>;
+  /**
+   * GitHub integration contract for this job.
+   *
+   * Recorded at job start time and immutable for the job's lifetime.
+   * Governs whether GitHub credentials, API calls, PR creation, issue linking,
+   * and PR-based lifecycle gates apply to this job.
+   *
+   * Semantics:
+   *   - `{ enabled: true }`:  GitHub integration is active (default behavior).
+   *   - `{ enabled: false }`: GitHub integration is disabled; job uses Git-only transport.
+   *   - absent / undefined:   Legacy state; treated as `{ enabled: true }` for backward compat.
+   *
+   * Config changes after job start do NOT alter this field.
+   * Optional for backward compat — absent in legacy state files is valid.
+   */
+  githubIntegration?: { enabled: boolean };
   /**
    * Operator adjudication ledger — append-only records of operator rulings made via
    * `job resume --prompt <text>`. Distinct from issue-comment-derived `decisions`:

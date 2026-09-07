@@ -25,6 +25,7 @@ import {
   VALIDATOR_PROBE_SLUG,
 } from "../pipeline/descriptor-input-completeness.js";
 import { descriptorHasReviewerInsertionPoint } from "../pipeline/reviewer-capability.js";
+import { applyGitHubIntegration } from "../pipeline/apply-github-integration.js";
 import { loadReviewerDefinitions } from "../reviewers/load.js";
 import { validateReviewerDefinitions } from "../reviewers/validate.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
@@ -134,12 +135,15 @@ export class PipelineRunCommand extends CommandRunner {
     const descriptor = getPipelineDescriptor(pipelineId);
     assertRuntimeSupportsScope(descriptor, this.pipelineRuntime);
 
-    // Compose the actual runtime descriptor (base + custom reviewers) and validate
-    // input-completeness BEFORE bootstrapping the job. This catches authoring errors
-    // (e.g. producer removed from a slim pipeline while consumer still requires the output)
-    // before any job state is created. Runs in the same preflight slot as
-    // validateReviewerDefinitions / assertRuntimeSupportsScope.
-    const composedDescriptor = composeReviewerDescriptor(descriptor, reviewers);
+    // Compose the actual runtime descriptor (base + custom reviewers), apply the
+    // GitHub integration contract (removes pr-create when disabled), then validate
+    // input-completeness BEFORE bootstrapping the job. Applying the contract first
+    // ensures the completeness check runs on what will actually execute — not on
+    // steps that have been removed (e.g. pr-create in a disabled-contract job).
+    const composedDescriptor = applyGitHubIntegration(
+      composeReviewerDescriptor(descriptor, reviewers),
+      { enabled: this.preflightResult.githubEnabled },
+    );
     // Ambient inputs must use VALIDATOR_PROBE_SLUG because the validator calls
     // step.reads/writes with internal probe deps (slug = VALIDATOR_PROBE_SLUG).
     // Using the real slug would produce path mismatches (request.md path components differ).
@@ -160,6 +164,12 @@ export class PipelineRunCommand extends CommandRunner {
     await this.pipelineRuntime.assertNoDuplicateLiveJob(cwd, slug);
 
     // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
+    // When GitHub integration is disabled, repo is null — store origin identity only.
+    const repo = this.preflightResult.repo;
+    const githubEnabled = this.preflightResult.githubEnabled;
+    const repositoryInfo = githubEnabled && repo
+      ? { owner: repo.owner, name: repo.name, origin: this.preflightResult.origin }
+      : { origin: this.preflightResult.origin };
     const jobState = await this.pipelineRuntime.bootstrapJob(cwd, {
       request: {
         path: this.absolutePath,
@@ -168,8 +178,9 @@ export class PipelineRunCommand extends CommandRunner {
         slug: requestSlug,
         baseBranch: request.baseBranch,
       },
-      repository: { owner: this.preflightResult.repo.owner, name: this.preflightResult.repo.name },
+      repository: repositoryInfo,
       pipelineId,
+      githubIntegration: { enabled: githubEnabled },
     });
 
     // Snapshot reviewer definitions into job state only when the resolved descriptor
@@ -180,6 +191,8 @@ export class PipelineRunCommand extends CommandRunner {
     }
 
     logInfo(`Job ID: ${jobState.jobId}`);
+    // T-13: Log the GitHub integration status fixed to this job.
+    logInfo(`GitHub integration: ${githubEnabled ? "enabled" : "disabled"}`);
 
     // Set noWorktree flag on initial state (portable — written to state.json for archive to read)
     if (this.options.noWorktree === true) {

@@ -190,7 +190,7 @@ describe("TC-022: runAttachVerification without policy defaults to attachResumeP
         cwd: "/tmp",
         branch: TC022_BRANCH,
         spawnFn: makeTC022SpawnFn(),
-        expectedRepo: { owner: "owner", name: "repo" },
+        expectedRepo: { github: { owner: "owner", name: "repo" } },
         // policy omitted → verifyCheckpoint defaults to attachResumePolicy
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });

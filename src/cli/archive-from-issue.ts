@@ -144,7 +144,7 @@ export async function runArchiveFromIssue(
             cwd: repoRoot,
             branch: resolved.branch,
             spawnFn,
-            expectedRepo: { owner, name: repo },
+            expectedRepo: { github: { owner, name: repo } },
             policy: attachArchivePolicy,
           });
         } catch (err) {

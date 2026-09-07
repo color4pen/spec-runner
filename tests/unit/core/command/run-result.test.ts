@@ -262,6 +262,73 @@ describe("awaiting-resume with pullRequest URL", () => {
   });
 });
 
+// TC-051: branch-published result for GitHub-disabled jobs
+describe("TC-051: branch-published — D7 additive fields", () => {
+  it("returns branch-published with branch, revision, and githubIntegration when all are available", () => {
+    const state = baseState({
+      status: "awaiting-archive",
+      step: "pr-create",
+      githubIntegration: { enabled: false },
+      branch: "feat/my-feature-abc123",
+      synthesizedCommits: ["aaa111", "bbb222", "ccc333"],
+    });
+    const contract = buildRunResult(state, "my-feature");
+
+    expect(contract.result).toBe("branch-published");
+    expect(contract.prUrl).toBeNull();
+    expect(contract.reason).toBeNull();
+    expect(contract.branch).toBe("feat/my-feature-abc123");
+    expect(contract.revision).toBe("ccc333");
+    expect(contract.githubIntegration).toEqual({ enabled: false });
+    expect(contract.schemaVersion).toBe(1);
+    expect(contract.slug).toBe("my-feature");
+    expect(contract.jobId).toBe("job-abc-123");
+  });
+
+  it("omits revision when synthesizedCommits is absent", () => {
+    const state = baseState({
+      status: "awaiting-archive",
+      step: "pr-create",
+      githubIntegration: { enabled: false },
+      branch: "feat/my-feature-abc123",
+    });
+    const contract = buildRunResult(state, "my-feature");
+
+    expect(contract.result).toBe("branch-published");
+    expect(contract.revision).toBeUndefined();
+    expect(contract.branch).toBe("feat/my-feature-abc123");
+    expect(contract.githubIntegration).toEqual({ enabled: false });
+  });
+
+  it("omits branch when state.branch is null", () => {
+    const state = baseState({
+      status: "awaiting-archive",
+      step: "pr-create",
+      githubIntegration: { enabled: false },
+      branch: null,
+    });
+    const contract = buildRunResult(state, "my-feature");
+
+    expect(contract.result).toBe("branch-published");
+    expect(contract.branch).toBeUndefined();
+  });
+
+  it("returns pr-created (not branch-published) when githubIntegration is absent (legacy state)", () => {
+    const state = baseState({
+      status: "awaiting-archive",
+      step: "pr-create",
+      pullRequest: { url: "https://github.com/org/repo/pull/1", number: 1, createdAt: "2026-01-01" },
+    });
+    // No githubIntegration field — legacy state defaults to enabled
+    const contract = buildRunResult(state, "my-feature");
+
+    expect(contract.result).toBe("pr-created");
+    expect(contract.branch).toBeUndefined();
+    expect(contract.revision).toBeUndefined();
+    expect(contract.githubIntegration).toBeUndefined();
+  });
+});
+
 // All fields populated: slug, jobId, step
 describe("all required fields are populated", () => {
   it("pr-created has slug, jobId, step", () => {

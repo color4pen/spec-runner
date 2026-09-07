@@ -167,6 +167,47 @@ Automation contexts (cron, CI, always-on schedulers) cannot run device flow and 
 
 Run `specrunner doctor` to see which source is currently resolved.
 
+## Optional GitHub Integration
+
+By default SpecRunner requires a GitHub token and pushes to a GitHub repository. You can disable GitHub integration for repositories hosted elsewhere (self-hosted Gitea, GitLab, bare Git, etc.).
+
+```jsonc
+// .specrunner/config.json
+{
+  "version": 1,
+  "github": { "enabled": false }
+}
+```
+
+**What still works (Git is still required):**
+
+| Feature | Without GitHub |
+|---|---|
+| Pipeline (all agent steps) | ✓ |
+| Worktrees, commits, push to origin | ✓ |
+| Branch-borne state (attach, resume) | ✓ |
+| `job show` / `job ls` / `job cancel` / `job archive` | ✓ |
+| `doctor` (git, runtime, agent provider checks) | ✓ |
+| `config effective` / `guide` / `rules` / `reviewers` | ✓ |
+
+**What requires GitHub (`github.enabled: true`, the default):**
+
+| Feature | Notes |
+|---|---|
+| PR creation (`pr-create` step) | Removed from pipeline when disabled |
+| `job start --issue` / `--from-issue` | Rejected at dispatch |
+| `inbox run` | Requires GitHub issues API |
+| `job archive --with-merge` | Rejected at handler |
+| `job resume --from-issue` | Rejected at dispatch |
+
+> **GitHub non-dependency ≠ Git non-dependency.**
+> SpecRunner always requires a Git repository with an `origin` remote. Commits, worktrees, branch push/fetch, and egress checks are all git operations.
+
+When GitHub is disabled:
+- The pipeline completes without opening a PR. Completion result is `branch-published` instead of `pr-created`. An `attestation.md` is written to `specrunner/changes/<slug>/` on the feature branch.
+- `job archive` pushes the archive record to the feature branch and marks the job `archived`. The remote feature branch is retained (not deleted); merging it into your base branch is your responsibility. `archived` does **not** mean "merged".
+- `job reopen` works without PR checks.
+
 ## Runtime Modes
 
 **Local (default)** — runs agents locally via the Claude Agent SDK. No API key needed beyond the GitHub token.
@@ -199,7 +240,7 @@ specrunner job ls                          List all jobs
 specrunner job show <jobId|slug>           Show job state
 specrunner job resume <slug>               Resume a halted job
 specrunner job cancel <jobId>              Cancel job and cleanup
-specrunner job archive <slug>              Push archive record; re-run after PR merge to complete teardown
+specrunner job archive <slug>              Push archive record, mark archived, and remove worktree (one step; for GitHub-disabled jobs: preserves remote feature branch)
 specrunner job stats [--json]             Run-level statistics (cost, convergence, duration)
 ```
 

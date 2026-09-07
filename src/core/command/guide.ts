@@ -119,8 +119,28 @@ git worktree add の .git/config ロック競合 (Issue #166) を回避するた
   },
   {
     name: "merge",
-    summary: "archive 前の手動 rebase 手順と --with-merge",
+    summary: "archive 前の手動 rebase 手順と --with-merge / GitHub 無効時の外部 merge",
     body: `# guide: merge — 手動 rebase + archive
+
+## GitHub 無効時（github.enabled: false）
+
+GitHub 連携を無効化した job では \`--with-merge\` は使用できません（exit 2 で拒否）。
+SpecRunner は外部 merge gate（GitHub CI / branch protection / PR merge）を持ちません。
+pipeline は \`pr-create\` なしで完走し、結果は \`branch-published\`（PR URL なし）になります。
+\`archived\` は「archive record が remote feature branch に到達した」ことのみを意味し、
+「変更が main に入った」を保証しません。
+
+### 取り込み手順（GitHub 無効）
+
+\`\`\`bash
+specrunner job archive <slug>        # archive record を feature branch に push
+# → remote feature branch が残る（削除されない）
+# その後、手動で base branch へ merge する:
+git merge origin/<feature-branch>    # または forge の UI で merge
+\`\`\`
+
+---
+
 
 ## 前提確認
 

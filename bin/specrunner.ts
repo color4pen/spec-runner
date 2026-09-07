@@ -7,7 +7,7 @@
  * Handlers return exit codes (number); process.exit() is called once, after dispatch.
  */
 
-import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE, resolveCommand, resolveEffectiveRequiresRepo } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE, resolveCommand, resolveEffectiveRequiresRepo, resolveEffectiveRequiresGitHub, findActiveGitHubOnlyFlags } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
@@ -115,6 +115,86 @@ export async function main(): Promise<void> {
     process.stderr.write(`Error: ${err.message}\n`);
     process.stderr.write(`Hint: ${err.hint}\n`);
     process.exit(err.exitCode);
+  }
+
+  // T-11: GitHub integration check — reject commands/flags that require GitHub when disabled.
+  // Only run when ctx.repoRoot is available (so we can load the config).
+  //
+  // Two-level check:
+  //   Level 1 (dispatch): Uses project config (github.enabled). Appropriate for new-job / issue
+  //     operations where no specific job state exists yet.
+  //   Level 2 (handler): Uses job's saved contract. Appropriate for job-specific flag operations
+  //     (--with-merge, --merge-wait-ms) where the target job may have been started with GitHub
+  //     enabled even if the current config says disabled.
+  //
+  // For job-specific flags (--with-merge, --merge-wait-ms) with a positional slug: try to load
+  // the job state and bypass the config-level check if the job was started with GitHub enabled.
+  // The handler (archive.ts) performs the definitive job-contract check.
+  if (ctx.repoRoot !== null) {
+    const commandRequiresGitHub = resolveEffectiveRequiresGitHub(COMMANDS, canonicalPath);
+    const activeGitHubOnlyFlags = findActiveGitHubOnlyFlags(spec, parsed.flags);
+    const needsGitHub = commandRequiresGitHub || activeGitHubOnlyFlags.length > 0;
+    if (needsGitHub) {
+      try {
+        const { loadConfig } = await import("../src/config/store.js");
+        const { resolveGitHubIntegrationConfig } = await import("../src/config/github-integration.js");
+        const config = await loadConfig(ctx.repoRoot);
+        const { enabled } = resolveGitHubIntegrationConfig(config);
+        if (!enabled) {
+          // For job-specific flags (--with-merge, --merge-wait-ms) with a slug positional:
+          // check the job's saved contract — it may have been started with GitHub enabled.
+          // These flags are never applicable to new-job creation, so job state is authoritative.
+          const jobSpecificFlags = ["with-merge", "merge-wait-ms"];
+          const isJobSpecificFlagOnly =
+            !commandRequiresGitHub &&
+            activeGitHubOnlyFlags.length > 0 &&
+            activeGitHubOnlyFlags.every((f) => jobSpecificFlags.includes(f)) &&
+            parsed.positional !== undefined;
+
+          let bypassForJobContract = false;
+          if (isJobSpecificFlagOnly) {
+            try {
+              const { JobStateStore } = await import("../src/store/job-state-store.js");
+              const { getGitHubIntegration: getJobIntegration } = await import("../src/state/github-integration.js");
+              const { getJobSlug } = await import("../src/state/job-slug.js");
+              // includeArchived: after archive-record moves the change folder to changes/archive/
+              // (status still awaiting-archive), the job must remain resolvable so that a re-run of
+              // `job archive <slug> --with-merge` is not rejected on the current config.
+              // Same search scope as the archive handler / core archive orchestrator.
+              const allStates = await JobStateStore.list(ctx.repoRoot, { includeArchived: true });
+              const matching = allStates.filter((s) => getJobSlug(s) === parsed.positional);
+              matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+              const matchingState = matching[0];
+              if (matchingState && getJobIntegration(matchingState).enabled) {
+                // Job was started with GitHub enabled → let the handler decide
+                bypassForJobContract = true;
+              }
+            } catch {
+              // Can't read job state — fall through to config-level rejection (safe default)
+            }
+          }
+
+          if (!bypassForJobContract) {
+            if (commandRequiresGitHub) {
+              process.stderr.write(`Error: '${commandLabel}' requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+            } else {
+              process.stderr.write(`Error: --${activeGitHubOnlyFlags[0]} requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+            }
+            process.stderr.write(`Hint: Enable GitHub integration in .specrunner/config.json (set github.enabled: true), or omit the flag.\n`);
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+        }
+      } catch (e) {
+        // If config load fails (e.g. not a specrunner project), skip the GitHub check and
+        // let the handler surface the config error with a more contextual message.
+        if (e instanceof SpecRunnerError && e.code === "GITHUB_INTEGRATION_REQUIRED") {
+          process.stderr.write(`Error: ${e.message}\n`);
+          process.stderr.write(`Hint: ${e.hint}\n`);
+          process.exit(e.exitCode);
+        }
+        // Other errors (CONFIG_NOT_FOUND etc.): fall through to handler
+      }
+    }
   }
 
   // Dispatch — handler returns exit code; process.exit is called once, outside the try/catch.

@@ -44,16 +44,18 @@ describe("pipelineManagedPaths", () => {
   //
   // Destruction confirmation: prCreateResultPath を配列から外すと toHaveLength(4) および
   // toContain(PR_CREATE_RESULT) が fail する
-  it("TC-002: returns state.json, events.jsonl, usage.json, pr-create-result.md for the given slug (no bite-evidence-result.md)", () => {
+  it("TC-002: returns state.json, events.jsonl, usage.json, pr-create-result.md, attestation.md for the given slug (no bite-evidence-result.md)", () => {
     const paths = pipelineManagedPaths(SLUG);
     expect(paths).toContain(STATE_JSON);
     expect(paths).toContain(EVENTS_JSONL);
     expect(paths).toContain(USAGE_JSON);
     // TC-002: prCreateResultPath must be included (#898 fix, T-01)
     expect(paths).toContain(PR_CREATE_RESULT);
+    // T-07: attestationPath must be included so it is excluded from round staging/halt detection
+    expect(paths).toContain(`specrunner/changes/${SLUG}/attestation.md`);
     // remove-bite-evidence: bite-evidence-result.md removed from pipeline-managed paths
     expect(paths).not.toContain(`specrunner/changes/${SLUG}/bite-evidence-result.md`);
-    expect(paths).toHaveLength(4);
+    expect(paths).toHaveLength(5);
   });
 
   // Destruction confirmation: prCreateResultPath を pipelineManagedPaths から除去すると

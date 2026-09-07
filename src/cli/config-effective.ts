@@ -1,6 +1,8 @@
 import { loadConfigWithSourceMetadata } from "../config/store.js";
 import { traceStepExecutionConfigFromLoadResult } from "../config/step-config.js";
 import type { TracedStepExecutionConfig, TracedStepConfigSource } from "../config/step-config.js";
+import { traceGitHubIntegration } from "../config/github-integration.js";
+import type { TracedGitHubIntegrationConfig } from "../config/github-integration.js";
 import { TYPE_CONFIG } from "../config/type-config.js";
 import { AGENT_STEP_NAMES, STEP_NAMES } from "../core/step/step-names.js";
 import type { AgentStep } from "../core/step/types.js";
@@ -32,6 +34,8 @@ export interface ConfigEffectiveOutput {
     userGlobal: { path: string; exists: boolean };
     projectLocal: { path: string; exists: boolean };
   };
+  /** T-13: Resolved GitHub integration status with source attribution. */
+  githubIntegration?: TracedGitHubIntegrationConfig;
   steps: TracedStepExecutionConfig[];
   note: string;
 }
@@ -62,6 +66,8 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
   try {
     const repoRoot = options.repoRoot ?? undefined;
     const loaded = await loadConfigWithSourceMetadata(repoRoot);
+    // T-13: Trace GitHub integration status with source attribution
+    const githubIntegration = traceGitHubIntegration(loaded);
     const output: ConfigEffectiveOutput = {
       requestType: requestType ?? null,
       configPaths: {
@@ -74,6 +80,7 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
           exists: loaded.projectLocal.exists,
         },
       },
+      githubIntegration,
       steps: AGENT_STEP_NAMES.map((stepName) => {
         const step = STANDARD_AGENT_STEPS[stepName]!;
         return traceStepExecutionConfigFromLoadResult(loaded, stepName, {
@@ -106,6 +113,11 @@ export function formatConfigEffectiveHuman(output: ConfigEffectiveOutput): strin
   lines.push(`requestType: ${output.requestType ?? "none"}`);
   lines.push(`userGlobal: ${formatExistsPath(output.configPaths.userGlobal)}`);
   lines.push(`projectLocal: ${formatExistsPath(output.configPaths.projectLocal)}`);
+  // T-13: Show GitHub integration status with source
+  if (output.githubIntegration !== undefined) {
+    const gi = output.githubIntegration;
+    lines.push(`githubIntegration: ${gi.enabled ? "enabled" : "disabled"} (source: ${gi.source})`);
+  }
   lines.push(output.note);
   lines.push("");
 

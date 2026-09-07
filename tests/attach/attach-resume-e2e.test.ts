@@ -356,7 +356,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         cwd: machineBDir,
         branch: BRANCH,
         spawnFn: spawnCommand,
-        expectedRepo: EXPECTED_REPO,
+        expectedRepo: { github: EXPECTED_REPO },
       });
 
       expect(verified.slug).toBe(SLUG);

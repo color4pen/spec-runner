@@ -265,7 +265,7 @@ export class ResumeCommand extends CommandRunner {
     // Resume step resolution: --from > resumePoint.step > state.step (hard-crash fallback)
     let startStep: StepName;
     try {
-      const allowedSteps = buildAllowedStepSet(state.reviewers);
+      const allowedSteps = buildAllowedStepSet(state.reviewers, state.githubIntegration);
       startStep = resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps, state.reviewers);
     } catch (err) {
       logError((err as Error).message);

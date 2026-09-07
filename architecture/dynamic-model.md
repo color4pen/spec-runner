@@ -37,6 +37,7 @@
 - **状態 ＝ step**、**遷移 ＝ transition 表**（`{from, on: <outcome 値>, to}`）＋ loop（`to` が前 step を指す ＋ 上限）。どの遷移にも一致しない outcome は **fail-closed（escalate）**。
 - 状態集合（step）・許可遷移・収束意味論は記述子（`PipelineDescriptor`）が持ち、`pipelineId` で選ぶ。registry は `standard` / `design-only` / `fast` の 3 本。`pipelineId` は request.md Meta の `pipeline`（absent = `standard`）から job 生成時に**一度だけ**解決し、途中で付け替えない。実行時の状態集合は custom reviewer step を挿入した**合成後の descriptor**（`composeReviewerDescriptor`）であり、着手前に `validateDescriptorInputCompleteness` が step 入力の充足を検算して throw する（状態を作らない preflight の列）。
 - **scope checkpoint**: descriptor が `permissionScope`（`domain-model.md`）を宣言する場合、その `checkpoint`（judge step）で最終 diff の変更ファイルを forbidden surface に当てて breach を機械導出し、`origin:"scope"` の decision-needed finding を当該 step の findings に合成してから verdict を導出する（＝この step に「scope を越えたら escalate」を束ねる）。`fast` が最初の宣言 profile（checkpoint = `conformance`）。
+- **GitHub 連携契約による pipeline 変形（`applyGitHubIntegration`）**: `githubIntegration.enabled === false` の job では `applyGitHubIntegration` が合成後 descriptor から `pr-create` step・roles・transitions を除去し、`to: "pr-create"` を全て `to: "end"` に書き換える。`adr-gen` の success / skipped が `end` に向くため、pipeline 完走は `awaiting-archive` へ遷移し PR は作成されない。完了出力は `RunResultKind = "branch-published"`（有効経路は `"pr-created"`）。`commitFinalState` は `awaiting-archive` 遷移前に `specrunner/changes/<slug>/attestation.md` を feature branch に書き出す（失敗は warn のみで続行）。GitHub 有効経路の descriptor は参照同一のまま返し追加コストを持たない。
 - → `src/core/pipeline/`（transition 表・収束意味論が正典）／ `src/core/pipeline/registry.ts`（記述子）。routing の解決手順は behavior（spec）。
 
 ---

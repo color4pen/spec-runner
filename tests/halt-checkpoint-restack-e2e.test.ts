@@ -410,7 +410,7 @@ describe(
           cwd: machineBDir,
           branch: BRANCH,
           spawnFn: machineBSpawnFn,
-          expectedRepo: EXPECTED_REPO,
+          expectedRepo: { github: EXPECTED_REPO },
           policy: attachResumePolicy,
         });
 

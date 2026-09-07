@@ -139,7 +139,7 @@ async function runSpecReviewViaExecutor(
   const events = new EventBus();
   const runner = createManagedAgentRunner({
     sessionClient: deps.client,
-    githubClient: deps.githubClient,
+    githubClient: deps.githubClient!,
     repo: { owner: "testowner", name: "testrepo" },
     githubToken: "ghp_test",
   });

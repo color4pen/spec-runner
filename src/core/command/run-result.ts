@@ -7,11 +7,16 @@
  */
 import type { JobState } from "../../state/schema.js";
 
-export type RunResultKind = "pr-created" | "awaiting-human" | "failed";
+export type RunResultKind = "pr-created" | "branch-published" | "awaiting-human" | "failed";
 
 /**
  * Terminal contract emitted to stdout when --json is specified.
  * schemaVersion allows consumers to detect future field additions.
+ *
+ * D7 additive fields (present only when applicable):
+ *   branch           — feature branch name; set for branch-published results.
+ *   revision         — final synthesized commit OID; set for branch-published results.
+ *   githubIntegration — job-level GitHub integration contract; set for branch-published results.
  */
 export interface RunResultContract {
   schemaVersion: 1;
@@ -21,6 +26,12 @@ export interface RunResultContract {
   step: string;
   prUrl: string | null;
   reason: { code: string | null; message: string } | null;
+  /** Feature branch name. Present for branch-published results (D7). */
+  branch?: string;
+  /** Final synthesized commit OID. Present for branch-published results when available (D7). */
+  revision?: string;
+  /** Job-level GitHub integration contract. Present for branch-published results (D7). */
+  githubIntegration?: { enabled: boolean };
 }
 
 /**
@@ -53,6 +64,26 @@ export function buildRunResult(state: JobState, slug: string): RunResultContract
   }
 
   if (state.status === "awaiting-archive") {
+    // When GitHub integration is explicitly disabled, no PR is created — the branch is
+    // published locally. Use "branch-published" to distinguish from "pr-created".
+    // Legacy state (no githubIntegration field) defaults to enabled → "pr-created".
+    const githubDisabled = state.githubIntegration?.enabled === false;
+    if (githubDisabled) {
+      // D7: populate additive fields for branch-published results.
+      const revision = state.synthesizedCommits?.at(-1);
+      return {
+        schemaVersion: 1,
+        result: "branch-published",
+        slug,
+        jobId: state.jobId,
+        step: state.step,
+        prUrl: null,
+        reason: null,
+        branch: state.branch ?? undefined,
+        revision: revision ?? undefined,
+        githubIntegration: { enabled: false },
+      };
+    }
     return {
       schemaVersion: 1,
       result: "pr-created",

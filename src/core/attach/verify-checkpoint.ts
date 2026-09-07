@@ -21,7 +21,9 @@ import { requestMdPath, slugEventsPath } from "../../util/paths.js";
 import { checkpointNotAttachableError } from "../../errors.js";
 import { fold } from "../../store/event-journal.js";
 import { detectCounterReversal } from "../../store/journal-integrity.js";
+import { getGitHubIntegration } from "../../state/github-integration.js";
 import type { NormalizedJobState } from "../../store/job-state-projection.js";
+import type { RepositoryOrigin } from "../../state/schema/types.js";
 import { attachResumePolicy } from "./checkpoint-policy.js";
 import type { CheckpointVerificationPolicy } from "./checkpoint-policy.js";
 
@@ -74,7 +76,20 @@ export async function verifyCheckpoint(input: {
   eventsJsonl: string;
   treeFiles: string[];
   branch: string;
-  expectedRepo: { owner: string; name: string };
+  /**
+   * Expected repository identity. Both fields are optional; the verification
+   * code selects which to use based on the checkpoint's githubIntegration
+   * contract (T-10):
+   *   - GitHub-enabled (or legacy): requires `github.owner/name` match.
+   *     If `github` is absent → fail-closed with repository-identity-mismatch.
+   *   - GitHub-disabled: requires `origin.digest` match.
+   *     If either `origin` (invoker) or `state.repository.origin` (checkpoint)
+   *     is absent → fail-closed with repository-identity-mismatch.
+   */
+  expectedRepo: {
+    github?: { owner: string; name: string };
+    origin?: RepositoryOrigin;
+  };
   checkpointOid: string;
 }, policy: CheckpointVerificationPolicy = attachResumePolicy): Promise<VerifiedCheckpoint> {
   const { slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid } = input;
@@ -183,12 +198,49 @@ export async function verifyCheckpoint(input: {
     );
   }
 
-  // (e) Repository / jobId / branch / slug identity
-  if (state.repository.owner !== expectedRepo.owner || state.repository.name !== expectedRepo.name) {
-    throw checkpointNotAttachableError(
-      "repository-identity-mismatch",
-      `state.repository is '${state.repository.owner}/${state.repository.name}', expected '${expectedRepo.owner}/${expectedRepo.name}'.`,
-    );
+  // (e) Repository / jobId / branch / slug identity — branched on githubIntegration contract (T-10).
+  const checkpointIntegration = getGitHubIntegration(state as import("../../state/schema.js").JobState);
+  if (checkpointIntegration.enabled) {
+    // GitHub-enabled (or legacy): require invoker github.owner/name to be present and to match.
+    // Fail-closed if expectedRepo.github is absent (invoker had no GitHub context).
+    if (!expectedRepo.github) {
+      throw checkpointNotAttachableError(
+        "repository-identity-mismatch",
+        `Checkpoint has GitHub integration enabled but no GitHub repository identity was provided for verification (expectedRepo.github is absent). ` +
+          `state.repository: '${state.repository.owner}/${state.repository.name}'.`,
+      );
+    }
+    if (
+      state.repository.owner !== expectedRepo.github.owner ||
+      state.repository.name !== expectedRepo.github.name
+    ) {
+      throw checkpointNotAttachableError(
+        "repository-identity-mismatch",
+        `state.repository is '${state.repository.owner}/${state.repository.name}', expected '${expectedRepo.github.owner}/${expectedRepo.github.name}'.`,
+      );
+    }
+  } else {
+    // GitHub-disabled: require origin digest match (forge-agnostic identity).
+    // Fail-closed if either origin is absent.
+    const stateOrigin = (state.repository as { origin?: RepositoryOrigin }).origin;
+    if (!stateOrigin) {
+      throw checkpointNotAttachableError(
+        "repository-identity-mismatch",
+        `Checkpoint has GitHub integration disabled but no origin identity (state.repository.origin) was recorded in job state.`,
+      );
+    }
+    if (!expectedRepo.origin) {
+      throw checkpointNotAttachableError(
+        "repository-identity-mismatch",
+        `Checkpoint has GitHub integration disabled but no origin identity was provided by the invoker for verification (expectedRepo.origin is absent).`,
+      );
+    }
+    if (stateOrigin.digest !== expectedRepo.origin.digest) {
+      throw checkpointNotAttachableError(
+        "repository-identity-mismatch",
+        `origin identity mismatch: checkpoint digest '${stateOrigin.digest}', invoker digest '${expectedRepo.origin.digest}'.`,
+      );
+    }
   }
 
   if (!state.jobId || state.jobId.trim().length === 0) {
