@@ -40,16 +40,22 @@ export interface GitHubCompositionResult {
  * Resolves the GitHub integration contract, then constructs the GitHubClient
  * (only when integration is enabled) and collects all relevant fields.
  *
- * @param config  Loaded project config (github.enabled is read from config.github.enabled).
- * @param cwd     Working directory (for git remote URL resolution).
- * @param env     Environment variables (for token resolution).
+ * @param config          Loaded project config (github.enabled is read unless overrideEnabled is set).
+ * @param cwd             Working directory (for git remote URL resolution).
+ * @param env             Environment variables (for token resolution).
+ * @param options.overrideEnabled  When set, use this value instead of config.github.enabled.
+ *                        Use to force job-contract-based resolution for existing jobs where the
+ *                        project config may have changed after job start (T-archive-job-contract).
  */
 export async function composeGitHubIntegration(
   config: SpecRunnerConfig,
   cwd: string,
   env: Record<string, string | undefined>,
+  options?: { overrideEnabled?: boolean },
 ): Promise<GitHubCompositionResult> {
-  const { enabled } = resolveGitHubIntegrationConfig(config);
+  const { enabled } = options?.overrideEnabled !== undefined
+    ? { enabled: options.overrideEnabled }
+    : resolveGitHubIntegrationConfig(config);
 
   const resolved = await resolveJobGitHubIntegration({
     config,

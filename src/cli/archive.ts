@@ -201,8 +201,10 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         pollIntervalMs = DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
       }
 
-      // Resolve GitHub integration for --with-merge path (B-19: via composition)
-      // composeGitHubIntegration creates the GitHubClient; no direct createGitHubClient call here.
+      // Resolve GitHub integration for --with-merge path (B-19: via composition).
+      // Use the job's saved contract (jobGithubEnabled) as the authority, NOT the current
+      // config. This allows --with-merge to succeed even when the project config was
+      // changed to github.enabled: false after the job was started with GitHub enabled.
       let githubToken: string;
       let owner: string;
       let repoName: string;
@@ -212,6 +214,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           mergeConfig ?? await loadConfig(),
           opts.cwd,
           process.env as Record<string, string | undefined>,
+          { overrideEnabled: jobGithubEnabled },  // job contract overrides config (T-archive-job-contract)
         );
         if (!mergeCompose.enabled || !mergeCompose.githubToken || !mergeCompose.repository || !mergeCompose.githubClient) {
           throw new SpecRunnerError(

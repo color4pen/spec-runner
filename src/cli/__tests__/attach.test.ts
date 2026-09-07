@@ -174,6 +174,49 @@ describe("TC-006: awaiting-resume checkpoint attach succeeds with resume hint", 
 });
 
 // ---------------------------------------------------------------------------
+// TC-005b: GitHub-disabled awaiting-archive hint omits --with-merge
+// ---------------------------------------------------------------------------
+
+describe("TC-005b: GitHub-disabled awaiting-archive hint omits --with-merge", () => {
+  beforeEach(() => {
+    vi.mocked(runAttachVerification).mockResolvedValue({
+      slug: "test-slug",
+      jobId: "test-job-id",
+      branch: "feat/test-branch",
+      checkpointOid: "abc123oid",
+      state: {
+        status: "awaiting-archive",
+        request: { baseBranch: "main", slug: "test-slug" },
+        repository: {},
+        githubIntegration: { enabled: false },
+      },
+    } as Awaited<ReturnType<typeof runAttachVerification>>);
+    vi.mocked(stderrWrite).mockClear();
+    vi.mocked(logResult).mockClear();
+  });
+
+  it("TC-005b: returns exit code 0", async () => {
+    const code = await runAttach(makeOpts());
+    expect(code).toBe(0);
+  });
+
+  it("TC-005b: hint contains 'job archive' but NOT '--with-merge'", async () => {
+    await runAttach(makeOpts());
+    const hints = vi.mocked(stderrWrite).mock.calls.map((c) => String(c[0]));
+    const archiveHint = hints.find((h) => h.includes("job archive"));
+    expect(archiveHint).toBeDefined();
+    expect(archiveHint).not.toContain("--with-merge");
+  });
+
+  it("TC-005b: hint mentions GitHub integration is disabled", async () => {
+    await runAttach(makeOpts());
+    const hints = vi.mocked(stderrWrite).mock.calls.map((c) => String(c[0]));
+    const archiveHint = hints.find((h) => h.includes("job archive"));
+    expect(archiveHint).toMatch(/disabled|integration/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-007: non-quiescent checkpoint attach is rejected
 // ---------------------------------------------------------------------------
 

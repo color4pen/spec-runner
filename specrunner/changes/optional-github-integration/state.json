@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-06T17:15:42.831Z",
+  "updatedAt": "2026-09-06T23:20:43.863Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
   "pipelineId": "standard",
@@ -323,8 +323,15 @@
     "number": 1126,
     "createdAt": "2026-09-06T17:15:42.153Z"
   },
+  "operatorAdjudications": [
+    {
+      "text": "PR #1126 のオーナーレビュー指摘への修正。全て job の保存済み契約 (state.githubIntegration) を正本にすること。\n1. src/cli/cancel.ts: 対象 job を解決した後、その保存済み契約が disabled なら resolveGitHubToken を呼ばず、cancel runner の transport auth にも token を渡さない。disabled + credential あり + 非 GitHub HTTPS origin で git push --delete に extraheader が付かない回帰テストを追加する。\n2. src/cli/ps.ts handleJobLs: 一覧対象 job と各 job の契約に応じて GitHub 処理を分離し、GitHub 有効 job の PR 照会が必要な場合だけ token 解決と client 生成を行う。disabled job のみを扱う経路では credential / client に触れない。runPs(..., null) ではなく handleJobLs を対象にした回帰テストを追加する。\n3. archive --with-merge: bin/specrunner.ts の T-11 事前チェックと src/cli/archive.ts の compose 処理の両方で、既存 job 固有操作は対象 state の契約を正本にし、現在の config で上書きしない（新規 job / issue 探索の config 判定とは分ける）。config を false に変更した後でも GitHub 有効で開始した既存 job の --with-merge が通る回帰テストを追加する。\n4. src/cli/attach.ts: awaiting-archive のヒントを checkpoint の保存済み契約で分岐し、disabled なら --with-merge なしの job archive <slug> を表示する。\n5. tests/github-disabled-e2e.test.ts に job reopen (runReopenCore) → job resume の経路を追加する (AC-2 / AC-6)。\n6. README.md の job archive 行の説明 (re-run after PR merge) を GitHub 無効時の完了手順を含む記述に更新する (AC-12)。\n完了前に resolveGitHubToken / createGitHubClient / createTransportAuth の全呼び出し元を列挙し、各経路が job の保存済み契約を参照していることを確認すること。",
+      "step": "implementer",
+      "recordedAt": "2026-09-06T23:20:43.707Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 130,
+    "historyCount": 133,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

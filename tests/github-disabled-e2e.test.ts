@@ -34,6 +34,7 @@ import * as os from "node:os";
 import { spawnCommand, type SpawnOptions } from "../src/util/spawn.js";
 import { runRunCore } from "../src/cli/run.js";
 import { runResumeCore } from "../src/cli/resume.js";
+import { runReopenCore } from "../src/cli/reopen.js";
 import { runArchive } from "../src/cli/archive.js";
 import { JobStateStore } from "../src/store/job-state-store.js";
 import { getJobSlug } from "../src/state/job-slug.js";
@@ -89,6 +90,9 @@ vi.mock("../src/core/pipeline/index.js", async (importOriginal) => {
                 ? {
                     ...s,
                     status: "awaiting-resume" as const,
+                    // D4: set step so reopen's resumePoint=null clear doesn't strand
+                    // resolveResumeStep with "init" (not a valid pipeline step name)
+                    step: "implementer" as const,
                     resumePoint: {
                       step: "implementer",
                       reason: "timeout",
@@ -502,5 +506,163 @@ describe("T-16: GitHub-disabled lifecycle — CLI entry points: run → attach �
       expect(fetchSpy).not.toHaveBeenCalled();
     },
     180_000, // 3 minutes: worktree creation + multiple git commit/push operations
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-124: Reopen → resume pathway (AC-2 / AC-6)
+//
+// After a GitHub-disabled job reaches awaiting-archive, it can be reopened
+// (no PR gate required) and resumed for additional modifications.
+// ---------------------------------------------------------------------------
+
+describe("T-16: GitHub-disabled reopen → resume lifecycle (runReopenCore + runResumeCore)", () => {
+  it(
+    "reopens a GitHub-disabled awaiting-archive job and resumes it without GitHub API calls",
+    async () => {
+      // =====================================================================
+      // GIT FIXTURE SETUP (same pattern as the main lifecycle test)
+      // =====================================================================
+
+      const originDir = path.join(tmpDir, "reopen-origin");
+      const machineADir = path.join(tmpDir, "reopen-machine-a");
+
+      await fsPromises.mkdir(originDir, { recursive: true });
+      await git(originDir, "init", "--bare", "--initial-branch=main");
+      await git(tmpDir, "clone", originDir, "reopen-machine-a");
+      await git(machineADir, "config", "user.email", "test@test.com");
+      await git(machineADir, "config", "user.name", "Test");
+
+      await fsPromises.writeFile(path.join(machineADir, "README.md"), "# Reopen E2E\n");
+      await fsPromises.writeFile(
+        path.join(machineADir, ".gitignore"),
+        ".specrunner/*\n!.specrunner/config.json\nnode_modules/\n",
+      );
+      await fsPromises.mkdir(path.join(machineADir, ".specrunner"), { recursive: true });
+      await fsPromises.writeFile(
+        path.join(machineADir, ".specrunner", "config.json"),
+        JSON.stringify({ version: 1, github: { enabled: false } }),
+      );
+
+      const REOPEN_SLUG = "gh-disabled-reopen";
+      const changeDir = path.join(machineADir, "specrunner", "changes", REOPEN_SLUG);
+      await fsPromises.mkdir(changeDir, { recursive: true });
+      await fsPromises.writeFile(
+        path.join(changeDir, "spec.md"),
+        "# Spec\n\n## Overview\n\nReopen test with GitHub integration disabled.\n",
+      );
+      await fsPromises.writeFile(
+        path.join(changeDir, "tasks.md"),
+        "# Tasks\n\n- [ ] Implement the reopen feature\n",
+      );
+
+      await git(machineADir, "add", "-A");
+      await git(machineADir, "commit", "-m", "initial: setup for GitHub-disabled reopen E2E");
+      await git(machineADir, "push", "origin", "main");
+
+      const externalRequestMdPath = path.join(tmpDir, "reopen-request.md");
+      await fsPromises.writeFile(
+        externalRequestMdPath,
+        [
+          `# GitHub-disabled Reopen E2E feature`,
+          ``,
+          `## Meta`,
+          ``,
+          `- **type**: new-feature`,
+          `- **slug**: ${REOPEN_SLUG}`,
+          `- **base-branch**: main`,
+          `- **adr**: false`,
+          ``,
+          `Reopen lifecycle test without GitHub integration.`,
+          ``,
+        ].join("\n"),
+      );
+
+      // Spy on fetch — must remain at zero throughout
+      const fetchSpy = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async (url: string | URL | Request) => {
+          throw new Error(`[T-16-reopen] Unexpected fetch call: ${String(url)}`);
+        });
+
+      // =====================================================================
+      // Phase 1: runRunCore → awaiting-resume
+      // =====================================================================
+
+      const runExitCode = await runRunCore(externalRequestMdPath, {
+        cwd: machineADir,
+      });
+      // Call 1: awaiting-resume → exit 1
+      expect(runExitCode).toBe(1);
+      expect(pipelineCallState.count).toBe(1);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // =====================================================================
+      // Phase 2: runResumeCore → awaiting-archive
+      // =====================================================================
+
+      const resumeExitCode1 = await runResumeCore(REOPEN_SLUG, {
+        cwd: machineADir,
+        repoRoot: machineADir,
+      });
+      // Call 2: awaiting-archive → exit 0
+      expect(resumeExitCode1).toBe(0);
+      expect(pipelineCallState.count).toBe(2);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // =====================================================================
+      // Phase 3: runReopenCore → awaiting-resume (no pipeline call)
+      //
+      // AC-6: GitHub-disabled job reopen does NOT require PR gate.
+      // The job transitions from awaiting-archive → awaiting-resume.
+      // =====================================================================
+
+      const reopenExitCode = await runReopenCore(REOPEN_SLUG, {
+        reason: "Need additional fix",
+        cwd: machineADir,
+        repoRoot: machineADir,
+      });
+      // TC-064: reopen transitions state only — no pipeline call
+      expect(reopenExitCode).toBe(0);
+      // Pipeline mock should NOT have been called by reopen
+      expect(pipelineCallState.count).toBe(2);
+      // TC-063: No GitHub API calls during reopen of disabled job
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // Verify job is now awaiting-resume
+      const allStates = await JobStateStore.list(machineADir);
+      const reopenedState = allStates.find((s) => getJobSlug(s) === REOPEN_SLUG);
+      expect(reopenedState).toBeDefined();
+      expect(reopenedState!.status).toBe("awaiting-resume");
+      // Contract must still be disabled
+      expect(getGitHubIntegration(reopenedState!).enabled).toBe(false);
+
+      // =====================================================================
+      // Phase 4: runResumeCore → awaiting-archive (after reopen)
+      //
+      // AC-2 / AC-6: Resume works after reopen for GitHub-disabled jobs.
+      // =====================================================================
+
+      const resumeExitCode2 = await runResumeCore(REOPEN_SLUG, {
+        cwd: machineADir,
+        repoRoot: machineADir,
+      });
+      // Call 3: awaiting-archive → exit 0
+      expect(resumeExitCode2).toBe(0);
+      expect(pipelineCallState.count).toBe(3);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      // Verify job is awaiting-archive again
+      const allStates2 = await JobStateStore.list(machineADir);
+      const finalState = allStates2.find((s) => getJobSlug(s) === REOPEN_SLUG);
+      expect(finalState).toBeDefined();
+      expect(finalState!.status).toBe("awaiting-archive");
+      // Contract must still be disabled
+      expect(getGitHubIntegration(finalState!).enabled).toBe(false);
+
+      // TC-121: No GitHub API calls throughout the entire reopen lifecycle
+      expect(fetchSpy).not.toHaveBeenCalled();
+    },
+    180_000, // 3 minutes
   );
 });

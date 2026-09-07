@@ -204,7 +204,14 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   // 6. Success — print next-step hint (do NOT resume pipeline)
   logResult(`Attached job '${verified.slug}' (jobId: ${verified.jobId}) from branch '${verified.branch}'.`);
   if (verified.state.status === "awaiting-archive") {
-    stderrWrite(`Run 'specrunner job archive ${verified.slug} --with-merge' to take the job in.`);
+    // Use the checkpoint's saved contract (not the current invoker config) for the hint.
+    // GitHub-disabled jobs have no PR to merge, so --with-merge is not applicable.
+    const checkpointGithubEnabled = verified.state.githubIntegration?.enabled ?? true;
+    if (checkpointGithubEnabled) {
+      stderrWrite(`Run 'specrunner job archive ${verified.slug} --with-merge' to take the job in.`);
+    } else {
+      stderrWrite(`Run 'specrunner job archive ${verified.slug}' to archive this job (GitHub integration is disabled; the remote feature branch will be preserved).`);
+    }
   } else {
     stderrWrite(`Run 'specrunner job resume ${verified.slug}' to resume the pipeline.`);
   }

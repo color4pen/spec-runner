@@ -119,6 +119,17 @@ export async function main(): Promise<void> {
 
   // T-11: GitHub integration check — reject commands/flags that require GitHub when disabled.
   // Only run when ctx.repoRoot is available (so we can load the config).
+  //
+  // Two-level check:
+  //   Level 1 (dispatch): Uses project config (github.enabled). Appropriate for new-job / issue
+  //     operations where no specific job state exists yet.
+  //   Level 2 (handler): Uses job's saved contract. Appropriate for job-specific flag operations
+  //     (--with-merge, --merge-wait-ms) where the target job may have been started with GitHub
+  //     enabled even if the current config says disabled.
+  //
+  // For job-specific flags (--with-merge, --merge-wait-ms) with a positional slug: try to load
+  // the job state and bypass the config-level check if the job was started with GitHub enabled.
+  // The handler (archive.ts) performs the definitive job-contract check.
   if (ctx.repoRoot !== null) {
     const commandRequiresGitHub = resolveEffectiveRequiresGitHub(COMMANDS, canonicalPath);
     const activeGitHubOnlyFlags = findActiveGitHubOnlyFlags(spec, parsed.flags);
@@ -130,13 +141,42 @@ export async function main(): Promise<void> {
         const config = await loadConfig(ctx.repoRoot);
         const { enabled } = resolveGitHubIntegrationConfig(config);
         if (!enabled) {
-          if (commandRequiresGitHub) {
-            process.stderr.write(`Error: '${commandLabel}' requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
-          } else {
-            process.stderr.write(`Error: --${activeGitHubOnlyFlags[0]} requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+          // For job-specific flags (--with-merge, --merge-wait-ms) with a slug positional:
+          // check the job's saved contract — it may have been started with GitHub enabled.
+          // These flags are never applicable to new-job creation, so job state is authoritative.
+          const jobSpecificFlags = ["with-merge", "merge-wait-ms"];
+          const isJobSpecificFlagOnly =
+            !commandRequiresGitHub &&
+            activeGitHubOnlyFlags.length > 0 &&
+            activeGitHubOnlyFlags.every((f) => jobSpecificFlags.includes(f)) &&
+            parsed.positional !== undefined;
+
+          let bypassForJobContract = false;
+          if (isJobSpecificFlagOnly) {
+            try {
+              const { JobStateStore } = await import("../src/store/job-state-store.js");
+              const { getGitHubIntegration: getJobIntegration } = await import("../src/state/github-integration.js");
+              const { getJobSlug } = await import("../src/state/job-slug.js");
+              const allStates = await JobStateStore.list(ctx.repoRoot);
+              const matchingState = allStates.find((s) => getJobSlug(s) === parsed.positional);
+              if (matchingState && getJobIntegration(matchingState).enabled) {
+                // Job was started with GitHub enabled → let the handler decide
+                bypassForJobContract = true;
+              }
+            } catch {
+              // Can't read job state — fall through to config-level rejection (safe default)
+            }
           }
-          process.stderr.write(`Hint: Enable GitHub integration in .specrunner/config.json (set github.enabled: true), or omit the flag.\n`);
-          process.exit(EXIT_CODE.ARG_ERROR);
+
+          if (!bypassForJobContract) {
+            if (commandRequiresGitHub) {
+              process.stderr.write(`Error: '${commandLabel}' requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+            } else {
+              process.stderr.write(`Error: --${activeGitHubOnlyFlags[0]} requires GitHub integration, which is disabled in this project (github.enabled: false).\n`);
+            }
+            process.stderr.write(`Hint: Enable GitHub integration in .specrunner/config.json (set github.enabled: true), or omit the flag.\n`);
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
         }
       } catch (e) {
         // If config load fails (e.g. not a specrunner project), skip the GitHub check and

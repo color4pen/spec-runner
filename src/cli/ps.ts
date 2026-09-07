@@ -151,31 +151,59 @@ export async function runPs(
 /**
  * CLI handler for `specrunner job ls`.
  * Returns the exit code; process termination is owned by the dispatch boundary.
+ *
+ * B-19 / T-ps: GitHub token is only resolved when at least one job requires it
+ * (GitHub-enabled + awaiting-archive + has a PR). Paths that only deal with
+ * GitHub-disabled jobs do not touch credentials or create a GitHubClient.
  */
 export async function handleJobLs(parsed: ParsedArgs, ctx?: CommandContext): Promise<number> {
-  let githubClient = null;
+  const repoRoot = ctx!.repoRoot ?? ctx!.invokerCwd;
+
+  // Pre-check: does any job need a GitHub client for PR status?
+  // Only GitHub-enabled jobs that are awaiting-archive with a recorded PR need it.
+  let needsGitHubClient = false;
   try {
-    let githubHost = "github.com";
-    let githubApiBaseUrl = "https://api.github.com";
-    try {
-      const cfg = await loadConfigWithOverlay();
-      githubHost = resolveGitHubHost(cfg.github);
-      githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
-    } catch {
-      // Config not available — use defaults
-    }
-    const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
-    githubClient = createGitHubClient(fetch, token, githubApiBaseUrl);
+    const allJobs = await JobStateStore.list(repoRoot, {
+      includeArchived: !!(parsed.flags["all"] || parsed.flags["status"] === "archived"),
+    });
+    const { getGitHubIntegration: getIntegration } = await import("../state/github-integration.js");
+    needsGitHubClient = allJobs.some(
+      (j) =>
+        j.status === "awaiting-archive" &&
+        getIntegration(j).enabled &&
+        !!j.pullRequest,
+    );
   } catch {
-    // No token available — PR merge check will be skipped
+    // Can't determine — attempt token resolution to be safe (legacy behavior)
+    needsGitHubClient = true;
   }
+
+  let githubClient = null;
+  if (needsGitHubClient) {
+    try {
+      let githubHost = "github.com";
+      let githubApiBaseUrl = "https://api.github.com";
+      try {
+        const cfg = await loadConfigWithOverlay();
+        githubHost = resolveGitHubHost(cfg.github);
+        githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
+      } catch {
+        // Config not available — use defaults
+      }
+      const { token } = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+      githubClient = createGitHubClient(fetch, token, githubApiBaseUrl);
+    } catch {
+      // No token available — PR merge check will be skipped
+    }
+  }
+
   return await runPs(
     {
       active: !!parsed.flags["active"],
       all: !!parsed.flags["all"],
       status: parsed.flags["status"] as string | undefined,
       json: !!parsed.flags["json"],
-      repoRoot: ctx!.repoRoot ?? ctx!.invokerCwd,
+      repoRoot,
     },
     githubClient,
   );
