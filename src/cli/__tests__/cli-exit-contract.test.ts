@@ -182,6 +182,13 @@ describe("cli-exit-contract fixture completeness", () => {
     const fixtureKeys = Object.keys(baseFixture).sort();
     expect(fixtureKeys).toEqual([...EXPECTED_IDS].sort());
   });
+
+  it("EC-11-version fixture pins the <PACKAGE_VERSION> placeholder, not a literal version", () => {
+    // release-please bumps package.json on every release; a literal version in
+    // the fixture would fail the contract suite on each release PR.
+    const entry = (baseFixture as Record<string, { stdout: string[] }>)["EC-11-version"];
+    expect(entry.stdout).toEqual(["<PACKAGE_VERSION>\n"]);
+  });
 });
 
 // ---------------------------------------------------------------------------
