@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-07T00:59:48.374Z",
+  "updatedAt": "2026-09-07T01:01:12.188Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
   "pipelineId": "standard",
@@ -102,7 +102,8 @@
     "3cf374eed18862f9d727660e1e2edb45f8256dc2",
     "128146b3d194049aec815b0073c9fcb4a8f600d6",
     "05777cb4c2cf4e1c6f307c421387dfd860263fe8",
-    "06cb495e1b3791387c759dac1db271d4e8b62ae9"
+    "06cb495e1b3791387c759dac1db271d4e8b62ae9",
+    "e7faeb3d425d5e524773311d5e1c36f022bb71ab"
   ],
   "touchedFiles": {
     "request-review": [
@@ -283,7 +284,7 @@
       "architecture/model.md"
     ],
     "adr-gen": [
-      "specrunner/adr/2026-06-04-pipeline-descriptor-registry.md",
+      "specrunner/adr/2026-06-06-run-result-contract-json.md",
       "specrunner/adr/2026-09-06-optional-github-integration.md"
     ]
   },
@@ -323,7 +324,7 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/1126",
     "number": 1126,
-    "createdAt": "2026-09-06T17:15:42.153Z"
+    "createdAt": "2026-09-07T01:01:11.368Z"
   },
   "operatorAdjudications": [
     {
@@ -333,7 +334,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 177,
+    "historyCount": 182,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -349,8 +350,8 @@
       "custom-reviewers": 2,
       "regression-gate": 4,
       "conformance": 3,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
