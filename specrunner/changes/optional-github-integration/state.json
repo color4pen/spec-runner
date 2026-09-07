@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-07T00:42:53.501Z",
+  "updatedAt": "2026-09-07T00:59:48.374Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -100,7 +100,9 @@
     "56d6ae5f493aef229b66841b327ac3862c55dd16",
     "b8a9561b0108df6d7f94b5da7432f19cab899bac",
     "3cf374eed18862f9d727660e1e2edb45f8256dc2",
-    "128146b3d194049aec815b0073c9fcb4a8f600d6"
+    "128146b3d194049aec815b0073c9fcb4a8f600d6",
+    "05777cb4c2cf4e1c6f307c421387dfd860263fe8",
+    "06cb495e1b3791387c759dac1db271d4e8b62ae9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -256,29 +258,29 @@
     "conformance": [
       "src/config/github-integration.ts",
       "src/state/github-integration.ts",
+      "src/state/schema/types.ts",
       "src/state/schema/operations.ts",
       "src/core/pipeline/apply-github-integration.ts",
       "src/core/command/reopen.ts",
       "src/core/attach/verify-checkpoint.ts",
+      "src/git/remote.ts",
+      "tests/github-disabled-e2e.test.ts",
       "src/core/command/run-result.ts",
       "src/core/command/runner.ts",
-      "src/git/remote.ts",
-      "src/core/archive/plain-archive.ts",
-      "src/cli/archive.ts",
-      "src/cli/github-composition.ts",
-      "src/core/github/integration.ts",
-      "src/core/preflight.ts",
-      "src/state/schema/types.ts",
-      "tests/github-disabled-e2e.test.ts",
-      "tests/unit/cli/reopen-github-disabled.test.ts",
-      "tests/unit/core/command/reopen-terminal-slug.test.ts",
-      "src/cli/config-effective.ts",
+      "bin/specrunner.ts",
+      "src/core/runtime/local.ts",
       "src/core/doctor/checks/index.ts",
-      "src/core/runtime/factory.ts",
+      "src/core/doctor/checks/repo/git-origin.ts",
+      "src/core/preflight.ts",
+      "src/core/github/integration.ts",
+      "src/cli/github-composition.ts",
+      "src/cli/config-effective.ts",
+      "src/cli/job-show.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/command/resume.ts",
       "README.md",
-      "architecture/model.md",
-      "src/config/schema/validation.ts",
-      "src/core/runtime/local.ts"
+      "tests/unit/architecture/core-invariants.test.ts",
+      "architecture/model.md"
     ],
     "adr-gen": [
       "specrunner/adr/2026-06-04-pipeline-descriptor-registry.md",
@@ -331,7 +333,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 168,
+    "historyCount": 177,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -339,14 +341,14 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 7,
-      "verification": 7,
+      "verification": 8,
       "code-review": 4,
       "code-fixer": 6,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 4,
-      "conformance": 2,
+      "conformance": 3,
       "adr-gen": 1,
       "pr-create": 1
     }
