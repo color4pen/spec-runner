@@ -241,3 +241,10 @@
 {"type":"transition","ts":"2026-09-07T00:38:53.806Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-09-07T00:38:53.807Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-09-07T00:38:53.808Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-09-07T00:42:53.493Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"b1882011-7d8f-49af-9b22-51c4121f60f0","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/optional-github-integration/regression-gate-result-004.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":17,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-09-07T00:38:53.845Z","endedAt":"2026-09-07T00:42:52.141Z","commitOid":"128146b3d194049aec815b0073c9fcb4a8f600d6"}
+{"type":"lineage","step":"regression-gate","ts":"2026-09-07T00:42:52.141Z","outputs":[{"path":"specrunner/changes/optional-github-integration/regression-gate-result-004.md","hash":"sha256:df6bdbcf577a5381a89c5cdaff4d2e1678401893e92fb7b9a924faf2eec3200f"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-09-07T00:42:53.498Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-09-07T00:42:53.498Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-09-07T00:42:53.500Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-09-07T00:42:53.501Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
