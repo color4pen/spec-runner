@@ -286,6 +286,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
             config,
             opts.cwd,
             process.env as Record<string, string | undefined>,
+            { overrideEnabled: jobGithubEnabled },  // use job contract, not current config (T-archive-job-contract)
           );
           archiveToken = plainCompose.githubToken;
         } catch {

@@ -21,6 +21,7 @@ import { runAttachVerification } from "../core/attach/orchestrator.js";
 import { attachQuiescentPolicy } from "../core/attach/checkpoint-policy.js";
 import { loadConfig } from "../config/store.js";
 import { createTransportAuth } from "../git/transport-auth.js";
+import { readStateJsonFromRef } from "../git/checkpoint-ref.js";
 import { spawnCommand } from "../util/spawn.js";
 import {
   SpecRunnerError,
@@ -88,7 +89,34 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
     return err.exitCode;
   }
 
-  // Resolve GitHub integration from invoker config (for transport auth + fetch)
+  // Phase 1: Probe the checkpoint with plain (unauthenticated) git to read the stored
+  // githubIntegration contract. This prevents composeGitHubIntegration from using the
+  // current config's github.enabled when it may have changed after job start (e.g. from
+  // disabled → enabled). If the probe fails (e.g. auth required), fall back to the
+  // current config's enabled value — Phase 2 will then compose accordingly.
+  let checkpointGithubEnabled: boolean = config.github?.enabled ?? true;
+  try {
+    const probeFetch = await spawnCommand("git", ["fetch", "origin", opts.branch], { cwd: repoRoot });
+    if (probeFetch.exitCode === 0) {
+      const probeRev = await spawnCommand(
+        "git", ["rev-parse", `origin/${opts.branch}^{commit}`], { cwd: repoRoot },
+      );
+      if (probeRev.exitCode === 0) {
+        const probeOid = probeRev.stdout.trim();
+        const { stateJson } = await readStateJsonFromRef(spawnCommand, repoRoot, probeOid);
+        const rawState = JSON.parse(stateJson) as Record<string, unknown>;
+        const gi = rawState["githubIntegration"] as Record<string, unknown> | null | undefined;
+        if (gi !== null && gi !== undefined && typeof gi["enabled"] === "boolean") {
+          checkpointGithubEnabled = gi["enabled"];
+        }
+      }
+    }
+  } catch {
+    // Phase 1 probe failed — fall back to current config (Phase 2 may still succeed)
+  }
+
+  // Phase 2: Compose using the checkpoint's githubIntegration contract as the authority.
+  // overrideEnabled ensures the current config's github.enabled is not used.
   let githubToken: string | undefined;
   let owner: string = "";
   let repoName: string = "";
@@ -99,6 +127,7 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
       config,
       cwd,
       process.env as Record<string, string | undefined>,
+      { overrideEnabled: checkpointGithubEnabled },
     );
     githubToken = composition.githubToken;
     invokerOrigin = composition.origin;

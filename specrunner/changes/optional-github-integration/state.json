@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-07T00:26:35.947Z",
+  "updatedAt": "2026-09-07T00:35:06.962Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -97,7 +97,8 @@
     "545b3151d9382c27681ba2d7f3ccf6950d99e18f",
     "dfcc5614b9f63bd34dabab256d8c35cab60fc6eb",
     "4857fbd11acdc0045c4c1c1833f630af9ef2e4ed",
-    "56d6ae5f493aef229b66841b327ac3862c55dd16"
+    "56d6ae5f493aef229b66841b327ac3862c55dd16",
+    "b8a9561b0108df6d7f94b5da7432f19cab899bac"
   ],
   "touchedFiles": {
     "request-review": [
@@ -236,13 +237,16 @@
       "src/cli/bootstrap.ts",
       "src/cli/resume.ts",
       "src/core/command/runner.ts",
-      "src/core/command/run-result.ts",
       "src/config/github-integration.ts",
+      "src/core/command/run-result.ts",
       "tests/github-disabled-e2e.test.ts",
       "src/cli/archive.ts",
       "src/state/schema/operations.ts",
       "src/cli/github-composition.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/cli/attach.ts",
       "src/git/remote.ts",
+      "src/core/github/integration.ts",
       "src/core/attach/verify-checkpoint.ts"
     ],
     "conformance": [
@@ -323,7 +327,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 155,
+    "historyCount": 159,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -337,7 +341,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 2,
       "adr-gen": 1,
       "pr-create": 1

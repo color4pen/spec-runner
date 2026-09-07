@@ -396,7 +396,7 @@ export function validateJobState(raw: unknown): JobState {
     const repo = obj["repository"] as Record<string, unknown> | undefined;
     if (gi["enabled"] === false) {
       // GitHub-disabled: owner/name must be absent; origin must be present
-      if (repo && (repo["owner"] != null || repo["name"] != null)) {
+      if (repo && (repo["owner"] !== undefined || repo["name"] !== undefined)) {
         throw new Error(
           "repository.owner and repository.name must be absent when githubIntegration.enabled is false.",
         );

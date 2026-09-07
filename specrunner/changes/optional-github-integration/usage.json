@@ -816,6 +816,37 @@
       },
       "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
       "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-07T00:35:05.670Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 15636,
+          "outputTokens": 31,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 35,
+          "outputTokens": 27096,
+          "cacheReadInputTokens": 1634846,
+          "cacheCreationInputTokens": 83024
+        }
+      },
+      "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
+      "stepName": "regression-gate",
+      "numTurns": 41,
+      "durationMs": 508775,
+      "durationApiMs": 509680,
+      "totalCostUsd": 1.4109338,
+      "contextMetrics": {
+        "provider": "claude-code",
+        "model": "claude-sonnet-4-6",
+        "contextWindowTokens": 200000,
+        "peakActiveContextTokens": 83027,
+        "compactionCount": 0
+      }
     }
   ]
 }
