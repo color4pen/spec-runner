@@ -23,6 +23,7 @@ import { loadConfig } from "../config/store.js";
 import { createTransportAuth } from "../git/transport-auth.js";
 import { readStateJsonFromRef } from "../git/checkpoint-ref.js";
 import { spawnCommand } from "../util/spawn.js";
+import { getGitHubIntegration } from "../state/github-integration.js";
 import {
   SpecRunnerError,
   EXIT_CODE,
@@ -94,6 +95,10 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   // current config's github.enabled when it may have changed after job start (e.g. from
   // disabled → enabled). If the probe fails (e.g. auth required), fall back to the
   // current config's enabled value — Phase 2 will then compose accordingly.
+  //
+  // When the probe succeeds, the stored state is authoritative even if it predates the
+  // githubIntegration field: a legacy checkpoint resolves to enabled (same backward-compat
+  // rule as getGitHubIntegration / verifyCheckpoint), never to the current config.
   let checkpointGithubEnabled: boolean = config.github?.enabled ?? true;
   try {
     const probeFetch = await spawnCommand("git", ["fetch", "origin", opts.branch], { cwd: repoRoot });
@@ -108,6 +113,9 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
         const gi = rawState["githubIntegration"] as Record<string, unknown> | null | undefined;
         if (gi !== null && gi !== undefined && typeof gi["enabled"] === "boolean") {
           checkpointGithubEnabled = gi["enabled"];
+        } else {
+          // Probe succeeded, legacy state without githubIntegration → enabled.
+          checkpointGithubEnabled = getGitHubIntegration(rawState as { githubIntegration?: { enabled: boolean } }).enabled;
         }
       }
     }

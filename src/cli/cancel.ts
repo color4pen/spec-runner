@@ -120,7 +120,10 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     // Check if the target job's contract is GitHub-disabled (job state is authoritative).
     let jobGithubEnabled = true; // default: enabled (backward compat)
     try {
-      const allStates = await JobStateStore.list(repoRoot!);
+      // includeArchived: a job whose change folder was moved to changes/archive/ by a partial
+      // archive (status still awaiting-archive) must resolve its stored contract, otherwise a
+      // disabled job would fall back to the enabled default and resolve a token.
+      const allStates = await JobStateStore.list(repoRoot!, { includeArchived: true });
       const matchingState = allStates.find((s) => s.jobId === resolvedJobId);
       if (matchingState) {
         jobGithubEnabled = getGitHubIntegration(matchingState).enabled;

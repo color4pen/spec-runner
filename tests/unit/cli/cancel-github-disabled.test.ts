@@ -149,6 +149,32 @@ describe("T-cancel-gh-disabled: GitHub-disabled job skips token resolution", () 
     );
   });
 
+  it("resolves the contract from the archive search scope (includeArchived) — disabled job after a partial archive", async () => {
+    // Scenario: the disabled job's change folder was moved to changes/archive/ by a partial
+    // archive (status still awaiting-archive). It is ONLY visible with includeArchived === true;
+    // a plain list() would fall back to the enabled default and resolve a token.
+    const { JobStateStore } = await import("../../../src/store/job-state-store.js");
+    const jobId = "test-job-id-gh-disabled-1234"; // matches the hoisted resolveId mock
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_root: string, listOpts?: { includeArchived?: boolean }) =>
+        listOpts?.includeArchived === true ? [makeDisabledJobState(jobId)] : [],
+    );
+
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    await runCancel({
+      jobId,
+      force: false,
+      purge: false,
+      allTerminated: false,
+      yes: false,
+      restoreDraft: false,
+      repoRoot: "/fake/repo",
+    });
+
+    expect(JobStateStore.list).toHaveBeenCalledWith("/fake/repo", { includeArchived: true });
+    expect(mockResolveGitHubToken).not.toHaveBeenCalled();
+  });
+
   it("GitHub-enabled job still calls resolveGitHubToken (backward compat)", async () => {
     const { JobStateStore } = await import("../../../src/store/job-state-store.js");
     // Empty list → default enabled=true

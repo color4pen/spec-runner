@@ -176,8 +176,8 @@ describe("TC-060: GitHub-disabled job reopen skips PR gate (githubClient null)",
     const { runReopenCore } = await import("../../../src/cli/reopen.js");
     await runReopenCore(SLUG, { reason: "manual fix needed", cwd: FAKE_CWD });
 
-    // JobStateStore.list is called with the cwd
-    expect(mockList).toHaveBeenCalledWith(FAKE_CWD);
+    // JobStateStore.list is called with the cwd, using the same scope as ReopenCommand (core)
+    expect(mockList).toHaveBeenCalledWith(FAKE_CWD, { includeArchived: true });
   });
 
   it("with no matching job state, defaults to github-enabled (backward compat)", async () => {
@@ -219,8 +219,23 @@ describe("TC-060: GitHub-disabled job reopen skips PR gate (githubClient null)",
     });
 
     // list should be called with repoRoot, not cwd
-    expect(mockList).toHaveBeenCalledWith("/repo/root");
+    expect(mockList).toHaveBeenCalledWith("/repo/root", { includeArchived: true });
     expect(mockLoadConfigWithOverlay).not.toHaveBeenCalled();
+  });
+
+  it("resolves the contract from the archive search scope — disabled job after a partial archive", async () => {
+    // The disabled job's change folder was moved to changes/archive/ by a partial archive
+    // (status still awaiting-archive): visible ONLY with includeArchived === true. A plain
+    // list() would fall back to the enabled default and attempt token resolution.
+    mockList.mockImplementation(async (_root: string, listOpts?: { includeArchived?: boolean }) =>
+      listOpts?.includeArchived === true ? [makeJobState(SLUG, false)] : [],
+    );
+
+    const { runReopenCore } = await import("../../../src/cli/reopen.js");
+    await runReopenCore(SLUG, { reason: "fix", cwd: FAKE_CWD });
+
+    expect(mockLoadConfigWithOverlay).not.toHaveBeenCalled();
+    expect(capturedGithubClient).toBeNull();
   });
 });
 

@@ -4,6 +4,7 @@
  * TC-005: awaiting-archive checkpoint の attach が成功し archive hint が出力される
  * TC-006: awaiting-resume checkpoint の attach が成功し resume hint が出力される
  * TC-007: non-quiescent checkpoint の attach が not-quiescent で reject される
+ * TC-005c: githubIntegration を持たない旧形式 checkpoint は config=false でも enabled として扱う
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -64,6 +65,11 @@ vi.mock("../../adapter/github/github-client.js", () => ({
   createGitHubClient: vi.fn().mockReturnValue({}),
 }));
 
+// Phase 1 probe: default = probe fails (falls back to config); TC-005c overrides per test.
+vi.mock("../../git/checkpoint-ref.js", () => ({
+  readStateJsonFromRef: vi.fn().mockRejectedValue(new Error("probe unavailable")),
+}));
+
 vi.mock("../../core/attach/orchestrator.js", () => ({
   runAttachVerification: vi.fn(),
 }));
@@ -80,6 +86,10 @@ vi.mock("../../core/runtime/local.js", () => ({
 
 import { runAttach } from "../attach.js";
 import { runAttachVerification } from "../../core/attach/orchestrator.js";
+import { readStateJsonFromRef } from "../../git/checkpoint-ref.js";
+import { loadConfig } from "../../config/store.js";
+import { spawnCommand } from "../../util/spawn.js";
+import { resolveGitHubToken } from "../../core/credentials/github.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 
@@ -213,6 +223,63 @@ describe("TC-005b: GitHub-disabled awaiting-archive hint omits --with-merge", ()
     const hints = vi.mocked(stderrWrite).mock.calls.map((c) => String(c[0]));
     const archiveHint = hints.find((h) => h.includes("job archive"));
     expect(archiveHint).toMatch(/disabled|integration/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005c: legacy checkpoint (no githubIntegration) + config github.enabled=false
+//   → probe succeeded, so the stored state is authoritative: legacy = enabled
+//     (same rule as getGitHubIntegration / verifyCheckpoint), NOT the current config.
+// ---------------------------------------------------------------------------
+
+describe("TC-005c: legacy checkpoint without githubIntegration attaches as GitHub-enabled under config=false", () => {
+  const legacyStateJson = JSON.stringify({
+    version: 1,
+    jobId: "legacy-job-id",
+    status: "awaiting-archive",
+    request: { baseBranch: "main", slug: "test-slug" },
+    repository: { owner: "test-owner", name: "test-repo" },
+    // no githubIntegration field (legacy)
+  });
+
+  beforeEach(() => {
+    vi.mocked(loadConfig).mockResolvedValueOnce({
+      github: { enabled: false },
+      runtime: "local",
+      workspace: undefined,
+    } as unknown as Awaited<ReturnType<typeof loadConfig>>);
+    // Probe: fetch ok, rev-parse yields an oid, state.json readable
+    vi.mocked(spawnCommand).mockResolvedValue({ exitCode: 0, stdout: "abc123oid\n", stderr: "" });
+    vi.mocked(readStateJsonFromRef).mockResolvedValueOnce({ slug: "test-slug", stateJson: legacyStateJson });
+    vi.mocked(runAttachVerification).mockResolvedValue(
+      makeVerified("awaiting-archive") as Awaited<ReturnType<typeof runAttachVerification>>,
+    );
+    vi.mocked(resolveGitHubToken).mockClear();
+    vi.mocked(runAttachVerification).mockClear();
+  });
+
+  it("TC-005c: passes expectedRepo.github (owner/name) to verification instead of inheriting config=false", async () => {
+    const code = await runAttach(makeOpts());
+    expect(code).toBe(0);
+    expect(runAttachVerification).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runAttachVerification).mock.calls[0]![0];
+    expect(call.expectedRepo.github).toEqual({ owner: "test-owner", name: "test-repo" });
+  });
+
+  it("TC-005c: resolves a GitHub token for the enabled (legacy) contract", async () => {
+    await runAttach(makeOpts());
+    expect(resolveGitHubToken).toHaveBeenCalled();
+  });
+
+  it("TC-005c (contrast): checkpoint with githubIntegration.enabled=false keeps expectedRepo.github undefined", async () => {
+    vi.mocked(readStateJsonFromRef).mockReset();
+    vi.mocked(readStateJsonFromRef).mockResolvedValueOnce({
+      slug: "test-slug",
+      stateJson: JSON.stringify({ ...JSON.parse(legacyStateJson), repository: {}, githubIntegration: { enabled: false } }),
+    });
+    await runAttach(makeOpts());
+    const call = vi.mocked(runAttachVerification).mock.calls[0]![0];
+    expect(call.expectedRepo.github).toBeUndefined();
   });
 });
 

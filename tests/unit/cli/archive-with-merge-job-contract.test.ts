@@ -170,6 +170,42 @@ describe("T-archive-job-contract: config=false, job=enabled — --with-merge use
     );
   });
 
+  it("resolves the job contract from the archive search scope (includeArchived) after a partial archive", async () => {
+    // Scenario: config=false, job=enabled, archive-record already moved the change folder to
+    // changes/archive/ (status still awaiting-archive), then merge failed. On re-run the job is
+    // ONLY visible when includeArchived === true — a plain list() must not lose the contract.
+    const { JobStateStore } = await import("../../../src/store/job-state-store.js");
+    const listSpy = vi.spyOn(JobStateStore, "list").mockImplementation(async (_root, listOpts) =>
+      listOpts?.includeArchived === true ? [makeEnabledJobState()] : [],
+    );
+
+    mockComposeGitHubIntegration.mockResolvedValue({
+      enabled: true,
+      githubToken: "ghp_test_token",
+      repository: { owner: "test-owner", name: "test-repo" },
+      githubClient: {},
+      tokenSource: "env",
+      origin: { url: "https://github.com/test-owner/test-repo.git", digest: "abc123" },
+    });
+
+    const { runArchive } = await import("../../../src/cli/archive.js");
+    const exitCode = await runArchive({ slug: SLUG, cwd: CWD, withMerge: true });
+
+    // Every contract/job lookup in the CLI uses the same scope as the core archive orchestrator.
+    expect(listSpy).toHaveBeenCalled();
+    for (const call of listSpy.mock.calls) {
+      expect(call[1]).toEqual({ includeArchived: true });
+    }
+    expect(mockComposeGitHubIntegration).toHaveBeenCalledWith(
+      expect.anything(),
+      CWD,
+      expect.anything(),
+      expect.objectContaining({ overrideEnabled: true }),
+    );
+    expect(mockRunMergeThenArchive).toHaveBeenCalled();
+    expect(exitCode).toBe(0);
+  });
+
   it("proceeds to runMergeThenArchive when composeGitHubIntegration succeeds", async () => {
     const { JobStateStore } = await import("../../../src/store/job-state-store.js");
     vi.spyOn(JobStateStore, "list").mockResolvedValue([makeEnabledJobState()]);

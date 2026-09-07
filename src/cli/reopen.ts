@@ -46,8 +46,12 @@ export async function runReopenCore(slug: string, options: ReopenOptions): Promi
     try {
       const cwd = options.repoRoot ?? options.cwd;
       if (cwd) {
-        const allStates = await JobStateStore.list(cwd);
-        const matchingState = allStates.find((s) => getJobSlug(s) === slug);
+        // includeArchived: same search scope as ReopenCommand (core), so a job whose change
+        // folder was moved to changes/archive/ by a partial archive still resolves its contract.
+        const allStates = await JobStateStore.list(cwd, { includeArchived: true });
+        const matching = allStates.filter((s) => getJobSlug(s) === slug);
+        matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        const matchingState = matching[0];
         if (matchingState) {
           jobGithubEnabled = getGitHubIntegration(matchingState).enabled;
         }

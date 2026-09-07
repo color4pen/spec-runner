@@ -157,8 +157,14 @@ export async function main(): Promise<void> {
               const { JobStateStore } = await import("../src/store/job-state-store.js");
               const { getGitHubIntegration: getJobIntegration } = await import("../src/state/github-integration.js");
               const { getJobSlug } = await import("../src/state/job-slug.js");
-              const allStates = await JobStateStore.list(ctx.repoRoot);
-              const matchingState = allStates.find((s) => getJobSlug(s) === parsed.positional);
+              // includeArchived: after archive-record moves the change folder to changes/archive/
+              // (status still awaiting-archive), the job must remain resolvable so that a re-run of
+              // `job archive <slug> --with-merge` is not rejected on the current config.
+              // Same search scope as the archive handler / core archive orchestrator.
+              const allStates = await JobStateStore.list(ctx.repoRoot, { includeArchived: true });
+              const matching = allStates.filter((s) => getJobSlug(s) === parsed.positional);
+              matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+              const matchingState = matching[0];
               if (matchingState && getJobIntegration(matchingState).enabled) {
                 // Job was started with GitHub enabled → let the handler decide
                 bypassForJobContract = true;

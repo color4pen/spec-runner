@@ -92,7 +92,9 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
   // Resolve jobId for pipeline log initialization (best-effort)
   let resolvedJobIdForLog: string | undefined;
   try {
-    const allStates = await JobStateStore.list(repoRoot);
+    // includeArchived: the change folder may already live under changes/archive/ (status still
+    // awaiting-archive) after a partial archive; same search scope as the core archive orchestrator.
+    const allStates = await JobStateStore.list(repoRoot, { includeArchived: true });
     const matching = allStates.filter((s) => getJobSlug(s) === opts.slug);
     if (matching.length > 0) {
       matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -139,7 +141,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
   let jobGithubEnabled = true; // default: enabled (backward compat)
   try {
     const allStates = resolvedJobIdForLog
-      ? await JobStateStore.list(repoRoot)
+      ? await JobStateStore.list(repoRoot, { includeArchived: true })
       : [];
     const matchingState = allStates.find((s) => s.jobId === resolvedJobIdForLog);
     if (matchingState) {
