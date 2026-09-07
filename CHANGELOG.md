@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.1...specrunner-v0.5.2) (2026-09-07)
+
+
+### Features
+
+* local Git実行でGitHub連携を任意化する ([#1126](https://github.com/color4pen/spec-runner/issues/1126)) ([a28b820](https://github.com/color4pen/spec-runner/commit/a28b820c7229eba1844037644d65b7d81785a82e))
+* reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す ([#1121](https://github.com/color4pen/spec-runner/issues/1121)) ([0e8cc80](https://github.com/color4pen/spec-runner/commit/0e8cc802cd9826ffceafedf892d4819b5a04be3d))
+
 ## [0.5.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.0...specrunner-v0.5.1) (2026-08-30)
 
 
