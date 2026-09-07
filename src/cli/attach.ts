@@ -20,7 +20,6 @@ import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { runAttachVerification } from "../core/attach/orchestrator.js";
 import { attachQuiescentPolicy } from "../core/attach/checkpoint-policy.js";
 import { loadConfig } from "../config/store.js";
-import { getOriginUrl, normalizeOriginIdentity } from "../git/remote.js";
 import { createTransportAuth } from "../git/transport-auth.js";
 import { spawnCommand } from "../util/spawn.js";
 import {
@@ -112,18 +111,6 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
     logError(e ? e.message : `Setup failed: ${(err as Error).message}`);
     if (e) stderrWrite(`Hint: ${e.hint}`);
     return 1;
-  }
-
-  // If composeGitHubIntegration did not resolve an origin (e.g. GitHub-disabled path
-  // where resolveJobGitHubIntegration may not call getOriginUrl), resolve it here
-  // as a best-effort fallback so GitHub-disabled attach can use digest comparison.
-  if (!invokerOrigin) {
-    try {
-      const rawUrl = await getOriginUrl(repoRoot);
-      invokerOrigin = normalizeOriginIdentity(rawUrl);
-    } catch {
-      // best-effort; invokerOrigin stays undefined
-    }
   }
 
   // 4. Transport-auth-wrapped spawn + fetch → read → verify

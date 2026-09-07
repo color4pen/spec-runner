@@ -85,17 +85,6 @@ export const commonChecks: DoctorCheck[] = [
 ];
 
 /**
- * T-12: Checks that require GitHub integration (token, API client, GitHub-specific origin).
- * Excluded from the check set when github.enabled: false.
- */
-export const githubChecks: DoctorCheck[] = [
-  githubTokenPresentCheck,
-  githubClientIdCheck,
-  githubTokenValidCheck,
-  githubOriginCheck,
-];
-
-/**
  * T-12: Base checks that run regardless of GitHub integration status.
  * Excludes GitHub-specific checks (token, client-id, token-valid, github-origin).
  * Includes gitOriginCheck (generic origin presence check) when GitHub is disabled.

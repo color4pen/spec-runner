@@ -67,8 +67,7 @@ export function traceGitHubIntegration(
   const userGlobalRaw = loadResult.userGlobal.migrated;
   if (
     userGlobalRaw !== null &&
-    typeof userGlobalRaw === "object" &&
-    userGlobalRaw !== null
+    typeof userGlobalRaw === "object"
   ) {
     const ug = userGlobalRaw as Record<string, unknown>;
     const github = ug["github"];

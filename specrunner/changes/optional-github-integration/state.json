@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c0a99891-77df-4040-91ba-b92d480d26b4",
   "createdAt": "2026-09-06T10:11:28.319Z",
-  "updatedAt": "2026-09-07T00:13:19.887Z",
+  "updatedAt": "2026-09-07T00:22:19.125Z",
   "request": {
     "title": "local Git実行でGitHub連携を任意化する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/optional-github-integration-c0a99891",
   "error": null,
@@ -94,7 +94,8 @@
     "1c6422d0aead151ce331ba5276532e91b071f551",
     "97f70046aa1c001c2954f6211ac51a984872e1da",
     "c8dadfed09e6f9e73ebc36504397d8235636f89a",
-    "545b3151d9382c27681ba2d7f3ccf6950d99e18f"
+    "545b3151d9382c27681ba2d7f3ccf6950d99e18f",
+    "dfcc5614b9f63bd34dabab256d8c35cab60fc6eb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -197,26 +198,31 @@
     "code-review": [
       "src/config/github-integration.ts",
       "src/state/github-integration.ts",
+      "src/state/schema/operations.ts",
       "src/git/remote.ts",
       "src/core/github/integration.ts",
-      "src/cli/github-composition.ts",
       "src/core/pipeline/apply-github-integration.ts",
-      "src/state/schema/operations.ts",
-      "src/state/schema/types.ts",
       "src/core/command/reopen.ts",
       "src/core/attach/verify-checkpoint.ts",
       "tests/github-disabled-e2e.test.ts",
       "src/core/command/run-result.ts",
-      "src/core/preflight.ts",
-      "tests/unit/git/normalize-origin-identity.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "tests/unit/cli/reopen-github-disabled.test.ts",
+      "src/cli/github-composition.ts",
       "src/cli/archive.ts",
-      "tests/unit/pipeline/apply-github-integration.test.ts",
-      "tests/unit/cli/archive-usage-text.test.ts",
       "src/core/attestation/render-markdown.ts",
-      "bin/specrunner.ts",
-      "src/core/attach/orchestrator.ts"
+      "src/core/runtime/local.ts",
+      "tests/unit/pipeline/apply-github-integration.test.ts",
+      "tests/unit/git/normalize-origin-identity.test.ts",
+      "src/core/command/runner.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/core/doctor/checks/repo/git-origin.ts",
+      "src/state/schema/types.ts",
+      "src/cli/attach.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/preflight.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/core/pipeline/round-git-scope.ts",
+      "tests/unit/pipeline/resume-from-pr-create-disabled.test.ts",
+      "tests/unit/core/command/run-result.test.ts"
     ],
     "code-fixer": [
       "tests/github-disabled-e2e.test.ts",
@@ -376,7 +382,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 142,
+    "historyCount": 146,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -385,7 +391,7 @@
       "spec-fixer": 1,
       "implementer": 7,
       "verification": 7,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
