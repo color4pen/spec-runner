@@ -9,12 +9,14 @@
  *   5. Returns the first snapshot captured by the process.exit spy
  *      (exitCode: null if main() returned without calling process.exit)
  *   6. Normalises environment-dependent values in output strings
+ *      (absolute paths, and the package version → <PACKAGE_VERSION>)
  *
  * This file is imported by cli-exit-contract.test.ts, which sets up all vi.mock
  * declarations and passes the configureMocks callback with per-case behavior.
  */
 
 import { vi } from "vitest";
+import { getVersion } from "../version.js";
 
 export interface ExitContractSnapshot {
   exitCode: number | null;
@@ -24,16 +26,28 @@ export interface ExitContractSnapshot {
 
 const SENTINEL = "EXIT_CONTRACT_SENTINEL";
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
 /**
  * Normalise absolute paths and environment-dependent values in output strings
- * so that snapshots are portable across machines.
+ * so that snapshots are portable across machines and across releases.
+ *
+ * The package version (`specrunner --version`) is replaced with
+ * `<PACKAGE_VERSION>`: release-please bumps package.json on every release,
+ * and pinning the literal version in the fixture would break the contract
+ * suite on each release PR.
  */
 function normalise(lines: string[]): string[] {
   const cwd = process.cwd();
+  const version = getVersion();
+  const versionPattern = new RegExp(`(^|[^0-9.])${escapeRegExp(version)}(?![0-9.])`, "g");
   return lines.map((line) =>
     line
-      .replace(new RegExp(cwd.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"), "g"), "<CWD>")
-      .replace(/\/main\/repo/g, "<MAIN_WORKTREE>"),
+      .replace(new RegExp(escapeRegExp(cwd), "g"), "<CWD>")
+      .replace(/\/main\/repo/g, "<MAIN_WORKTREE>")
+      .replace(versionPattern, "$1<PACKAGE_VERSION>"),
   );
 }
 
