@@ -5,14 +5,8 @@
 
 ### Features
 
-* Git非依存 artifact-output profile の成立性を設計・実測する ([#1122](https://github.com/color4pen/spec-runner/issues/1122)) ([9b34eeb](https://github.com/color4pen/spec-runner/commit/9b34eeb735cb229a82d8d185235fea6a58837c53))
 * local Git実行でGitHub連携を任意化する ([#1126](https://github.com/color4pen/spec-runner/issues/1126)) ([a28b820](https://github.com/color4pen/spec-runner/commit/a28b820c7229eba1844037644d65b7d81785a82e))
 * reviewer finding に修正方針（remediation）契約を追加し fixer / regression-gate へ渡す ([#1121](https://github.com/color4pen/spec-runner/issues/1121)) ([0e8cc80](https://github.com/color4pen/spec-runner/commit/0e8cc802cd9826ffceafedf892d4819b5a04be3d))
-
-
-### Reverts
-
-* Git非依存 artifact-output profile ([#1122](https://github.com/color4pen/spec-runner/issues/1122)) を取り消す ([#1124](https://github.com/color4pen/spec-runner/issues/1124)) ([6c37dc5](https://github.com/color4pen/spec-runner/commit/6c37dc52027be8ff6f6a699a73e5a959b9ea7cfa))
 
 ## [0.5.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.0...specrunner-v0.5.1) (2026-08-30)
 
