@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:22:02.360Z",
+  "updatedAt": "2026-09-08T11:27:44.359Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -16,7 +16,7 @@
       "digest": "35ffe8ecaff73338e33ace5c32372729d0537a71400be474168fdee21c19831a"
     }
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/publish-at-job-boundaries-0142023a",
   "error": null,
@@ -87,7 +87,8 @@
     "df4c5a6a2af033719ecef91d2ec5604bf4516369",
     "fc6479960d0524ce4cdd0ced5d6dca3ba95f30e6",
     "ffe45c096aac0383df9e592aafbafe06f67c4786",
-    "16c9357010357928e4626a8872738fa50b16d0c8"
+    "16c9357010357928e4626a8872738fa50b16d0c8",
+    "14d115ab6db9cc6a248f40a8bb9ec577a2a2e444"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -99,7 +100,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -109,7 +110,7 @@
       "implementer": 3,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 3
+      "code-fixer": 4
     }
   }
 }
