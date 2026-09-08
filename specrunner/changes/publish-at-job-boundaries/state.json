@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:53:30.707Z",
+  "updatedAt": "2026-09-08T11:58:54.662Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -16,7 +16,7 @@
       "digest": "35ffe8ecaff73338e33ace5c32372729d0537a71400be474168fdee21c19831a"
     }
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/publish-at-job-boundaries-0142023a",
   "error": null,
@@ -94,7 +94,9 @@
     "e0bca3b66f689abd9293e47f5f559a35b3cff95e",
     "ffa94c787576f38c7fbeec9e852b182e7ba0b0e2",
     "d7d8ff6b94db860f0a9e93d4c6f705f9306e6284",
-    "b128ee5dcca303981cbc063fc0890cac9060733b"
+    "b128ee5dcca303981cbc063fc0890cac9060733b",
+    "ccf6e2d9df2ba0eeec9dc11a66a03e9dac070cb0",
+    "cb999cd7588883b005f43cfde4347594422a4d2f"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -142,7 +144,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 112,
+    "historyCount": 121,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -150,13 +152,14 @@
       "spec-review": 2,
       "spec-fixer": 1,
       "implementer": 3,
-      "verification": 3,
+      "verification": 4,
       "code-review": 6,
       "code-fixer": 5,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
