@@ -12,6 +12,7 @@
  * Mirrors the SDK's ModelUsage type (subset of fields used for verification).
  */
 export interface ModelUsage {
+  /** Uncached input, excluding cache reads and cache writes in newly recorded usage. */
   inputTokens: number;
   outputTokens: number;
   cacheReadInputTokens: number;

@@ -83,9 +83,9 @@ function makeRunner(deps: CodexAgentRunnerDeps = {}): CodexAgentRunner {
   return new CodexAgentRunner({ _sleepFn: async () => {}, ...deps });
 }
 
-async function* successStream(finalResponse = "done") {
+async function* successStream(finalResponse = "done", usage = { input_tokens: 10, output_tokens: 5, cached_input_tokens: 0, cache_write_input_tokens: 0 }) {
   yield { type: "item.completed", item: { type: "agent_message", text: finalResponse } };
-  yield { type: "turn.completed", usage: { input_tokens: 10, output_tokens: 5 } };
+  yield { type: "turn.completed", usage };
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ describe("CodexAgentRunner output verification repair loop", () => {
       id: "thread-ov-test",
       runStreamed: vi.fn().mockImplementation(() => {
         callCount++;
-        return Promise.resolve({ events: successStream(`turn ${callCount}`) });
+        return Promise.resolve({ events: successStream(`turn ${callCount}`, { input_tokens: 100, output_tokens: 10, cached_input_tokens: 40, cache_write_input_tokens: 20 }) });
       }),
     };
 
@@ -139,6 +139,7 @@ describe("CodexAgentRunner output verification repair loop", () => {
     // detect called twice: once finds violation, once clears
     expect(detectCallCount).toBe(2);
     expect(outputVerification.buildPrompt).toHaveBeenCalledTimes(1);
+    expect(Object.values(result.modelUsage!)).toEqual([{ inputTokens: 80, outputTokens: 20, cacheReadInputTokens: 80, cacheCreationInputTokens: 40 }]);
   });
 
   it("repair turn failure is best-effort: completionReason === success (work turn result preserved)", async () => {
