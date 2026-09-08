@@ -91,7 +91,7 @@ function makeCtx(overrides: Partial<AgentRunContext> = {}): AgentRunContext {
 async function* makeEventStream(params: {
   finalResponse: string;
   items?: Array<{ type: string; [key: string]: unknown }>;
-  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null;
+  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number; cache_write_input_tokens?: number } | null;
 }) {
   const items = params.items ?? [];
   for (const item of items) {
@@ -110,7 +110,7 @@ async function* makeEventStream(params: {
 function makeStreamedTurn(params: {
   finalResponse: string;
   items?: Array<{ type: string; [key: string]: unknown }>;
-  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null;
+  usage?: { input_tokens: number; output_tokens: number; cached_input_tokens?: number; cache_write_input_tokens?: number } | null;
 }) {
   return { events: makeEventStream(params) };
 }
@@ -126,7 +126,7 @@ function makeThread(turnResult: {
     runStreamed: vi.fn().mockResolvedValue(makeStreamedTurn({
       finalResponse: turnResult.finalResponse,
       items: (turnResult.items as Array<{ type: string }> | undefined) ?? [],
-      usage: turnResult.usage as { input_tokens: number; output_tokens: number; cached_input_tokens?: number } | null | undefined ?? null,
+      usage: turnResult.usage as { input_tokens: number; output_tokens: number; cached_input_tokens?: number; cache_write_input_tokens?: number } | null | undefined ?? null,
     })),
   };
 }
@@ -198,6 +198,7 @@ describe("CodexAgentRunner", () => {
       input_tokens: 100,
       output_tokens: 50,
       cached_input_tokens: 30,
+      cache_write_input_tokens: 20,
     };
     const thread = makeThread({ finalResponse: "ok", usage });
     const factory = makeCodexFactory(thread);
@@ -207,10 +208,10 @@ describe("CodexAgentRunner", () => {
     expect(result.modelUsage).toBeDefined();
     const modelUsage = result.modelUsage!;
     const modelKey = Object.keys(modelUsage)[0]!;
-    expect(modelUsage[modelKey]!.inputTokens).toBe(100);
+    expect(modelUsage[modelKey]!.inputTokens).toBe(50);
     expect(modelUsage[modelKey]!.outputTokens).toBe(50);
     expect(modelUsage[modelKey]!.cacheReadInputTokens).toBe(30);
-    expect(modelUsage[modelKey]!.cacheCreationInputTokens).toBe(0);
+    expect(modelUsage[modelKey]!.cacheCreationInputTokens).toBe(20);
   });
 
   it("returns error when Codex SDK throws", async () => {
@@ -525,8 +526,8 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
   });
 
   it("modelUsage が turn 1 + turn 2 の加算 (per-turn 加算)", async () => {
-    const turn1Usage = { input_tokens: 100, output_tokens: 50, cached_input_tokens: 10 };
-    const turn2Usage = { input_tokens: 80, output_tokens: 40, cached_input_tokens: 5 };
+    const turn1Usage = { input_tokens: 100, output_tokens: 50, cached_input_tokens: 10, cache_write_input_tokens: 20 };
+    const turn2Usage = { input_tokens: 80, output_tokens: 40, cached_input_tokens: 5, cache_write_input_tokens: 10 };
 
     let callCount = 0;
     const thread: CodexThread = {
@@ -552,10 +553,11 @@ describe("CodexAgentRunner follow-up 2-turn execution", () => {
     expect(result.completionReason).toBe("success");
     expect(result.modelUsage).toBeDefined();
     const modelKey = Object.keys(result.modelUsage!)[0]!;
-    // Should be sum: 100+80=180 input, 50+40=90 output, 10+5=15 cached
-    expect(result.modelUsage![modelKey]!.inputTokens).toBe(180);
+    // Normalize both observations: raw input 180 - reads 15 - writes 30 = 135.
+    expect(result.modelUsage![modelKey]!.inputTokens).toBe(135);
     expect(result.modelUsage![modelKey]!.outputTokens).toBe(90);
     expect(result.modelUsage![modelKey]!.cacheReadInputTokens).toBe(15);
+    expect(result.modelUsage![modelKey]!.cacheCreationInputTokens).toBe(30);
   });
 
   it("signal が follow turn にも渡される", async () => {

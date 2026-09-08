@@ -305,16 +305,16 @@ describe("TC-004: computeCostUsd — new Claude 5 and GPT-5.6 models at 1M token
     expect(computeCostUsd("claude-fable-5", usage)).toBeCloseTo(73.5, 6);
   });
 
-  it("gpt-5.6-sol: returns 35.5 (5+30+0.5+0)", () => {
-    expect(computeCostUsd("gpt-5.6-sol", usage)).toBeCloseTo(35.5, 6);
+  it("gpt-5.6-sol: returns 29.4 (4+20+0.4+5)", () => {
+    expect(computeCostUsd("gpt-5.6-sol", usage)).toBeCloseTo(29.4, 6);
   });
 
-  it("gpt-5.6-terra: returns 14.2 (2+12+0.2+0)", () => {
-    expect(computeCostUsd("gpt-5.6-terra", usage)).toBeCloseTo(14.2, 6);
+  it("gpt-5.6-terra: returns 16.7 (2+12+0.2+2.5)", () => {
+    expect(computeCostUsd("gpt-5.6-terra", usage)).toBeCloseTo(16.7, 6);
   });
 
-  it("gpt-5.6-luna: returns 1.42 (0.2+1.2+0.02+0)", () => {
-    expect(computeCostUsd("gpt-5.6-luna", usage)).toBeCloseTo(1.42, 6);
+  it("gpt-5.6-luna: returns 1.67 (0.2+1.2+0.02+0.25)", () => {
+    expect(computeCostUsd("gpt-5.6-luna", usage)).toBeCloseTo(1.67, 6);
   });
 });
 

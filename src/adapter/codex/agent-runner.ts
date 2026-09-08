@@ -50,6 +50,7 @@ import { SpecRunnerError } from "../../errors.js";
 import { loadCodexSdk, type CodexSdkLoader } from "./sdk-loader.js";
 import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
 import { createLastToolTracker } from "../shared/last-tool-tracker.js";
+import { normalizeCodexUsage, type CodexUsage } from "./usage.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -73,13 +74,6 @@ interface FileChangeItem {
 interface ThreadItem {
   type: string;
   [key: string]: unknown;
-}
-
-interface CodexUsage {
-  input_tokens: number;
-  cached_input_tokens?: number;
-  output_tokens: number;
-  reasoning_output_tokens?: number;
 }
 
 // Minimal event shapes for runStreamed (mirrors SDK's ThreadEvent)
@@ -570,6 +564,7 @@ export class CodexAgentRunner implements AgentRunner {
         input_tokens: prev.input_tokens + next.input_tokens,
         output_tokens: prev.output_tokens + next.output_tokens,
         cached_input_tokens: (prev.cached_input_tokens ?? 0) + (next.cached_input_tokens ?? 0),
+        cache_write_input_tokens: (prev.cache_write_input_tokens ?? 0) + (next.cache_write_input_tokens ?? 0),
       };
     };
 
@@ -733,14 +728,7 @@ export class CodexAgentRunner implements AgentRunner {
 
       // Map Codex usage → ModelUsage
       if (turn.usage) {
-        const u = turn.usage;
-        const usage: ModelUsage = {
-          inputTokens: u.input_tokens,
-          outputTokens: u.output_tokens,
-          cacheReadInputTokens: u.cached_input_tokens ?? 0,
-          cacheCreationInputTokens: 0,
-        };
-        modelUsage = { [resolvedConfig.model]: usage };
+        modelUsage = { [resolvedConfig.model]: normalizeCodexUsage(turn.usage) };
       }
 
       // D6: Output verification repair loop (mirrors ClaudeCodeRunner)
@@ -770,21 +758,7 @@ export class CodexAgentRunner implements AgentRunner {
             const repairUsage = accumulateUsage(turn.usage, repairTurn.usage);
             if (repairUsage && turn.usage !== repairUsage) {
               turn = { ...turn, usage: repairUsage };
-              // Update modelUsage
-              if (repairTurn.usage) {
-                const u = repairTurn.usage;
-                const prev = modelUsage?.[resolvedConfig.model];
-                if (prev) {
-                  modelUsage = {
-                    [resolvedConfig.model]: {
-                      inputTokens: prev.inputTokens + u.input_tokens,
-                      outputTokens: prev.outputTokens + u.output_tokens,
-                      cacheReadInputTokens: (prev.cacheReadInputTokens ?? 0) + (u.cached_input_tokens ?? 0),
-                      cacheCreationInputTokens: prev.cacheCreationInputTokens ?? 0,
-                    },
-                  };
-                }
-              }
+              modelUsage = { [resolvedConfig.model]: normalizeCodexUsage(repairUsage) };
             }
           } catch (err) {
             // Re-throw abort errors so watchdog-triggered timeouts reach the outer catch (D4 design).

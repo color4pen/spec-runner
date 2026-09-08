@@ -40,8 +40,10 @@ export interface ModelPricing {
  * below 200K tokens; a per-prompt threshold above that range would not appear in
  * these measurements.
  *
- * OpenAI cache notes: cacheRead = cached-input tier price; cacheWrite = 0
- * (OpenAI does not charge for cache write operations).
+ * GPT-5.6 rows use Standard short-context reference prices checked 2026-09-09:
+ * https://developers.openai.com/api/docs/pricing
+ * Cache writes have a separate price. Other OpenAI rows retain their dated rates.
+ * These are API-equivalent estimates, not subscription charges or tier detection.
  */
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Claude Opus 4.8 — standard context
@@ -140,7 +142,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // ---------------------------------------------------------------------------
   // OpenAI models
   // Source: https://openai.com/api/pricing/ (as of 2026-06-12)
-  // cacheWrite = 0 for all OpenAI models (no cache-write charge)
+  // GPT-5.6 reference rates below were refreshed separately on 2026-09-09.
   // ---------------------------------------------------------------------------
 
   // o3 — OpenAI official pricing
@@ -207,31 +209,31 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheWrite: 0,
   },
 
-  // gpt-5.6-sol — OpenAI 公表値(2026-08-09 確認)
-  // cacheRead = input × 0.1 / cacheWrite = 0 (OpenAI は cache write 無課金)
+  // gpt-5.6-sol — Standard short-context reference, checked 2026-09-09
+  // https://developers.openai.com/api/docs/pricing
   "gpt-5.6-sol": {
-    input: 5.0,
-    output: 30.0,
-    cacheRead: 0.5,
-    cacheWrite: 0,
+    input: 4,
+    output: 20,
+    cacheRead: 0.4,
+    cacheWrite: 5,
   },
 
-  // gpt-5.6-terra — OpenAI 公表値(2026-08-09 確認)
-  // cacheRead = input × 0.1 / cacheWrite = 0 (OpenAI は cache write 無課金)
+  // gpt-5.6-terra — Standard short-context reference, checked 2026-09-09
+  // https://developers.openai.com/api/docs/pricing
   "gpt-5.6-terra": {
-    input: 2.0,
-    output: 12.0,
+    input: 2,
+    output: 12,
     cacheRead: 0.2,
-    cacheWrite: 0,
+    cacheWrite: 2.5,
   },
 
-  // gpt-5.6-luna — OpenAI 公表値(2026-07-30 改定後)
-  // cacheRead = input × 0.1 / cacheWrite = 0 (OpenAI は cache write 無課金)
+  // gpt-5.6-luna — Standard short-context reference, checked 2026-09-09
+  // https://developers.openai.com/api/docs/pricing
   "gpt-5.6-luna": {
     input: 0.2,
     output: 1.2,
     cacheRead: 0.02,
-    cacheWrite: 0,
+    cacheWrite: 0.25,
   },
 };
 
