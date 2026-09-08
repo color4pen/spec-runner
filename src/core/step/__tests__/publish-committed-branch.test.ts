@@ -42,4 +42,18 @@ describe("publishCommittedBranch", () => {
       .resolves.toEqual({ kind: "published" });
     expect(spawn.mock.calls.filter((call) => call[1][0] === "push")).toHaveLength(2);
   });
+
+  it("TC-CFS-004 returns a typed push failure after both publication attempts fail", async () => {
+    const spawn = vi.fn()
+      .mockResolvedValueOnce(result(0, "remote-tip\n"))
+      .mockResolvedValueOnce(result(0, "job-1\n"))
+      .mockResolvedValueOnce(result(1, "", "push failed"))
+      .mockResolvedValueOnce(result(1, "", "push failed again"));
+    await expect(publishCommittedBranch({ cwd: "/repo", branch: "change/x", ledger: ["job-1"], spawnFn: spawn }))
+      .resolves.toMatchObject({ kind: "failure", phase: "push" });
+    const commands = spawn.mock.calls.map((call) => call[1][0]);
+    expect(commands.filter((command) => command === "push")).toHaveLength(2);
+    expect(commands).not.toContain("add");
+    expect(commands).not.toContain("commit");
+  });
 });

@@ -361,7 +361,6 @@ describe("TC-003: commitFinalState push success — persistBeforePush called bef
         { exitCode: 1 }, // diff --cached → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
         { exitCode: 0 }, // push → success
       ]);
@@ -421,7 +420,6 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
         { exitCode: 1 }, // diff → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
         { exitCode: 1 }, // push (fail 1)
         { exitCode: 1 }, // push (fail 2)
@@ -429,7 +427,7 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
 
       const persistBeforePush = vi.fn(async (_oid: string) => {});
 
-      // commitFinalState does not throw on push failure (best-effort)
+      // Push failure is returned after the OID has been persisted.
       await expect(
         commitFinalState({
           cwd: CWD,
@@ -440,7 +438,11 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
           synthesizedCommits: [],
           persistBeforePush,
         }),
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({
+        kind: "failure",
+        phase: "push",
+        error: "remote rejected final-state publication",
+      });
 
       // TC-004: persistBeforePush must have been called despite push failure
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
@@ -689,14 +691,13 @@ describe("TC-009: persistBeforePush throw — commitAndPush rethrows, push not c
 });
 
 // ---------------------------------------------------------------------------
-// TC-010 (should): commitFinalState の persistBeforePush が throw しても
-//                  push が試行される (best-effort)
+// TC-010: commitFinalState の台帳保存失敗は公開を停止する
 // ---------------------------------------------------------------------------
 
-describe("TC-010 (should): commitFinalState persistBeforePush throw — push still attempted", () => {
+describe("TC-010: commitFinalState persistBeforePush failure blocks publication", () => {
   it(
     // TC-010
-    "TC-010: commitFinalState continues to push even when persistBeforePush throws",
+    "TC-010: commitFinalState returns a persist failure without pushing",
     async () => {
       const CHECKPOINT_OID = "sha-checkpoint-010";
       const pushCalls: string[][] = [];
@@ -710,9 +711,6 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
         { exitCode: 1 }, // diff → staged
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04 new)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
-        { exitCode: 0 }, // push (success, shows push was attempted despite persistBeforePush failure)
       ]);
 
       const wrappedSpawnFn: PipelineSpawnFn = async (cmd, args, opts) => {
@@ -724,7 +722,7 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
         throw new Error("disk-full: cannot persist");
       });
 
-      // commitFinalState must NOT throw (best-effort path)
+      // The caller receives the failure and must not publish an unrecorded commit.
       await expect(
         commitFinalState({
           cwd: CWD,
@@ -735,12 +733,15 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
           synthesizedCommits: [],
           persistBeforePush,
         }),
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({
+        kind: "failure",
+        phase: "persist",
+        error: "disk-full: cannot persist",
+      });
 
-      // TC-010: persistBeforePush must have been called (verifies T-04 is in place)
-      // and push must still have been attempted (verifies best-effort continue).
+      // No push is allowed when recording the commit fails.
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
-      expect(pushCalls.length).toBeGreaterThan(0);
+      expect(pushCalls).toHaveLength(0);
     },
   );
 });
@@ -771,13 +772,12 @@ describe("TC-011 (should): commitFinalState push failure warning includes git st
           { exitCode: 1 }, // diff → staged
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04 new: for persistBeforePush)
-          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (egress ledger try-block)
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list (via verifyEgressLedger)
           { exitCode: 1, stderr: `${PUSH_STDERR}\n` },    // push fail 1
           { exitCode: 1, stderr: `${PUSH_STDERR}\n` },    // push fail 2 → warning with stderr
         ]);
 
-        // Pass a no-op persistBeforePush to ensure T-04's extra rev-parse is accounted for.
+        // Record the commit before exercising the publication failure.
         await commitFinalState({
           cwd: CWD,
           branch: BRANCH,

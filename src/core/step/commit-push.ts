@@ -844,8 +844,7 @@ export async function commitFinalState(params: {
   synthesizedCommits?: string[];
   /**
    * Optional callback invoked after commit and before push to persist the commit OID
-   * to the synthesizedCommits ledger. Best-effort: throw is caught and warned; push proceeds.
-   * Also reused as `persistCommit` for the restack module (D7).
+   * to the synthesizedCommits ledger. A failure is returned and prevents publication.
    */
   persistBeforePush?: (oid: string) => Promise<void>;
   /**
@@ -919,8 +918,8 @@ export async function commitFinalState(params: {
   }
 
   // Persist-before-push invariant: record the checkpoint/finalize OID before push so
-  // that a push failure cannot leave the ledger incomplete. Best-effort: failure is
-  // warned and does not block push (commitFinalState is a terminal best-effort path).
+  // that a push failure cannot leave the ledger incomplete. Persistence failure
+  // returns a typed failure and blocks publication.
   if (persistBeforePush) {
     try {
       await persistBeforePush(oid);
