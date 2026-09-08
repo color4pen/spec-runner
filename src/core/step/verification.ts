@@ -22,7 +22,8 @@ import { SpecRunnerError } from "../../errors.js";
  * verificationCwd = deps.cwd ?? process.cwd().
  *
  * After execution, verification-result.md is already in the worktree — no copy needed.
- * It is committed locally so subsequent local steps can read it from the same worktree.
+ * It is committed locally. Managed runtime then publishes it for the next remote agent;
+ * local runtime keeps it in the same worktree until a job publication boundary.
  *
  * Design D1: explicit kind discriminator (not null-agent inference).
  * Design D2: no Anthropic session — entirely local.
@@ -58,7 +59,7 @@ export const VerificationStep: CliStep = {
       exitCode: p.exitCode,
     }));
 
-    // Propagate verification-result.md to branch so build-fixer can read it
+    // Commit the result and record its OID before any cross-checkout handoff.
     if (state.branch) {
       const iteration = (state.steps?.[STEP_NAMES.VERIFICATION]?.length ?? 0) + 1;
       const propagateResult = await propagateVerificationResult({
@@ -67,8 +68,6 @@ export const VerificationStep: CliStep = {
         iteration,
         cwd: verificationCwd,
         spawn: deps.spawn,
-        // D4 egress backstop: pass ledger so propagate can verify publish range before push.
-        synthesizedCommits: state.synthesizedCommits ?? [],
       });
       if (!propagateResult.ok) {
         stderrWrite(
@@ -83,6 +82,9 @@ export const VerificationStep: CliStep = {
         const ledger = (state.synthesizedCommits ??= []);
         if (!ledger.includes(propagateResult.commitOid)) ledger.push(propagateResult.commitOid);
       }
+      // Run even when the file is unchanged: a prior handoff may have failed
+      // after committing, leaving an unpublished result in the ledger.
+      await deps.verificationHandoff?.publish(verificationCwd, state);
     }
 
     // Return the projected phase outcomes. The executor reads verificationPhases from

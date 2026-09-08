@@ -4,6 +4,7 @@
  * Design D3: SessionClient, ManagedAgentRunner, no-op workspace/cleanup.
  * All config.runtime !== "local" logic lives here — not in CLI or pipeline.
  */
+import { publishCommittedBranch } from "../step/commit-push.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SessionClient } from "../port/session-client.js";
@@ -337,6 +338,23 @@ export class ManagedRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
+      verificationHandoff: {
+        publish: async (cwd, state) => {
+          const publication = await publishCommittedBranch({
+            cwd,
+            branch: state.branch ?? "",
+            ledger: state.synthesizedCommits ?? [],
+            spawnFn: this.wrappedSpawnFn,
+          });
+          if (publication.kind === "failure") {
+            throw new SpecRunnerError(
+              "PUBLICATION_FAILED",
+              "Retry verification from this checkout before starting the next managed agent.",
+              `verification/handoff/${publication.phase}: ${publication.error}`,
+            );
+          }
+        },
+      },
       storeFactory: (id: string) => this.managedLocalStore(id, slug),
       // R2b capability fields
       stepArtifact: deriveStepArtifactLifecycleCapability(this),

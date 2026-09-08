@@ -14,6 +14,7 @@
  * (composition-root agent runner).
  */
 
+import type { VerificationHandoffCapability } from "../port/step-types.js";
 import type { StepContext } from "../port/step-context.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { SpawnFn } from "../../util/spawn.js";
@@ -41,6 +42,8 @@ export interface StepExecutionDeps extends StepContext {
   repo?: string;
   /** Subprocess spawning function. CLI steps pass this to subprocess-spawning functions. */
   spawn: SpawnFn;
+  /** Optional remote handoff for CLI verification results. */
+  verificationHandoff?: VerificationHandoffCapability;
   /** Factory for creating JobStateStore instances (no inline `new JobStateStore()`). */
   storeFactory: StoreFactory;
   /**

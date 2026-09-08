@@ -141,12 +141,16 @@ describe("verification result commit is a required gate", () => {
     });
     const state = { ...makeMinimalState(), branch: "feat/test" };
 
-    await expect(VerificationStep.run(state, makeMinimalDeps("main", "/fake/cwd")))
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+    const publish = vi.fn();
+    deps.verificationHandoff = { publish };
+    await expect(VerificationStep.run(state, deps))
       .rejects.toMatchObject({
         code: "PUBLICATION_FAILED",
         message: expect.stringContaining("verification/commit"),
       });
     expect(state.synthesizedCommits).toBeUndefined();
+    expect(publish).not.toHaveBeenCalled();
   });
 });
 
