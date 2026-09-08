@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "runtime": "local",
   "verification": {
     "commands": [
       { "name": "build", "run": "bun run build" },
@@ -16,11 +17,11 @@
   },
   "steps": {
     "defaults": {
-      "model": "claude-sonnet-4-6",
+      "model": "gpt-5.6-sol",
       "maxTurns": null
     },
     "design": {
-      "model": "claude-opus-5"
+      "model": "gpt-5.6-sol"
     },
     "cross-boundary-invariants": {
       "model": "gpt-5.6-sol"
