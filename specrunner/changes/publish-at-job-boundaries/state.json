@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T14:41:20.739Z",
+  "updatedAt": "2026-09-08T14:46:46.124Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -16,7 +16,7 @@
       "digest": "35ffe8ecaff73338e33ace5c32372729d0537a71400be474168fdee21c19831a"
     }
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/publish-at-job-boundaries-0142023a",
   "error": null,
@@ -97,7 +97,9 @@
     "b128ee5dcca303981cbc063fc0890cac9060733b",
     "ccf6e2d9df2ba0eeec9dc11a66a03e9dac070cb0",
     "cb999cd7588883b005f43cfde4347594422a4d2f",
-    "b71b9b548c4fd4166c93966ed43fa163e0e1ca98"
+    "b71b9b548c4fd4166c93966ed43fa163e0e1ca98",
+    "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
+    "f8dd9862335d018c3b908572c4d200bffb18e6e6"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -122,7 +124,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "ffa94c787576f38c7fbeec9e852b182e7ba0b0e2",
+      "approvedAtCommit": "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -138,7 +140,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "ffa94c787576f38c7fbeec9e852b182e7ba0b0e2",
+      "approvedAtCommit": "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -155,7 +157,7 @@
     "createdAt": "2026-09-08T12:02:21.175Z"
   },
   "_journal": {
-    "historyCount": 130,
+    "historyCount": 140,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -164,11 +166,11 @@
       "spec-fixer": 1,
       "implementer": 3,
       "verification": 4,
-      "code-review": 6,
+      "code-review": 7,
       "code-fixer": 5,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 1,
       "conformance": 1,
       "adr-gen": 1,
