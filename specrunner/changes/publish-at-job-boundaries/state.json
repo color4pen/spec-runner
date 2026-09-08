@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:58:54.662Z",
+  "updatedAt": "2026-09-08T12:02:21.915Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -16,8 +16,8 @@
       "digest": "35ffe8ecaff73338e33ace5c32372729d0537a71400be474168fdee21c19831a"
     }
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/publish-at-job-boundaries-0142023a",
   "error": null,
   "pipelineId": "standard",
@@ -96,7 +96,8 @@
     "d7d8ff6b94db860f0a9e93d4c6f705f9306e6284",
     "b128ee5dcca303981cbc063fc0890cac9060733b",
     "ccf6e2d9df2ba0eeec9dc11a66a03e9dac070cb0",
-    "cb999cd7588883b005f43cfde4347594422a4d2f"
+    "cb999cd7588883b005f43cfde4347594422a4d2f",
+    "b71b9b548c4fd4166c93966ed43fa163e0e1ca98"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -143,8 +144,13 @@
       "canonHash": "specrunner/changes/publish-at-job-boundaries/design.md:sha256:13c9af54f6ee0287f8e9e147e671d2fb78a83410fa89e1f506f99c99887eccb2|specrunner/changes/publish-at-job-boundaries/request.md:sha256:c84e36ed5b8aff50a58a8e91cee23d00d1e4e21758f95544f97622eb3e1a2af5|specrunner/changes/publish-at-job-boundaries/spec.md:sha256:435fc8c11a3678342431b7af98ebf00f570ad01298c6bc8a905d333f35391a35|specrunner/changes/publish-at-job-boundaries/tasks.md:sha256:268dfb124b863fa5476ea9887bcb4641693110ec00690b6a2d968a0fa225447e|specrunner/changes/publish-at-job-boundaries/test-cases.md:sha256:1a68f81c243f0d65d21f4a988b85ab48dcfef9cd8dfef893c9e5d6ff9c886b85"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1130",
+    "number": 1130,
+    "createdAt": "2026-09-08T12:02:21.175Z"
+  },
   "_journal": {
-    "historyCount": 121,
+    "historyCount": 126,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -159,7 +165,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
