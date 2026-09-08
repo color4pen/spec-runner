@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:34:54.914Z",
+  "updatedAt": "2026-09-08T11:37:08.360Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -17,9 +17,13 @@
     }
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/publish-at-job-boundaries-0142023a",
-  "error": null,
+  "error": {
+    "code": "CODE_REVIEW_RETRIES_EXHAUSTED",
+    "message": "code-review did not approve after 2 iterations",
+    "hint": "Review review-feedback-005.md and address findings manually."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -90,9 +94,15 @@
     "16c9357010357928e4626a8872738fa50b16d0c8",
     "14d115ab6db9cc6a248f40a8bb9ec577a2a2e444",
     "b87da40f841f9b34436a0d2332157be4062b45c7",
-    "599eeb6937227a966d8654ec55a702c7622a6131"
+    "599eeb6937227a966d8654ec55a702c7622a6131",
+    "e0bca3b66f689abd9293e47f5f559a35b3cff95e"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-review did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -102,7 +112,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 89,
+    "historyCount": 92,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -111,7 +121,7 @@
       "spec-fixer": 1,
       "implementer": 3,
       "verification": 3,
-      "code-review": 4,
+      "code-review": 5,
       "code-fixer": 5
     }
   }
