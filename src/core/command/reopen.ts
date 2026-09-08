@@ -46,6 +46,18 @@ export interface ReopenOptions {
 }
 
 /**
+ * A GitHub-enabled job normally needs an OPEN PR before it can be reopened.
+ * The sole exception is a no-PR profile whose final checkpoint publication
+ * failed after the pipeline had already entered awaiting-archive.  Reopening
+ * that state is the supported retry path for publishing the ledgered commits.
+ */
+export function isNoPrPublicationRetry(state: JobState): boolean {
+  return state.status === "awaiting-archive" &&
+    !state.pullRequest?.number &&
+    state.error?.code === "PUBLICATION_FAILED";
+}
+
+/**
  * Standalone command for `specrunner job reopen`.
  * execute() performs all validation and state transition without starting the pipeline.
  */
@@ -133,7 +145,7 @@ export class ReopenCommand {
 
     // PR gate: only enforced when GitHub integration is enabled.
     // For disabled jobs (no PR exists), the gate is skipped entirely.
-    if (getGitHubIntegration(state).enabled) {
+    if (getGitHubIntegration(state).enabled && !isNoPrPublicationRetry(state)) {
       // PR gate: job must have a recorded PR and the PR must be OPEN
       if (!state.pullRequest?.number) {
         logError(`Job '${this.slug}' has no recorded PR to reopen against.`);
@@ -183,7 +195,8 @@ export class ReopenCommand {
       }
       // Only OPEN PRs are allowed to proceed
     }
-    // GitHub-disabled jobs: no PR gate — proceed directly to transition
+    // GitHub-disabled jobs and failed final publication for no-PR profiles:
+    // no PR gate — proceed directly to transition.
 
     // Build the job state store (needed for appendOperatorEvent + persist).
     // D6: a durable store is required — fail-closed when sidecar is missing.

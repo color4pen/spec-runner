@@ -428,14 +428,19 @@ export class Pipeline {
           if (commit?.kind === "failure") {
             state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint commit failed (${commit.phase})`, hint: "Retry from this worktree." } };
             await endStore.persist(state);
-            throw new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/commit-${commit.phase}: ${commit.error}`);
+            const error = new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/commit-${commit.phase}: ${commit.error}`);
+            Object.assign(error, { state });
+            throw error;
           }
           if (deps.terminalState.publishCommittedState) {
             const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
             if (publication.kind === "failure") {
-              state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint publication failed (${publication.phase})`, hint: "Retry from this worktree." } };
+              const retryHint = `Run 'job reopen ${deps.slug} --reason <reason>', then resume the final profile step from this worktree.`;
+              state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint publication failed (${publication.phase})`, hint: retryHint } };
               await endStore.persist(state);
-              throw new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/${publication.phase}: ${publication.error}`);
+              const error = new SpecRunnerError("PUBLICATION_FAILED", retryHint, `post-pr/${publication.phase}: ${publication.error}`);
+              Object.assign(error, { state });
+              throw error;
             }
           }
         }

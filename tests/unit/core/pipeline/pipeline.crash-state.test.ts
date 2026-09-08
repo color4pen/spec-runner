@@ -137,6 +137,32 @@ describe("T3.1: executor throws without .state → state becomes awaiting-resume
     expect(persisted.error?.message).toContain("pre-pr/push");
   });
 
+  it("persists a retryable awaiting-archive state when no-PR final publication fails", async () => {
+    const jobState = makeMinimalState("test-no-pr-final-publication");
+    const deps = makeMinimalDeps();
+    deps.terminalState = {
+      commitFinalState: async () => ({ kind: "no-change" }),
+      publishCommittedState: async () => ({ kind: "failure", phase: "push", error: "remote rejected publication" }),
+    };
+    const pipeline = new Pipeline({
+      steps: new Map([["implementer", makeAgentStep("implementer")]]),
+      transitions: [{ step: "implementer", on: "success", to: "end" }],
+      maxIterations: 1,
+      executor: { execute: vi.fn().mockResolvedValue(jobState) } as unknown as StepExecutor,
+      events: new EventBus(),
+    });
+
+    await expect(pipeline.run("implementer", jobState, deps)).rejects.toMatchObject({
+      code: "PUBLICATION_FAILED",
+    });
+    const persisted = await deps.storeFactory(jobState.jobId).load();
+
+    expect(persisted.status).toBe("awaiting-archive");
+    expect(persisted.pullRequest).toBeUndefined();
+    expect(persisted.error?.code).toBe("PUBLICATION_FAILED");
+    expect(persisted.error?.hint).toContain("job reopen test-slug");
+  });
+
   it("plain Error throw results in awaiting-resume with UNEXPECTED_STEP_ERROR", async () => {
     const jobState = makeMinimalState("test-no-state-throw");
     await fs.mkdir(path.join(tempDir, ".specrunner", "jobs"), { recursive: true });
