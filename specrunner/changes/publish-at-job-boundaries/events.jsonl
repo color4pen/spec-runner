@@ -1,0 +1,5 @@
+{"type":"transition","ts":"2026-09-08T09:14:41.079Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-09-08T09:14:43.341Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-09-08T09:14:47.052Z","step":"store-fail","status":"ok","message":"running → failed: Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."}
+{"type":"step-attempt","step":"request-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CODEX_SDK_ERROR","message":"Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again.","hint":""},"transientRetryAttempts":0},"startedAt":"2026-09-08T09:14:43.677Z","endedAt":"2026-09-08T09:14:47.051Z"}
+{"type":"transition","ts":"2026-09-08T09:14:47.054Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again."}
