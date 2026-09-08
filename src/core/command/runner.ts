@@ -337,6 +337,10 @@ export abstract class CommandRunner {
             pid: null,
           },
         });
+        const haltPublication = {
+          enabled: shouldPublishCheckpointOnHalt(haltState),
+          result: null as Awaited<ReturnType<NonNullable<typeof deps.terminalState.publishCommittedState>>> | null,
+        };
 
         // Persist halt state (best-effort).
         try {
@@ -352,8 +356,9 @@ export abstract class CommandRunner {
           if (commit?.kind === "failure") {
             haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." };
             await deps.storeFactory(haltState.jobId).persist(haltState);
-          } else if (shouldPublishCheckpointOnHalt(haltState)) {
+          } else if (haltPublication.enabled) {
             const publication = await deps.terminalState.publishCommittedState?.(deps.cwd ?? process.cwd(), haltState);
+            haltPublication.result = publication ?? null;
             if (publication?.kind === "failure") {
               haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." };
               await deps.storeFactory(haltState.jobId).persist(haltState);
@@ -368,6 +373,7 @@ export abstract class CommandRunner {
           githubClient: deps.githubClient,
           owner: deps.owner,
           repo: deps.repo,
+          haltCheckpointPublication: haltPublication,
         });
 
         finalState = haltState;

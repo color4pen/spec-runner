@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:04:06.301Z",
+  "updatedAt": "2026-09-08T11:13:24.559Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -17,13 +17,9 @@
     }
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/publish-at-job-boundaries-0142023a",
-  "error": {
-    "code": "UNPUSHABLE_PATH_BLOCKED",
-    "message": "Step 'code-fixer' cannot push changes to protected path(s): .github/workflows/specrunner-dispatch.yml. Environment constraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**",
-    "hint": "The current environment's token cannot push to the following paths:\n  - .github/workflows/specrunner-dispatch.yml\nConstraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**\nYour changes remain uncommitted in the worktree.\nRemove the changes to these paths or resolve the requirement without modifying them, then run 'specrunner job resume publish-at-job-boundaries' to continue."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -91,14 +87,17 @@
     "df4c5a6a2af033719ecef91d2ec5604bf4516369",
     "fc6479960d0524ce4cdd0ced5d6dca3ba95f30e6"
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "unpushable path constraint: .github/workflows/specrunner-dispatch.yml",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "review-feedback-002.md の finding 2 に対応する operator 修正を作業ブランチへ反映済みです。.github/workflows/specrunner-dispatch.yml の再開条件を保存済みpolicyとcheckpoint公開成功を条件とする説明に修正し、.specrunner/config.json に pipeline.publishCheckpointOnHalt=true を明示し、docs/operations.md も整合させました。これらの既存差分を確認したうえで finding 1（未公開halt時の通知でremote resumeを案内しない）を修正してください。.github/workflows/** はこのActions環境では変更できないため追加編集しないでください。finding 2 に追加対応が必要なら編集せず理由を報告してください。前回の2回目code-fixerの未commit差分は保存されていないため、リモートの現状を起点に必要な修正と検証を行ってください。",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-08T11:13:24.168Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 2,
       "design": 1,

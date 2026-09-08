@@ -661,18 +661,26 @@ export class Pipeline {
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
     if (state.status === "awaiting-resume") {
+      const haltPublication = {
+        enabled: shouldPublishCheckpointOnHalt(state),
+        result: null as Awaited<ReturnType<NonNullable<PipelineOrchestrationDeps["terminalState"]["publishCommittedState"]>>> | null,
+      };
       // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
       const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
       if (commit?.kind === "failure") {
         state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." } };
         await deps.storeFactory(state.jobId).persist(state);
-      } else if (state.error?.code !== "PUBLICATION_FAILED" && shouldPublishCheckpointOnHalt(state) && deps.terminalState.publishCommittedState) {
+      } else if (state.error?.code !== "PUBLICATION_FAILED" && haltPublication.enabled && deps.terminalState.publishCommittedState) {
         const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+        haltPublication.result = publication;
         if (publication.kind === "failure") {
           state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." } };
           await deps.storeFactory(state.jobId).persist(state);
         }
       }
+
+      await notifyJobTerminal(state, { ...deps, haltCheckpointPublication: haltPublication });
+      return state;
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).

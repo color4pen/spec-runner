@@ -243,8 +243,9 @@ describe("TC-PN-002: issueNumber set + escalation → createIssueComment called"
     expect(issueNumber).toBe(42);
     expect(body).toContain('kind="escalation"');
     expect(body).toContain("specrunner job resume");
-    // compare URL is included when branch is set
-    expect(body).toContain("https://github.com/testowner/testrepo/compare/main...feat/my-slug-12345678");
+    // This fixture has no successful halt publisher, so it must not claim remote readiness.
+    expect(body).not.toContain("/compare/");
+    expect(body).toContain("To resume in the same worktree:");
   });
 });
 
