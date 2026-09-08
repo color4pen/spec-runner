@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
   "createdAt": "2026-09-08T09:14:41.079Z",
-  "updatedAt": "2026-09-08T11:37:08.360Z",
+  "updatedAt": "2026-09-08T11:46:18.741Z",
   "request": {
     "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
     "type": "spec-change",
@@ -17,13 +17,9 @@
     }
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/publish-at-job-boundaries-0142023a",
-  "error": {
-    "code": "CODE_REVIEW_RETRIES_EXHAUSTED",
-    "message": "code-review did not approve after 2 iterations",
-    "hint": "Review review-feedback-005.md and address findings manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -97,22 +93,22 @@
     "599eeb6937227a966d8654ec55a702c7622a6131",
     "e0bca3b66f689abd9293e47f5f559a35b3cff95e"
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "code-review did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "review-feedback-002.md の finding 2 に対応する operator 修正を作業ブランチへ反映済みです。.github/workflows/specrunner-dispatch.yml の再開条件を保存済みpolicyとcheckpoint公開成功を条件とする説明に修正し、.specrunner/config.json に pipeline.publishCheckpointOnHalt=true を明示し、docs/operations.md も整合させました。これらの既存差分を確認したうえで finding 1（未公開halt時の通知でremote resumeを案内しない）を修正してください。.github/workflows/** はこのActions環境では変更できないため追加編集しないでください。finding 2 に追加対応が必要なら編集せず理由を報告してください。前回の2回目code-fixerの未commit差分は保存されていないため、リモートの現状を起点に必要な修正と検証を行ってください。",
       "step": "code-fixer",
       "recordedAt": "2026-09-08T11:13:24.168Z"
+    },
+    {
+      "text": "review-feedback-005.md の既存テスト不整合を operator commit 4c6d84c53 で修正し、作業ブランチへ push 済みです。commitFinalState の typed result と deferPublication=true のローカル commit 契約に期待値を合わせ、push 失敗ケースを publishCommittedBranch のテストへ移しました。関連 egress テストの mock 呼び出し列と台帳保存失敗時の公開停止期待も更新し、実装と食い違ったコメントを修正しています。bun run test は 856 files / 13012 passed / 1 skipped / 2 todo、bun run typecheck と bun run lint も成功しました。現状の差分を code-review から再評価してください。前回までの operator による workflow 修正は既に反映済みです。.github/workflows/** はこの Actions 環境では変更できないため、追加修正が必要なら編集せず具体的な理由を報告してください。",
+      "step": "code-review",
+      "recordedAt": "2026-09-08T11:46:18.336Z"
     }
   ],
   "_journal": {
-    "historyCount": 92,
+    "historyCount": 95,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
