@@ -47,12 +47,12 @@ afterEach(async () => {
 });
 
 describe("propagateVerificationResult — happy path", () => {
-  it("adds, diffs (non-zero=changes), commits, pushes directly in cwd (no temp worktree)", async () => {
+  it("adds, diffs and commits directly in cwd without publishing", async () => {
     const spawn = makeSpawn([
       { exitCode: 0 }, // git add
       { exitCode: 1 }, // git diff --cached --quiet (non-zero = changes staged)
       { exitCode: 0 }, // git commit
-      { exitCode: 0 }, // git push
+      { exitCode: 0, stdout: "verification-oid\n" }, // rev-parse HEAD
     ]);
 
     const result = await propagateVerificationResult({
@@ -63,7 +63,7 @@ describe("propagateVerificationResult — happy path", () => {
       spawn,
     });
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, commitOid: "verification-oid" });
     const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
     expect(cmds[0]).toBe(`git add ${verificationResultPath("my-change")}`);
     // Pathspec-limited diff and commit: a whole-index diff/commit would treat unrelated
@@ -71,7 +71,8 @@ describe("propagateVerificationResult — happy path", () => {
     expect(cmds[1]).toBe(`git diff --cached --quiet -- ${verificationResultPath("my-change")}`);
     expect(cmds[2]).toContain("git commit -m chore: verification result for my-change (iter 1)");
     expect(cmds[2]).toContain(`-- ${verificationResultPath("my-change")}`);
-    expect(cmds[3]).toBe("git push origin feat/test");
+    expect(cmds[3]).toBe("git rev-parse HEAD");
+    expect(cmds.some((c) => c.startsWith("git push"))).toBe(false);
 
     // All operations run in cwd (NOT a temp worktree)
     expect(spawn.calls.every((c) => c.cwd === cwd)).toBe(true);
@@ -145,13 +146,13 @@ describe("propagateVerificationResult — git add fails", () => {
   });
 });
 
-describe("propagateVerificationResult — push fails", () => {
-  it("returns error", async () => {
+describe("propagateVerificationResult — publication boundary", () => {
+  it("does not interpret a later publication failure inside verification", async () => {
     const spawn = makeSpawn([
       { exitCode: 0 }, // git add
       { exitCode: 1 }, // diff (changes staged)
       { exitCode: 0 }, // commit
-      { exitCode: 1, stderr: "rejected: non-fast-forward" }, // push
+      { exitCode: 0, stdout: "verification-oid\n" }, // rev-parse HEAD
     ]);
 
     const result = await propagateVerificationResult({
@@ -162,8 +163,8 @@ describe("propagateVerificationResult — push fails", () => {
       spawn,
     });
 
-    expect(result.ok).toBe(false);
-    expect(result.error).toContain("git push");
+    expect(result).toEqual({ ok: true, commitOid: "verification-oid" });
+    expect(spawn.calls.some((call) => call.args[0] === "push")).toBe(false);
   });
 });
 

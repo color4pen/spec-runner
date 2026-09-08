@@ -137,7 +137,7 @@ Please:
 4. Read ${changeFolder}/tasks.md to identify each task and its acceptance criteria
 5. Generate test cases with Category, Priority, Source, and must/should/could priorities. Scenario 由来 TC は Source 参照のみ（GWT 省略）、非 Scenario 由来 TC は GWT を記述する（混在形式）
 6. Write the scenarios to ${outputPath}
-7. ファイルを worktree に書き出したら作業を終えてください。CLI が commit + push を行います。
+7. ファイルを worktree に書き出したら作業を終えてください。CLI が local commit を行います。
 
 ${requestContent}
 </user-request>`;

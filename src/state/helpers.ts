@@ -2,6 +2,11 @@ import type { JobState, StepResult, StepRun, ModelUsage, VerificationPhaseOutcom
 import type { BaseReportResult, Finding, Observation, Evidence } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 
+/** Resolve the immutable job policy; legacy states retain enabled behavior. */
+export function shouldPublishCheckpointOnHalt(state: JobState): boolean {
+  return state.checkpointPublication?.publishOnHalt ?? true;
+}
+
 /**
  * Convert a StepRun to StepResult shape (legacy view).
  * Used for backward compatibility when consuming step records.

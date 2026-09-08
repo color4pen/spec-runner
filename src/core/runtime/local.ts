@@ -38,8 +38,8 @@ import {
   writeOutputTemplates,
   cleanupOutputTemplates,
 } from "../artifact/copy-artifacts.js";
-import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
-import type { CommitPushInfra } from "../step/commit-push.js";
+import { commitAndPush, commitFinalState, commitScopedPaths, publishCommittedBranch } from "../step/commit-push.js";
+import type { CommitPushInfra, PublicationResult } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import { deriveStepIoValidationCapability } from "../step/step-capability.js";
@@ -246,6 +246,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       repository: RepositoryInfo;
       pipelineId?: string;
       githubIntegration?: { enabled: boolean };
+      checkpointPublication?: { publishOnHalt: boolean };
     },
   ): Promise<JobState> {
     return buildInitialJobState(params);
@@ -819,6 +820,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
     // mutable this.slugStoreOpts() — prevents cross-job ledger corruption.
     const finalInfra: CommitPushInfra = {
       ...infra,
+      deferPublication: true,
       persistBeforePush: capturedSlugOpts
         ? async (oid: string) => {
             await this.updateJobState(
@@ -922,6 +924,16 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       synthesizedCommits: state.synthesizedCommits,
       persistBeforePush,
       recordRestack,
+      deferPublication: true,
+    });
+  }
+
+  async publishCommittedState(cwd: string, state: JobState): Promise<PublicationResult> {
+    return publishCommittedBranch({
+      cwd,
+      branch: state.branch ?? "",
+      ledger: state.synthesizedCommits ?? [],
+      spawnFn: this.wrappedSpawnFn,
     });
   }
 
@@ -1057,7 +1069,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
     egressParams?: RoundEgressParams,
   ): Promise<void> {
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, { ...infra, deferPublication: true }, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
   }
 
   /**

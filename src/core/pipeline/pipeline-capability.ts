@@ -16,6 +16,7 @@ import type { JobState } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { WorktreeInspectionResult, ChangedFilesResult } from "../port/runtime-strategy.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import type { PublicationResult } from "../step/commit-push.js";
 import type { PushCapability } from "../../git/push-capability.js";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,7 @@ export interface TerminalStateCapability {
    * @param state - Terminal job state (status determines message label).
    */
   commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  publishCommittedState?(cwd: string, state: JobState): Promise<PublicationResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +153,7 @@ export interface RoundGitEffectsCapability {
  */
 interface TerminalStateSource {
   commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  publishCommittedState?(cwd: string, state: JobState): Promise<PublicationResult>;
 }
 
 /**
@@ -161,6 +164,7 @@ export function deriveTerminalStateCapability(
 ): TerminalStateCapability {
   return {
     commitFinalState: (cwd, slug, state) => runtime.commitFinalState(cwd, slug, state),
+    publishCommittedState: (cwd, state) => runtime.publishCommittedState?.(cwd, state) ?? Promise.resolve({ kind: "already-synchronized" }),
   };
 }
 

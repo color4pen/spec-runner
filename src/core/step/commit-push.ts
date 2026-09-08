@@ -33,7 +33,6 @@ import {
 } from "./staging-containment.js";
 import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
-import { restackCheckpointOntoPublishedTip } from "./checkpoint-restack.js";
 import type { CheckpointRestackRecord } from "../../store/event-journal.js";
 
 /**
@@ -93,6 +92,8 @@ export interface CommitPushInfra {
    * into CommitPushInfra so finalizeStepArtifacts does not depend on _latestBuiltDeps.
    */
   pushCapability?: PushCapability | null;
+  /** Local runtime defers publication until a job boundary. */
+  deferPublication?: boolean;
 }
 
 /**
@@ -662,11 +663,10 @@ export async function commitAndPush(
       }
     }
 
-    // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
-
-    // Push with one retry.
-    await pushOnly(branch, cwd, step.name, infra);
+    if (!infra.deferPublication) {
+      await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
+      await pushOnly(branch, cwd, step.name, infra);
+    }
   } else {
     // ── Guarded synthesis mode ────────────────────────────────────────────────
     // List all changed paths in the worktree (post-reset: reflects actual agent output).
@@ -795,11 +795,10 @@ export async function commitAndPush(
       }
     }
 
-    // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
-
-    // Push with one retry.
-    await pushOnly(branch, cwd, step.name, infra);
+    if (!infra.deferPublication) {
+      await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
+      await pushOnly(branch, cwd, step.name, infra);
+    }
   }
 }
 
@@ -850,8 +849,9 @@ export async function commitFinalState(params: {
    * Best-effort: throw is caught and warned inside restackCheckpointOntoPublishedTip.
    */
   recordRestack?: (record: CheckpointRestackRecord) => Promise<void>;
+  deferPublication?: boolean;
 }): Promise<void> {
-  const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits, persistBeforePush } = params;
+  const { cwd, slug, spawnFn, messageLabel = "finalize", persistBeforePush } = params;
 
   const managedPaths = pipelineManagedPaths(slug);
 
@@ -919,85 +919,52 @@ export async function commitFinalState(params: {
     }
   }
 
-  // D4: Egress verification before push.
-  // Build ledger: existing synthesizedCommits ∪ this commit's OID.
-  // The checkpoint/finalize OID is now persisted to disk before push so that a push
-  // failure leaves the ledger complete, preventing EGRESS_UNKNOWN_COMMIT on resume.
-  try {
+  if (!params.deferPublication) {
     const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
-    const newOid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
-    const ledger = [...(synthesizedCommits ?? []), ...(newOid ? [newOid] : [])];
-    await verifyEgressLedger({ cwd, ledger, spawnFn, branch });
-  } catch (err) {
-    stderrWrite(
-      `Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. ` +
-        `Skipping push to prevent unauthorized commit publication.`,
-    );
-    return;
-  }
-
-  // Push with one retry (best-effort — don't throw on failure).
-  // -u: worktree branches are created with --no-track, so the first push binds the
-  // upstream to the feature branch itself (never the base branch). Idempotent.
-  const push1 = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
-  if ((push1.exitCode ?? 1) === 0) return;
-
-  const push2 = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
-  if ((push2.exitCode ?? 1) === 0) return;
-
-  const push2Stderr = (push2.stderr ?? "").trim();
-  stderrWrite(
-    `Warning: failed to push ${messageLabel} commit for ${slug} to origin/${branch}. ` +
-      `Push manually to ensure state is on the branch.` +
-      (push2Stderr ? ` git stderr: ${push2Stderr}` : ""),
-  );
-
-  // D1 (halt-checkpoint-restack): after push double-failure, attempt to restack
-  // the checkpoint onto the last successful remote tip (origin/<branch>).
-  // Called ONLY on the failure path; the success path above exits early.
-  // Early-return branches (staging 0, no staged diff, commit failure, egress failure)
-  // are also excluded — restack is irrelevant when no checkpoint commit was created.
-  //
-  // Guard: restack only for checkpoint commits (awaiting-resume halt).
-  // Finalize commits (awaiting-archive, messageLabel="finalize") are excluded:
-  // the archive path has different quiescence requirements and is out-of-scope (spec).
-  if (messageLabel === "checkpoint") {
-    const restackOutcome = await restackCheckpointOntoPublishedTip({
-      cwd,
-      branch,
-      slug,
-      spawnFn,
-      messageLabel,
-      pushFailureStderr: push2Stderr,
-      recordRestack: params.recordRestack,
-      persistCommit: persistBeforePush,
-    });
-
-    // Output restack result message (after the existing warn, per D1)
-    switch (restackOutcome.kind) {
-      case "published":
-        stderrWrite(
-          `Info: checkpoint-restack: published restacked checkpoint for ${slug} ` +
-            `at ${restackOutcome.restackedOid} (parent: ${restackOutcome.parentOid}, ` +
-            `${restackOutcome.unpublishedCount} unpublished commit(s), graft: ${restackOutcome.graft})`,
-        );
-        stderrWrite(
-          `Warning: checkpoint-restack: 以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること`,
-        );
-        break;
-      case "push-failed":
-        stderrWrite(
-          `Warning: checkpoint-restack: push of restacked checkpoint also failed for ${slug}` +
-            (restackOutcome.stderr ? `: ${restackOutcome.stderr}` : ""),
-        );
-        break;
-      case "skipped":
-        stderrWrite(
-          `Info: checkpoint-restack: skipped for ${slug} (reason: ${restackOutcome.reason})`,
-        );
-        break;
+    const oid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
+    try {
+      await verifyEgressLedger({ cwd, ledger: [...(params.synthesizedCommits ?? []), ...(oid ? [oid] : [])], spawnFn, branch: params.branch });
+    } catch (err) {
+      stderrWrite(`Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+    const first = await spawnFn("git", ["push", "-u", "origin", params.branch], { cwd });
+    if ((first.exitCode ?? 1) !== 0) {
+      const second = await spawnFn("git", ["push", "-u", "origin", params.branch], { cwd });
+      if ((second.exitCode ?? 1) !== 0) stderrWrite(`Warning: failed to push ${messageLabel} commit for ${slug}. git stderr: ${second.stderr.trim()}`);
     }
   }
+}
+
+export type PublicationResult =
+  | { kind: "published" }
+  | { kind: "already-synchronized" }
+  | { kind: "failure"; phase: "inspect" | "egress" | "push"; error: string };
+
+/** Publish already-committed, ledger-approved work without creating a commit. */
+export async function publishCommittedBranch(params: {
+  cwd: string;
+  branch: string;
+  ledger: readonly string[];
+  spawnFn: PipelineSpawnFn;
+}): Promise<PublicationResult> {
+  const { cwd, branch, ledger, spawnFn } = params;
+  const remoteRef = await spawnFn("git", ["rev-parse", "--verify", `refs/remotes/origin/${branch}`], { cwd });
+  const revArgs = (remoteRef.exitCode ?? 1) === 0
+    ? ["rev-list", `${remoteRef.stdout.trim()}..HEAD`]
+    : ["rev-list", "HEAD", "--not", "--remotes=origin"];
+  const outgoing = await spawnFn("git", revArgs, { cwd });
+  if ((outgoing.exitCode ?? 1) !== 0) return { kind: "failure", phase: "inspect", error: "unable to inspect outgoing commits" };
+  const oids = outgoing.stdout.split("\n").map((oid) => oid.trim()).filter(Boolean);
+  if (oids.length === 0) return { kind: "already-synchronized" };
+  const approved = new Set(ledger);
+  const unknown = oids.find((oid) => !approved.has(oid));
+  if (unknown) return { kind: "failure", phase: "egress", error: `outgoing commit ${unknown} is not in the synthesis ledger` };
+  const first = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
+  if ((first.exitCode ?? 1) === 0) return { kind: "published" };
+  const second = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
+  if ((second.exitCode ?? 1) === 0) return { kind: "published" };
+  return { kind: "failure", phase: "push", error: "remote rejected publication" };
 }
 
 /**
@@ -1089,14 +1056,10 @@ export async function commitScopedPaths(
     throw commitEffectFailedError(commitMessage, branch, "commit", `exit code ${commitResult.exitCode}`);
   }
 
-  // D4 backstop: egress verification before push (when caller supplies egress params).
-  // Verifies publish range ⊆ synthesizedCommits ∪ current commit OID.
-  if (egress) {
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits);
+  if (!infra.deferPublication) {
+    if (egress) await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits);
+    await pushOnly(branch, cwd, commitMessage, infra);
   }
-
-  // Push with one retry (uses commitMessage as step label for the event)
-  await pushOnly(branch, cwd, commitMessage, infra);
 }
 
 /**

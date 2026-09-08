@@ -36,6 +36,7 @@ export interface ConfigEffectiveOutput {
   };
   /** T-13: Resolved GitHub integration status with source attribution. */
   githubIntegration?: TracedGitHubIntegrationConfig;
+  checkpointPublication?: { publishOnHalt: boolean; source: "project-local" | "user-global" | "default" };
   steps: TracedStepExecutionConfig[];
   note: string;
 }
@@ -68,6 +69,15 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
     const loaded = await loadConfigWithSourceMetadata(repoRoot);
     // T-13: Trace GitHub integration status with source attribution
     const githubIntegration = traceGitHubIntegration(loaded);
+    const readPolicy = (raw: unknown): boolean | undefined => {
+      if (typeof raw !== "object" || raw === null) return undefined;
+      const pipeline = (raw as Record<string, unknown>)["pipeline"];
+      if (typeof pipeline !== "object" || pipeline === null) return undefined;
+      const value = (pipeline as Record<string, unknown>)["publishCheckpointOnHalt"];
+      return typeof value === "boolean" ? value : undefined;
+    };
+    const projectPolicy = readPolicy(loaded.projectLocal.migrated);
+    const userPolicy = readPolicy(loaded.userGlobal.migrated);
     const output: ConfigEffectiveOutput = {
       requestType: requestType ?? null,
       configPaths: {
@@ -81,6 +91,11 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
         },
       },
       githubIntegration,
+      checkpointPublication: projectPolicy !== undefined
+        ? { publishOnHalt: projectPolicy, source: "project-local" }
+        : userPolicy !== undefined
+          ? { publishOnHalt: userPolicy, source: "user-global" }
+          : { publishOnHalt: true, source: "default" },
       steps: AGENT_STEP_NAMES.map((stepName) => {
         const step = STANDARD_AGENT_STEPS[stepName]!;
         return traceStepExecutionConfigFromLoadResult(loaded, stepName, {
@@ -118,6 +133,8 @@ export function formatConfigEffectiveHuman(output: ConfigEffectiveOutput): strin
     const gi = output.githubIntegration;
     lines.push(`githubIntegration: ${gi.enabled ? "enabled" : "disabled"} (source: ${gi.source})`);
   }
+  const publication = output.checkpointPublication ?? { publishOnHalt: true, source: "default" as const };
+  lines.push(`publishCheckpointOnHalt: ${publication.publishOnHalt} (source: ${publication.source})`);
   lines.push(output.note);
   lines.push("");
 

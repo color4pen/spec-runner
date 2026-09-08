@@ -8,6 +8,8 @@ import type { TerminalStateCapability } from "./pipeline-capability.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
+import { shouldPublishCheckpointOnHalt } from "../../state/helpers.js";
+import { SpecRunnerError } from "../../errors.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
@@ -292,6 +294,12 @@ export class Pipeline {
         const stateBeforeExec = state;
         logPipelineDiag("pipeline:step:pre-execute", `step=${currentStep}`);
         try {
+          if (currentStep === "pr-create" && deps.terminalState.publishCommittedState) {
+            const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+            if (publication.kind === "failure") {
+              throw new SpecRunnerError("PUBLICATION_FAILED", "Result publication failed before PR processing.", `pre-pr/${publication.phase}: ${publication.error}`);
+            }
+          }
           state = await this.executor.execute(step, state, effectiveDeps);
         } catch (err) {
           const errWithState = err as { state?: JobState };
@@ -416,6 +424,14 @@ export class Pipeline {
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
           // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
           await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          if (deps.terminalState.publishCommittedState) {
+            const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+            if (publication.kind === "failure") {
+              state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint publication failed (${publication.phase})`, hint: "Retry from this worktree." } };
+              await endStore.persist(state);
+              throw new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/${publication.phase}: ${publication.error}`);
+            }
+          }
         }
 
         // Escalation → awaiting-resume (unless fatal error)
@@ -638,9 +654,16 @@ export class Pipeline {
     // does NOT throw, so local resume possibility is never broken by a push failure.
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
-    if (state.status === "awaiting-resume") {
+    if (state.status === "awaiting-resume" && shouldPublishCheckpointOnHalt(state)) {
       // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
       await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+      if (deps.terminalState.publishCommittedState) {
+        const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+        if (publication.kind === "failure") {
+          state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." } };
+          await deps.storeFactory(state.jobId).persist(state);
+        }
+      }
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).

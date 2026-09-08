@@ -68,7 +68,7 @@ interface Transition { step: string; on: Verdict | string; to: string | "end" | 
 - → `src/core/step/executor.ts`
 
 ### CommitOrchestrator — step commit 適用の単一所有者（committer）
-- **責務**: step 実行経路の状態書き込み・git 副作用の**唯一の適用点**（B-13 / B-14）。step 結果の commit（journal 追記・projection 永続・git commit/push・touched files 記録）、halt の適用（`commitHalt` — FSM 遷移・rethrow の一括担当）、並列 round の一括書き込み（`commitRound` — 宣言出力への scoped staging、B-15）。
+- **責務**: step 実行経路の状態書き込み・git 副作用の**唯一の適用点**（B-13 / B-14）。step 結果は journal / projection / OID 台帳と local commit に保存し、remote 公開は Pipeline の PR 前後・正常終了・制御 halt 境界に分離する。並列 round は coordinator が scoped local commit を作る。
 - **staging containment**: commit 前の guarded staging — 除外 glob・staged 件数上限・staged バイト量上限の fail-closed 3 層 guard（違反は commit せず escalation halt）。生成物・肥大 artifact が branch に混入する経路を構造で塞ぐ。
 - **協調**: StepExecutor / ParallelReviewRound（producer）/ JobStateStore（永続）/ RoundGitEffectsCapability（git seam）/ CommitInspectionCapability（commit inspection）/ EventBus。
 - → `src/core/step/commit-orchestrator.ts` ／ `src/core/step/staging-containment.ts` ／ `src/core/step/round-git-scope.ts`

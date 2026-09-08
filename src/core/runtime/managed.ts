@@ -142,6 +142,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       repository: RepositoryInfo;
       pipelineId?: string;
       githubIntegration?: { enabled: boolean };
+      checkpointPublication?: { publishOnHalt: boolean };
     },
   ): Promise<JobState> {
     return buildInitialJobState(params);
@@ -392,6 +393,10 @@ export class ManagedRuntime implements RuntimeStrategy {
    */
   async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {
     // no-op
+  }
+
+  async publishCommittedState(_cwd: string, _state: JobState): Promise<import("../step/commit-push.js").PublicationResult> {
+    return { kind: "already-synchronized" };
   }
 
   async verifyFindingRefs(refs: FindingRef[], _cwd: string, branch: string | null): Promise<FindingRef[]> {

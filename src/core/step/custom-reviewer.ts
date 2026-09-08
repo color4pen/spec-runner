@@ -91,7 +91,7 @@ Original request:
 ${opts.requestContent}
 </user-request>${constraintsSection}${exclusionsSection}${contextSection}${priorRoundSection}${adjudicationSection}
 
-ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
+ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。`;
 }
 
 /**

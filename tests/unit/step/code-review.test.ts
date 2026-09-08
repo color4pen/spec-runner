@@ -185,7 +185,7 @@ describe("CodeReviewStep.buildMessage 内容検証", () => {
     expect(message).toContain(reviewFeedbackPath("my-slug", 1));
     // buildGitPushInstruction uses "Commit" (capital C) — case-insensitive check
     expect(message.toLowerCase()).toContain("commit");
-    expect(message.toLowerCase()).toContain("push");
+    expect(message.toLowerCase()).not.toContain("push");
   });
 });
 

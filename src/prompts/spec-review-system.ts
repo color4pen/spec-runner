@@ -195,7 +195,7 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
 
   // End-session instruction: StepExecutor handles commit+push for local runtime.
   // Managed runtime agents receive git push instructions via their own adapter.
-  const gitPushInstruction = "ファイルを worktree に書き出したら作業を終えてください。CLI が commit + push を行います。";
+  const gitPushInstruction = "ファイルを worktree に書き出したら作業を終えてください。CLI が local commit を行います。";
 
   // Build spec-review mode instruction
   const specReviewModeInstruction = buildSpecReviewModeInstruction(input.specReviewMode ?? "full");

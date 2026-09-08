@@ -20,6 +20,7 @@ import { verificationResultPath } from "../../util/paths.js";
 
 export interface PropagateResult {
   ok: boolean;
+  commitOid?: string;
   warning?: string;
   error?: string;
 }
@@ -41,7 +42,7 @@ export async function propagateVerificationResult(params: {
   synthesizedCommits?: readonly string[];
 }): Promise<PropagateResult> {
   const spawn = params.spawn;
-  const { slug, branch, iteration, cwd, synthesizedCommits } = params;
+  const { slug, iteration, cwd } = params;
 
   // Verify the source file exists in cwd (the job worktree)
   const sourceFile = path.join(cwd, verificationResultPath(slug));
@@ -73,28 +74,7 @@ export async function propagateVerificationResult(params: {
     return { ok: false, error: `git commit failed: ${commitResult.stderr.trim()}` };
   }
 
-  // D4 egress backstop: verify publish range ⊆ synthesizedCommits ledger before push.
-  // Inline implementation (not importing from step/commit-push.ts to avoid cross-layer coupling).
-  if (synthesizedCommits !== undefined) {
-    const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
-    const newOid = (headResult.exitCode ?? 1) === 0 ? headResult.stdout.trim() : "";
-    const ledger = new Set([...synthesizedCommits, ...(newOid ? [newOid] : [])]);
-    const revListResult = await spawn("git", ["rev-list", "HEAD", "--not", "--remotes=origin"], { cwd });
-    if ((revListResult.exitCode ?? 1) !== 0) {
-      return { ok: false, error: `egress rev-list failed: exit ${revListResult.exitCode}` };
-    }
-    const oids = revListResult.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
-    for (const oid of oids) {
-      if (!ledger.has(oid)) {
-        return { ok: false, error: `egress check: unknown commit ${oid} in publish range` };
-      }
-    }
-  }
-
-  const pushResult = await spawn("git", ["push", "origin", branch], { cwd });
-  if (pushResult.exitCode !== 0) {
-    return { ok: false, error: `git push failed: ${pushResult.stderr.trim()}` };
-  }
-
-  return { ok: true };
+  const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
+  const commitOid = (headResult.exitCode ?? 1) === 0 ? headResult.stdout.trim() : undefined;
+  return { ok: true, commitOid };
 }

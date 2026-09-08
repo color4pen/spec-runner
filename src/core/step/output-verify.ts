@@ -256,7 +256,7 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
     lines.push("");
   }
 
-  lines.push("After completing the work, commit and push your changes.");
+  lines.push("After completing the work, leave the files in the worktree for the CLI to commit locally.");
 
   return lines.join("\n");
 }

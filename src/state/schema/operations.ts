@@ -223,6 +223,13 @@ export function validateJobState(raw: unknown): JobState {
     }
   }
 
+  if ("checkpointPublication" in obj && obj["checkpointPublication"] !== undefined && obj["checkpointPublication"] !== null) {
+    const policy = obj["checkpointPublication"];
+    if (typeof policy !== "object" || Array.isArray(policy) || typeof (policy as Record<string, unknown>)["publishOnHalt"] !== "boolean") {
+      throw new Error("checkpointPublication.publishOnHalt must be a boolean.");
+    }
+  }
+
   // Validate mainCheckoutDrift when present (backward compat: absence is OK)
   if ("mainCheckoutDrift" in obj && obj["mainCheckoutDrift"] !== null && obj["mainCheckoutDrift"] !== undefined) {
     if (typeof obj["mainCheckoutDrift"] !== "object") {
@@ -444,4 +451,3 @@ export function validateJobState(raw: unknown): JobState {
 
   return raw as JobState;
 }
-

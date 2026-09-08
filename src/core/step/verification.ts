@@ -21,8 +21,7 @@ import { stderrWrite } from "../../logger/stdout.js";
  * verificationCwd = deps.cwd ?? process.cwd().
  *
  * After execution, verification-result.md is already in the worktree — no copy needed.
- * It is propagated to the feature branch on origin via propagateVerificationResult so
- * build-fixer's managed agent workspace can read it on the next clone.
+ * It is committed locally so subsequent local steps can read it from the same worktree.
  *
  * Design D1: explicit kind discriminator (not null-agent inference).
  * Design D2: no Anthropic session — entirely local.
@@ -75,8 +74,11 @@ export const VerificationStep: CliStep = {
           `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${propagateResult.error}\n`,
         );
         stderrWrite(
-          `build-fixer (if invoked next) may not see the verification result and fall back to running tests itself.\n`,
+          `the verification result could not be committed locally.\n`,
         );
+      } else if (propagateResult.commitOid) {
+        const ledger = (state.synthesizedCommits ??= []);
+        if (!ledger.includes(propagateResult.commitOid)) ledger.push(propagateResult.commitOid);
       }
     }
 
