@@ -7,6 +7,7 @@ import { reloadCoverageConfig } from "../verification/reload-coverage-config.js"
 import { verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { SpecRunnerError } from "../../errors.js";
 
 /**
  * VerificationStep: implements the verification pipeline step as a CLI-resident step.
@@ -71,10 +72,12 @@ export const VerificationStep: CliStep = {
       });
       if (!propagateResult.ok) {
         stderrWrite(
-          `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${propagateResult.error}\n`,
+          `Failed to commit verification-result.md on branch ${state.branch}: ${propagateResult.error}\n`,
         );
-        stderrWrite(
-          `the verification result could not be committed locally.\n`,
+        throw new SpecRunnerError(
+          "PUBLICATION_FAILED",
+          "The verification result was not committed and recorded locally. Retry verification from this worktree.",
+          `verification/commit: ${propagateResult.error ?? "unknown commit failure"}`,
         );
       } else if (propagateResult.commitOid) {
         const ledger = (state.synthesizedCommits ??= []);

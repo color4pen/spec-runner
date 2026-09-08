@@ -10,8 +10,8 @@
  * Design D5: With the job worktree design, the cwd IS already the feature branch
  * worktree. No temp worktree is needed — we commit and push directly from cwd.
  *
- * Failures are returned as `{ ok: false, error }`; the caller decides whether
- * to halt verification or continue with a warning.
+ * Failures are returned as `{ ok: false, error }`; the caller must halt
+ * verification because publication requires a committed, ledgerable result.
  */
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
@@ -75,6 +75,10 @@ export async function propagateVerificationResult(params: {
   }
 
   const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
-  const commitOid = (headResult.exitCode ?? 1) === 0 ? headResult.stdout.trim() : undefined;
+  const commitOid = headResult.stdout.trim();
+  if ((headResult.exitCode ?? 1) !== 0 || commitOid.length === 0) {
+    const detail = headResult.stderr.trim() || "git returned no commit OID";
+    return { ok: false, error: `git rev-parse HEAD failed: ${detail}` };
+  }
   return { ok: true, commitOid };
 }

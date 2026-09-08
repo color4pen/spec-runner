@@ -187,4 +187,26 @@ describe("propagateVerificationResult — commit fails", () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain("git commit failed");
   });
+
+  it("returns error when the committed result cannot be resolved for ledgering", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 },
+      { exitCode: 1 },
+      { exitCode: 0 },
+      { exitCode: 1, stderr: "fatal: bad revision" },
+    ]);
+
+    const result = await propagateVerificationResult({
+      slug: "my-change",
+      branch: "feat/test",
+      iteration: 1,
+      cwd,
+      spawn,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "git rev-parse HEAD failed: fatal: bad revision",
+    });
+  });
 });

@@ -17,6 +17,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { noopRoundGitEffects, noopStepArtifact, noopStepIo, noopTerminalState } from "../../../../src/core/step/noop-capabilities.js";
+import { SpecRunnerError } from "../../../../src/errors.js";
 
 let tempDir: string;
 
@@ -111,6 +112,46 @@ function makeAgentStep(name: string): Step {
 
 // T3.1: executor.execute throws plain Error (no .state) → state becomes awaiting-resume
 describe("T3.1: executor throws without .state → state becomes awaiting-resume (要件 7)", () => {
+  it("does not publish or enter PR processing after verification result commit failure", async () => {
+    const jobState = { ...makeMinimalState("test-verification-commit-failure"), step: "verification" as const };
+    const deps = makeMinimalDeps();
+    const publishSpy = vi.fn().mockResolvedValue({ kind: "published", commitCount: 1 });
+    deps.terminalState = {
+      commitFinalState: async () => ({ kind: "no-change" }),
+      publishCommittedState: publishSpy,
+    };
+    const executeSpy = vi.fn(async (step: Step) => {
+      if (step.name === "verification") {
+        throw new SpecRunnerError(
+          "PUBLICATION_FAILED",
+          "Retry verification from this worktree.",
+          "verification/commit: git commit failed",
+        );
+      }
+      return jobState;
+    });
+    const pipeline = new Pipeline({
+      steps: new Map([
+        ["verification", makeAgentStep("verification")],
+        ["pr-create", makeAgentStep("pr-create")],
+      ]),
+      transitions: [
+        { step: "verification", on: "passed", to: "pr-create" },
+        { step: "verification", on: "error", to: "escalate" },
+      ],
+      maxIterations: 1,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events: new EventBus(),
+    });
+
+    const result = await pipeline.run("verification", jobState, deps);
+
+    expect(result.error?.code).toBe("PUBLICATION_FAILED");
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    expect(executeSpy.mock.calls[0]?.[0].name).toBe("verification");
+    expect(publishSpy).not.toHaveBeenCalled();
+  });
+
   it("persists a pre-PR publication failure with its phase-specific error code", async () => {
     const jobState = { ...makeMinimalState("test-pre-pr-publication"), step: "pr-create" as const };
     const deps = makeMinimalDeps();
