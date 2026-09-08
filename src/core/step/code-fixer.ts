@@ -158,7 +158,7 @@ ${findingsBlock}
 ${evidenceRefConformance}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
-2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+2. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 3. Do NOT add new features or make specification changes
 
 Original request:
@@ -207,7 +207,7 @@ ${findingsBlock}
 ${evidenceRefCoordinator}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
-2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+2. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 3. Do NOT add new features or make specification changes
 
 Original request:
@@ -232,7 +232,7 @@ Review feedback: ${findingsPath}
 Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding is a mandatory fix target
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 4. Do NOT modify the review-feedback file itself
 5. Do NOT add new features or make specification changes
 
@@ -287,7 +287,7 @@ ${findingsBlock}
 ${evidenceRefNormal}
 Please:
 1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
-2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+2. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 3. Do NOT add new features or make specification changes
 
 Original request:
@@ -306,7 +306,7 @@ Review feedback: ${findingsPath}
 Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding is a mandatory fix target
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 4. Do NOT modify the review-feedback file itself
 5. Do NOT add new features or make specification changes
 

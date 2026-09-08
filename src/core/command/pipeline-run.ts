@@ -181,6 +181,7 @@ export class PipelineRunCommand extends CommandRunner {
       repository: repositoryInfo,
       pipelineId,
       githubIntegration: { enabled: githubEnabled },
+      checkpointPublication: { publishOnHalt: config.pipeline?.publishCheckpointOnHalt ?? true },
     });
 
     // Snapshot reviewer definitions into job state only when the resolved descriptor

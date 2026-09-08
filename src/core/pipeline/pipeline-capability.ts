@@ -16,6 +16,8 @@ import type { JobState } from "../../state/schema.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
 import type { WorktreeInspectionResult, ChangedFilesResult } from "../port/runtime-strategy.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import type { PublicationResult } from "../step/commit-push.js";
+import type { FinalStateCommitResult } from "../step/commit-push.js";
 import type { PushCapability } from "../../git/push-capability.js";
 
 // ---------------------------------------------------------------------------
@@ -42,15 +44,15 @@ export interface RoundEgressParams {
 // ---------------------------------------------------------------------------
 
 /**
- * Capability for committing and pushing the final pipeline state.
+ * Capability for committing and publishing the final pipeline state at separate boundaries.
  *
  * Consumed by Pipeline (awaiting-archive / awaiting-resume transitions) and
  * CommandRunner (gate-halt path). Injected via PipelineDeps.terminalState.
  *
- * - local:   git add → commit "finalize/checkpoint: <slug>" → push (best-effort).
+ * - local:   scoped git add → commit "finalize/checkpoint: <slug>", followed separately by publication.
  * - managed: no-op.
  *
- * Must NOT throw — push failures are warned on stderr, local resume is preserved.
+ * Must NOT throw — failures are returned as typed results so local resume is preserved.
  */
 export interface TerminalStateCapability {
   /**
@@ -61,7 +63,8 @@ export interface TerminalStateCapability {
    * @param slug  - Job slug (used in commit message).
    * @param state - Terminal job state (status determines message label).
    */
-  commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  commitFinalState(cwd: string, slug: string, state: JobState): Promise<FinalStateCommitResult>;
+  publishCommittedState?(cwd: string, state: JobState): Promise<PublicationResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +153,8 @@ export interface RoundGitEffectsCapability {
  * Shape required of a runtime to derive TerminalStateCapability.
  */
 interface TerminalStateSource {
-  commitFinalState(cwd: string, slug: string, state: JobState): Promise<void>;
+  commitFinalState(cwd: string, slug: string, state: JobState): Promise<FinalStateCommitResult>;
+  publishCommittedState?(cwd: string, state: JobState): Promise<PublicationResult>;
 }
 
 /**
@@ -161,6 +165,7 @@ export function deriveTerminalStateCapability(
 ): TerminalStateCapability {
   return {
     commitFinalState: (cwd, slug, state) => runtime.commitFinalState(cwd, slug, state),
+    publishCommittedState: (cwd, state) => runtime.publishCommittedState?.(cwd, state) ?? Promise.resolve({ kind: "already-synchronized" }),
   };
 }
 

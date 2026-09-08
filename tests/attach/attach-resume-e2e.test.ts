@@ -139,9 +139,9 @@ function makeStubGithubClient(): GitHubClient {
 
 function makeMachineATerminalState(machineADir: string, slug: string): TerminalStateCapability {
   return {
-    async commitFinalState(_cwd: string, _slug: string, state: JobState): Promise<void> {
+    async commitFinalState(_cwd: string, _slug: string, state: JobState) {
       // Real commitFinalState: git add -A → commit "checkpoint: <slug>" → push
-      await commitFinalState({
+      return commitFinalState({
         cwd: machineADir,
         branch: state.branch ?? "",
         slug,

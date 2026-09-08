@@ -165,7 +165,7 @@ ${evidenceRef}
 前回のセッションの文脈を踏まえて、上記の findings の指摘事項を修正してください。
 前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
 
-ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 </user-request>`;
   }
 
@@ -177,6 +177,6 @@ ${evidenceRef}
 前回のセッションの文脈を踏まえて、新しい findings の指摘事項を修正してください。
 前回試みたアプローチで不十分だった箇所は別のアプローチを検討してください。
 
-ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 </user-request>`;
 }

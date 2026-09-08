@@ -4,6 +4,7 @@
  * Design D3: SessionClient, ManagedAgentRunner, no-op workspace/cleanup.
  * All config.runtime !== "local" logic lives here — not in CLI or pipeline.
  */
+import { publishCommittedBranch } from "../step/commit-push.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SessionClient } from "../port/session-client.js";
@@ -142,6 +143,7 @@ export class ManagedRuntime implements RuntimeStrategy {
       repository: RepositoryInfo;
       pipelineId?: string;
       githubIntegration?: { enabled: boolean };
+      checkpointPublication?: { publishOnHalt: boolean };
     },
   ): Promise<JobState> {
     return buildInitialJobState(params);
@@ -336,6 +338,23 @@ export class ManagedRuntime implements RuntimeStrategy {
       cwd: workspace.cwd,
       runner: this.createAgentRunner(),
       spawn: spawnCommand,
+      verificationHandoff: {
+        publish: async (cwd, state) => {
+          const publication = await publishCommittedBranch({
+            cwd,
+            branch: state.branch ?? "",
+            ledger: state.synthesizedCommits ?? [],
+            spawnFn: this.wrappedSpawnFn,
+          });
+          if (publication.kind === "failure") {
+            throw new SpecRunnerError(
+              "PUBLICATION_FAILED",
+              "Retry verification from this checkout before starting the next managed agent.",
+              `verification/handoff/${publication.phase}: ${publication.error}`,
+            );
+          }
+        },
+      },
       storeFactory: (id: string) => this.managedLocalStore(id, slug),
       // R2b capability fields
       stepArtifact: deriveStepArtifactLifecycleCapability(this),
@@ -390,8 +409,12 @@ export class ManagedRuntime implements RuntimeStrategy {
   /**
    * D5: no-op for managed runtime — cloud agent manages branch state independently.
    */
-  async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {
-    // no-op
+  async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<import("../step/commit-push.js").FinalStateCommitResult> {
+    return { kind: "no-change" };
+  }
+
+  async publishCommittedState(_cwd: string, _state: JobState): Promise<import("../step/commit-push.js").PublicationResult> {
+    return { kind: "already-synchronized" };
   }
 
   async verifyFindingRefs(refs: FindingRef[], _cwd: string, branch: string | null): Promise<FindingRef[]> {

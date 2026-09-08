@@ -66,7 +66,7 @@ export const noopStepIo: StepIoValidationCapability = {
  * - commitFinalState: no-op (no git commit/push for terminal state).
  */
 export const noopTerminalState: TerminalStateCapability = {
-  commitFinalState: async () => {},
+  commitFinalState: async () => ({ kind: "no-change" }),
 };
 
 // ---------------------------------------------------------------------------

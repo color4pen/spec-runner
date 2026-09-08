@@ -218,6 +218,43 @@ describe("TC-N-007: notifyJobTerminal — issueNumber set + awaiting-resume", ()
     expect(body).toContain('kind="escalation"');
     expect(body).toContain("specrunner job resume my-slug");
     expect(body).toContain("iterations exhausted");
+    expect(body).toContain("To resume in the same worktree:");
+    expect(body).not.toContain("/compare/");
+  });
+
+  it("includes remote guidance only after successful halt publication", async () => {
+    const state = makeState({ status: "awaiting-resume", issueNumber: 42 });
+    const client = makeMockClient();
+
+    await notifyJobTerminal(state, {
+      githubClient: client,
+      owner: "testowner",
+      repo: "testrepo",
+      haltCheckpointPublication: { enabled: true, result: { kind: "published" } },
+    });
+
+    const body = (client.createIssueComment as ReturnType<typeof vi.fn>).mock.calls[0]?.[3] as string;
+    expect(body).toContain("/compare/");
+    expect(body).not.toContain("same worktree");
+  });
+
+  it("suppresses remote guidance after halt publication failure", async () => {
+    const state = makeState({ status: "awaiting-resume", issueNumber: 42 });
+    const client = makeMockClient();
+
+    await notifyJobTerminal(state, {
+      githubClient: client,
+      owner: "testowner",
+      repo: "testrepo",
+      haltCheckpointPublication: {
+        enabled: true,
+        result: { kind: "failure", phase: "push", error: "rejected" },
+      },
+    });
+
+    const body = (client.createIssueComment as ReturnType<typeof vi.fn>).mock.calls[0]?.[3] as string;
+    expect(body).not.toContain("/compare/");
+    expect(body).toContain("To resume in the same worktree:");
   });
 });
 

@@ -61,6 +61,7 @@ export interface JobBootstrapCapability {
       pipelineId?: string;
       /** GitHub integration contract to fix at job start. Absent = enabled (backward compat). */
       githubIntegration?: { enabled: boolean };
+      checkpointPublication?: { publishOnHalt: boolean };
     },
   ): Promise<JobState>;
 }
@@ -125,5 +126,4 @@ export interface JobStatePersistenceCapability {
     workspace: WorkspaceContext,
   ): Promise<JobState>;
 }
-
 

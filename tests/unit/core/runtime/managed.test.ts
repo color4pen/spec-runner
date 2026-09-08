@@ -153,6 +153,17 @@ describe("TC-MR-004: buildDeps includes sessionClient and ManagedAgentRunner", (
     expect(deps.cwd).toBe("/repo");
     expect(deps.githubClient).toBe(githubClient);
   });
+
+  it("keeps local publication as an already-synchronized no-op", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
+    const state = await makeJobStateForManaged();
+
+    await expect(runtime.publishCommittedState("/repo", state)).resolves.toEqual({
+      kind: "already-synchronized",
+    });
+  });
 });
 
 // Helper: build a spawnFn mock for ManagedRuntime setupWorkspace with requestFilePath

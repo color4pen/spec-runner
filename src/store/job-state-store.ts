@@ -57,6 +57,7 @@ export function buildInitialJobState(params: {
    * Absent = enabled (backward compat with legacy state files).
    */
   githubIntegration?: { enabled: boolean };
+  checkpointPublication?: { publishOnHalt: boolean };
 }): JobState {
   const jobId = randomUUID();
   const now = new Date().toISOString();
@@ -87,6 +88,7 @@ export function buildInitialJobState(params: {
     error: null,
     pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
     profile: params.profile ?? STANDARD_PROFILE,
+    checkpointPublication: params.checkpointPublication,
   };
 
   if (params.reviewers && params.reviewers.length > 0) {

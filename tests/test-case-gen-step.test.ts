@@ -107,7 +107,7 @@ describe("TC-001: TestCaseGenStep.buildMessage 内容検証", () => {
     expect(message).toContain("test-cases.md");
     expect(message).toContain("feat/my-change");
     expect(message.toLowerCase()).toContain("commit");
-    expect(message.toLowerCase()).toContain("push");
+    expect(message.toLowerCase()).not.toContain("push");
     expect(message).toContain("<user-request>");
     expect(message).toContain("</user-request>");
     expect(message).toContain("Add test-case-gen step to pipeline");

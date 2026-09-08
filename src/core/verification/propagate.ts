@@ -1,17 +1,8 @@
 /**
- * Propagate verification-result.md to the feature branch on origin.
- *
- * The verification step (kind: "cli") writes verification-result.md to the
- * job worktree. The implementer re-entry (recovery mode) runs in a managed
- * agent session whose workspace is a fresh clone of the feature branch. Without
- * this propagation, the implementer cannot read verification-result.md and falls
- * back to running tests itself.
- *
- * Design D5: With the job worktree design, the cwd IS already the feature branch
- * worktree. No temp worktree is needed — we commit and push directly from cwd.
- *
- * Failures are returned as `{ ok: false, error }`; the caller decides whether
- * to halt verification or continue with a warning.
+ * Commit verification-result.md in the CLI checkout and return its OID.
+ * Local steps read it from the same worktree. Managed runtime separately
+ * publishes the ledgered result through VerificationHandoffCapability.
+ * Failures require the caller to halt before any publication or next step.
  */
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
@@ -20,6 +11,7 @@ import { verificationResultPath } from "../../util/paths.js";
 
 export interface PropagateResult {
   ok: boolean;
+  commitOid?: string;
   warning?: string;
   error?: string;
 }
@@ -34,14 +26,13 @@ export async function propagateVerificationResult(params: {
   cwd: string;
   spawn: SpawnFn;
   /**
-   * D4 egress backstop: when provided, verifies the publish range against this ledger
-   * (synthesizedCommits from job state) before pushing. Unknown commits abort the push
-   * and return { ok: false, error }. Omit to skip the check (backward compat).
+   * Legacy caller input. Publication and its egress check are owned by the
+   * runtime handoff; this helper only creates the local result commit.
    */
   synthesizedCommits?: readonly string[];
 }): Promise<PropagateResult> {
   const spawn = params.spawn;
-  const { slug, branch, iteration, cwd, synthesizedCommits } = params;
+  const { slug, iteration, cwd } = params;
 
   // Verify the source file exists in cwd (the job worktree)
   const sourceFile = path.join(cwd, verificationResultPath(slug));
@@ -73,28 +64,11 @@ export async function propagateVerificationResult(params: {
     return { ok: false, error: `git commit failed: ${commitResult.stderr.trim()}` };
   }
 
-  // D4 egress backstop: verify publish range ⊆ synthesizedCommits ledger before push.
-  // Inline implementation (not importing from step/commit-push.ts to avoid cross-layer coupling).
-  if (synthesizedCommits !== undefined) {
-    const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
-    const newOid = (headResult.exitCode ?? 1) === 0 ? headResult.stdout.trim() : "";
-    const ledger = new Set([...synthesizedCommits, ...(newOid ? [newOid] : [])]);
-    const revListResult = await spawn("git", ["rev-list", "HEAD", "--not", "--remotes=origin"], { cwd });
-    if ((revListResult.exitCode ?? 1) !== 0) {
-      return { ok: false, error: `egress rev-list failed: exit ${revListResult.exitCode}` };
-    }
-    const oids = revListResult.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
-    for (const oid of oids) {
-      if (!ledger.has(oid)) {
-        return { ok: false, error: `egress check: unknown commit ${oid} in publish range` };
-      }
-    }
+  const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
+  const commitOid = headResult.stdout.trim();
+  if ((headResult.exitCode ?? 1) !== 0 || commitOid.length === 0) {
+    const detail = headResult.stderr.trim() || "git returned no commit OID";
+    return { ok: false, error: `git rev-parse HEAD failed: ${detail}` };
   }
-
-  const pushResult = await spawn("git", ["push", "origin", branch], { cwd });
-  if (pushResult.exitCode !== 0) {
-    return { ok: false, error: `git push failed: ${pushResult.stderr.trim()}` };
-  }
-
-  return { ok: true };
+  return { ok: true, commitOid };
 }

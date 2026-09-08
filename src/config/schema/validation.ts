@@ -207,6 +207,7 @@ export const configSchema = object({
   pipeline: optional(
     object(
       {
+        publishCheckpointOnHalt: optional(boolean("must be a boolean.")),
         maxRetries: optional(
           number("must be between 1 and 10.").check(
             int("must be between 1 and 10."),
@@ -798,4 +799,3 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
   // Return the original raw cast to SpecRunnerConfig (preserves unknown fields like `jobs`).
   return raw as SpecRunnerConfig;
 }
-

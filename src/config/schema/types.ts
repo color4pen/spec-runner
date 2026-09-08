@@ -219,6 +219,8 @@ export interface FastPipelineConfig {
 
 /** Pipeline-level settings */
 export interface PipelineConfig {
+  /** Publish safe controlled-halt checkpoints. Default: true. */
+  publishCheckpointOnHalt?: boolean;
   /**
    * Maximum number of spec-review iterations (body execution count).
    * Default: 2. Valid range: 1-10.

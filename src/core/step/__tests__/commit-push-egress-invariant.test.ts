@@ -117,6 +117,7 @@ function makeInfra(
 ): CommitPushInfra {
   return {
     spawnFn,
+    deferPublication: true,
     sleepFn: vi.fn(async () => {}),
     events: new EventBus(),
     // persistBeforePush is optional; will be present after T-01 is implemented
@@ -257,7 +258,7 @@ describe("TC-001: scoped mode — push fails → persistBeforePush is called wit
 
       await expect(
         commitAndPush(makeScopedStep(), state, deps, null, infra),
-      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+      ).resolves.toBeUndefined();
 
       // TC-001: persistBeforePush must have been called with the commit OID
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
@@ -266,7 +267,7 @@ describe("TC-001: scoped mode — push fails → persistBeforePush is called wit
       // Verify push was attempted (calls after commit must include "push")
       const subcommands = calls.map((c) => c[0]);
       expect(subcommands).toContain("commit");
-      expect(subcommands).toContain("push");
+      expect(subcommands).not.toContain("push");
     },
   );
 });
@@ -318,7 +319,7 @@ describe("TC-002: guarded mode — push fails → persistBeforePush is called wi
 
       await expect(
         commitAndPush(makeGuardedStep(), state, deps, null, infra),
-      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+      ).resolves.toBeUndefined();
 
       // TC-002: persistBeforePush must have been called with the commit OID
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
@@ -326,7 +327,7 @@ describe("TC-002: guarded mode — push fails → persistBeforePush is called wi
 
       const subcommands = calls.map((c) => c[0]);
       expect(subcommands).toContain("commit");
-      expect(subcommands).toContain("push");
+      expect(subcommands).not.toContain("push");
     },
   );
 });
@@ -360,7 +361,6 @@ describe("TC-003: commitFinalState push success — persistBeforePush called bef
         { exitCode: 1 }, // diff --cached → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
         { exitCode: 0 }, // push → success
       ]);
@@ -420,7 +420,6 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
         { exitCode: 1 }, // diff → staged changes
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
         { exitCode: 1 }, // push (fail 1)
         { exitCode: 1 }, // push (fail 2)
@@ -428,7 +427,7 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
 
       const persistBeforePush = vi.fn(async (_oid: string) => {});
 
-      // commitFinalState does not throw on push failure (best-effort)
+      // Push failure is returned after the OID has been persisted.
       await expect(
         commitFinalState({
           cwd: CWD,
@@ -439,7 +438,11 @@ describe("TC-004: commitFinalState push fails — persistBeforePush still called
           synthesizedCommits: [],
           persistBeforePush,
         }),
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({
+        kind: "failure",
+        phase: "push",
+        error: "remote rejected final-state publication",
+      });
 
       // TC-004: persistBeforePush must have been called despite push failure
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
@@ -481,7 +484,7 @@ describe("TC-005: push failure → halt → resume egress pin", () => {
 
       await expect(
         commitAndPush(makeScopedStep(), makeState(), makeDeps(), null, infra),
-      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+      ).resolves.toBeUndefined();
 
       // persistBeforePush must have been called (fails before T-02 implementation)
       expect(capturedOids).toHaveLength(1);
@@ -688,14 +691,13 @@ describe("TC-009: persistBeforePush throw — commitAndPush rethrows, push not c
 });
 
 // ---------------------------------------------------------------------------
-// TC-010 (should): commitFinalState の persistBeforePush が throw しても
-//                  push が試行される (best-effort)
+// TC-010: commitFinalState の台帳保存失敗は公開を停止する
 // ---------------------------------------------------------------------------
 
-describe("TC-010 (should): commitFinalState persistBeforePush throw — push still attempted", () => {
+describe("TC-010: commitFinalState persistBeforePush failure blocks publication", () => {
   it(
     // TC-010
-    "TC-010: commitFinalState continues to push even when persistBeforePush throws",
+    "TC-010: commitFinalState returns a persist failure without pushing",
     async () => {
       const CHECKPOINT_OID = "sha-checkpoint-010";
       const pushCalls: string[][] = [];
@@ -709,9 +711,6 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
         { exitCode: 1 }, // diff → staged
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
         { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04 new)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (verifyEgressLedger)
-        { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list
-        { exitCode: 0 }, // push (success, shows push was attempted despite persistBeforePush failure)
       ]);
 
       const wrappedSpawnFn: PipelineSpawnFn = async (cmd, args, opts) => {
@@ -723,7 +722,7 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
         throw new Error("disk-full: cannot persist");
       });
 
-      // commitFinalState must NOT throw (best-effort path)
+      // The caller receives the failure and must not publish an unrecorded commit.
       await expect(
         commitFinalState({
           cwd: CWD,
@@ -734,12 +733,15 @@ describe("TC-010 (should): commitFinalState persistBeforePush throw — push sti
           synthesizedCommits: [],
           persistBeforePush,
         }),
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({
+        kind: "failure",
+        phase: "persist",
+        error: "disk-full: cannot persist",
+      });
 
-      // TC-010: persistBeforePush must have been called (verifies T-04 is in place)
-      // and push must still have been attempted (verifies best-effort continue).
+      // No push is allowed when recording the commit fails.
       expect(persistBeforePush).toHaveBeenCalledTimes(1);
-      expect(pushCalls.length).toBeGreaterThan(0);
+      expect(pushCalls).toHaveLength(0);
     },
   );
 });
@@ -770,13 +772,12 @@ describe("TC-011 (should): commitFinalState push failure warning includes git st
           { exitCode: 1 }, // diff → staged
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // commit
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (T-04 new: for persistBeforePush)
-          { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-parse HEAD (egress ledger try-block)
           { exitCode: 0, stdout: `${CHECKPOINT_OID}\n` }, // rev-list (via verifyEgressLedger)
           { exitCode: 1, stderr: `${PUSH_STDERR}\n` },    // push fail 1
           { exitCode: 1, stderr: `${PUSH_STDERR}\n` },    // push fail 2 → warning with stderr
         ]);
 
-        // Pass a no-op persistBeforePush to ensure T-04's extra rev-parse is accounted for.
+        // Record the commit before exercising the publication failure.
         await commitFinalState({
           cwd: CWD,
           branch: BRANCH,
@@ -866,7 +867,7 @@ describe("TC-016: scoped mode — push fails → in-memory state.synthesizedComm
 
       await expect(
         commitAndPush(makeScopedStep(), state, makeDeps(), null, infra),
-      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+      ).resolves.toBeUndefined();
 
       // The in-memory state must carry the OID: downstream failure handling
       // (commitHalt → store.persist, pipeline post-step store.persist) persists this
@@ -902,7 +903,7 @@ describe("TC-017: guarded mode — push fails → in-memory state.synthesizedCom
 
       await expect(
         commitAndPush(makeGuardedStep(), state, makeDeps(), null, infra),
-      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+      ).resolves.toBeUndefined();
 
       expect(state.synthesizedCommits).toContain(SYNTH_OID);
     },
@@ -952,7 +953,7 @@ describe("TC-018: real-store replay — halt-path wholesale persist does not rol
 
         await expect(
           commitAndPush(makeScopedStep(), state, makeDeps(), null, infra),
-        ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+        ).resolves.toBeUndefined();
 
         // Halt-path replay: commitHalt persists the caller's in-memory state WHOLESALE
         // (commit-orchestrator.ts commitHalt → store.persist(s)). Without the in-memory

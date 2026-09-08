@@ -1,3 +1,4 @@
+import type { VerificationHandoffCapability } from "./port/step-types.js";
 import type { SessionClient } from "./port/session-client.js";
 import type { GitHubClient } from "./port/github-client.js";
 import type { AgentRunner } from "./port/agent-runner.js";
@@ -71,6 +72,8 @@ export interface PipelineDeps extends StepContext {
    * Design D3 (require-spawn-injection): required to prevent leaky defaults in tests.
    */
   spawn: SpawnFn;
+  /** Optional remote handoff for CLI verification results. */
+  verificationHandoff?: VerificationHandoffCapability;
   /**
    * Factory for creating JobStateStore instances. Injected by RuntimeStrategy.buildDeps().
    * Pipeline and executor use this instead of inline `new JobStateStore()`.

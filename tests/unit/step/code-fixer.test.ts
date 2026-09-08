@@ -225,7 +225,7 @@ describe("TC-025: CodeFixerStep.buildMessage が直近の review-feedback パス
     const deps = makeMinimalDeps("my-change");
     const message = CodeFixerStep.buildMessage(state, deps);
     expect(message.toLowerCase()).toContain("commit");
-    expect(message.toLowerCase()).toContain("push");
+    expect(message.toLowerCase()).not.toContain("push");
   });
 
   it("message contains <user-request> tags", () => {

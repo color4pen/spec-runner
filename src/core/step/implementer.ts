@@ -93,7 +93,7 @@ Please:
 3. Implement all tasks in tasks.md — align both tests and implementation with canon (test-cases.md / spec). If you modify any test files, report the changed tests and the reason in your completion report.
 4. Update tasks.md: mark completed tasks with [x]
 5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
-6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+6. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 
 Original request:
 ${requestContent}
@@ -148,7 +148,7 @@ Please:
 1. 失敗した verification の出力を確認して原因を特定する（${findingsPath} を参照）
 2. canon(test-cases.md / spec.md)と整合するよう実装・テストを修正して失敗を解消する
 3. tasks.md のチェックボックスを更新する
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 
 Original request:
 ${requestContent}

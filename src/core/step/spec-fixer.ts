@@ -51,7 +51,7 @@ Findings file: ${findingsPath}
 Please:
 1. Read the findings file at ${findingsPath}
 2. For each finding, implement the fix described in the "How to Fix" column
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 4. Do NOT modify the spec-review-result.md file itself
 
 If any finding cannot be fixed, add a comment at the end of design.md:
@@ -146,7 +146,7 @@ ${findingsBlock}
 ${evidenceRefConformance}
 Please:
 1. For each finding above, fix the spec.md, design.md, or tasks.md artifact as indicated by the rationale
-2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+2. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 3. Do NOT modify the conformance result file itself
 
 If any finding cannot be fixed, add a comment at the end of design.md:
@@ -186,7 +186,7 @@ ${findingsBlock}
 ${evidenceRefNormal}
 Please:
 1. For each finding above, implement the fix described in the rationale
-2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+2. ファイルを worktree に書き出したら end_turn してください。CLI が local commit を行います。
 3. Do NOT modify the spec-review-result.md file itself
 
 If any finding cannot be fixed, add a comment at the end of design.md:

@@ -1,0 +1,184 @@
+{
+  "version": 2,
+  "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+  "createdAt": "2026-09-08T09:14:41.079Z",
+  "updatedAt": "2026-09-08T14:57:36.812Z",
+  "request": {
+    "title": "local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner",
+    "origin": {
+      "url": "https://github.com/color4pen/spec-runner",
+      "digest": "35ffe8ecaff73338e33ace5c32372729d0537a71400be474168fdee21c19831a"
+    }
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/publish-at-job-boundaries-0142023a",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:d89544fab75ab3f175beb456dc5816bf124ec872e738b29319066d04d2afbc46"
+  },
+  "githubIntegration": {
+    "enabled": true
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1128,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "8f53a3d2543f29548b680d20e87bf0b75e620313",
+    "ebc2b950d2356da2644937bda7d0735bb52cbd11",
+    "4cf6bcc83dec2ec72e30d2fa2532ad73d086faa0",
+    "bc4b6f73485c3cb813bcf0b90b345092422c37c3",
+    "835fc7db2e291c0f5c7b90d68045a6d54e6732ad",
+    "63f04e8303a7366dd20c5f97f6ff15753d901c65",
+    "8cba780462ea05b692b308ef17bb3d4d69eaa170",
+    "d3b8db5c5978c83cffb54f5cd02b9541af100793",
+    "c875aafbb1a00102bc3badd8045c3dc58f0baf53",
+    "22b8e8c8ab16cf7f25ea8cf05dd71139d3680a78",
+    "be0791fcf533663e373736132ffb790c8e1f50a2",
+    "7d0a8842f82e5095941cd106d534fbd97fa34a2b",
+    "218c52b1a502a1df6ebc72f9aae39b428f898bed",
+    "7fbc7f94d2e2c2677b7e7a0e7c8d61ac9b089be8",
+    "df4c5a6a2af033719ecef91d2ec5604bf4516369",
+    "fc6479960d0524ce4cdd0ced5d6dca3ba95f30e6",
+    "ffe45c096aac0383df9e592aafbafe06f67c4786",
+    "16c9357010357928e4626a8872738fa50b16d0c8",
+    "14d115ab6db9cc6a248f40a8bb9ec577a2a2e444",
+    "b87da40f841f9b34436a0d2332157be4062b45c7",
+    "599eeb6937227a966d8654ec55a702c7622a6131",
+    "e0bca3b66f689abd9293e47f5f559a35b3cff95e",
+    "ffa94c787576f38c7fbeec9e852b182e7ba0b0e2",
+    "d7d8ff6b94db860f0a9e93d4c6f705f9306e6284",
+    "b128ee5dcca303981cbc063fc0890cac9060733b",
+    "ccf6e2d9df2ba0eeec9dc11a66a03e9dac070cb0",
+    "cb999cd7588883b005f43cfde4347594422a4d2f",
+    "b71b9b548c4fd4166c93966ed43fa163e0e1ca98",
+    "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
+    "f8dd9862335d018c3b908572c4d200bffb18e6e6",
+    "fc9c594cf6a46c309ed3731563226b68000a3633",
+    "415eaeb854786296b373c5143c42a93353f9e1bb",
+    "649cc64c8547f5b1e27f6b1998e95df40ef9ef50",
+    "771ab337840efa9e986b55821028cf5c432f040f"
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "review-feedback-002.md の finding 2 に対応する operator 修正を作業ブランチへ反映済みです。.github/workflows/specrunner-dispatch.yml の再開条件を保存済みpolicyとcheckpoint公開成功を条件とする説明に修正し、.specrunner/config.json に pipeline.publishCheckpointOnHalt=true を明示し、docs/operations.md も整合させました。これらの既存差分を確認したうえで finding 1（未公開halt時の通知でremote resumeを案内しない）を修正してください。.github/workflows/** はこのActions環境では変更できないため追加編集しないでください。finding 2 に追加対応が必要なら編集せず理由を報告してください。前回の2回目code-fixerの未commit差分は保存されていないため、リモートの現状を起点に必要な修正と検証を行ってください。",
+      "step": "code-fixer",
+      "recordedAt": "2026-09-08T11:13:24.168Z"
+    },
+    {
+      "text": "review-feedback-005.md の既存テスト不整合を operator commit 4c6d84c53 で修正し、作業ブランチへ push 済みです。commitFinalState の typed result と deferPublication=true のローカル commit 契約に期待値を合わせ、push 失敗ケースを publishCommittedBranch のテストへ移しました。関連 egress テストの mock 呼び出し列と台帳保存失敗時の公開停止期待も更新し、実装と食い違ったコメントを修正しています。bun run test は 856 files / 13012 passed / 1 skipped / 2 todo、bun run typecheck と bun run lint も成功しました。現状の差分を code-review から再評価してください。前回までの operator による workflow 修正は既に反映済みです。.github/workflows/** はこの Actions 環境では変更できないため、追加修正が必要なら編集せず具体的な理由を報告してください。",
+      "step": "code-review",
+      "recordedAt": "2026-09-08T11:46:18.336Z"
+    },
+    {
+      "text": "Operator reviewで、共通のverification結果commit処理からpushを無条件に除去したためmanaged runtimeの次のagent cloneに最新のverification-result.mdが届かない問題を確認しました。operator commit 87a6f558b を作業ブランチへpush済みです。ManagedRuntime.buildDepsだけが注入する狭いverificationHandoff capabilityで、結果をcommitしOID台帳へ記録した後に既存のpublishCommittedBranchとtransport認証経路で公開します。local runtimeは引き続き途中pushなしです。公開失敗はPUBLICATION_FAILEDとして停止し、差分なし再試行でも公開処理へ進みます。実Git bare remoteと次agent cloneの回帰テストで、localのpushゼロ、managedの結果到達、push失敗後の新規commitなし再送、未知commitの公開拒否を確認済みです。commit失敗時にはhandoffしないことも確認済みです。bun run test は857 files / 13016 passed / 1 skipped / 2 todo、bun run typecheckとbun run lintも成功しました。code-reviewから差分を再評価し後続の検証へ進んでください。.github/workflows/**はこのActions環境では変更できないため、追加修正が必要なら編集せず理由を報告してください。",
+      "step": "code-review",
+      "recordedAt": "2026-09-08T14:41:20.306Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/publish-at-job-boundaries/design.md:sha256:13c9af54f6ee0287f8e9e147e671d2fb78a83410fa89e1f506f99c99887eccb2|specrunner/changes/publish-at-job-boundaries/request.md:sha256:c84e36ed5b8aff50a58a8e91cee23d00d1e4e21758f95544f97622eb3e1a2af5|specrunner/changes/publish-at-job-boundaries/spec.md:sha256:435fc8c11a3678342431b7af98ebf00f570ad01298c6bc8a905d333f35391a35|specrunner/changes/publish-at-job-boundaries/tasks.md:sha256:268dfb124b863fa5476ea9887bcb4641693110ec00690b6a2d968a0fa225447e|specrunner/changes/publish-at-job-boundaries/test-cases.md:sha256:1a68f81c243f0d65d21f4a988b85ab48dcfef9cd8dfef893c9e5d6ff9c886b85"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "227d9fb1dbc0431a581119f945d023e94a6b9b9a",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/publish-at-job-boundaries/design.md:sha256:13c9af54f6ee0287f8e9e147e671d2fb78a83410fa89e1f506f99c99887eccb2|specrunner/changes/publish-at-job-boundaries/request.md:sha256:c84e36ed5b8aff50a58a8e91cee23d00d1e4e21758f95544f97622eb3e1a2af5|specrunner/changes/publish-at-job-boundaries/spec.md:sha256:435fc8c11a3678342431b7af98ebf00f570ad01298c6bc8a905d333f35391a35|specrunner/changes/publish-at-job-boundaries/tasks.md:sha256:268dfb124b863fa5476ea9887bcb4641693110ec00690b6a2d968a0fa225447e|specrunner/changes/publish-at-job-boundaries/test-cases.md:sha256:1a68f81c243f0d65d21f4a988b85ab48dcfef9cd8dfef893c9e5d6ff9c886b85"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1130",
+    "number": 1130,
+    "createdAt": "2026-09-08T14:57:36.036Z"
+  },
+  "_journal": {
+    "historyCount": 159,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "implementer": 3,
+      "verification": 5,
+      "code-review": 7,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
+      "conformance": 2,
+      "adr-gen": 2,
+      "pr-create": 2
+    }
+  }
+}

@@ -49,6 +49,10 @@ vi.mock("../../../src/cli/github-composition.js", () => ({
 }));
 
 vi.mock("../../../src/core/command/reopen.js", () => ({
+  isNoPrPublicationRetry: (state: JobState) =>
+    state.status === "awaiting-archive" &&
+    !state.pullRequest?.number &&
+    state.error?.code === "PUBLICATION_FAILED",
   ReopenCommand: class MockReopenCommand {
     constructor(_slug: string, opts: { githubClient: unknown }) {
       capturedGithubClient = opts.githubClient;
@@ -134,6 +138,24 @@ describe("TC-063: GitHub-disabled job reopen does not resolve token or call GitH
     await runReopenCore(SLUG, { reason: "fix it", cwd: FAKE_CWD });
 
     expect(mockLoadConfigWithOverlay).not.toHaveBeenCalled();
+  });
+
+  it("skips credentials for a GitHub-enabled no-PR final-publication retry", async () => {
+    const state = makeJobState(SLUG, true);
+    state.error = {
+      code: "PUBLICATION_FAILED",
+      message: "Final checkpoint publication failed (push)",
+      hint: "Retry",
+    };
+    mockList.mockResolvedValue([state]);
+
+    const { runReopenCore } = await import("../../../src/cli/reopen.js");
+    const code = await runReopenCore(SLUG, { reason: "retry publication", cwd: FAKE_CWD });
+
+    expect(code).toBe(0);
+    expect(mockLoadConfigWithOverlay).not.toHaveBeenCalled();
+    expect(mockComposeGitHubIntegrationForJob).not.toHaveBeenCalled();
+    expect(capturedGithubClient).toBeNull();
   });
 
   it("does not call composeGitHubIntegrationForJob when job is GitHub-disabled", async () => {

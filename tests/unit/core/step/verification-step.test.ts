@@ -28,6 +28,7 @@ vi.mock("../../../../src/core/verification/reload-coverage-config.js", () => ({
 
 import { runVerification } from "../../../../src/core/verification/runner.js";
 import { reloadCoverageConfig } from "../../../../src/core/verification/reload-coverage-config.js";
+import { propagateVerificationResult } from "../../../../src/core/verification/propagate.js";
 import { VerificationStep } from "../../../../src/core/step/verification.js";
 
 function makeMinimalState(): JobState {
@@ -129,6 +130,27 @@ describe("TC-11: VerificationStep.run passes deps.request.baseBranch to runVerif
     const spy = vi.mocked(runVerification);
     expect(spy).toHaveBeenCalledOnce();
     expect(spy.mock.calls[0]?.[3]).toBe("main");
+  });
+});
+
+describe("verification result commit is a required gate", () => {
+  it("fails the step when the result cannot be committed and ledgered", async () => {
+    vi.mocked(propagateVerificationResult).mockResolvedValueOnce({
+      ok: false,
+      error: "git commit failed: disk full",
+    });
+    const state = { ...makeMinimalState(), branch: "feat/test" };
+
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+    const publish = vi.fn();
+    deps.verificationHandoff = { publish };
+    await expect(VerificationStep.run(state, deps))
+      .rejects.toMatchObject({
+        code: "PUBLICATION_FAILED",
+        message: expect.stringContaining("verification/commit"),
+      });
+    expect(state.synthesizedCommits).toBeUndefined();
+    expect(publish).not.toHaveBeenCalled();
   });
 });
 

@@ -33,7 +33,7 @@ import { KeepAlive } from "../lifecycle/keepalive.js";
 import { createExitGuardHandler } from "../lifecycle/exit-guard.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
-import { getLatestStepResult } from "../../state/helpers.js";
+import { getLatestStepResult, shouldPublishCheckpointOnHalt } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { buildPipelineForJob } from "../pipeline/index.js";
 import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
@@ -337,6 +337,10 @@ export abstract class CommandRunner {
             pid: null,
           },
         });
+        const haltPublication = {
+          enabled: shouldPublishCheckpointOnHalt(haltState),
+          result: null as Awaited<ReturnType<NonNullable<typeof deps.terminalState.publishCommittedState>>> | null,
+        };
 
         // Persist halt state (best-effort).
         try {
@@ -345,10 +349,21 @@ export abstract class CommandRunner {
           // Persist failure is not fatal — job can still be reported.
         }
 
-        // Commit final state to remote (best-effort — managed runtime only).
+        // Always commit the local safe checkpoint; policy controls only remote publication.
         // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
         try {
-          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
+          const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
+          if (commit?.kind === "failure") {
+            haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." };
+            await deps.storeFactory(haltState.jobId).persist(haltState);
+          } else if (haltPublication.enabled) {
+            const publication = await deps.terminalState.publishCommittedState?.(deps.cwd ?? process.cwd(), haltState);
+            haltPublication.result = publication ?? null;
+            if (publication?.kind === "failure") {
+              haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." };
+              await deps.storeFactory(haltState.jobId).persist(haltState);
+            }
+          }
         } catch {
           // Best-effort: do not let remote sync failure block local halt reporting.
         }
@@ -358,6 +373,7 @@ export abstract class CommandRunner {
           githubClient: deps.githubClient,
           owner: deps.owner,
           repo: deps.repo,
+          haltCheckpointPublication: haltPublication,
         });
 
         finalState = haltState;

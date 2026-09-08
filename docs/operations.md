@@ -221,7 +221,9 @@ GitHub リポジトリのデフォルト設定（Settings → Actions → Genera
 Actions の job が failed になる。次のスケジュール tick（次の cron 発火）または次のトリガーイベントで新しい run が起動し、inbox の冪等設計により安全に再試行される（再試行で同一 job が二重起動されることはない）。
 
 **agent escalation 時**  
-job の状態（進捗・context）はブランチに保持される。次の tick または issue への `/resume` コメントで再開できる（「inbox の挙動詳細」セクションの `/resume` ワークフロー参照）。Actions run 自体は failed または成功終了になるが、job の進捗は失われない。
+job に保存された `pipeline.publishCheckpointOnHalt: true` に従い、制御された escalation で safe checkpoint の branch への公開に成功した場合に限り、次の tick または issue への `/resume` コメントで別環境から再開できる。Actions 用の `.specrunner/config.json` では `pipeline.publishCheckpointOnHalt: true` を明示する。既存 job は保存済み policy に従う。公開が無効または失敗した場合は同じ worktree で復旧し、runner 消失後の再開は保証しない。
+
+signal、強制終了、runner loss は controlled halt ではなく自動 push を行わない。step 中の local commit は前回公開境界以降 remote に未送信のため、一時 runner ととも失われ得る。
 
 **`concurrency` による直列化**  
 `cancel-in-progress: false` により、実行中の run は完走させつつ次の run はキューに入る。複数のトリガーが短時間に重なっても多重実行にならない。

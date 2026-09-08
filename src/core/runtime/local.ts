@@ -38,8 +38,8 @@ import {
   writeOutputTemplates,
   cleanupOutputTemplates,
 } from "../artifact/copy-artifacts.js";
-import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
-import type { CommitPushInfra } from "../step/commit-push.js";
+import { commitAndPush, commitFinalState, commitScopedPaths, publishCommittedBranch } from "../step/commit-push.js";
+import type { CommitPushInfra, PublicationResult } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import { deriveStepIoValidationCapability } from "../step/step-capability.js";
@@ -246,6 +246,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       repository: RepositoryInfo;
       pipelineId?: string;
       githubIntegration?: { enabled: boolean };
+      checkpointPublication?: { publishOnHalt: boolean };
     },
   ): Promise<JobState> {
     return buildInitialJobState(params);
@@ -819,6 +820,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
     // mutable this.slugStoreOpts() — prevents cross-job ledger corruption.
     const finalInfra: CommitPushInfra = {
       ...infra,
+      deferPublication: true,
       persistBeforePush: capturedSlugOpts
         ? async (oid: string) => {
             await this.updateJobState(
@@ -842,15 +844,15 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * D5 (remote-checkpoint-publish-attach-closure): commit and push slug canonical state
+   * D5 (remote-checkpoint-publish-attach-closure): commit slug canonical state
    * after a terminal pipeline transition.
    *
    * - awaiting-archive: messageLabel = "finalize" (commit "finalize: <slug>").
    * - awaiting-resume: messageLabel = "checkpoint" (commit "checkpoint: <slug>").
-   * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
-   * - Push failures warn on stderr but do not throw (local resume is preserved).
+   * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit。
+   * - A typed result distinguishes no-change from a failed required checkpoint commit.
    */
-  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<void> {
+  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<import("../step/commit-push.js").FinalStateCommitResult> {
     const effectiveCwd = cwd;
     const branch = state.branch ?? "";
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
@@ -913,7 +915,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       }
     }
 
-    await commitFinalState({
+    return commitFinalState({
       cwd: effectiveCwd,
       branch,
       slug,
@@ -922,6 +924,16 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       synthesizedCommits: state.synthesizedCommits,
       persistBeforePush,
       recordRestack,
+      deferPublication: true,
+    });
+  }
+
+  async publishCommittedState(cwd: string, state: JobState): Promise<PublicationResult> {
+    return publishCommittedBranch({
+      cwd,
+      branch: state.branch ?? "",
+      ledger: state.synthesizedCommits ?? [],
+      spawnFn: this.wrappedSpawnFn,
     });
   }
 
@@ -1057,7 +1069,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
     egressParams?: RoundEgressParams,
   ): Promise<void> {
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, { ...infra, deferPublication: true }, egressParams, egressParams?.pushCapability ?? null, egressParams?.excludeWorktreePatterns);
   }
 
   /**

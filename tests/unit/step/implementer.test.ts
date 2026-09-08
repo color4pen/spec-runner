@@ -105,7 +105,7 @@ describe("ImplementerStep.buildMessage 内容検証", () => {
     expect(message).toContain("feat/my-change");
     // buildGitPushInstruction uses "Commit" (capital) — case-insensitive check
     expect(message.toLowerCase()).toContain("commit");
-    expect(message.toLowerCase()).toContain("push");
+    expect(message.toLowerCase()).not.toContain("push");
     expect(message).toContain("<user-request>");
     expect(message).toContain("</user-request>");
   });

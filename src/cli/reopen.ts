@@ -15,7 +15,7 @@ import type { ParsedArgs } from "./flag-parser.js";
 import type { CommandContext } from "./command-context.js";
 import { setLogLevel, logError, resolveLogLevel, type LogLevel } from "../logger/stdout.js";
 import { EXIT_CODE } from "../errors.js";
-import { ReopenCommand } from "../core/command/reopen.js";
+import { ReopenCommand, isNoPrPublicationRetry } from "../core/command/reopen.js";
 import { composeGitHubIntegrationForJob } from "./github-composition.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { getGitHubIntegration } from "../state/github-integration.js";
@@ -53,7 +53,8 @@ export async function runReopenCore(slug: string, options: ReopenOptions): Promi
         matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         const matchingState = matching[0];
         if (matchingState) {
-          jobGithubEnabled = getGitHubIntegration(matchingState).enabled;
+          jobGithubEnabled = getGitHubIntegration(matchingState).enabled &&
+            !isNoPrPublicationRetry(matchingState);
         }
       }
     } catch {

@@ -1,0 +1,410 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:31:09.443Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 248341,
+          "outputTokens": 3170,
+          "cacheReadInputTokens": 198016,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "request-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:41:34.272Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 652713,
+          "outputTokens": 18151,
+          "cacheReadInputTokens": 562560,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "design"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:46:02.034Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 282952,
+          "outputTokens": 7465,
+          "cacheReadInputTokens": 235648,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:49:20.970Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 705724,
+          "outputTokens": 4862,
+          "cacheReadInputTokens": 622976,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:51:40.447Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 139828,
+          "outputTokens": 3407,
+          "cacheReadInputTokens": 98048,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "spec-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:53:32.656Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 359552,
+          "outputTokens": 2511,
+          "cacheReadInputTokens": 300672,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "spec-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:19:19.842Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 14327731,
+          "outputTokens": 32128,
+          "cacheReadInputTokens": 13970048,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:25:27.754Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1271964,
+          "outputTokens": 3660,
+          "cacheReadInputTokens": 1113728,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:34:37.184Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1496512,
+          "outputTokens": 3341,
+          "cacheReadInputTokens": 1327360,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "implementer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:42:16.643Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1024990,
+          "outputTokens": 5533,
+          "cacheReadInputTokens": 865664,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:51:31.580Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 3187294,
+          "outputTokens": 11122,
+          "cacheReadInputTokens": 3025664,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T10:54:48.764Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 845708,
+          "outputTokens": 4538,
+          "cacheReadInputTokens": 752128,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:19:19.558Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1190923,
+          "outputTokens": 6147,
+          "cacheReadInputTokens": 1074816,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:22:00.815Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 590565,
+          "outputTokens": 3853,
+          "cacheReadInputTokens": 505728,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:27:42.936Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1779446,
+          "outputTokens": 6906,
+          "cacheReadInputTokens": 1623936,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:30:44.545Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 806333,
+          "outputTokens": 4381,
+          "cacheReadInputTokens": 704896,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:34:53.451Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 1093728,
+          "outputTokens": 5029,
+          "cacheReadInputTokens": 961664,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:37:06.925Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 507218,
+          "outputTokens": 3133,
+          "cacheReadInputTokens": 428032,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:48:36.317Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 479621,
+          "outputTokens": 3081,
+          "cacheReadInputTokens": 416256,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:50:47.614Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 603927,
+          "outputTokens": 2977,
+          "cacheReadInputTokens": 516736,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:50:43.714Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 438131,
+          "outputTokens": 2952,
+          "cacheReadInputTokens": 371072,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "scale-tolerance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:53:29.395Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 598519,
+          "outputTokens": 3160,
+          "cacheReadInputTokens": 522624,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T11:55:36.662Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 503882,
+          "outputTokens": 2779,
+          "cacheReadInputTokens": 348160,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T12:02:17.520Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 404467,
+          "outputTokens": 5247,
+          "cacheReadInputTokens": 313216,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "adr-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:43:57.552Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 633551,
+          "outputTokens": 3474,
+          "cacheReadInputTokens": 551680,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:46:44.658Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 832731,
+          "outputTokens": 3613,
+          "cacheReadInputTokens": 733696,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:48:17.894Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 327718,
+          "outputTokens": 2074,
+          "cacheReadInputTokens": 261632,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:51:43.863Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 560755,
+          "outputTokens": 2985,
+          "cacheReadInputTokens": 488960,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:57:34.089Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 305230,
+          "outputTokens": 1472,
+          "cacheReadInputTokens": 220416,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "adr-gen"
+    }
+  ]
+}

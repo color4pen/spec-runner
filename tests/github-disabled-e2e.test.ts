@@ -59,8 +59,7 @@ const { pipelineCallState } = vi.hoisted(() => ({
 //
 // Each call:
 //   1. Persists the new state to the slug store (writes state.json + events.jsonl)
-//   2. Calls deps.terminalState.commitFinalState (real LocalRuntime implementation:
-//      git add → git commit → persistBeforePush appends OID → git push)
+//   2. Commits final state and explicitly publishes at the controlled boundary.
 //   3. Returns the new state
 //
 // The egress ledger (synthesizedCommits) is maintained correctly:
@@ -115,6 +114,7 @@ vi.mock("../src/core/pipeline/index.js", async (importOriginal) => {
             // to synthesizedCommits BEFORE push — egress ledger stays consistent.
             const cwd: string = d.cwd ?? process.cwd();
             await d.terminalState.commitFinalState(cwd, d.slug, newState);
+            await d.terminalState.publishCommittedState(cwd, newState);
 
             return newState;
           },

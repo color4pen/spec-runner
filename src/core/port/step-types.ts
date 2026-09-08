@@ -52,6 +52,12 @@ export interface IoRef {
  */
 export type StepDeps = StepContext;
 
+/** Remote handoff required when the next agent reads a separate checkout. */
+export interface VerificationHandoffCapability {
+  /** Publish the ledgered result before continuing; reject when publication fails. */
+  publish(cwd: string, state: JobState): Promise<void>;
+}
+
 /**
  * Dependencies for CLI-resident steps (kind: "cli").
  * Extends StepDeps with spawn — required for steps that invoke subprocesses.
@@ -62,6 +68,8 @@ export type StepDeps = StepContext;
  */
 export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
+  /** Absent for local runtime, whose next step reads the same worktree. */
+  verificationHandoff?: VerificationHandoffCapability;
 }
 
 /**

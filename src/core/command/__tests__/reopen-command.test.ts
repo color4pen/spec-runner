@@ -219,6 +219,26 @@ describe("TC-001: reopen transitions an awaiting-archive job to awaiting-resume"
     expect(awaitingResumePersist).toBeDefined();
   });
 
+  it("allows a GitHub-enabled no-PR job to reopen only after final publication failure", async () => {
+    const awaitingState = makeJobState({
+      pullRequest: undefined,
+      error: { code: "PUBLICATION_FAILED", message: "Final checkpoint publication failed (push)", hint: "Retry" },
+    });
+    const awaitingResumeState = makeAwaitingResumeState(awaitingState);
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
+    vi.mocked(transitionJob).mockReturnValue({ state: awaitingResumeState, noop: false });
+
+    const exitCode = await new ReopenCommand("test-slug", {
+      reason: "retry final publication",
+      cwd: "/repo",
+      githubClient: null,
+    }).execute();
+
+    expect(exitCode).toBe(0);
+    expect(MOCK_GITHUB_CLIENT.getPullRequest).not.toHaveBeenCalled();
+    expect(MOCK_STORE.persist).toHaveBeenCalledWith(expect.objectContaining({ status: "awaiting-resume" }));
+  });
+
   it("TC-002: reopen does not start the pipeline — execute() returns after transition", async () => {
     const awaitingState = makeJobState({ status: "awaiting-archive" });
     const awaitingResumeState = makeAwaitingResumeState(awaitingState);

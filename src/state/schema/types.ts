@@ -491,6 +491,8 @@ export interface JobState {
   branch: string | null;
   history: HistoryEntry[];
   error: ErrorInfo | null;
+  /** Job-start snapshot of the controlled-halt publication policy. */
+  checkpointPublication?: { publishOnHalt: boolean };
   /** Step-level results journal (array per step for iteration tracking). Optional for backward compat with v1 files. */
   steps?: Record<string, StepRun[]>;
   /** PR info recorded after pr-create step succeeds. Optional for backward compat with legacy state files. */

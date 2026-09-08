@@ -8,6 +8,8 @@ import type { TerminalStateCapability } from "./pipeline-capability.js";
 import type { EventBus } from "../event/event-bus.js";
 import { StepExecutor } from "../step/executor.js";
 import { getLatestStepResult } from "../../state/helpers.js";
+import { shouldPublishCheckpointOnHalt } from "../../state/helpers.js";
+import { SpecRunnerError } from "../../errors.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
@@ -292,6 +294,12 @@ export class Pipeline {
         const stateBeforeExec = state;
         logPipelineDiag("pipeline:step:pre-execute", `step=${currentStep}`);
         try {
+          if (currentStep === "pr-create" && deps.terminalState.publishCommittedState) {
+            const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+            if (publication.kind === "failure") {
+              throw new SpecRunnerError("PUBLICATION_FAILED", "Result publication failed before PR processing.", `pre-pr/${publication.phase}: ${publication.error}`);
+            }
+          }
           state = await this.executor.execute(step, state, effectiveDeps);
         } catch (err) {
           const errWithState = err as { state?: JobState };
@@ -302,10 +310,11 @@ export class Pipeline {
             // Mark as failed so getStepOutcome() returns "error" and
             // the transition table routes to "escalate" → awaiting-resume.
             const store = deps.storeFactory(state.jobId);
+            const typedError = err instanceof SpecRunnerError ? err : null;
             state = await store.fail(state, {
-              code: "UNEXPECTED_STEP_ERROR",
+              code: typedError?.code ?? "UNEXPECTED_STEP_ERROR",
               message: (err as Error).message ?? String(err),
-              hint: "",
+              hint: typedError?.hint ?? "",
             }, currentStep);
           }
         }
@@ -415,7 +424,25 @@ export class Pipeline {
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
           // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          if (commit?.kind === "failure") {
+            state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint commit failed (${commit.phase})`, hint: "Retry from this worktree." } };
+            await endStore.persist(state);
+            const error = new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/commit-${commit.phase}: ${commit.error}`);
+            Object.assign(error, { state });
+            throw error;
+          }
+          if (deps.terminalState.publishCommittedState) {
+            const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+            if (publication.kind === "failure") {
+              const retryHint = `Run 'job reopen ${deps.slug} --reason <reason>', then resume the final profile step from this worktree.`;
+              state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint publication failed (${publication.phase})`, hint: retryHint } };
+              await endStore.persist(state);
+              const error = new SpecRunnerError("PUBLICATION_FAILED", retryHint, `post-pr/${publication.phase}: ${publication.error}`);
+              Object.assign(error, { state });
+              throw error;
+            }
+          }
         }
 
         // Escalation → awaiting-resume (unless fatal error)
@@ -639,8 +666,26 @@ export class Pipeline {
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
     if (state.status === "awaiting-resume") {
+      const haltPublication = {
+        enabled: shouldPublishCheckpointOnHalt(state),
+        result: null as Awaited<ReturnType<NonNullable<PipelineOrchestrationDeps["terminalState"]["publishCommittedState"]>>> | null,
+      };
       // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-      await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+      const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+      if (commit?.kind === "failure") {
+        state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." } };
+        await deps.storeFactory(state.jobId).persist(state);
+      } else if (state.error?.code !== "PUBLICATION_FAILED" && haltPublication.enabled && deps.terminalState.publishCommittedState) {
+        const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
+        haltPublication.result = publication;
+        if (publication.kind === "failure") {
+          state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." } };
+          await deps.storeFactory(state.jobId).persist(state);
+        }
+      }
+
+      await notifyJobTerminal(state, { ...deps, haltCheckpointPublication: haltPublication });
+      return state;
     }
 
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).

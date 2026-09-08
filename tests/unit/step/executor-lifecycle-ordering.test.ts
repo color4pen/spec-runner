@@ -290,7 +290,7 @@ describe("T-15: Step finalize lifecycle ordering", () => {
 
 describe("T-15: Terminal commit lifecycle ordering", () => {
   it("TC-T15-03: terminalState.commitFinalState called with string cwd and slug (not deps)", async () => {
-    const commitFinalStateSpy = vi.fn<(cwd: string, slug: string, state: unknown) => Promise<void>>().mockResolvedValue(undefined);
+    const commitFinalStateSpy = vi.fn<(cwd: string, slug: string, state: unknown) => Promise<{ kind: "no-change" }>>().mockResolvedValue({ kind: "no-change" });
 
     // Simulate the exact expression from pipeline.ts / runner.ts
     const deps = makeBaseDeps({

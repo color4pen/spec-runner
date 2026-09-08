@@ -7,6 +7,7 @@ import { reloadCoverageConfig } from "../verification/reload-coverage-config.js"
 import { verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { SpecRunnerError } from "../../errors.js";
 
 /**
  * VerificationStep: implements the verification pipeline step as a CLI-resident step.
@@ -21,8 +22,8 @@ import { stderrWrite } from "../../logger/stdout.js";
  * verificationCwd = deps.cwd ?? process.cwd().
  *
  * After execution, verification-result.md is already in the worktree — no copy needed.
- * It is propagated to the feature branch on origin via propagateVerificationResult so
- * build-fixer's managed agent workspace can read it on the next clone.
+ * It is committed locally. Managed runtime then publishes it for the next remote agent;
+ * local runtime keeps it in the same worktree until a job publication boundary.
  *
  * Design D1: explicit kind discriminator (not null-agent inference).
  * Design D2: no Anthropic session — entirely local.
@@ -58,7 +59,7 @@ export const VerificationStep: CliStep = {
       exitCode: p.exitCode,
     }));
 
-    // Propagate verification-result.md to branch so build-fixer can read it
+    // Commit the result and record its OID before any cross-checkout handoff.
     if (state.branch) {
       const iteration = (state.steps?.[STEP_NAMES.VERIFICATION]?.length ?? 0) + 1;
       const propagateResult = await propagateVerificationResult({
@@ -67,17 +68,23 @@ export const VerificationStep: CliStep = {
         iteration,
         cwd: verificationCwd,
         spawn: deps.spawn,
-        // D4 egress backstop: pass ledger so propagate can verify publish range before push.
-        synthesizedCommits: state.synthesizedCommits ?? [],
       });
       if (!propagateResult.ok) {
         stderrWrite(
-          `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${propagateResult.error}\n`,
+          `Failed to commit verification-result.md on branch ${state.branch}: ${propagateResult.error}\n`,
         );
-        stderrWrite(
-          `build-fixer (if invoked next) may not see the verification result and fall back to running tests itself.\n`,
+        throw new SpecRunnerError(
+          "PUBLICATION_FAILED",
+          "The verification result was not committed and recorded locally. Retry verification from this worktree.",
+          `verification/commit: ${propagateResult.error ?? "unknown commit failure"}`,
         );
+      } else if (propagateResult.commitOid) {
+        const ledger = (state.synthesizedCommits ??= []);
+        if (!ledger.includes(propagateResult.commitOid)) ledger.push(propagateResult.commitOid);
       }
+      // Run even when the file is unchanged: a prior handoff may have failed
+      // after committing, leaving an unpublished result in the ledger.
+      await deps.verificationHandoff?.publish(verificationCwd, state);
     }
 
     // Return the projected phase outcomes. The executor reads verificationPhases from

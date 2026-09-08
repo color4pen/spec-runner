@@ -22,6 +22,14 @@ interface NotifyCtx {
   githubClient: GitHubClient | null;
   owner?: string;
   repo?: string;
+  haltCheckpointPublication?: {
+    enabled: boolean;
+    result: {
+      kind: "published" | "already-synchronized" | "failure";
+      phase?: string;
+      error?: string;
+    } | null;
+  };
 }
 
 /** The HTML comment prefix used in all specrunner notification comments. */
@@ -161,7 +169,10 @@ function escapePlainText(text: string): string {
  * Includes: marker, stopped step, resume reason, compare URL (when branch is set),
  * open decision options (when present), and resume command.
  */
-export function buildEscalationComment(state: JobState): string {
+export function buildEscalationComment(
+  state: JobState,
+  haltCheckpointPublication?: NotifyCtx["haltCheckpointPublication"],
+): string {
   const marker = buildMarker("escalation", state.jobId);
   const slug = state.request.slug ?? null;
   const step = state.resumePoint?.step ?? "(unknown)";
@@ -180,7 +191,15 @@ export function buildEscalationComment(state: JobState): string {
     "",
   ];
 
-  if (state.branch && state.repository.owner && state.repository.name) {
+  // Direct rendering retains its historical remote-ready form for callers that
+  // already established publication. notifyJobTerminal always passes an explicit
+  // outcome and therefore fails closed when publication was disabled or absent.
+  const remoteResumeReady = haltCheckpointPublication === undefined
+    || (haltCheckpointPublication.enabled
+      && haltCheckpointPublication.result != null
+      && haltCheckpointPublication.result.kind !== "failure");
+
+  if (remoteResumeReady && state.branch && state.repository.owner && state.repository.name) {
     const base = state.request.baseBranch ?? "main";
     const url = buildCompareUrl(state.repository.owner, state.repository.name, base, state.branch);
     lines.push(`Diff: ${url}`);
@@ -217,12 +236,14 @@ export function buildEscalationComment(state: JobState): string {
       lines.push("");
     });
 
-    lines.push("Reply with:");
-    lines.push(`  /resume ${exampleParts.join(" ")}`);
-    lines.push("");
+    if (remoteResumeReady) {
+      lines.push("Reply with:");
+      lines.push(`  /resume ${exampleParts.join(" ")}`);
+      lines.push("");
+    }
   }
 
-  lines.push("To resume:");
+  lines.push(remoteResumeReady ? "To resume:" : "To resume in the same worktree:");
   lines.push(`  ${resumeCmd}`);
 
   return lines.join("\n");
@@ -281,7 +302,10 @@ export async function notifyJobTerminal(state: JobState, ctx: NotifyCtx): Promis
 
   let body: string;
   if (state.status === "awaiting-resume") {
-    body = buildEscalationComment(state);
+    body = buildEscalationComment(
+      state,
+      ctx.haltCheckpointPublication ?? { enabled: false, result: null },
+    );
   } else if (state.status === "awaiting-archive") {
     body = buildCompletionComment(state);
   } else {

@@ -410,6 +410,8 @@ This setting has two layers of effect:
 
 **`pipeline.maxStagedBytes`** — fail-closed guard: if the post-exclusion total worktree byte size (uncompressed, measured via `lstat` before `git add`) exceeds this limit, the step halts (escalation) before any `git add` or commit. The default of `52428800` (50 MiB) is chosen because legitimate source changes virtually never exceed 50 MiB uncompressed; exceedance is a strong signal of generated-artifact contamination. The error message states the total bytes, the threshold, and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedBytes` for legitimately large changes. The file-count guard and the byte-size guard are **independent** — either excess halts before commit.
 
+**`pipeline.publishCheckpointOnHalt`** — controls publication of safe checkpoints at controlled halts. It defaults to `true` and is copied into each job when the job is created; resume, reopen, and attach keep that stored policy. Set it to `false` for a durable local workspace where same-worktree resume is sufficient. This does not enable per-step publication.
+
 `maxStagedFiles` and `maxStagedBytes` affect **GUARDED steps only** (implementer / code-fixer / adr-gen). They have no effect on scoped steps (design, spec-review, etc.). `stagingExcludePatterns` staging applies to guarded steps only, but its delivery scope enforcement applies to the full pipeline.
 
 ```jsonc
@@ -428,6 +430,7 @@ This setting has two layers of effect:
 | `pipeline.stagingExcludePatterns` | absent (no exclusions) | Glob patterns removed from the guarded stage set. Matched paths stay in the worktree, not in the commit. Staging applies to guarded steps only; delivery scope enforcement (unpushable-path judgment, scoped residual check, design/review delivery context) applies pipeline-wide. Patterns that can match paths under `specrunner/changes/` are rejected with `CONFIG_INVALID`. Uses bounded glob rules (`**/`, `*`, literal others). |
 | `pipeline.maxStagedFiles` | `2000` | Max post-exclusion file count for a guarded step before the step halts. Guarded steps only. |
 | `pipeline.maxStagedBytes` | `52428800` | Max post-exclusion total worktree byte size (uncompressed, via lstat) for a guarded step before the step halts. Independent of `maxStagedFiles`. Guarded steps only. |
+| `pipeline.publishCheckpointOnHalt` | `true` | Publish a managed-path checkpoint at a controlled halt. The resolved value is snapshotted into the job. |
 
 **Glob syntax** for `stagingExcludePatterns`: `**/` matches zero or more directory segments; `*` matches within one segment (does not cross `/`); all other characters are literal (`.` matches only a literal dot).
 
