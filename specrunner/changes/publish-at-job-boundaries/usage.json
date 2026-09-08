@@ -391,6 +391,20 @@
       },
       "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
       "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:57:34.089Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 305230,
+          "outputTokens": 1472,
+          "cacheReadInputTokens": 220416,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "adr-gen"
     }
   ]
 }
