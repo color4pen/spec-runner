@@ -377,6 +377,20 @@
       },
       "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
       "stepName": "regression-gate"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:51:43.863Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 560755,
+          "outputTokens": 2985,
+          "cacheReadInputTokens": 488960,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "conformance"
     }
   ]
 }

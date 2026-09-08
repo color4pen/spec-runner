@@ -126,7 +126,7 @@ managed runtime は remote を介した agent handoff を別責務として持�
 - Request: `specrunner/changes/publish-at-job-boundaries/request.md`
 - Design: `specrunner/changes/publish-at-job-boundaries/design.md`
 - Spec: `specrunner/changes/publish-at-job-boundaries/spec.md`
-- Reviews: `specrunner/changes/publish-at-job-boundaries/review-feedback-001.md` through `review-feedback-006.md`
+- Reviews: `specrunner/changes/publish-at-job-boundaries/review-feedback-001.md` through `review-feedback-007.md`
 - Related: `specrunner/adr/2026-07-25-egress-commit-oid-persist-before-push.md`
 - Related: `specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md`
 - Related: `specrunner/adr/2026-09-06-optional-github-integration.md`
