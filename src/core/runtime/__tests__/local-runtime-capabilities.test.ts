@@ -40,7 +40,7 @@ function makeStepIoSource() {
 
 function makeTerminalStateSource() {
   return {
-    async commitFinalState(_cwd: string, _slug: string, _state: JobState): Promise<void> {},
+    async commitFinalState(_cwd: string, _slug: string, _state: JobState) { return { kind: "no-change" as const }; },
   };
 }
 
@@ -136,7 +136,7 @@ describe("T-14: LocalRuntime capability contracts — TerminalStateCapability", 
   it("TC-T14-07: commitFinalState resolves without throwing", async () => {
     const source = makeTerminalStateSource();
     const cap = deriveTerminalStateCapability(source);
-    await expect(cap.commitFinalState("/tmp", "my-slug", {} as never)).resolves.toBeUndefined();
+    await expect(cap.commitFinalState("/tmp", "my-slug", {} as never)).resolves.toEqual({ kind: "no-change" });
   });
 });
 

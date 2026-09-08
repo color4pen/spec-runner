@@ -345,11 +345,14 @@ export abstract class CommandRunner {
           // Persist failure is not fatal — job can still be reported.
         }
 
-        // Commit final state to remote (best-effort — managed runtime only).
+        // Always commit the local safe checkpoint; policy controls only remote publication.
         // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
         try {
-          if (shouldPublishCheckpointOnHalt(haltState)) {
-            await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
+          const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, haltState);
+          if (commit?.kind === "failure") {
+            haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." };
+            await deps.storeFactory(haltState.jobId).persist(haltState);
+          } else if (shouldPublishCheckpointOnHalt(haltState)) {
             const publication = await deps.terminalState.publishCommittedState?.(deps.cwd ?? process.cwd(), haltState);
             if (publication?.kind === "failure") {
               haltState.error = { code: "PUBLICATION_FAILED", message: `Gate checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." };

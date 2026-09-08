@@ -830,6 +830,11 @@ export async function commitAndPush(
  * @param params.synthesizedCommits - Existing synthesizedCommits ledger from job state.
  *                                    Used as the base for egress verification (D4).
  */
+export type FinalStateCommitResult =
+  | { kind: "committed"; oid: string }
+  | { kind: "no-change" }
+  | { kind: "failure"; phase: "stage" | "diff" | "commit" | "inspect" | "persist" | "push"; error: string };
+
 export async function commitFinalState(params: {
   cwd: string;
   branch: string;
@@ -850,7 +855,7 @@ export async function commitFinalState(params: {
    */
   recordRestack?: (record: CheckpointRestackRecord) => Promise<void>;
   deferPublication?: boolean;
-}): Promise<void> {
+}): Promise<FinalStateCommitResult> {
   const { cwd, slug, spawnFn, messageLabel = "finalize", persistBeforePush } = params;
 
   const managedPaths = pipelineManagedPaths(slug);
@@ -871,6 +876,8 @@ export async function commitFinalState(params: {
     const addResult = await spawnFn("git", ["add", "--", p], { cwd });
     if ((addResult.exitCode ?? 1) === 0) {
       stagedPaths.push(p);
+    } else if (p === managedPaths[0]) {
+      return { kind: "failure", phase: "stage", error: "unable to stage final job state" };
     }
   }
 
@@ -878,16 +885,19 @@ export async function commitFinalState(params: {
   // commit here: with an empty managed pathspec the only staged content could be
   // pre-staged unauthorized entries, and a whole-index commit would sweep them in.
   if (stagedPaths.length === 0) {
-    return;
+    return { kind: "no-change" };
   }
 
   // Check for staged changes within the managed pathspec only (exit 1 = changes present,
   // exit 0 = clean). Whole-index diff would report exit 1 for pre-staged unauthorized
   // entries even when no managed file changed.
   const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet", "--", ...stagedPaths], { cwd });
-  if ((diffResult.exitCode ?? 0) !== 1) {
+  if ((diffResult.exitCode ?? 0) === 0) {
     // No staged changes in managed paths — nothing to commit.
-    return;
+    return { kind: "no-change" };
+  }
+  if ((diffResult.exitCode ?? 0) !== 1) {
+    return { kind: "failure", phase: "diff", error: "unable to inspect staged final-state changes" };
   }
 
   // Commit managed-paths state snapshot.
@@ -899,41 +909,45 @@ export async function commitFinalState(params: {
   const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`, "--", ...stagedPaths], { cwd });
   if ((commitResult.exitCode ?? 1) !== 0) {
     stderrWrite(`Warning: ${messageLabel} commit failed for ${slug}. Push manually to ensure state is on the branch.`);
-    return;
+    return { kind: "failure", phase: "commit", error: `${messageLabel} commit failed` };
+  }
+
+  const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
+  const oid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
+  if (!oid) {
+    return { kind: "failure", phase: "inspect", error: "unable to resolve final-state commit" };
   }
 
   // Persist-before-push invariant: record the checkpoint/finalize OID before push so
   // that a push failure cannot leave the ledger incomplete. Best-effort: failure is
   // warned and does not block push (commitFinalState is a terminal best-effort path).
   if (persistBeforePush) {
-    const pbpOidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
-    const pbpOid = (pbpOidResult.exitCode ?? 1) === 0 ? pbpOidResult.stdout.trim() : "";
-    if (pbpOid) {
-      try {
-        await persistBeforePush(pbpOid);
-      } catch (err) {
-        stderrWrite(
-          `Warning: ${messageLabel} persistBeforePush failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. Continuing with push.`,
-        );
-      }
+    try {
+      await persistBeforePush(oid);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      stderrWrite(`Warning: ${messageLabel} persistBeforePush failed for ${slug}: ${message}.`);
+      return { kind: "failure", phase: "persist", error: message };
     }
   }
 
   if (!params.deferPublication) {
-    const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
-    const oid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
     try {
       await verifyEgressLedger({ cwd, ledger: [...(params.synthesizedCommits ?? []), ...(oid ? [oid] : [])], spawnFn, branch: params.branch });
     } catch (err) {
       stderrWrite(`Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}`);
-      return;
+      return { kind: "failure", phase: "inspect", error: err instanceof Error ? err.message : String(err) };
     }
     const first = await spawnFn("git", ["push", "-u", "origin", params.branch], { cwd });
     if ((first.exitCode ?? 1) !== 0) {
       const second = await spawnFn("git", ["push", "-u", "origin", params.branch], { cwd });
-      if ((second.exitCode ?? 1) !== 0) stderrWrite(`Warning: failed to push ${messageLabel} commit for ${slug}. git stderr: ${second.stderr.trim()}`);
+      if ((second.exitCode ?? 1) !== 0) {
+        stderrWrite(`Warning: failed to push ${messageLabel} commit for ${slug}. git stderr: ${second.stderr.trim()}`);
+        return { kind: "failure", phase: "push", error: "remote rejected final-state publication" };
+      }
     }
   }
+  return { kind: "committed", oid };
 }
 
 export type PublicationResult =

@@ -844,15 +844,15 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * D5 (remote-checkpoint-publish-attach-closure): commit and push slug canonical state
+   * D5 (remote-checkpoint-publish-attach-closure): commit slug canonical state
    * after a terminal pipeline transition.
    *
    * - awaiting-archive: messageLabel = "finalize" (commit "finalize: <slug>").
    * - awaiting-resume: messageLabel = "checkpoint" (commit "checkpoint: <slug>").
-   * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
-   * - Push failures warn on stderr but do not throw (local resume is preserved).
+   * - 管理パス（state.json / events.jsonl / usage.json / pr-create-result.md）のみを明示 pathspec で add → commit。
+   * - A typed result distinguishes no-change from a failed required checkpoint commit.
    */
-  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<void> {
+  async commitFinalState(cwd: string, slug: string, state: JobState): Promise<import("../step/commit-push.js").FinalStateCommitResult> {
     const effectiveCwd = cwd;
     const branch = state.branch ?? "";
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
@@ -915,7 +915,7 @@ export class LocalRuntime implements RuntimeStrategy, MaterializerHost {
       }
     }
 
-    await commitFinalState({
+    return commitFinalState({
       cwd: effectiveCwd,
       branch,
       slug,

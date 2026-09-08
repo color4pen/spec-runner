@@ -310,10 +310,11 @@ export class Pipeline {
             // Mark as failed so getStepOutcome() returns "error" and
             // the transition table routes to "escalate" → awaiting-resume.
             const store = deps.storeFactory(state.jobId);
+            const typedError = err instanceof SpecRunnerError ? err : null;
             state = await store.fail(state, {
-              code: "UNEXPECTED_STEP_ERROR",
+              code: typedError?.code ?? "UNEXPECTED_STEP_ERROR",
               message: (err as Error).message ?? String(err),
-              hint: "",
+              hint: typedError?.hint ?? "",
             }, currentStep);
           }
         }
@@ -423,7 +424,12 @@ export class Pipeline {
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
           // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-          await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+          if (commit?.kind === "failure") {
+            state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Final checkpoint commit failed (${commit.phase})`, hint: "Retry from this worktree." } };
+            await endStore.persist(state);
+            throw new SpecRunnerError("PUBLICATION_FAILED", "Retry from this worktree.", `post-pr/commit-${commit.phase}: ${commit.error}`);
+          }
           if (deps.terminalState.publishCommittedState) {
             const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
             if (publication.kind === "failure") {
@@ -654,10 +660,13 @@ export class Pipeline {
     // does NOT throw, so local resume possibility is never broken by a push failure.
     // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
     // that seam is intentionally NOT moved here to preserve existing test coverage.
-    if (state.status === "awaiting-resume" && shouldPublishCheckpointOnHalt(state)) {
+    if (state.status === "awaiting-resume") {
       // Fallback to process.cwd() when deps.cwd is absent (always injected in production via buildDeps).
-      await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
-      if (deps.terminalState.publishCommittedState) {
+      const commit = await deps.terminalState.commitFinalState(deps.cwd ?? process.cwd(), deps.slug, state);
+      if (commit?.kind === "failure") {
+        state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint commit failed (${commit.phase})`, hint: "Local resume remains available." } };
+        await deps.storeFactory(state.jobId).persist(state);
+      } else if (state.error?.code !== "PUBLICATION_FAILED" && shouldPublishCheckpointOnHalt(state) && deps.terminalState.publishCommittedState) {
         const publication = await deps.terminalState.publishCommittedState(deps.cwd ?? process.cwd(), state);
         if (publication.kind === "failure") {
           state = { ...state, error: { code: "PUBLICATION_FAILED", message: `Halt checkpoint publication failed (${publication.phase})`, hint: "Local resume remains available." } };

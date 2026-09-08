@@ -111,6 +111,32 @@ function makeAgentStep(name: string): Step {
 
 // T3.1: executor.execute throws plain Error (no .state) → state becomes awaiting-resume
 describe("T3.1: executor throws without .state → state becomes awaiting-resume (要件 7)", () => {
+  it("persists a pre-PR publication failure with its phase-specific error code", async () => {
+    const jobState = { ...makeMinimalState("test-pre-pr-publication"), step: "pr-create" as const };
+    const deps = makeMinimalDeps();
+    const executeSpy = vi.fn();
+    deps.terminalState = {
+      commitFinalState: async () => ({ kind: "no-change" }),
+      publishCommittedState: async () => ({ kind: "failure", phase: "push", error: "remote rejected publication" }),
+    };
+    const pipeline = new Pipeline({
+      steps: new Map([["pr-create", makeAgentStep("pr-create")]]),
+      transitions: [{ step: "pr-create", on: "error", to: "escalate" }],
+      maxIterations: 1,
+      executor: { execute: executeSpy } as unknown as StepExecutor,
+      events: new EventBus(),
+    });
+
+    const result = await pipeline.run("pr-create", jobState, deps);
+    const persisted = await deps.storeFactory(jobState.jobId).load();
+
+    expect(executeSpy).not.toHaveBeenCalled();
+    expect(result.error?.code).toBe("PUBLICATION_FAILED");
+    expect(result.error?.message).toContain("pre-pr/push");
+    expect(persisted.error?.code).toBe("PUBLICATION_FAILED");
+    expect(persisted.error?.message).toContain("pre-pr/push");
+  });
+
   it("plain Error throw results in awaiting-resume with UNEXPECTED_STEP_ERROR", async () => {
     const jobState = makeMinimalState("test-no-state-throw");
     await fs.mkdir(path.join(tempDir, ".specrunner", "jobs"), { recursive: true });
