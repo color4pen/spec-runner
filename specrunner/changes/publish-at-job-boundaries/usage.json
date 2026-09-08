@@ -41,6 +41,20 @@
       },
       "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
       "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T09:49:20.970Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 705724,
+          "outputTokens": 4862,
+          "cacheReadInputTokens": 622976,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "spec-review"
     }
   ]
 }

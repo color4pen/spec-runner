@@ -33,9 +33,9 @@ local の step finalizer、round coordinator、verification propagation は、sc
 
 ### D2. 未送信 range を公開する narrow capability を設ける
 
-既存 commit/push module の egress 検査と retry を再利用し、`origin/<branch>`..HEAD の全 OID が `synthesizedCommits` に含まれる場合だけ push する。worktree diff や新規 commit の有無を push 条件にしない。結果は published / already-synchronized / phase 付き failure とし、Pipeline/CommandRunner の公開境界だけが利用する。unknown commit、dirty/excluded path は自動 stage/adopt せず、手動 commit は既存 `--adopt-commits` のみで採用する。
+既存 commit/push module の egress 検査と retry を再利用する。remote feature ref が存在する場合は `origin/<branch>..HEAD`、初回公開で存在しない場合は `HEAD --not --remotes=origin` 相当（既知の origin ancestry を除外する revision walk）で outgoing OID を列挙し、その全 OID が `synthesizedCommits` に含まれる場合だけ新しい remote feature ref へ push する。worktree diff や新規 commit の有無を push 条件にしない。publish-only capability は LocalRuntime が既存 Git 操作に用いる transport-authenticated spawn seam（HTTPS credential/header 注入を含む）をそのまま受け取り、独自の未認証 spawn 経路を作らない。Git 引数、credential 入り URL、remote stderr/error を含む phase diagnostics は既存 secret redaction を通し、typed result、stderr、state、journal、通常/verbose log のいずれにも token や credential を保存・表示しない。結果は published / already-synchronized / phase 付き failure とし、Pipeline/CommandRunner の公開境界だけが利用する。unknown commit、dirty/excluded path は自動 stage/adopt せず、手動 commit は既存 `--adopt-commits` のみで採用する。
 
-**Rationale:** terminal commit の no-diff early return と publish 判定を分けなければ再送できない。狭い capability は巨大 runtime facade を避ける。
+**Rationale:** terminal commit の no-diff early return と publish 判定を分けなければ再送できず、未作成の `origin/<branch>` を range endpoint にすると初回公開が unknown revision で失敗する。また、既存の認証 seam と redaction を外れた publish は HTTPS remote で失敗するか credential を永続化し得る。狭い capability は巨大 runtime facade を避ける。
 
 **Alternatives considered:** `git status` 判定、unknown range の自動台帳追加、force push は未送信を見落とすか egress fail-closed を壊すため却下する。
 
@@ -75,7 +75,7 @@ archive record push 成功後だけ archived 遷移・cleanup する順序を保
 
 ### D7. isolated Git fixture と既存 CLI 経路で検証する
 
-temporary bare remote、spawn/API spy、既存 Pipeline/CommandRunner fixture で push zero、順序、no-diff retry、unknown OID、halt policy、legacy、archive、managed regression を検証する。実 GitHub/Vercel/credential は使わず、implementer verification の証跡を review で再利用する。
+temporary bare remote、spawn/API spy、既存 Pipeline/CommandRunner fixture で push zero、順序、no-diff retry、unknown OID、halt policy、legacy、archive、managed regression を検証する。初回用 fixture は remote feature ref を作らず既知 origin ancestry のみを置き、outgoing ledger 照合から新規 branch push が成功することを確認する。transport spy には dummy token と credential 入り URL/remote error を注入し、認証済み spawn seam が全 publication boundary で使われること、および result、stderr、state、journal、通常/verbose log の全出力・永続化先に secret が現れないことを確認する。実 GitHub/Vercel/credential は使わず、implementer verification の証跡を review で再利用する。
 
 **Rationale:** mock のみでは git range semantics を、実 service では決定性と隔離を保証できない。
 

@@ -20,7 +20,13 @@ Local normal steps, fixer iterations, parallel review rounds, and verification S
 
 ### Requirement: publication is independent from commit creation
 
-Publication MUST compare remote and local revisions even when no new diff exists, and MUST verify every outgoing commit against the synthesized-commit ledger.
+Publication MUST compare remote and local revisions even when no new diff exists, and MUST verify every outgoing commit against the synthesized-commit ledger. If the remote feature ref does not yet exist, it MUST derive outgoing commits by excluding known origin ancestry (equivalent to `HEAD --not --remotes=origin`) instead of resolving a nonexistent `origin/<branch>` endpoint.
+
+#### Scenario: first publication without remote feature ref
+
+**Given** origin contains known base ancestry but no remote feature branch, and local HEAD contains ledgered job commits
+**When** the first publication boundary runs
+**Then** only commits outside known origin ancestry are ledger-verified and pushed to create the remote feature branch without an unknown-revision failure
 
 #### Scenario: no-diff retry
 

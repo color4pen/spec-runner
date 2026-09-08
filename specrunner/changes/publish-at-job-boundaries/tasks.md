@@ -13,15 +13,17 @@
 
 ## T-02: commit-only と publish-only を分離する
 
-- [ ] commit/push module の synthesis を既存 staging・scope・guard・OID persist を保つ commit-only API にする。
-- [ ] remote..HEAD の全 OID を台帳検査し、差分なしでも未送信 commit を retry する publish-only API を作る。
+- [ ] commit/push module の synthesis を既存 staging・scope・guard・OID persist を保つ commit-only API にする。publish-only API は LocalRuntime の既存 transport-authenticated spawn seam と credential injection/redaction を継承し、未認証の別 spawn 経路を作らない。
+- [ ] remote feature ref がある場合は `origin/<branch>..HEAD`、ない初回は `HEAD --not --remotes=origin` 相当で既知 origin ancestry を除外して outgoing OID を台帳検査し、差分なしでも未送信 commit を retry する publish-only API を作る。
 - [ ] published/already-synchronized/phase failure を typed result として返す。
 - [ ] unknown/dirty/excluded output は自動採用せず既存 `--adopt-commits` を維持する。
-- [ ] bare remote で batch、no-diff retry、unknown OID、retry diagnostics をテストする。
+- [ ] remote feature ref が存在しない bare remote からの初回 branch 作成、batch、no-diff retry、unknown OID、retry diagnostics をテストする。
+- [ ] transport spy に dummy token と credential 入り URL/remote error を注入し、認証 seam の利用と、typed result・stderr・state・journal・通常/verbose log の全出力/永続化先での sanitization をテストする。
 
 **Acceptance Criteria**:
 - commit-only は push ゼロで既存安全契約を満たす。
 - publish-only は未送信 range を送り、ledger 外 commit を拒否する。
+- 初回 remote branch 不在でも既知 remote ancestry は ledger 対象外となり、credential を露出せず認証済み transport で公開できる。
 
 ## T-03: local の途中経路を commit-only 化する
 
@@ -36,11 +38,11 @@
 
 ## T-04: PR 前後の公開を編成する
 
-- [ ] narrow publication capability を Pipeline に注入し、最終検証後かつ pr-create API 前に成果 publish を必須にする。
+- [ ] LocalRuntime の transport-authenticated spawn seam と secret sanitizer を継承する narrow publication capability を Pipeline に注入し、最終検証後かつ pr-create API 前に成果 publish を必須にする。
 - [ ] pre-PR failure は API を呼ばず retryable state と phase diagnosis を残す。
 - [ ] API 後に PR identity/awaiting-archive を保存・commit して post-PR publish する。
 - [ ] existing-open と保存 PR identity を使い、post-PR failure retry の重複 PR を防ぐ。
-- [ ] API/spawn spy と bare remote で初回・existing・各 failure の順序をテストする。
+- [ ] API/spawn spy と remote feature ref がない bare remote で初回・existing・各 failure の順序をテストし、phase diagnosis の全出力/永続化先が credential-safe であることを確認する。
 
 **Acceptance Criteria**:
 - verification/review → publish → PR API → final publish の順序が成立する。

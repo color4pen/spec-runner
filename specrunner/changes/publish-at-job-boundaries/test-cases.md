@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 34 cases
-- **Automated** (unit/integration): 31
+- **Total**: 36 cases
+- **Automated** (unit/integration): 33
 - **Manual**: 2
-- **Priority**: must: 29, should: 4, could: 1
+- **Priority**: must: 31, should: 4, could: 1
 
 ### TC-001: 複数の local step 成果を push せず蓄積する
 
@@ -42,6 +42,10 @@
 **Category**: integration
 **Priority**: must
 **Source**: spec.md > Requirement: PR processing follows successful result publication > Scenario: first PR creation
+
+**GIVEN** bare origin に既知 base ancestry だけが存在し、remote feature ref は未作成で、local HEAD に ledger 済み bootstrap/job commits がある
+**WHEN** 初回 PR 処理が開始される
+**THEN** `HEAD --not --remotes=origin` 相当で既知 ancestry を除いた outgoing commit だけを照合・push して remote feature branch を作成し、その成功後に PR API、最終記録 publish の順で進む
 
 ### TC-007: 既存 PR の再試行で重複 PR を作らない
 
@@ -241,14 +245,34 @@
 **WHEN** 各 job が同じ controlled halt または正常公開境界に到達する
 **THEN** provider や CI 環境変数から policy を推測せず、同じ保存済み policy と公開境界が適用される
 
+### TC-035: remote feature ref 不在の PR なし初回公開を成功させる
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: publication is independent from commit creation > Scenario: first publication without remote feature ref
+
+**GIVEN** bare origin に base ancestry はあるが remote feature ref はなく、GitHub-disabled または pr-create なし job の ledger 済み commits と最終 checkpoint が local HEAD にある
+**WHEN** 正常完了の publication boundary を実行する
+**THEN** unknown revision を起こさず既知 origin ancestry を除く outgoing range だけを照合し、新しい remote feature branch に成果と checkpoint を push して PR API は呼ばない
+
+### TC-036: publication transport の認証と診断を secret-safe に保つ
+
+**Category**: integration
+**Priority**: must
+**Source**: tasks.md > T-02: commit-only と publish-only を分離する
+
+**GIVEN** LocalRuntime の authenticated Git transport spy が dummy token を注入し、credential 入り URL または token を含む remote error を返し得る
+**WHEN** pre-PR、post-PR、PR なし正常完了、halt checkpoint の各 publication boundary が成功または失敗する
+**THEN** すべてが既存の認証済み spawn seam を利用し、dummy token と credential は typed result、stderr、state、journal、通常 log、verbose log のいずれにも現れない
+
 ## Result
 
 ```yaml
 result: completed
-total: 34
-automated: 31
+total: 36
+automated: 33
 manual: 2
-must: 29
+must: 31
 should: 4
 could: 1
 blocked_reasons: []
