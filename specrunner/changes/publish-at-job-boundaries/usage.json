@@ -363,6 +363,20 @@
       },
       "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
       "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-09-08T14:48:17.894Z",
+      "modelUsage": {
+        "gpt-5.6-sol": {
+          "inputTokens": 327718,
+          "outputTokens": 2074,
+          "cacheReadInputTokens": 261632,
+          "cacheCreationInputTokens": 0
+        }
+      },
+      "jobId": "0142023a-bf7f-4988-8b99-054af335fbd2",
+      "stepName": "regression-gate"
     }
   ]
 }
