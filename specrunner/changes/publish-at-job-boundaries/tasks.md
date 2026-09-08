@@ -97,6 +97,7 @@
 - [x] PR 初回/existing、GitHub disabled、no-PR、policy、legacy、unknown、retry、archive、managed suite を実行する。
 - [x] build/typecheck/test/lint を一度実行し verification evidence に記録する（実 GitHub/Vercel/credential 不要）。
 - [x] tasks checkbox と証跡を更新し reviewer の重複実行を不要にする。
+- [x] verification iter 1 で残存していた旧 halt-checkpoint-restack テストを、publish-only の fail-closed 契約に合わせて除去する。
 
 **Acceptance Criteria**:
 - 全 scenario が自動/静的契約 test で検証される。
