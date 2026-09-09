@@ -39,7 +39,8 @@ run-name: "${{ inputs.action }} #${{ inputs.issue }}"
 #            待たない・検出しない。完了処理はすべて CLI 側（runPlainArchive）にあり、
 #            workflow は状態を見ない。
 #
-# 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
+# 前提: リポジトリ secret CODEX_AUTH_JSON（Codex の auth.json）。
+# モデル設定は Actions でも読める .specrunner/config.json に置く。
 
 on:
   workflow_dispatch:
@@ -109,14 +110,10 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Ensure Claude Code native binary
-        # bun install は libc を選別せず musl variant も展開する。SDK は musl → glibc の
-        # 順に解決するため、glibc runner では musl binary が選ばれ、musl loader 不在で
-        # exec が ENOENT（"not found" 表示）になる。musl variant を除去して glibc へ
-        # 落とし、glibc binary の実在を検査してから pipeline を走らせる。
+      - name: Check Codex runtime and model configuration
         run: |
-          rm -rf node_modules/@anthropic-ai/claude-agent-sdk-linux-x64-musl
-          test -e node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/claude
+          ./node_modules/.bin/codex --version
+          bun ./bin/specrunner.ts config effective
 
       - name: Git identity for pipeline commits
         run: |
@@ -131,38 +128,10 @@ jobs:
         # origin/main から local ref を補う。main を checkout している場合は何もしない。
         run: git rev-parse --verify -q main >/dev/null || git branch main origin/main
 
-      - name: Enable sandbox prerequisites
-        # 実測（run 32379478853）: ubuntu-latest は bwrap 不在 +
-        # apparmor_restrict_unprivileged_userns=1 で Claude Code の Linux sandbox が
-        # 縮退し、agent が tool を実行できず turn を使い切る。両前提を有効化する。
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-
-      - name: Runner sandbox diagnostics
-        run: |
-          which bwrap || echo "bwrap: absent"
-          sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true
-          sysctl kernel.unprivileged_userns_clone 2>/dev/null || true
-
-      - name: Claude Code smoke test
-        # pipeline 抜きで claude binary の単発実行が成立するかを検証する。
-        # 失敗時は生 stderr が唯一の証拠（pipeline 経由では握りつぶされる）。
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: |
-          bin=node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/claude
-          "$bin" --version
-          timeout 120 "$bin" -p "reply with exactly: SMOKE_OK" 2>claude-stderr.txt || echo "smoke exit=$?"
-          echo "--- stderr ---"; tail -c 4000 claude-stderr.txt || true
-
       - name: Codex auth preflight
-        # cross-boundary-invariants (gpt-5.6-sol / openai provider) 用。
-        # credential containment: auth.json は run 全体に常駐させない。ここでは
-        # 一時 CODEX_HOME で codex login status を検証して即削除するのみ。
-        # pipeline 実行中の materialize / cleanup は CodexAgentRunner が
-        # Codex 実行スコープ内で行う (CODEX_AUTH_JSON env → 一時 CODEX_HOME)。
-        # credential 内容は絶対にログ出力しない。
+        if: inputs.action != 'archive'
+        # auth.json は確認後に削除し、pipeline 内では CodexAgentRunner が
+        # 各 Codex 実行中だけ再作成する。認証情報はログに出力しない。
         env:
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
         run: |
@@ -170,25 +139,22 @@ jobs:
             echo "::error::CODEX_AUTH_JSON secret が未設定"
             exit 1
           fi
-          CODEX_HOME="$(mktemp -d "$RUNNER_TEMP/codex-auth-XXXXXX")"
-          export CODEX_HOME
-          printf '%s' "$CODEX_AUTH_JSON" > "$CODEX_HOME/auth.json"
-          chmod 600 "$CODEX_HOME/auth.json"
-          # 認証確認（status はログイン方式のみ出力し credential は含まない。未ログインは exit 1）
-          status=0
-          ./node_modules/.bin/codex login status || status=$?
-          rm -rf "$CODEX_HOME"
-          exit "$status"
+          umask 077
+          codex_auth_dir="$(mktemp -d "$RUNNER_TEMP/codex-auth-XXXXXX")"
+          trap 'rm -rf "$codex_auth_dir"' EXIT
+          printf '%s' "$CODEX_AUTH_JSON" > "$codex_auth_dir/auth.json"
+          if ! env CODEX_HOME="$codex_auth_dir" CODEX_AUTH_JSON= ./node_modules/.bin/codex login status >/dev/null 2>&1; then
+            echo "::error::Codex の認証情報を読み込めません。CODEX_AUTH_JSON を確認してください"
+            exit 1
+          fi
+          echo "Codex credentials loaded (no API request performed)"
 
       - name: Run pipeline
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # debug: agent session transcript を .specrunner/logs/<jobId>/ に書かせる
           SPECRUNNER_LOG_LEVEL: debug
-          # SDK 側の debug log（SpecRunner の plumbing に依存しない証拠経路）
-          CLAUDE_CODE_DEBUG_LOGS_DIR: ${{ github.workspace }}/.claude-debug
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # ChatGPT auth for Codex steps。SECRET_DENYLIST 登録済みのため subprocess へは
+          # Codex auth。SECRET_DENYLIST 登録済みのため subprocess へは
           # 伝播せず、CodexAgentRunner が Codex 実行スコープ内でのみ file 化する。
           CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
           ISSUE: ${{ inputs.issue }}
@@ -259,7 +225,7 @@ jobs:
         # runner の log は VM と共に消えるため、失敗診断用に常時 tail を残す
         if: always()
         run: |
-          for f in $(find .specrunner .git/specrunner-worktrees/*/.specrunner .claude-debug -type f \( -name "*.log" -o -name "*.jsonl" -o -name "*.txt" \) 2>/dev/null); do
+          for f in $(find .specrunner .git/specrunner-worktrees/*/.specrunner -type f \( -name "*.log" -o -name "*.jsonl" -o -name "*.txt" \) 2>/dev/null); do
             echo "===== $f ====="
             tail -c 30000 "$f"
             echo

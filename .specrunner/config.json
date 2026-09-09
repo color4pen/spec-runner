@@ -18,13 +18,11 @@
   "steps": {
     "defaults": {
       "model": "gpt-5.6-sol",
-      "maxTurns": null
+      "maxTurns": null,
+      "timeoutMs": null
     },
-    "design": {
-      "model": "gpt-5.6-sol"
-    },
-    "cross-boundary-invariants": {
-      "model": "gpt-5.6-sol"
+    "adr-gen": {
+      "model": "gpt-5.6-terra"
     }
   },
   "archive": {
