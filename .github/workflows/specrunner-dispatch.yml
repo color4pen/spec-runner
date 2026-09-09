@@ -92,7 +92,7 @@ concurrency:
 
 jobs:
   run:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write # branch push
       pull-requests: write # PR 作成
@@ -109,6 +109,19 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
 
       - run: bun install --frozen-lockfile
+
+      - name: Prepare Linux sandbox for Codex
+        if: inputs.action != 'archive'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap apparmor-profiles apparmor-utils
+          if [ -f /usr/share/apparmor/extra-profiles/bwrap-userns-restrict ]; then
+            sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+          fi
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          # Codex のモデル呼び出し前に user/network namespace の起動を確認する。
+          bwrap --unshare-user --unshare-pid --unshare-net \
+            --ro-bind / / --proc /proc --dev /dev -- /bin/true
 
       - name: Check Codex runtime and model configuration
         run: |
