@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.2...specrunner-v0.5.3) (2026-09-09)
+
+
+### Features
+
+* local runtimeの各ステップpushを廃止し、成果公開と停止時の引き継ぎに集約する ([#1130](https://github.com/color4pen/spec-runner/issues/1130)) ([1117107](https://github.com/color4pen/spec-runner/commit/11171076b1c4c0309f94a06bf2d6866ce8a69793))
+
+
+### Bug Fixes
+
+* correct Codex cache accounting and reference prices ([#1132](https://github.com/color4pen/spec-runner/issues/1132)) ([d9382b2](https://github.com/color4pen/spec-runner/commit/d9382b27ce4ca024267fbd787fa1fbc0f8d53baa))
+
 ## [0.5.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.5.1...specrunner-v0.5.2) (2026-09-07)
 
 
